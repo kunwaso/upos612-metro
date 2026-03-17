@@ -1,0 +1,594 @@
+/**
+ * Vendor compatibility styles — Metronic 8.3.3 aligned
+ *
+ * Provides styles for legacy vendor components (Select2, Dropzone, datepicker,
+ * datetimepicker, daterangepicker, file input, iCheck, Ladda, input-group-addon)
+ * when used with the main app layout (which does not load vendor.css).
+ * All values use Metronic/Bootstrap 5 CSS variables so they follow the theme.
+ */
+
+/* -------------------------------------------------------------------------
+   Bootstrap 3 input-group-addon → Metronic / BS5 input-group-text look
+   ------------------------------------------------------------------------- */
+.input-group-addon {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bs-body-color, #071437);
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.input-group .input-group-addon {
+  border-radius: 0;
+}
+
+.input-group .input-group-addon:first-child {
+  border-right: 0;
+  border-top-left-radius: var(--bs-border-radius-sm, 0.475rem);
+  border-bottom-left-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.input-group .input-group-addon:last-child {
+  border-left: 0;
+  border-top-right-radius: var(--bs-border-radius-sm, 0.475rem);
+  border-bottom-right-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.input-group .form-control + .input-group-addon,
+.input-group .form-select + .input-group-addon,
+.input-group .input-group-addon + .form-control,
+.input-group .input-group-addon + .form-select {
+  border-left: 1px solid var(--bs-border-color, #f1f1f4);
+}
+
+.input-group .input-group-addon + .form-control,
+.input-group .input-group-addon + .form-select {
+  border-right: 0;
+}
+
+.input-group .input-group-addon .fa,
+.input-group .input-group-addon .fas,
+.input-group .input-group-addon .far {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* -------------------------------------------------------------------------
+   Select2 — Metronic styled
+   ------------------------------------------------------------------------- */
+.select2-container {
+  box-sizing: border-box;
+  display: inline-block;
+  margin: 0;
+  position: relative;
+  vertical-align: middle;
+}
+
+.select2-container .select2-selection--single {
+  box-sizing: border-box;
+  cursor: pointer;
+  display: block;
+  height: calc(1.5em + 1.5rem + 2px);
+  padding: 0.65rem 1rem;
+  user-select: none;
+  -webkit-user-select: none;
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #071437);
+}
+
+.select2-container--focus .select2-selection--single,
+.select2-container--open .select2-selection--single {
+  border-color: var(--bs-primary, #1b84ff);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 27, 132, 255), 0.25);
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+  display: block;
+  padding-left: 0;
+  padding-right: 2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select2-container .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2rem;
+  color: var(--bs-gray-600, #78829d);
+}
+
+.select2-container--default .select2-selection__arrow b {
+  border-color: currentColor transparent transparent transparent;
+  border-style: solid;
+  border-width: 5px 4px 0 4px;
+  height: 0;
+  left: 50%;
+  margin-left: -4px;
+  margin-top: -2px;
+  position: absolute;
+  top: 50%;
+  width: 0;
+}
+
+.select2-dropdown {
+  background-color: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  z-index: 1051;
+}
+
+.select2-results__option {
+  padding: 0.5rem 1rem;
+  color: var(--bs-body-color, #071437);
+}
+
+.select2-results__option--highlighted {
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+  color: var(--bs-primary-text-emphasis, #0b3566);
+}
+
+.select2-search--dropdown .select2-search__field {
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  padding: 0.4rem 0.75rem;
+  width: 100%;
+}
+
+/* -------------------------------------------------------------------------
+   Dropzone — Metronic styled
+   ------------------------------------------------------------------------- */
+.dropzone {
+  border: 2px dashed var(--bs-border-color, #dbdfe9);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  background: var(--bs-tertiary-bg, #f9f9f9);
+  padding: 1.5rem;
+  min-height: 120px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dropzone.dz-drag-hover,
+.dropzone:hover {
+  border-color: var(--bs-primary, #1b84ff);
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+}
+
+.dropzone .dz-message {
+  margin: 2em 0;
+  color: var(--bs-secondary-color, rgba(7, 20, 55, 0.75));
+  font-size: var(--bs-body-font-size, 1rem);
+}
+
+.dropzone .dz-preview .dz-remove {
+  color: var(--bs-danger, #f8285a);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* -------------------------------------------------------------------------
+   Bootstrap Datepicker — Metronic styled
+   ------------------------------------------------------------------------- */
+.datepicker {
+  padding: 0.5rem;
+  border-radius: var(--bs-border-radius, 0.95rem);
+  direction: ltr;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+}
+
+.datepicker-dropdown {
+  top: 0;
+  left: 0;
+}
+
+.datepicker table tr td,
+.datepicker table tr th {
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  padding: 0.35rem;
+}
+
+.datepicker table tr td.active,
+.datepicker table tr td.active:hover {
+  background-color: var(--bs-primary, #1b84ff);
+  color: #fff;
+}
+
+.datepicker table tr td.today {
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+  color: var(--bs-primary-text-emphasis, #0b3566);
+}
+
+.datepicker table tr td:hover:not(.active):not(.disabled) {
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+}
+
+.datepicker .datepicker-switch,
+.datepicker .prev,
+.datepicker .next {
+  color: var(--bs-body-color, #071437);
+  font-weight: 600;
+}
+
+.datepicker .datepicker-switch:hover,
+.datepicker .prev:hover,
+.datepicker .next:hover {
+  color: var(--bs-primary, #1b84ff);
+}
+
+/* -------------------------------------------------------------------------
+   Bootstrap Datetimepicker — Metronic styled
+   ------------------------------------------------------------------------- */
+.bootstrap-datetimepicker-widget {
+  list-style: none;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+  padding: 0.75rem;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu {
+  display: block;
+  margin: 0.25rem 0;
+  padding: 0.75rem;
+  min-width: 19em;
+}
+
+.bootstrap-datetimepicker-widget .btn {
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  font-weight: 500;
+}
+
+.bootstrap-datetimepicker-widget .btn-primary {
+  background-color: var(--bs-primary, #1b84ff);
+  border-color: var(--bs-primary, #1b84ff);
+}
+
+.bootstrap-datetimepicker-widget table td.active {
+  background-color: var(--bs-primary, #1b84ff);
+  color: #fff;
+}
+
+.bootstrap-datetimepicker-widget table td.today:before {
+  border-bottom-color: var(--bs-primary, #1b84ff);
+}
+
+/* -------------------------------------------------------------------------
+   Daterangepicker — Metronic styled
+   ------------------------------------------------------------------------- */
+.daterangepicker {
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+  padding: 0.5rem;
+}
+
+.daterangepicker td.active,
+.daterangepicker td.active:hover {
+  background-color: var(--bs-primary, #1b84ff);
+  color: #fff;
+}
+
+.daterangepicker td.in-range {
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+  color: var(--bs-body-color, #071437);
+}
+
+.daterangepicker .calendar-table th {
+  color: var(--bs-body-color, #071437);
+  font-weight: 600;
+}
+
+.daterangepicker .ranges li.active {
+  background-color: var(--bs-primary, #1b84ff);
+  color: #fff;
+}
+
+.daterangepicker .ranges li:hover {
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+}
+
+.daterangepicker .btn-primary {
+  background-color: var(--bs-primary, #1b84ff);
+  border-color: var(--bs-primary, #1b84ff);
+}
+
+/* -------------------------------------------------------------------------
+   File input (btn-file, Krajee-style) — Metronic styled
+   ------------------------------------------------------------------------- */
+.btn-file {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.btn-file input[type="file"] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  text-align: right;
+  opacity: 0;
+  background: none;
+  cursor: pointer;
+  display: block;
+}
+
+.file-caption-name {
+  display: inline-block;
+  overflow: hidden;
+  max-height: 1.5em;
+  word-break: break-all;
+  color: var(--bs-body-color, #071437);
+}
+
+.file-error-message {
+  color: var(--bs-danger, #f8285a);
+  background-color: var(--bs-danger-bg-subtle, #fed4de);
+  border: 1px solid var(--bs-danger-border-subtle, #fca9bd);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.file-drop-zone {
+  vertical-align: middle;
+  border: 2px dashed var(--bs-border-color, #dbdfe9);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  padding: 1rem;
+  background: var(--bs-tertiary-bg, #f9f9f9);
+}
+
+.file-loading {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0;
+  text-align: right;
+  color: transparent;
+  border: none;
+  background-color: transparent;
+  opacity: 0.8;
+}
+
+.file-loading::after {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--bs-primary, #1b84ff);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: vendor-compat-spin 0.6s linear infinite;
+}
+
+@keyframes vendor-compat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Ladda button — Metronic styled (used in modals: sales_order, purchase_order, product)
+   ------------------------------------------------------------------------- */
+.ladda-button {
+  position: relative;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.ladda-button .ladda-label {
+  position: relative;
+  z-index: 3;
+}
+
+.ladda-button .ladda-spinner {
+  display: inline-block;
+  margin-top: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  margin-left: -1rem;
+  margin-top: -1rem;
+  z-index: 2;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vendor-compat-spin 0.6s linear infinite;
+}
+
+.ladda-button[data-loading] .ladda-spinner {
+  opacity: 1;
+}
+
+.ladda-button .ladda-progress {
+  background: rgba(0, 0, 0, 0.2);
+  display: none;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transition: width 0.1s linear;
+  width: 0;
+  border-radius: inherit;
+}
+
+.ladda-button[data-loading] .ladda-progress {
+  display: block;
+}
+
+.ladda-button[data-style="expand-right"] .ladda-spinner {
+  left: auto;
+  right: 1rem;
+  margin-left: 0;
+  margin-right: -1rem;
+}
+
+.ladda-button[data-style="expand-right"][data-loading] {
+  padding-right: 3rem;
+}
+
+.ladda-button[data-style="expand-right"][data-loading] .ladda-spinner {
+  opacity: 1;
+}
+
+.ladda-button[data-style="zoom-in"] .ladda-label,
+.ladda-button[data-style="zoom-in"] .ladda-spinner {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.ladda-button[data-style="zoom-in"][data-loading] .ladda-label {
+  opacity: 0;
+  transform: scale(1.5);
+}
+
+.ladda-button[data-style="zoom-in"][data-loading] .ladda-spinner {
+  opacity: 1;
+  transform: none;
+}
+
+/* -------------------------------------------------------------------------
+   iCheck (checkbox/radio) — Metronic styled, no sprite
+   Used by .input-icheck with skin icheckbox_square-blue / iradio_square-blue
+   ------------------------------------------------------------------------- */
+.icheckbox_square-blue,
+.iradio_square-blue {
+  border: 2px solid var(--bs-border-color, #dbdfe9);
+  cursor: pointer;
+  display: inline-block;
+  height: 1.25rem;
+  width: 1.25rem;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+  background-color: var(--bs-body-bg, #fff);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.icheckbox_square-blue {
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+}
+
+.iradio_square-blue {
+  border-radius: 50%;
+}
+
+.icheckbox_square-blue:hover,
+.iradio_square-blue:hover,
+.icheckbox_square-blue.hover,
+.iradio_square-blue.hover {
+  border-color: var(--bs-primary, #1b84ff);
+}
+
+.icheckbox_square-blue.checked,
+.iradio_square-blue.checked {
+  background-color: var(--bs-primary, #1b84ff);
+  border-color: var(--bs-primary, #1b84ff);
+}
+
+/* Checkmark for checkbox when checked */
+.icheckbox_square-blue.checked::after {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  top: 0.1rem;
+  width: 0.35rem;
+  height: 0.6rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.icheckbox_square-blue {
+  position: relative;
+}
+
+/* Radio dot when checked */
+.iradio_square-blue.checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: -0.25rem 0 0 -0.25rem;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.iradio_square-blue {
+  position: relative;
+}
+
+.icheckbox_square-blue.disabled,
+.iradio_square-blue.disabled {
+  opacity: 0.6;
+  cursor: default;
+  border-color: var(--bs-border-color, #dbdfe9);
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+}
+
+.icheckbox_square-blue.checked.disabled,
+.iradio_square-blue.checked.disabled {
+  background-color: var(--bs-gray-400, #c4cada);
+  border-color: var(--bs-gray-400, #c4cada);
+}
+
+/* -------------------------------------------------------------------------
+   jQuery UI (minimal — for datepicker/autocomplete)
+   ------------------------------------------------------------------------- */
+.ui-helper-hidden {
+  display: none;
+}
+
+.ui-helper-hidden-accessible {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.ui-front {
+  z-index: 1050;
+}
+
+.ui-widget-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 1049;
+}

@@ -43,6 +43,7 @@ php mcp/read-file-cache-mcp/bin/server
 
 Successful calls return structured metadata including:
 
+- `text`
 - `path`
 - `requested_offset`
 - `requested_limit`

@@ -5,6 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const { chromium } = require('@playwright/test');
+const {
+  annotateFindingsWithTriage,
+  buildTriageSummary,
+  createReportContext,
+  persistAuditReport,
+} = require('./audit-report');
 
 const DEFAULT_CONSOLE_IGNORE = [
   /Browsing Topics API removed/i,
@@ -66,6 +72,41 @@ function normalizeWaitUntil(value) {
 
   const normalized = value.trim().toLowerCase();
   return SUPPORTED_WAIT_UNTIL.has(normalized) ? normalized : DEFAULT_WAIT_UNTIL;
+}
+
+function normalizeMode(value) {
+  if (typeof value !== 'string') {
+    return 'headless';
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'interactive' ? 'interactive' : 'headless';
+}
+
+function normalizeBoolean(value, defaultValue) {
+  if (value === undefined || value === null) {
+    return defaultValue;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['0', 'false', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return defaultValue;
 }
 
 function truncate(value, maxLength = MAX_SNIPPET_LENGTH) {
@@ -847,10 +888,11 @@ async function executeSteps(page, steps, findings, pageUrl) {
     if (!isObject(step)) {
       mergeFindings(findings, [
         {
-          kind: 'page_error',
+          kind: 'interaction_failure',
           severity: 'error',
           url: pageUrl,
           message: `Step ${index + 1} is not an object.`,
+          responseBodySnippet: { stepIndex: index + 1 },
         },
       ]);
       continue;
@@ -860,10 +902,11 @@ async function executeSteps(page, steps, findings, pageUrl) {
     if (action === '') {
       mergeFindings(findings, [
         {
-          kind: 'page_error',
+          kind: 'interaction_failure',
           severity: 'error',
           url: pageUrl,
           message: `Step ${index + 1} is missing an action.`,
+          responseBodySnippet: { stepIndex: index + 1, step },
         },
       ]);
       continue;
@@ -958,10 +1001,16 @@ async function executeSteps(page, steps, findings, pageUrl) {
     } catch (error) {
       mergeFindings(findings, [
         {
-          kind: 'page_error',
+          kind: 'interaction_failure',
           severity: 'error',
           url: pageUrl,
           message: `Step ${index + 1} failed (${action}): ${error.message}`,
+          responseBodySnippet: {
+            stepIndex: index + 1,
+            action,
+            selector: step.selector || null,
+            timeoutMs: toIntegerOrDefault(step.timeoutMs, 0, 0),
+          },
         },
       ]);
 
@@ -970,6 +1019,25 @@ async function executeSteps(page, steps, findings, pageUrl) {
       }
     }
   }
+}
+
+async function finalizeAuditPayload(payload, options, reportContext) {
+  const triagedFindings = annotateFindingsWithTriage(payload.findings || []);
+  const triageSummary = buildTriageSummary(triagedFindings, { interactive: options.interactive });
+
+  let finalized = {
+    ...payload,
+    findings: triagedFindings,
+    mode: options.mode,
+    interactive: options.interactive,
+    triageSummary,
+  };
+
+  if (reportContext) {
+    finalized = persistAuditReport(finalized, { sessionContext: reportContext });
+  }
+
+  return finalized;
 }
 
 async function runAuditForUrl(rawOptions) {
@@ -985,6 +1053,35 @@ async function runAuditForUrl(rawOptions) {
     ...rawOptions,
   };
 
+  options.mode = normalizeMode(options.mode);
+  options.interactive = options.mode === 'interactive';
+  options.headed = options.interactive ? true : options.headed === true;
+  options.enableElementPick = options.interactive ? options.enableElementPick !== false : options.enableElementPick === true;
+  options.persistReport = normalizeBoolean(options.persistReport ?? options.persist_report, options.interactive);
+  options.reportDir =
+    typeof options.reportDir === 'string' && options.reportDir.trim() !== ''
+      ? options.reportDir.trim()
+      : typeof options.report_dir === 'string' && options.report_dir.trim() !== ''
+        ? options.report_dir.trim()
+        : null;
+  options.reportSlug =
+    typeof options.reportSlug === 'string' && options.reportSlug.trim() !== ''
+      ? options.reportSlug.trim()
+      : typeof options.report_slug === 'string' && options.report_slug.trim() !== ''
+        ? options.report_slug.trim()
+        : null;
+  options.saveStorageStatePath =
+    typeof options.saveStorageStatePath === 'string' && options.saveStorageStatePath.trim() !== ''
+      ? options.saveStorageStatePath.trim()
+      : typeof options.save_storage_state_path === 'string' && options.save_storage_state_path.trim() !== ''
+        ? options.save_storage_state_path.trim()
+        : null;
+
+  if (options.interactive && (typeof options.manualPauseMessage !== 'string' || options.manualPauseMessage.trim() === '')) {
+    options.manualPauseMessage =
+      'Interactive audit is paused. Login/interact now, double-click any element to pick it, then press Enter here to generate the report: ';
+  }
+
   const targetUrl = typeof options.url === 'string' ? options.url.trim() : '';
   if (!isHttpUrl(targetUrl)) {
     return {
@@ -994,6 +1091,8 @@ async function runAuditForUrl(rawOptions) {
         url: targetUrl || null,
         findings: [],
         runnerError: 'url must be a valid http(s) URL.',
+        mode: options.mode,
+        interactive: options.interactive,
       },
     };
   }
@@ -1010,7 +1109,19 @@ async function runAuditForUrl(rawOptions) {
   const artifactRefs = [];
   const asyncTasks = [];
   const artifactsRoot = ensureDirectory(options.artifactsDir || DEFAULT_ARTIFACTS_DIR);
-  const artifactDirectory = buildArtifactDirectory(artifactsRoot, targetUrl);
+  const reportContext = options.persistReport
+    ? createReportContext({
+        url: targetUrl,
+        artifactsDir: artifactsRoot,
+        reportDir: options.reportDir,
+        reportSlug: options.reportSlug,
+      })
+    : null;
+  const artifactDirectory = reportContext ? reportContext.sessionDir : buildArtifactDirectory(artifactsRoot, targetUrl);
+
+  if (options.interactive && !options.saveStorageStatePath && reportContext) {
+    options.saveStorageStatePath = path.join(reportContext.sessionDir, 'storage-state.json');
+  }
 
   try {
     if (!browser) {
@@ -1230,24 +1341,33 @@ async function runAuditForUrl(rawOptions) {
 
       return {
         exitCode: 0,
-        payload: {
-          auditStatus: 'fail',
-          url: targetUrl,
-          findings,
-          savedStorageStatePath,
-        },
+        payload: await finalizeAuditPayload(
+          {
+            auditStatus: 'fail',
+            url: targetUrl,
+            findings,
+            runnerError: runnerErrorMessage,
+            savedStorageStatePath,
+          },
+          options,
+          reportContext
+        ),
       };
     }
 
     return {
       exitCode: 1,
-      payload: {
-        auditStatus: 'fail',
-        url: targetUrl,
-        findings,
-        runnerError: runnerErrorMessage,
-        savedStorageStatePath,
-      },
+      payload: await finalizeAuditPayload(
+        {
+          auditStatus: 'fail',
+          url: targetUrl,
+          findings,
+          runnerError: runnerErrorMessage,
+          savedStorageStatePath,
+        },
+        options,
+        reportContext
+      ),
     };
   }
 
@@ -1255,12 +1375,16 @@ async function runAuditForUrl(rawOptions) {
 
   return {
     exitCode: 0,
-    payload: {
-      auditStatus,
-      url: targetUrl,
-      findings,
-      savedStorageStatePath,
-    },
+    payload: await finalizeAuditPayload(
+      {
+        auditStatus,
+        url: targetUrl,
+        findings,
+        savedStorageStatePath,
+      },
+      options,
+      reportContext
+    ),
   };
 }
 

@@ -7,12 +7,12 @@ Playwright-powered MCP server for auditing one URL (`scope: "single"`) or a rout
 ```bash
 cd mcp/audit-web-mcp
 composer install
+npm install
 ```
 
-From repo root, ensure Playwright dependencies are installed:
+Install Playwright browsers from the MCP package directory:
 
 ```bash
-npm install
 npx playwright install
 ```
 
@@ -25,8 +25,9 @@ npx playwright install
   - `pathPrefix` (required for `prefix`)
   - Auth options: `storage_state_path` or `login_url + login_username + login_password`
   - Optional: `steps[]`, `timeout`, `waitUntil`, `waitAfterLoadMs`
+  - Interactive/reporting: `mode`, `persist_report`, `report_dir`, `report_slug`, `save_storage_state_path`
 - Key output:
-  - Single scope: `auditStatus`, `url`, `findings[]`, optional `runnerError`
+  - Single scope: `auditStatus`, `url`, `findings[]`, `triageSummary`, optional `sessionId`, `reportJsonPath`, `reportMarkdownPath`, `savedStorageStatePath`, `runnerError`
   - Prefix scope: `scope`, `baseUrl`, `pathPrefix`, `auditStatus`, `total`, `passed`, `failed`, `results[]`
 
 ### Exit semantics
@@ -39,7 +40,9 @@ npx playwright install
 ```json
 {
   "url": "https://projectx/home",
-  "scope": "single"
+  "scope": "single",
+  "mode": "interactive",
+  "persist_report": true
 }
 ```
 
@@ -77,6 +80,18 @@ If that fails in the current checkout/environment, the server falls back to Lara
 - For protected prefixes, auth input is required to avoid login-redirect noise.
 - Credential fields are supported but should be treated as sensitive and never logged.
 
+## Persisted reports
+
+- Interactive audits default to `persist_report: true`.
+- Reports are written to `output/playwright/audit-web-mcp/reports/<timestamp>-<slug>/`.
+- Each session may include:
+  - `report.json`
+  - `report.md`
+  - `failure.png` when an error occurred
+  - `trace.zip` when an error occurred
+  - `storage-state.json` when storage state is saved
+- The report root also keeps `latest.json` and `latest.md` for agent follow-up.
+
 ## Interactive audit
 
 Optional headed mode:
@@ -90,4 +105,3 @@ npm run audit:interactive -- https://projectx/home
 - Can save storage state for later headless audits.
 
 **If no browser window appears:** Run the command from a normal terminal (PowerShell or Cmd) opened yourself, not from an IDE-integrated terminal. On Windows, the script uses launch args (`--disable-gpu`, etc.) to improve visibility; if it still fails, ensure Playwright browsers are installed (`npx playwright install` from repo root).
-

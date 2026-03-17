@@ -633,6 +633,9 @@
 			</div>
 		</div>
 		<!--end::Activities drawer-->
+		<script>
+			window.__globalSearchConfig = @json($globalSearchConfig ?? ['defaultType' => null, 'types' => []]);
+		</script>
 		<!--begin::Chat drawer-->
 		@if(!empty($aiChatConfig) && !empty($aiChatConfig['enabled']))
 			@include('aichat::chat.partials.drawer', ['config' => $aiChatConfig])
@@ -2342,8 +2345,9 @@
 			<!--end::Modal dialog-->
 		</div>
 		<!--end::Modal - Create Project-->
+		{{--
 		<!--begin::Modal - Users Search-->
-		<div class="modal fade" id="kt_modal_users_search" tabindex="-1" aria-hidden="true">
+		<div class="modal fade" id="kt_modal_users_search_legacy" tabindex="-1" aria-hidden="true">
 			<!--begin::Modal dialog-->
 			<div class="modal-dialog modal-dialog-centered mw-650px">
 				<!--begin::Modal content-->
@@ -2369,7 +2373,7 @@
 						</div>
 						<!--end::Content-->
 						<!--begin::Search-->
-						<div id="kt_modal_users_search_handler" data-kt-search-keypress="true" data-kt-search-min-length="2" data-kt-search-enter="enter" data-kt-search-layout="inline">
+						<div id="kt_modal_users_search_handler_legacy" data-kt-search-keypress="true" data-kt-search-min-length="2" data-kt-search-enter="enter" data-kt-search-layout="inline">
 							<!--begin::Form-->
 							<form data-kt-search-element="form" class="w-100 position-relative mb-5" autocomplete="off">
 								<!--begin::Hidden input(Added to disable form autocomplete)-->
@@ -3137,6 +3141,133 @@
 			<!--end::Modal dialog-->
 		</div>
 		<!--end::Modal - Users Search-->
+		--}}
+		<!--begin::Modal - Global Search-->
+		<div class="modal fade" id="kt_modal_users_search" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered mw-650px">
+				<div class="modal-content">
+					<div class="modal-header pb-0 border-0 justify-content-end">
+						<div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+							<i class="ki-duotone ki-cross fs-1">
+								<span class="path1"></span>
+								<span class="path2"></span>
+							</i>
+						</div>
+					</div>
+					<div class="modal-body scroll-y mx-5 mx-xl-18 pt-0 pb-15">
+						<div class="text-center mb-13">
+							<h1 class="mb-3">Global Search</h1>
+							<div class="text-muted fw-semibold fs-5">Search live contacts, products, sales orders, and purchases</div>
+						</div>
+						<div id="kt_modal_users_search_handler" data-kt-search-keypress="true" data-kt-search-min-length="2" data-kt-search-enter="enter" data-kt-search-layout="inline">
+							<form data-kt-search-element="form" class="w-100 position-relative mb-5" autocomplete="off">
+								<input type="hidden" />
+								<i class="ki-duotone ki-magnifier fs-2 fs-lg-1 text-gray-500 position-absolute top-50 ms-5 translate-middle-y">
+									<span class="path1"></span>
+									<span class="path2"></span>
+								</i>
+								<input type="text" class="form-control form-control-lg form-control-solid px-15" name="search" value="" placeholder="Search records..." data-kt-search-element="input" />
+								<span class="position-absolute top-50 end-0 translate-middle-y lh-0 d-none me-5" data-kt-search-element="spinner">
+									<span class="spinner-border h-15px w-15px align-middle text-muted"></span>
+								</span>
+								<span class="btn btn-flush btn-active-color-primary position-absolute top-50 end-0 translate-middle-y lh-0 me-5 d-none" data-kt-search-element="clear">
+									<i class="ki-duotone ki-cross fs-2 fs-lg-1 me-0">
+										<span class="path1"></span>
+										<span class="path2"></span>
+									</i>
+								</span>
+							</form>
+							<div class="py-5" data-kt-search-element="wrapper">
+								@if(!empty($globalSearchConfig['types']))
+									<div class="d-flex flex-wrap gap-2 mb-7" data-global-search-element="type-selector">
+										@foreach($globalSearchConfig['types'] as $typeKey => $typeConfig)
+											<button
+												type="button"
+												class="btn btn-sm btn-light-primary"
+												data-search-type="{{ $typeKey }}"
+												aria-pressed="{{ ($globalSearchConfig['defaultType'] ?? null) === $typeKey ? 'true' : 'false' }}">
+												{{ $typeConfig['label'] }}
+											</button>
+										@endforeach
+									</div>
+								@endif
+
+								<div data-kt-search-element="suggestions">
+									<div class="rounded border border-dashed border-gray-300 px-10 py-12 text-center">
+										<div class="symbol symbol-60px symbol-circle mx-auto mb-5">
+											<span class="symbol-label bg-light-primary text-primary">
+												<i class="ki-duotone ki-magnifier fs-1">
+													<span class="path1"></span>
+													<span class="path2"></span>
+												</i>
+											</span>
+										</div>
+										<div class="fs-3 fw-bold text-gray-900 mb-2">Start typing to search</div>
+										<div class="text-muted fw-semibold fs-6 mb-5">
+											Choose a type above, then search live data from the current business.
+										</div>
+										@if(!empty($globalSearchConfig['types']))
+											<div class="d-flex flex-wrap justify-content-center gap-2">
+												@foreach($globalSearchConfig['types'] as $typeConfig)
+													<span class="badge badge-light">{{ $typeConfig['label'] }}</span>
+												@endforeach
+											</div>
+										@else
+											<div class="text-muted fw-semibold fs-6">No search types are available for your account.</div>
+										@endif
+									</div>
+								</div>
+
+								<div data-kt-search-element="results" class="d-none">
+									<div class="mh-375px scroll-y me-n7 pe-7" data-global-search-element="results-list"></div>
+								</div>
+
+								<div data-global-search-element="error" class="text-center d-none">
+									<div class="fw-semibold py-10">
+										<div class="text-gray-600 fs-3 mb-2">Search failed</div>
+										<div class="text-muted fs-6">Please try again in a moment.</div>
+									</div>
+									<div class="text-center px-5">
+										<img src="{{ asset('assets/media/illustrations/sketchy-1/18.png') }}" alt="" class="w-100 h-200px h-sm-275px" />
+									</div>
+								</div>
+
+								<div data-kt-search-element="empty" class="text-center d-none">
+									<div class="fw-semibold py-10">
+										<div class="text-gray-600 fs-3 mb-2">No results found</div>
+										<div class="text-muted fs-6">Try a different keyword or switch to another search type.</div>
+									</div>
+									<div class="text-center px-5">
+										<img src="{{ asset('assets/media/illustrations/sketchy-1/1.png') }}" alt="" class="w-100 h-200px h-sm-325px" />
+									</div>
+								</div>
+
+								<template id="kt_global_search_result_template">
+									<a href="#" class="d-flex align-items-center justify-content-between p-4 rounded bg-state-light bg-state-opacity-50 mb-2 text-decoration-none">
+										<div class="d-flex align-items-center min-w-0">
+											<div class="symbol symbol-40px me-4">
+												<span class="symbol-label bg-light-primary text-primary">
+													<i class="ki-duotone ki-magnifier fs-2">
+														<span class="path1"></span>
+														<span class="path2"></span>
+													</i>
+												</span>
+											</div>
+											<div class="min-w-0">
+												<div class="fs-6 fw-bold text-gray-900 text-truncate" data-global-search-field="text"></div>
+												<div class="fw-semibold text-muted fs-7 text-truncate" data-global-search-field="subtitle"></div>
+											</div>
+										</div>
+										<span class="badge badge-light ms-4" data-global-search-field="type-label"></span>
+									</a>
+								</template>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--end::Modal - Global Search-->
 		<!--begin::Modal - Invite Friends-->
 		<div class="modal fade" id="kt_modal_invite_friends" tabindex="-1" aria-hidden="true">
 			<!--begin::Modal dialog-->
@@ -3701,6 +3832,11 @@
 		<!--end::Global Javascript Bundle-->
 		<!--begin::Vendors Javascript(used for this page only)-->
 		<script src="assets/plugins/custom/fullcalendar/fullcalendar.bundle.js"></script>
+		<script>
+			if (typeof window.FullCalendar !== 'undefined' && typeof window.FullCalendar.Calendar === 'function') {
+				window.KTFullCalendar = window.FullCalendar;
+			}
+		</script>
 		<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 		<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
 		<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
@@ -3725,12 +3861,11 @@
 		<script src="assets/js/custom/utilities/modals/create-project/files.js"></script>
 		<script src="assets/js/custom/utilities/modals/create-project/complete.js"></script>
 		<script src="assets/js/custom/utilities/modals/create-project/main.js"></script>
-		<script src="assets/js/custom/utilities/modals/users-search.js"></script>
+		<script src="{{ asset('assets/js/custom/utilities/modals/users-search.js') }}"></script>
+		<script src="{{ asset('assets/js/custom/layout/header-search.js') }}"></script>
 		@include('layouts.partials.javascripts')
 		<!--end::Custom Javascript-->
 		<!--end::Javascript-->
 	</body>
 	<!--end::Body-->
 </html>
-
-

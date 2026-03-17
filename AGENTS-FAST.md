@@ -48,6 +48,7 @@ Pick one lane first:
 | `tenant-audit` | User asks to audit/fix tenant security, missing business_id, or route auth | grep checklist -> fix or report each finding |
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area -> apply mitigations/fixes |
 | `full-autofix` | "run all autofixes", "check project", "health check", "autofix everything" | log-scan -> lint-fix -> optional tenant-audit / known-issues-fix |
+| `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome -> interactive `audit_web` -> read persisted report -> optional Chrome DevTools escalation -> fix -> Playwright + `audit_web` verify |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade -> checklist (focus, contrast, structure, assets) -> report (and fix within Metronic if implement mode) |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components -> improve hierarchy, spacing, copy within Metronic only; no new classes |
 | `design-critique` | User asks for UX/review of a screen or flow | read view -> assess clarity, hierarchy, empty/error states -> short critique + Metronic-safe suggestions |
@@ -80,6 +81,21 @@ Preferred order:
 3. `read_file_cache` for file content and slices
 4. `semantic_code_search` when exact symbols are unknown (optional)
 
+Required baseline for this repo:
+
+1. `laravel_mysql`
+2. `grep`
+3. `read_file_cache`
+
+Optional:
+
+1. `semantic_code_search`
+
+Session-start check:
+
+1. Run `php scripts/check-mcp-health.php` from repo root after installing MCP deps, warming caches, or changing local MCP config.
+2. Treat `semantic_code_search` warnings as non-blocking unless the task needs behavior-level discovery.
+
 If a preferred tool is available but unhealthy/degraded (for example timeout, empty content, metadata-only responses, stale index, repeated failure):
 
 1. Use the next fastest repo-aware tool for that step.
@@ -100,6 +116,7 @@ Read only the domain doc(s) you touch:
 | Auth/security/permissions | `ai/security-and-auth.md` |
 | Existing bug-prone areas | `ai/known-issues.md` |
 | MCP/tool choice | `ai/agent-tools-and-mcp.md` |
+| Browser audit workflow | `ai/browser-audit-workflow.md` |
 | Workflow tuning | `ai/agent-improvement.md` |
 | ProjectX <-> root integration | `ai/projectx-integration.md` |
 

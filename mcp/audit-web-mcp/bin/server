@@ -38,6 +38,7 @@ try {
 
     $schemaString = static fn (): array => ['type' => 'string'];
     $schemaInteger = static fn (): array => ['type' => 'integer'];
+    $schemaBoolean = static fn (): array => ['type' => 'boolean'];
 
     $builder->addTool($tool->audit_web(...), 'audit_web', 'Audit a URL or route prefix and return structured findings.', inputSchema: [
         'type' => 'object',
@@ -90,6 +91,27 @@ try {
                 'minimum' => 0,
                 'description' => 'Optional post-load wait in milliseconds to capture delayed errors.',
             ],
+            'mode' => [
+                'type' => 'string',
+                'enum' => ['headless', 'interactive'],
+                'description' => 'Run headless by default, or interactive for headed/manual browser audits on a single URL.',
+            ],
+            'persist_report' => [
+                'type' => 'boolean',
+                'description' => 'Persist report.json/report.md and latest pointers. Defaults to true in interactive mode.',
+            ],
+            'report_dir' => [
+                'type' => 'string',
+                'description' => 'Optional absolute or relative directory for persisted audit reports.',
+            ],
+            'report_slug' => [
+                'type' => 'string',
+                'description' => 'Optional slug override used when naming the persisted report session directory.',
+            ],
+            'save_storage_state_path' => [
+                'type' => 'string',
+                'description' => 'Optional storage-state output path. Interactive audits default this into the report session when persistence is enabled.',
+            ],
         ],
         'required' => ['url'],
         'additionalProperties' => false,
@@ -125,6 +147,7 @@ try {
                         'requestBodySnippet' => $schemaString(),
                         'responseBodySnippet' => $schemaString(),
                         'fingerprint' => $schemaString(),
+                        'triageCategory' => $schemaString(),
                         'artifactRefs' => [
                             'type' => 'array',
                             'items' => $schemaString(),
@@ -144,10 +167,39 @@ try {
                             'type' => 'array',
                             'items' => ['type' => 'object'],
                         ],
+                        'sessionId' => $schemaString(),
+                        'reportJsonPath' => $schemaString(),
+                        'reportMarkdownPath' => $schemaString(),
                         'runnerError' => $schemaString(),
                     ],
                     'additionalProperties' => true,
                 ],
+            ],
+            'mode' => $schemaString(),
+            'interactive' => $schemaBoolean(),
+            'sessionId' => $schemaString(),
+            'reportJsonPath' => $schemaString(),
+            'reportMarkdownPath' => $schemaString(),
+            'savedStorageStatePath' => $schemaString(),
+            'triageSummary' => [
+                'type' => 'object',
+                'properties' => [
+                    'primaryCategory' => $schemaString(),
+                    'findingCount' => $schemaInteger(),
+                    'errorCount' => $schemaInteger(),
+                    'warningCount' => $schemaInteger(),
+                    'shouldEscalateToDevtools' => $schemaBoolean(),
+                    'recommendedNextTool' => $schemaString(),
+                    'reasons' => [
+                        'type' => 'array',
+                        'items' => $schemaString(),
+                    ],
+                    'counts' => [
+                        'type' => 'object',
+                        'additionalProperties' => $schemaInteger(),
+                    ],
+                ],
+                'additionalProperties' => true,
             ],
             'runnerError' => $schemaString(),
         ],

@@ -16,7 +16,8 @@ export default defineConfig({
             buildDirectory: 'build-projectauto',
             input: [
                 __dirname + '/Resources/assets/sass/app.scss',
-                __dirname + '/Resources/assets/js/app.js'
+                __dirname + '/Resources/assets/js/app.js',
+                __dirname + '/Resources/assets/workflow-builder/src/main.js'
             ],
             refresh: true,
         }),

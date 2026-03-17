@@ -14,6 +14,7 @@ class ProjectautoRule extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
+        'workflow_id' => 'integer',
         'conditions' => 'array',
         'payload_template' => 'array',
         'is_active' => 'boolean',

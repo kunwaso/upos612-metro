@@ -139,6 +139,72 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('__additional_html', $additional_html);
                     $view->with('__system_settings', $__system_settings);
                     $view->with('is_org_admin', $is_org_admin);
+
+                    $globalSearchTypes = [];
+                    if (Auth::check()) {
+                        $user = Auth::user();
+                        $canSearchCustomers = $user->can('customer.view') || $user->can('customer.view_own');
+                        $canSearchSuppliers = $user->can('supplier.view') || $user->can('supplier.view_own');
+
+                        if ($canSearchCustomers || $canSearchSuppliers) {
+                            $globalSearchTypes['contacts'] = [
+                                'label' => 'Contacts',
+                                'url' => route('global-search.contacts'),
+                                'param' => 'q',
+                                'params' => ['type' => 'both'],
+                            ];
+                        }
+
+                        if ($canSearchCustomers) {
+                            $globalSearchTypes['customers'] = [
+                                'label' => 'Customers',
+                                'url' => route('global-search.contacts'),
+                                'param' => 'q',
+                                'params' => ['type' => 'customer'],
+                            ];
+                        }
+
+                        if ($canSearchSuppliers) {
+                            $globalSearchTypes['suppliers'] = [
+                                'label' => 'Suppliers',
+                                'url' => route('global-search.contacts'),
+                                'param' => 'q',
+                                'params' => ['type' => 'supplier'],
+                            ];
+                        }
+
+                        if ($user->can('product.view')) {
+                            $globalSearchTypes['products'] = [
+                                'label' => 'Products',
+                                'url' => route('global-search.products'),
+                                'param' => 'q',
+                                'params' => [],
+                            ];
+                        }
+
+                        if ($user->can('sell.view') || $user->can('direct_sell.view')) {
+                            $globalSearchTypes['sales_orders'] = [
+                                'label' => 'Sales Orders',
+                                'url' => route('global-search.sales-orders'),
+                                'param' => 'q',
+                                'params' => [],
+                            ];
+                        }
+
+                        if ($user->can('purchase.update')) {
+                            $globalSearchTypes['purchases'] = [
+                                'label' => 'Purchases',
+                                'url' => route('global-search.purchases'),
+                                'param' => 'q',
+                                'params' => [],
+                            ];
+                        }
+                    }
+
+                    $view->with('globalSearchConfig', [
+                        'defaultType' => array_key_first($globalSearchTypes),
+                        'types' => $globalSearchTypes,
+                    ]);
                 }
             }
         );

@@ -43,6 +43,14 @@ async function main() {
     input.timeoutMs = Number(cli.timeoutMs);
   }
 
+  if (input.mode === undefined && cli.mode) {
+    input.mode = cli.mode;
+  }
+
+  if (input.persist_report === undefined && cli.persist_report !== undefined) {
+    input.persist_report = cli.persist_report === true ? true : String(cli.persist_report).toLowerCase() !== 'false';
+  }
+
   if (input.waitUntil === undefined && cli.waitUntil) {
     input.waitUntil = cli.waitUntil;
   }
@@ -53,6 +61,18 @@ async function main() {
 
   if (input.storage_state_path === undefined && cli.storage_state_path) {
     input.storage_state_path = cli.storage_state_path;
+  }
+
+  if (input.save_storage_state_path === undefined && cli.save_storage_state_path) {
+    input.save_storage_state_path = cli.save_storage_state_path;
+  }
+
+  if (input.report_dir === undefined && cli.report_dir) {
+    input.report_dir = cli.report_dir;
+  }
+
+  if (input.report_slug === undefined && cli.report_slug) {
+    input.report_slug = cli.report_slug;
   }
 
   if (input.login_url === undefined && cli.login_url) {

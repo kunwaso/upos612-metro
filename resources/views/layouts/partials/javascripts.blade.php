@@ -160,10 +160,12 @@
                 false;
             @endif
 
-        $('#calendar').fullCalendar('option', {
-            locale: locale,
-            isRTL: isRTL
-        });
+        if ($('#calendar').length && typeof $.fn.fullCalendar === 'function' && $('#calendar').data('fullCalendar')) {
+            $('#calendar').fullCalendar('option', {
+                locale: locale,
+                isRTL: isRTL
+            });
+        }
         // side bar toggle  
         $(".drop_down").click(function(event) {
             event.preventDefault();

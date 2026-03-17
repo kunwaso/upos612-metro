@@ -56,9 +56,9 @@ class DataController extends Controller
 
                     if (auth()->user()->can('projectauto.settings.manage')) {
                         $sub->url(
-                            route('projectauto.settings.index'),
-                            __('projectauto::lang.settings'),
-                            ['icon' => '', 'active' => request()->routeIs('projectauto.settings.*')]
+                            route('projectauto.workflows.index'),
+                            __('projectauto::lang.workflows'),
+                            ['icon' => '', 'active' => request()->routeIs('projectauto.workflows.*') || request()->routeIs('projectauto.settings.*')]
                         );
                     }
                 },

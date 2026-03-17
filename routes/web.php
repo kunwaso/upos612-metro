@@ -20,6 +20,7 @@ use App\Http\Controllers\DocumentAndNoteController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GroupTaxController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportOpeningStockController;
 use App\Http\Controllers\ImportProductsController;
@@ -156,6 +157,7 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::post('/contacts/check-tax-number', [ContactController::class, 'checkTaxNumber']);
 
     Route::get('/contacts/customers', [ContactController::class, 'getCustomers']);
+    Route::get('/global-search/contacts', [GlobalSearchController::class, 'contacts'])->name('global-search.contacts');
     Route::resource('contacts', ContactController::class);
 
     Route::get('taxonomies-ajax-index-page', [TaxonomyController::class, 'getTaxonomyIndexPage']);
@@ -176,6 +178,8 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::get('/products/view/{id}', [ProductController::class, 'view'])->name('products.view');
     Route::get('/products/list', [ProductController::class, 'getProducts']);
     Route::get('/products/list-no-variation', [ProductController::class, 'getProductsWithoutVariations']);
+    Route::get('/global-search/products', [GlobalSearchController::class, 'products'])->name('global-search.products');
+    Route::get('/global-search/sales-orders', [GlobalSearchController::class, 'salesOrders'])->name('global-search.sales-orders');
     Route::post('/products/bulk-edit', [ProductController::class, 'bulkEdit']);
     Route::post('/products/bulk-update', [ProductController::class, 'bulkUpdate']);
     Route::post('/products/bulk-update-location', [ProductController::class, 'updateProductLocation']);
@@ -244,6 +248,7 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::post('/purchases/update-status', [PurchaseController::class, 'updateStatus']);
     Route::get('/purchases/get_products', [PurchaseController::class, 'getProducts']);
     Route::get('/purchases/get_suppliers', [PurchaseController::class, 'getSuppliers']);
+    Route::get('/global-search/purchases', [GlobalSearchController::class, 'purchases'])->name('global-search.purchases');
     Route::post('/purchases/get_purchase_entry_row', [PurchaseController::class, 'getPurchaseEntryRow']);
     Route::post('/purchases/check_ref_number', [PurchaseController::class, 'checkRefNumber']);
     Route::resource('purchases', PurchaseController::class)->except(['show']);

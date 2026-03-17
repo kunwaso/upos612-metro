@@ -1,0 +1,12 @@
+{
+  "name": "upos-audit-web-mcp",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "audit:interactive": "node scripts/run-audit-interactive.js",
+    "test": "node --test tests-node/*.test.js"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}

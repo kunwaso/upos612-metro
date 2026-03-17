@@ -233,6 +233,7 @@ final class ReadFileTool
             [new TextContent($text)],
             false,
             [
+                'text' => $text,
                 'path' => $path,
                 'requested_offset' => $requestedOffset,
                 'requested_limit' => $requestedLimit,

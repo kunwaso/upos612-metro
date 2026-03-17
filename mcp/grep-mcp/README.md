@@ -80,6 +80,16 @@ Successful calls return structured metadata including:
 - `SEARCH_FAILED`
 - `WORKSPACE_ROOT_INVALID`
 
+## Health Checks
+
+- Prefer **path-scoped probes** for startup checks, for example:
+
+```bash
+rg -n --max-count 1 --fixed-strings "MCP Servers" mcp/README.md
+```
+
+- Do not use broad repo scans as a startup health probe; large unscoped searches can still time out even when grep MCP is working normally.
+
 ## Codex Config
 
 Typical Codex config file:

@@ -14,10 +14,11 @@ Copy the example config into your Codex config file (create the file if it doesn
 ```powershell
 # Windows PowerShell: ensure directory exists, then copy
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex"
-Copy-Item "D:\wamp64\www\projectx\mcp\codex-config.toml.example" "$env:USERPROFILE\.codex\config.toml"
+Copy-Item "D:\wamp64\www\upos612\mcp\codex-config.toml.example" "$env:USERPROFILE\.codex\config.toml"
+# Then replace <repo-root> in config.toml with your local repo path.
 ```
 
-**Option B — merge by hand:** Open `mcp/codex-config.toml.example`, copy the `[mcp_servers.*]` blocks into your existing `~/.codex/config.toml`. If your repo path is not `D:/wamp64/www/projectx`, replace it in the copied lines.
+**Option B — merge by hand:** Open `mcp/codex-config.toml.example`, copy the `[mcp_servers.*]` blocks into your existing `~/.codex/config.toml`, then replace every `<repo-root>` placeholder with your local checkout path (for example `D:/wamp64/www/upos612`).
 
 Then restart Codex (or reload the extension) so it picks up the MCP servers.
 
@@ -26,15 +27,15 @@ Then restart Codex (or reload the extension) so it picks up the MCP servers.
 From repo root:
 
 ```powershell
-cd D:\wamp64\www\projectx\mcp\read-file-cache-mcp
+cd D:\wamp64\www\upos612\mcp\read-file-cache-mcp
 composer install
-cd D:\wamp64\www\projectx
+cd D:\wamp64\www\upos612
 ```
 
 Or in one line (PowerShell):
 
 ```powershell
-Set-Location D:\wamp64\www\projectx\mcp\read-file-cache-mcp; composer install; Set-Location D:\wamp64\www\projectx
+Set-Location D:\wamp64\www\upos612\mcp\read-file-cache-mcp; composer install; Set-Location D:\wamp64\www\upos612
 ```
 
 ## 3. Before or during Codex: warm the read-file cache
@@ -42,8 +43,9 @@ Set-Location D:\wamp64\www\projectx\mcp\read-file-cache-mcp; composer install; S
 From repo root, run once per session (or after a big pull) so file reads are faster:
 
 ```powershell
-cd D:\wamp64\www\projectx
+cd D:\wamp64\www\upos612
 php mcp/read-file-cache-mcp/bin/warm-cache
+php scripts/check-mcp-health.php
 ```
 
 Optional: `--max-files=10000` or `--path=app` to limit scope.
@@ -63,8 +65,9 @@ If you use the semantic_code_search server and have Ollama installed:
 
 ```powershell
 ollama pull nomic-embed-text
-cd D:\wamp64\www\projectx
+cd D:\wamp64\www\upos612
 php mcp/semantic-code-search-mcp/bin/index-codebase
+php scripts/check-mcp-health.php
 ```
 
 Run `index-codebase` again after large codebase changes. Use `--force` to re-index everything.
@@ -83,7 +86,7 @@ Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan
 |------|-------------------|
 | Config | Copy `mcp/codex-config.toml.example` to `~/.codex/config.toml` (or merge), then restart Codex |
 | One-time | `cd mcp/read-file-cache-mcp && composer install` |
-| Before Codex | `php mcp/read-file-cache-mcp/bin/warm-cache` (from repo root) |
+| Before Codex | `php mcp/read-file-cache-mcp/bin/warm-cache` then `php scripts/check-mcp-health.php` (from repo root) |
 | Grep: ripgrep | Install `rg` (e.g. `winget install BurntSushi.ripgrep.MSVC` on Windows) so grep MCP works |
 | Optional semantic | `php mcp/semantic-code-search-mcp/bin/index-codebase` (from repo root; needs Ollama) |
 | Plan files | Do not rewrite `.cursor/plans/*.plan.md`; see AGENTS.md and .cursor/plans/README.md §7 |
@@ -91,6 +94,7 @@ Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan
 **Session start checklist**
 
 - Run `php mcp/read-file-cache-mcp/bin/warm-cache` once per session or after a big pull (from repo root).
+- Run `php scripts/check-mcp-health.php` after startup changes, cache warm-up, or MCP dependency installs.
 - If using semantic search: run `index_status` (or the CLI below) to confirm the index is ready; if not, run `php mcp/semantic-code-search-mcp/bin/index-codebase`.
 - Optional: agents can call `warm_cache` and `index_status` at session start when the MCP is available.
-- Or double-click `warm-and-index.bat` (Windows, repo root) to run warm_cache, index_codebase, and index_status.
+- Or double-click `warm-and-index.bat` (Windows, repo root) to warm the read cache, try semantic indexing when available, and print the MCP health summary.

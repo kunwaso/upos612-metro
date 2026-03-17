@@ -107,6 +107,7 @@ try {
     ], outputSchema: [
         'type' => 'object',
         'properties' => [
+            'text' => $string(),
             'path' => $string(),
             'requested_offset' => $integer(),
             'requested_limit' => $integer(),
@@ -119,6 +120,7 @@ try {
             'cache_hit' => $boolean(),
         ],
         'required' => [
+            'text',
             'path',
             'requested_offset',
             'requested_limit',

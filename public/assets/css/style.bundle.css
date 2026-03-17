@@ -53260,3 +53260,7 @@ body {
         filter: blur(0);
     }
 }
+
+.dataTables_scroll {
+    min-height: 400px;
+}

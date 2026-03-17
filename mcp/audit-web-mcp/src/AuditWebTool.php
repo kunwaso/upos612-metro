@@ -37,6 +37,11 @@ final class AuditWebTool
         mixed $timeout = null,
         mixed $waitUntil = null,
         mixed $waitAfterLoadMs = null,
+        mixed $mode = 'headless',
+        mixed $persist_report = null,
+        mixed $report_dir = null,
+        mixed $report_slug = null,
+        mixed $save_storage_state_path = null,
     ): CallToolResult {
         try {
             $validated = $this->validateInput(
@@ -50,7 +55,12 @@ final class AuditWebTool
                 $steps,
                 $timeout,
                 $waitUntil,
-                $waitAfterLoadMs
+                $waitAfterLoadMs,
+                $mode,
+                $persist_report,
+                $report_dir,
+                $report_slug,
+                $save_storage_state_path
             );
 
             if ($validated['scope'] === 'single') {
@@ -210,6 +220,11 @@ final class AuditWebTool
      *   timeout: int,
      *   waitUntil: string,
      *   waitAfterLoadMs: int,
+     *   mode: string,
+     *   persist_report: bool,
+     *   report_dir: string|null,
+     *   report_slug: string|null,
+     *   save_storage_state_path: string|null,
      *   baseUrl: string
      * }
      */
@@ -225,6 +240,11 @@ final class AuditWebTool
         mixed $timeout,
         mixed $waitUntil,
         mixed $waitAfterLoadMs,
+        mixed $mode,
+        mixed $persist_report,
+        mixed $report_dir,
+        mixed $report_slug,
+        mixed $save_storage_state_path,
     ): array {
         if (!is_string($url) || trim($url) === '') {
             throw new \InvalidArgumentException('url is required.');
@@ -247,32 +267,14 @@ final class AuditWebTool
             throw new \InvalidArgumentException('pathPrefix is required when scope is "prefix".');
         }
 
-        $storageStatePath = null;
-        if ($storage_state_path !== null) {
-            if (!is_string($storage_state_path) || trim($storage_state_path) === '') {
-                throw new \InvalidArgumentException('storage_state_path must be a non-empty string.');
-            }
-            $storageStatePath = trim($storage_state_path);
+        $storageStatePath = $this->normalizeNullableString($storage_state_path, 'storage_state_path');
+
+        $loginUrl = $this->normalizeNullableString($login_url, 'login_url');
+        if ($loginUrl !== null && !$this->isHttpUrl($loginUrl)) {
+            throw new \InvalidArgumentException('login_url must be a valid http(s) URL.');
         }
 
-        $loginUrl = null;
-        if ($login_url !== null) {
-            if (!is_string($login_url) || trim($login_url) === '') {
-                throw new \InvalidArgumentException('login_url must be a non-empty string.');
-            }
-            $loginUrl = trim($login_url);
-            if (!$this->isHttpUrl($loginUrl)) {
-                throw new \InvalidArgumentException('login_url must be a valid http(s) URL.');
-            }
-        }
-
-        $loginUsername = null;
-        if ($login_username !== null) {
-            if (!is_string($login_username) || trim($login_username) === '') {
-                throw new \InvalidArgumentException('login_username must be a non-empty string.');
-            }
-            $loginUsername = trim($login_username);
-        }
+        $loginUsername = $this->normalizeNullableString($login_username, 'login_username');
 
         $loginPassword = null;
         if ($login_password !== null) {
@@ -319,6 +321,22 @@ final class AuditWebTool
             $waitAfterLoadValue = max(0, (int) $waitAfterLoadMs);
         }
 
+        $modeValue = is_string($mode) ? strtolower(trim($mode)) : 'headless';
+        if ($modeValue === '') {
+            $modeValue = 'headless';
+        }
+        if (!in_array($modeValue, ['headless', 'interactive'], true)) {
+            throw new \InvalidArgumentException('mode must be "headless" or "interactive".');
+        }
+        if ($scope === 'prefix' && $modeValue === 'interactive') {
+            throw new \InvalidArgumentException('Interactive mode is only supported for single-URL audits.');
+        }
+
+        $persistReport = $this->parseBoolean($persist_report, $modeValue === 'interactive', 'persist_report');
+        $reportDir = $this->normalizeNullableString($report_dir, 'report_dir');
+        $reportSlug = $this->normalizeNullableString($report_slug, 'report_slug');
+        $saveStorageStatePath = $this->normalizeNullableString($save_storage_state_path, 'save_storage_state_path');
+
         return [
             'url' => $url,
             'scope' => $scope,
@@ -332,6 +350,11 @@ final class AuditWebTool
             'timeout' => $timeoutValue,
             'waitUntil' => $waitUntilValue,
             'waitAfterLoadMs' => $waitAfterLoadValue,
+            'mode' => $modeValue,
+            'persist_report' => $persistReport,
+            'report_dir' => $reportDir,
+            'report_slug' => $reportSlug,
+            'save_storage_state_path' => $saveStorageStatePath,
             'baseUrl' => $this->extractBaseUrl($url),
         ];
     }
@@ -348,6 +371,8 @@ final class AuditWebTool
             'waitUntil' => $validated['waitUntil'],
             'waitAfterLoadMs' => $validated['waitAfterLoadMs'],
             'timeoutMs' => $validated['timeout'] * 1000,
+            'mode' => $validated['mode'],
+            'persist_report' => $validated['persist_report'],
         ];
 
         if ($validated['storage_state_path'] !== null) {
@@ -360,6 +385,15 @@ final class AuditWebTool
         }
         if (is_array($validated['steps'])) {
             $payload['steps'] = $validated['steps'];
+        }
+        if ($validated['report_dir'] !== null) {
+            $payload['report_dir'] = $validated['report_dir'];
+        }
+        if ($validated['report_slug'] !== null) {
+            $payload['report_slug'] = $validated['report_slug'];
+        }
+        if ($validated['save_storage_state_path'] !== null) {
+            $payload['save_storage_state_path'] = $validated['save_storage_state_path'];
         }
 
         return $payload;
@@ -412,12 +446,36 @@ final class AuditWebTool
             'findings' => $findings,
         ];
 
+        if (isset($raw['mode']) && is_string($raw['mode']) && $raw['mode'] !== '') {
+            $normalized['mode'] = $raw['mode'];
+        }
+
+        if (isset($raw['interactive']) && is_bool($raw['interactive'])) {
+            $normalized['interactive'] = $raw['interactive'];
+        }
+
         if (isset($raw['runnerError']) && is_string($raw['runnerError']) && $raw['runnerError'] !== '') {
             $normalized['runnerError'] = $raw['runnerError'];
         }
 
+        if (isset($raw['sessionId']) && is_string($raw['sessionId']) && $raw['sessionId'] !== '') {
+            $normalized['sessionId'] = $raw['sessionId'];
+        }
+
+        if (isset($raw['reportJsonPath']) && is_string($raw['reportJsonPath']) && $raw['reportJsonPath'] !== '') {
+            $normalized['reportJsonPath'] = $raw['reportJsonPath'];
+        }
+
+        if (isset($raw['reportMarkdownPath']) && is_string($raw['reportMarkdownPath']) && $raw['reportMarkdownPath'] !== '') {
+            $normalized['reportMarkdownPath'] = $raw['reportMarkdownPath'];
+        }
+
         if (isset($raw['savedStorageStatePath']) && is_string($raw['savedStorageStatePath']) && $raw['savedStorageStatePath'] !== '') {
             $normalized['savedStorageStatePath'] = $raw['savedStorageStatePath'];
+        }
+
+        if (isset($raw['triageSummary']) && is_array($raw['triageSummary'])) {
+            $normalized['triageSummary'] = $raw['triageSummary'];
         }
 
         return $normalized;
@@ -474,5 +532,45 @@ final class AuditWebTool
     {
         $perTargetBuffer = max(45, $timeoutSeconds);
         return max(60, ($perTargetBuffer * max(1, $targetCount)) + 45);
+    }
+
+    private function normalizeNullableString(mixed $value, string $field): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (!is_string($value) || trim($value) === '') {
+            throw new \InvalidArgumentException(sprintf('%s must be a non-empty string.', $field));
+        }
+
+        return trim($value);
+    }
+
+    private function parseBoolean(mixed $value, bool $default, string $field): bool
+    {
+        if ($value === null) {
+            return $default;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (int) $value !== 0;
+        }
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+                return false;
+            }
+        }
+
+        throw new \InvalidArgumentException(sprintf('%s must be a boolean value when provided.', $field));
     }
 }

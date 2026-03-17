@@ -675,6 +675,17 @@ class ProjectautoUtil
         }
 
         $flatContext = $this->flattenContext($context);
+
+        if (isset($conditions['items']) && is_array($conditions['items'])) {
+            foreach ($conditions['items'] as $condition) {
+                if (! $this->matchesConditionItem((array) $condition, $flatContext)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         foreach ($conditions as $key => $expected) {
             $actual = $flatContext[$key] ?? null;
 
@@ -694,6 +705,35 @@ class ProjectautoUtil
         }
 
         return true;
+    }
+
+    protected function matchesConditionItem(array $condition, array $flatContext): bool
+    {
+        $field = $condition['field'] ?? null;
+        $operator = $condition['operator'] ?? 'equals';
+        $value = $condition['value'] ?? null;
+        $negate = (bool) ($condition['negate'] ?? false);
+        $actual = $field !== null ? ($flatContext[$field] ?? null) : null;
+
+        $matches = false;
+
+        if ($operator === 'equals') {
+            $matches = (string) $actual === (string) $value;
+        } elseif ($operator === 'not_equals') {
+            $matches = (string) $actual !== (string) $value;
+        } elseif ($operator === 'greater_than') {
+            $matches = is_numeric($actual) && is_numeric($value) && (float) $actual > (float) $value;
+        } elseif ($operator === 'less_than') {
+            $matches = is_numeric($actual) && is_numeric($value) && (float) $actual < (float) $value;
+        } elseif ($operator === 'contains') {
+            $matches = is_string($actual) && str_contains($actual, (string) $value);
+        } elseif ($operator === 'in') {
+            $matches = in_array((string) $actual, array_map('strval', (array) $value), true);
+        } elseif ($operator === 'not_in') {
+            $matches = ! in_array((string) $actual, array_map('strval', (array) $value), true);
+        }
+
+        return $negate ? ! $matches : $matches;
     }
 
     protected function flattenContext(array $context): array

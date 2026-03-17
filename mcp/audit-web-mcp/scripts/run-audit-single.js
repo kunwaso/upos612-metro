@@ -56,8 +56,28 @@ async function main() {
     payload.timeoutMs = Number(cli.timeoutMs);
   }
 
+  if (payload.mode === undefined && cli.mode) {
+    payload.mode = cli.mode;
+  }
+
+  if (payload.persist_report === undefined && cli.persist_report !== undefined) {
+    payload.persist_report = cli.persist_report === true ? true : String(cli.persist_report).toLowerCase() !== 'false';
+  }
+
   if (payload.storage_state_path === undefined && cli.storage_state_path) {
     payload.storage_state_path = cli.storage_state_path;
+  }
+
+  if (payload.save_storage_state_path === undefined && cli.save_storage_state_path) {
+    payload.save_storage_state_path = cli.save_storage_state_path;
+  }
+
+  if (payload.report_dir === undefined && cli.report_dir) {
+    payload.report_dir = cli.report_dir;
+  }
+
+  if (payload.report_slug === undefined && cli.report_slug) {
+    payload.report_slug = cli.report_slug;
   }
 
   if (payload.login_url === undefined && cli.login_url) {

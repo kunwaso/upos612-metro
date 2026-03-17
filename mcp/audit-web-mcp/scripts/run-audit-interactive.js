@@ -56,11 +56,25 @@ async function main() {
     payload.timeoutMs = Number(cli.timeoutMs);
   }
 
+  if (payload.persist_report === undefined && cli.persist_report !== undefined) {
+    payload.persist_report = cli.persist_report === true ? true : String(cli.persist_report).toLowerCase() !== 'false';
+  }
+
+  if (payload.report_dir === undefined && cli.report_dir) {
+    payload.report_dir = cli.report_dir;
+  }
+
+  if (payload.report_slug === undefined && cli.report_slug) {
+    payload.report_slug = cli.report_slug;
+  }
+
   if (payload.saveStorageStatePath === undefined) {
     payload.saveStorageStatePath = payload.save_storage_state_path || cli.save_storage_state_path || null;
   }
 
+  payload.mode = 'interactive';
   payload.headed = true;
+  payload.persist_report = payload.persist_report !== false;
   payload.enableElementPick = payload.enableElementPick !== false;
   payload.manualPauseMessage =
     payload.manualPauseMessage ||

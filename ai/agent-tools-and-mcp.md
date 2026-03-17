@@ -18,9 +18,11 @@ Tool names vary by platform. Treat the names below as tool families with common 
 | Server | Status | Use for |
 |---|---|---|
 | `laravel_mysql` | Recommended | Repo-aware routes, schema, migrations, tests, project map, and guarded repo introspection |
+| `audit_web` | Recommended for browser audits | Interactive or headless Playwright URL audits with persisted JSON/Markdown findings, screenshots, traces, and triage metadata |
 | `grep` | Recommended | Exact string, selector, route, ID, translation key, and regex search |
 | `read_file_cache` | Recommended | Fast cached line-based reads for workspace text files |
 | `semantic_code_search` | Optional | Meaning-based discovery when exact symbols are unknown; requires indexing and Ollama |
+| `chrome-devtools` | Optional adjunct | Live Chrome DevTools inspection for timing-sensitive, silent, performance, or ambiguous browser issues |
 
 No single MCP server is strictly required for every task. If one is unavailable or degraded, fall back in a consistent order instead of guessing.
 
@@ -29,19 +31,34 @@ No single MCP server is strictly required for every task. If one is unavailable 
 At the start of a Codex or Cursor session, prefer this capability order:
 
 1. Check `laravel_mysql` for repo-aware resources/tools such as `project_map`, routes, schema, and tests.
-2. Check `grep` for exact or regex search.
-3. Check `read_file_cache` for workspace file reads.
-4. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
-5. If any of the above are unavailable, fall back to the host platform's built-in grep, codebase search, file read, and diagnostics tools.
+2. If the task is a browser audit, check `audit_web` and then `playwright`; keep `chrome-devtools` available for escalation.
+3. Check `grep` for exact or regex search.
+4. Check `read_file_cache` for workspace file reads.
+5. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
+6. If any of the above are unavailable, fall back to the host platform's built-in grep, codebase search, file read, and diagnostics tools.
 
 This keeps Codex and Cursor behavior aligned even when their active MCP surfaces differ.
+
+Default startup policy in this repo:
+
+- **Required:** `laravel_mysql`, `grep`, `read_file_cache`
+- **Optional:** `semantic_code_search`
+
+Repo-local startup check:
+
+```bash
+php scripts/check-mcp-health.php
+```
+
+The health check uses a **path-scoped** grep probe, confirms `read_file_cache` returns actual file text, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `OLLAMA_UNAVAILABLE`.
 
 Availability is not enough; do a quick health check for each server you depend on:
 
 1. `laravel_mysql`: run a lightweight call such as `project_map`.
-2. `grep`: run a tiny exact search in a known file.
-3. `read_file_cache`: run one small `read_file` and confirm file text is returned.
-4. `semantic_code_search` (optional): run `index_status` before `search_code`.
+2. `audit_web`: run one lightweight public URL audit in headless mode and confirm structured JSON is returned.
+3. `grep`: run a tiny exact search in a known file.
+4. `read_file_cache`: run one small `read_file` and confirm file text is returned.
+5. `semantic_code_search` (optional): run `index_status` before `search_code`.
 
 Treat a tool as degraded if it repeatedly times out, returns empty/partial payloads, loops on stale index errors, or returns metadata without the expected content body.
 
@@ -93,6 +110,8 @@ Treat a tool as degraded if it repeatedly times out, returns empty/partial paylo
 |---|---|---|
 | Web search | `web_search` | Look up docs, versions, errors, or current product behavior when the repo is not enough. |
 | Fetch URL | `fetch`, `mcp_web_fetch` | Pull stable docs or API references from a known URL. |
+| Browser audit MCP | `audit_web` | Run interactive or headless web audits that persist findings, screenshots, traces, and triage output. |
+| Chrome DevTools MCP | `chrome-devtools` | Attach to a live Chrome debug session for silent failures, timing issues, network/performance inspection, and ambiguous audit findings. |
 | Explore subagent | `mcp_task` with `explore` | Broad or parallel codebase discovery. |
 | Shell subagent | `mcp_task` with `shell` | Command-heavy work such as git, artisan, composer, npm, or tests. |
 | General-purpose subagent | `mcp_task` with `generalPurpose` | Multi-step research or bounded reasoning work. |
@@ -267,6 +286,41 @@ Remember:
 - grep does **not**
 - if `search_code` returns `INDEX_NOT_READY` or `INDEX_STALE`, run `index_codebase` and retry
 
+### 3.5 Audit Web MCP Server
+
+- Location: `mcp/audit-web-mcp/`
+- Purpose: Playwright-powered single-URL and prefix audits with structured findings, triage metadata, persisted reports, screenshots, traces, and optional storage-state handoff
+- Status: **Recommended for browser audits**
+- README: [mcp/audit-web-mcp/README.md](../mcp/audit-web-mcp/README.md)
+
+Use when:
+
+- the user asks for `audit and fix: <url>` or `interactive web audit: <url>`
+- you need a first-pass browser bug report before editing code
+- you want persisted `report.json` and `report.md` under `output/playwright/audit-web-mcp/reports/`
+
+Workflow:
+
+1. Start the dedicated Chrome debug browser with `scripts/open-audit-chrome.ps1`.
+2. Run `audit_web` in `mode=interactive` and `persist_report=true`.
+3. Read the persisted report.
+4. Escalate to Chrome DevTools MCP only if `triageSummary.shouldEscalateToDevtools` is `true` or the issue remains ambiguous.
+5. After code changes, verify with Playwright MCP and a rerun of `audit_web`.
+
+Detailed repo workflow: [ai/browser-audit-workflow.md](browser-audit-workflow.md)
+
+### 3.6 Chrome DevTools MCP
+
+- Location: user-scoped MCP config only; not shipped in this repo
+- Purpose: live inspection of a dedicated Chrome debug browser on `http://127.0.0.1:9222`
+- Status: **Optional adjunct**
+
+Use when:
+
+- the persisted `audit_web` report shows no findings but the bug is still visible
+- the issue is timing-sensitive, performance-related, or strongly tied to network waterfalls
+- you need live DevTools panels beyond Playwright screenshots/traces
+
 ---
 
 ## 4. Config Patterns for Codex and Cursor
@@ -346,7 +400,7 @@ Official Cursor docs: [docs.cursor.com/context/model-context-protocol](https://d
 
 If you use the MCP servers in the Codex extension, do the following so the codebase is indexed and cached for faster reads and search:
 
-1. **Config** — In `~/.codex/config.toml`, register at least `grep` and `read_file_cache` with `<repo-root>` set to this project’s absolute path (e.g. `D:/wamp64/www/projectx`). Add `laravel_mysql` and optionally `semantic_code_search` if you use them.
+1. **Config** — In `~/.codex/config.toml`, register at least `grep` and `read_file_cache` with `<repo-root>` set to this project’s absolute path (for example `D:/wamp64/www/upos612`). Add `laravel_mysql` and optionally `semantic_code_search` if you use them.
 
 2. **Read-file cache (faster file reads)** — Pre-warm the disk cache so `read_file` hits cache instead of the filesystem. Either:
    - **CLI (recommended):** From repo root run once (e.g. after clone or before a long Codex session):
@@ -355,6 +409,7 @@ If you use the MCP servers in the Codex extension, do the following so the codeb
      ```
      Optional: `--max-files=10000` or `--path=app` to limit scope.
    - **Agent:** The agent can call the `warm_cache` tool at the start of a session when `read_file_cache` is available (see AGENTS.md).
+   - **Health check:** After warming the cache, run `php scripts/check-mcp-health.php` to confirm `read_file_cache` returns actual file text and the required MCPs are ready.
 
 3. **Semantic search (optional)** — If you use the semantic_code_search server, build the index once so `search_code` works. From repo root:
    ```bash
@@ -362,7 +417,9 @@ If you use the MCP servers in the Codex extension, do the following so the codeb
    ```
    Requires Ollama and the embed model (e.g. `ollama pull nomic-embed-text`).
 
-4. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works.
+   If Ollama is unavailable or the index is missing, the health check reports `OLLAMA_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `laravel_mysql` -> `grep` -> `read_file_cache`.
+
+4. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works. For startup probes, use a **small path-scoped search** instead of a broad repo scan.
 
 ---
 

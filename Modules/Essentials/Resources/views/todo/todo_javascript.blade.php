@@ -76,7 +76,9 @@ $(document).on('submit', 'form#task_form', function(e){
 					$('#task_modal').modal('hide');
 				}
 
-				if ($('#calendar').length) {
+				if (window.CalendarPage && typeof window.CalendarPage.refetchEvents === 'function') {
+					window.CalendarPage.refetchEvents();
+				} else if ($('#calendar').length && typeof $.fn.fullCalendar === 'function') {
 					$('#calendar').fullCalendar( 'refetchEvents' );
 				}
 			} else {
