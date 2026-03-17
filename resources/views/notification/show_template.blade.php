@@ -10,7 +10,12 @@
     {!! Form::open(['url' => $notification_template['template_for'] == 'send_ledger' ? action([\App\Http\Controllers\ContactController::class, 'sendLedger']) : action([\App\Http\Controllers\NotificationController::class, 'send']), 'method' => 'post', 'id' => 'send_notification_form' ]) !!}
 
     <div class="modal-header">
-      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')">
+    <i class="ki-duotone ki-cross fs-2x">
+        <span class="path1"></span>
+        <span class="path2"></span>
+    </i>
+</button>
       <h4 class="modal-title">@lang( 'lang_v1.send_notification' ) - {{$template_name}}</h4>
     </div>
 
@@ -129,7 +134,7 @@
         {!! Form::hidden('template_for', $notification_template['template_for']); !!}
         <div class="modal-footer">
           <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white" id="send_notification_btn">@lang('lang_v1.send')</button>
-          <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">@lang('messages.close')</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang('messages.close')</button>
         </div>
         {!! Form::close() !!}
     </div><!-- /.modal-content -->

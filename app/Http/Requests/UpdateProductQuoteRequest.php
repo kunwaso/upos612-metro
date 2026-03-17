@@ -48,8 +48,6 @@ class UpdateProductQuoteRequest extends FormRequest
         $business_id = (int) $this->session()->get('user.business_id');
         $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
         $allowedCurrencies = array_keys((array) ($costingOptions['currency'] ?? []));
-        $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
-        $allowedPurchaseUom = array_values((array) ($costingOptions['purchase_uom'] ?? []));
 
         return [
             'contact_id' => [
@@ -83,14 +81,14 @@ class UpdateProductQuoteRequest extends FormRequest
                 }),
             ],
             'lines.*.qty' => 'required|numeric|gt:0',
-            'lines.*.purchase_uom' => ['required', 'string', 'max:20', Rule::in($allowedPurchaseUom)],
+            'lines.*.purchase_uom' => 'nullable|string|max:20',
             'lines.*.base_mill_price' => 'nullable|numeric|min:0',
             'lines.*.test_cost' => 'nullable|numeric|min:0',
             'lines.*.surcharge' => 'nullable|numeric|min:0',
             'lines.*.finish_uplift_pct' => 'nullable|numeric|between:0,1',
             'lines.*.waste_pct' => 'nullable|numeric|between:0,1',
             'lines.*.currency' => ['required', 'string', 'max:20', Rule::in($allowedCurrencies)],
-            'lines.*.incoterm' => ['required', 'string', 'max:50', Rule::in($allowedIncoterms)],
+            'lines.*.incoterm' => 'nullable|string|max:50',
         ];
     }
 
@@ -102,8 +100,14 @@ class UpdateProductQuoteRequest extends FormRequest
                 return;
             }
 
+            $business_id = (int) $this->session()->get('user.business_id');
+            $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
+            $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
+            $shipmentPort = trim((string) ($this->input('shipment_port') ?? ''));
+            $isLocalDelivery = $shipmentPort === '';
+
             $firstCurrency = (string) ($lines[0]['currency'] ?? '');
-            $firstIncoterm = (string) ($lines[0]['incoterm'] ?? '');
+            $firstIncoterm = trim((string) ($lines[0]['incoterm'] ?? ''));
 
             foreach ($lines as $index => $line) {
                 $hasProduct = (int) ($line['product_id'] ?? 0) > 0;
@@ -113,9 +117,19 @@ class UpdateProductQuoteRequest extends FormRequest
                     continue;
                 }
 
+                $incoterm = trim((string) ($line['incoterm'] ?? ''));
+                if (! $isLocalDelivery && $incoterm === '') {
+                    $validator->errors()->add('lines.' . $index . '.incoterm', __('validation.required', ['attribute' => __('product.incoterm')]));
+                    continue;
+                }
+                if ($incoterm !== '' && ! in_array($incoterm, $allowedIncoterms, true)) {
+                    $validator->errors()->add('lines.' . $index . '.incoterm', __('product.quote_dropdown_invalid', ['field' => 'incoterm']));
+                    continue;
+                }
+
                 if (
                     (string) ($line['currency'] ?? '') !== $firstCurrency
-                    || (string) ($line['incoterm'] ?? '') !== $firstIncoterm
+                    || $incoterm !== $firstIncoterm
                 ) {
                     $validator->errors()->add('lines', __('product.quote_shared_currency_incoterm_required'));
                     break;

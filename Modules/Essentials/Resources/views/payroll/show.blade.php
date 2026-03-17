@@ -1,9 +1,12 @@
 <div class="modal-dialog modal-lg" role="document">
   	<div class="modal-content">
   		<div class="modal-header no-print">
-	      	<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-	      		<span aria-hidden="true">&times;</span>
-	      	</button>
+	      	<button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')">
+    <i class="ki-duotone ki-cross fs-2x">
+        <span class="path1"></span>
+        <span class="path2"></span>
+    </i>
+</button>
 	      	<h4 class="modal-title no-print">
 	      		{!! __('essentials::lang.payroll_of_employee', ['employee' => $payroll->transaction_for->user_full_name, 'date' => $month_name . ' ' . $year]) !!}
 	      	</h4>
@@ -312,7 +315,7 @@
 	      	<button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white" aria-label="Print" onclick="$(this).closest('div.modal-content').find('.modal-body').printThis();">
 	      		<i class="fa fa-print"></i> @lang( 'messages.print' )
       		</button>
-	      	<button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">@lang( 'messages.close' )</button>
+	      	<button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
 	    </div>
   	</div><!-- /.modal-content -->
 </div><!-- /.modal-dialog -->

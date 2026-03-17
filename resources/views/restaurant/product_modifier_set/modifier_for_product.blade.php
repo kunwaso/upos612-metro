@@ -14,7 +14,12 @@
   <div class="modal-content">
 
     <div class="modal-header">
-      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')">
+    <i class="ki-duotone ki-cross fs-2x">
+        <span class="path1"></span>
+        <span class="path2"></span>
+    </i>
+</button>
       <h4 class="modal-title">@lang( 'restaurant.modifiers_for_product' ): <span class="text-success"></span>
       </h4>
     </div>
@@ -66,7 +71,7 @@
     <div class="modal-footer">
       <button data-url="{{action([\App\Http\Controllers\Restaurant\ProductModifierSetController::class, 'add_selected_modifiers'])}}" type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white add_modifier" data-dismiss="modal">
         @lang( 'messages.add' )</button>
-      <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">@lang( 'messages.close' )</button>
+      <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
     </div>
 
     {!! Form::close() !!}

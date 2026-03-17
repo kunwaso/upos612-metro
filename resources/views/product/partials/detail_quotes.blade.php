@@ -48,33 +48,13 @@
                             <input type="number" min="{{ $projectxPositiveQuantityMin }}" step="{{ $projectxQuantityStep }}" class="form-control form-control-solid" name="qty" id="budget_qty" value="{{ old('qty', 1) }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label required" for="budget_purchase_uom">{{ __('product.purchase_uom') }}</label>
-                            <select class="form-select form-select-solid select2" name="purchase_uom" id="budget_purchase_uom" data-control="select2" data-hide-search="true" data-placeholder="{{ __('product.purchase_uom') }}">
-                                @foreach($costingDropdowns['purchase_uom'] as $option)
-                                    <option value="{{ $option }}" {{ old('purchase_uom', $costingDropdowns['purchase_uom'][0] ?? '') === $option ? 'selected' : '' }}>{{ $option }}</option>
-                                @endforeach
-                            </select>
+                            <label class="form-label" for="budget_purchase_uom_display">{{ __('product.purchase_uom') }}</label>
+                            <input type="text" class="form-control form-control-solid" id="budget_purchase_uom_display" value="{{ old('purchase_uom', optional($product->unit)->short_name ?? '') }}" readonly>
+                            <input type="hidden" name="purchase_uom" id="budget_purchase_uom" value="{{ old('purchase_uom', optional($product->unit)->short_name ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">{{ __('product.base_mill_price') }}</label>
                             <input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid" name="base_mill_price" id="budget_base_mill_price" value="{{ old('base_mill_price', $defaultBasePriceInput ?? $defaultBasePrice) }}">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label">{{ __('product.test_cost') }}</label>
-                            <input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid" name="test_cost" id="budget_test_cost" value="{{ old('test_cost', 0) }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">{{ __('product.surcharge') }}</label>
-                            <input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid" name="surcharge" id="budget_surcharge" value="{{ old('surcharge', 0) }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">{{ __('product.finish_uplift_pct') }}</label>
-                            <input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid" name="finish_uplift_pct" id="budget_finish_uplift_pct" value="{{ old('finish_uplift_pct', 0) }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">{{ __('product.waste_pct') }}</label>
-                            <input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid" name="waste_pct" id="budget_waste_pct" value="{{ old('waste_pct', 0) }}">
                         </div>
 
                         <div class="col-md-6">
@@ -86,12 +66,22 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required" for="budget_incoterm">{{ __('product.incoterm') }}</label>
+                            <label class="form-label" for="budget_incoterm">{{ __('product.incoterm') }}</label>
                             <select class="form-select form-select-solid select2" name="incoterm" id="budget_incoterm" data-control="select2" data-hide-search="true" data-placeholder="{{ __('product.incoterm') }}">
+                                <option value="" {{ old('incoterm', '') === '' ? 'selected' : '' }}></option>
                                 @foreach($costingDropdowns['incoterm'] as $option)
-                                    <option value="{{ $option }}" {{ old('incoterm', $costingDropdowns['incoterm'][0] ?? '') === $option ? 'selected' : '' }}>{{ $option }}</option>
+                                    <option value="{{ $option }}" {{ old('incoterm', '') === $option ? 'selected' : '' }}>{{ $option }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="budget_shipment_port">{{ __('product.shipment_port') }}</label>
+                            <input type="text" class="form-control form-control-solid" name="shipment_port" id="budget_shipment_port" list="budget_shipment_port_list" value="{{ old('shipment_port') }}" placeholder="{{ __('product.shipment_port') }}">
+                            <datalist id="budget_shipment_port_list">
+                                @foreach(config('product.shipment_ports', []) as $port)
+                                    <option value="{{ $port }}">
+                                @endforeach
+                            </datalist>
                         </div>
                     </div>
 
@@ -261,24 +251,29 @@
         const fields = {
             qty: document.getElementById('budget_qty'),
             base: document.getElementById('budget_base_mill_price'),
-            test: document.getElementById('budget_test_cost'),
-            surcharge: document.getElementById('budget_surcharge'),
-            finish: document.getElementById('budget_finish_uplift_pct'),
-            waste: document.getElementById('budget_waste_pct')
+            incoterm: document.getElementById('budget_incoterm'),
+            shipmentPort: document.getElementById('budget_shipment_port')
         };
 
         const unitEl = document.getElementById('budget_unit_cost');
         const totalEl = document.getElementById('budget_total_cost');
 
+        const syncIncotermRequirement = () => {
+            const isLocalDelivery = !fields.shipmentPort || fields.shipmentPort.value.trim() === '';
+            fields.incoterm.required = !isLocalDelivery;
+
+            if (!isLocalDelivery && (fields.incoterm.value || '') === '') {
+                const firstNonEmpty = Array.from(fields.incoterm.options).find((option) => option.value !== '');
+                if (firstNonEmpty) {
+                    fields.incoterm.value = firstNonEmpty.value;
+                }
+            }
+        };
+
         const compute = () => {
             const qty = parseNum(fields.qty.value);
             const base = parseNum(fields.base.value);
-            const test = parseNum(fields.test.value);
-            const surcharge = parseNum(fields.surcharge.value);
-            const finish = parseNum(fields.finish.value);
-            const waste = parseNum(fields.waste.value);
-
-            const unit = base + test + surcharge + (base * finish) + (base * waste);
+            const unit = base;
             const total = unit * qty;
 
             unitEl.textContent = formatDecimal(unit, currencyPrecision);
@@ -290,6 +285,12 @@
             field.addEventListener('change', compute);
         });
 
+        if (fields.shipmentPort) {
+            fields.shipmentPort.addEventListener('input', syncIncotermRequirement);
+            fields.shipmentPort.addEventListener('change', syncIncotermRequirement);
+        }
+
+        syncIncotermRequirement();
         compute();
     })();
 </script>

@@ -61,7 +61,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">{{ __('product.shipment_port') }}</label>
-                    <input type="text" class="form-control form-control-solid" name="shipment_port" list="shipment_port_list" value="{{ old('shipment_port', $quote->shipment_port) }}" placeholder="{{ __('product.shipment_port') }}">
+                    <input type="text" class="form-control form-control-solid" id="quote_edit_shipment_port" name="shipment_port" list="shipment_port_list" value="{{ old('shipment_port', $quote->shipment_port) }}" placeholder="{{ __('product.shipment_port') }}">
                     <datalist id="shipment_port_list">
                         @foreach(config('product.shipment_ports', []) as $port)
                             <option value="{{ $port }}">
@@ -89,15 +89,11 @@
                 <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="quote_lines_table">
                     <thead>
                         <tr class="fw-bold text-muted fs-7 text-uppercase">
-                            <th>{{ __('product.line_type') }}</th>
+                            <th>{{ __('product.category') }}</th>
                             <th>{{ __('product.quote_line_item') }}</th>
                             <th>{{ __('product.quantity') }}</th>
                             <th>{{ __('product.purchase_uom') }}</th>
                             <th>{{ __('product.base_mill_price') }}</th>
-                            <th>{{ __('product.test_cost') }}</th>
-                            <th>{{ __('product.surcharge') }}</th>
-                            <th>{{ __('product.finish_uplift_pct') }}</th>
-                            <th>{{ __('product.waste_pct') }}</th>
                             <th>{{ __('product.currency_label') }}</th>
                             <th>{{ __('product.incoterm') }}</th>
                             <th>{{ __('product.total') }}</th>
@@ -108,44 +104,31 @@
                         @foreach($quoteLines as $index => $line)
                             <tr class="quote-line-row" data-index="{{ $index }}">
                                 <td>
-                                    <select class="form-select form-select-solid form-select-sm" data-field="line_type" name="lines[{{ $index }}][line_type]">
-                                        <option value="fabric" {{ ($line['line_type'] ?? 'fabric') === 'fabric' ? 'selected' : '' }}>{{ __('product.line_type_fabric') }}</option>
-                                        <option value="trim" {{ ($line['line_type'] ?? 'fabric') === 'trim' ? 'selected' : '' }}>{{ __('product.line_type_trim') }}</option>
-                                    </select>
+                                    <span class="text-gray-700 category-name">{{ $line['category'] ?? '' }}</span>
+                                    <input type="hidden" data-field="line_type" name="lines[{{ $index }}][line_type]" value="fabric">
                                 </td>
-                                <td data-role="fabric-cell">
+                                <td>
                                     <select class="form-select form-select-solid form-select-sm" data-field="id" name="lines[{{ $index }}][id]">
                                         <option value="">{{ __('product.select_fabric') }}</option>
                                         @foreach($fabrics as $product)
-                                            <option value="{{ $product->id }}" data-base-price="{{ (float) ($product->price_500_yds ?? $product->selling_price ?? 0) }}" {{ (string) ($line['id'] ?? '') === (string) $product->id ? 'selected' : '' }}>
+                                            <option
+                                                value="{{ $product->id }}"
+                                                data-base-price="{{ (float) ($product->price_500_yds ?? $product->selling_price ?? 0) }}"
+                                                data-unit="{{ optional($product->unit)->short_name ?? '' }}"
+                                                data-category="{{ optional($product->category)->name ?? '' }}"
+                                                {{ (string) ($line['id'] ?? '') === (string) $product->id ? 'selected' : '' }}
+                                            >
                                                 {{ $product->name }}@if($product->fabric_sku ?? $product->sku) ({{ $product->fabric_sku ?? $product->sku }})@endif
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
-                                <td data-role="trim-cell">
-                                    <select class="form-select form-select-solid form-select-sm" data-field="trim_id" name="lines[{{ $index }}][trim_id]">
-                                        <option value="">{{ __('product.select_trim') }}</option>
-                                        @foreach($trims as $trim)
-                                            <option value="{{ $trim->id }}" data-base-price="{{ (float) ($trim->unit_cost ?? 0) }}" {{ (string) ($line['trim_id'] ?? '') === (string) $trim->id ? 'selected' : '' }}>
-                                                {{ $trim->name }}@if($trim->part_number) ({{ $trim->part_number }})@endif
                                             </option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td><input type="number" min="{{ $projectxPositiveQuantityMin }}" step="{{ $projectxQuantityStep }}" class="form-control form-control-solid form-control-sm" data-field="qty" name="lines[{{ $index }}][qty]" value="{{ $line['qty'] ?? 1 }}"></td>
                                 <td>
-                                    <select class="form-select form-select-solid form-select-sm" data-field="purchase_uom" name="lines[{{ $index }}][purchase_uom]">
-                                        @foreach($costingDropdowns['purchase_uom'] as $option)
-                                            <option value="{{ $option }}" {{ (string) ($line['purchase_uom'] ?? '') === (string) $option ? 'selected' : '' }}>{{ $option }}</option>
-                                        @endforeach
-                                    </select>
+                                    <input type="text" class="form-control form-control-solid form-control-sm" data-role="purchase-uom-display" value="{{ $line['purchase_uom'] ?? '' }}" readonly>
+                                    <input type="hidden" data-field="purchase_uom" name="lines[{{ $index }}][purchase_uom]" value="{{ $line['purchase_uom'] ?? '' }}">
                                 </td>
                                 <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="base_mill_price" name="lines[{{ $index }}][base_mill_price]" value="{{ $line['base_mill_price'] ?? 0 }}"></td>
-                                <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="test_cost" name="lines[{{ $index }}][test_cost]" value="{{ $line['test_cost'] ?? 0 }}"></td>
-                                <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="surcharge" name="lines[{{ $index }}][surcharge]" value="{{ $line['surcharge'] ?? 0 }}"></td>
-                                <td><input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid form-control-sm" data-field="finish_uplift_pct" name="lines[{{ $index }}][finish_uplift_pct]" value="{{ $line['finish_uplift_pct'] ?? 0 }}"></td>
-                                <td><input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid form-control-sm" data-field="waste_pct" name="lines[{{ $index }}][waste_pct]" value="{{ $line['waste_pct'] ?? 0 }}"></td>
                                 <td>
                                     <select class="form-select form-select-solid form-select-sm" data-field="currency" name="lines[{{ $index }}][currency]">
                                         @foreach($costingDropdowns['currency'] as $code => $label)
@@ -155,6 +138,7 @@
                                 </td>
                                 <td>
                                     <select class="form-select form-select-solid form-select-sm" data-field="incoterm" name="lines[{{ $index }}][incoterm]">
+                                        <option value="" {{ (string) ($line['incoterm'] ?? '') === '' ? 'selected' : '' }}></option>
                                         @foreach($costingDropdowns['incoterm'] as $option)
                                             <option value="{{ $option }}" {{ (string) ($line['incoterm'] ?? '') === (string) $option ? 'selected' : '' }}>{{ $option }}</option>
                                         @endforeach
@@ -192,44 +176,30 @@
     <tbody>
         <tr id="quote_line_template" class="quote-line-row" data-index="__INDEX__">
             <td>
-                <select class="form-select form-select-solid form-select-sm" data-field="line_type" name="lines[__INDEX__][line_type]">
-                    <option value="fabric">{{ __('product.line_type_fabric') }}</option>
-                    <option value="trim">{{ __('product.line_type_trim') }}</option>
-                </select>
+                <span class="text-gray-700 category-name"></span>
+                <input type="hidden" data-field="line_type" name="lines[__INDEX__][line_type]" value="fabric">
             </td>
-            <td data-role="fabric-cell">
+            <td>
                 <select class="form-select form-select-solid form-select-sm" data-field="id" name="lines[__INDEX__][id]">
                     <option value="">{{ __('product.select_fabric') }}</option>
                     @foreach($fabrics as $product)
-                        <option value="{{ $product->id }}" data-base-price="{{ (float) ($product->price_500_yds ?? $product->selling_price ?? 0) }}">
+                        <option
+                            value="{{ $product->id }}"
+                            data-base-price="{{ (float) ($product->price_500_yds ?? $product->selling_price ?? 0) }}"
+                            data-unit="{{ optional($product->unit)->short_name ?? '' }}"
+                            data-category="{{ optional($product->category)->name ?? '' }}"
+                        >
                             {{ $product->name }}@if($product->fabric_sku ?? $product->sku) ({{ $product->fabric_sku ?? $product->sku }})@endif
-                        </option>
-                    @endforeach
-                </select>
-            </td>
-            <td data-role="trim-cell">
-                <select class="form-select form-select-solid form-select-sm" data-field="trim_id" name="lines[__INDEX__][trim_id]">
-                    <option value="">{{ __('product.select_trim') }}</option>
-                    @foreach($trims as $trim)
-                        <option value="{{ $trim->id }}" data-base-price="{{ (float) ($trim->unit_cost ?? 0) }}">
-                            {{ $trim->name }}@if($trim->part_number) ({{ $trim->part_number }})@endif
                         </option>
                     @endforeach
                 </select>
             </td>
             <td><input type="number" min="{{ $projectxPositiveQuantityMin }}" step="{{ $projectxQuantityStep }}" class="form-control form-control-solid form-control-sm" data-field="qty" name="lines[__INDEX__][qty]" value="1"></td>
             <td>
-                <select class="form-select form-select-solid form-select-sm" data-field="purchase_uom" name="lines[__INDEX__][purchase_uom]">
-                    @foreach($costingDropdowns['purchase_uom'] as $option)
-                        <option value="{{ $option }}" {{ $loop->first ? 'selected' : '' }}>{{ $option }}</option>
-                    @endforeach
-                </select>
+                <input type="text" class="form-control form-control-solid form-control-sm" data-role="purchase-uom-display" value="" readonly>
+                <input type="hidden" data-field="purchase_uom" name="lines[__INDEX__][purchase_uom]" value="">
             </td>
             <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="base_mill_price" name="lines[__INDEX__][base_mill_price]" value="0"></td>
-            <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="test_cost" name="lines[__INDEX__][test_cost]" value="0"></td>
-            <td><input type="number" min="{{ $projectxZeroMin }}" step="{{ $projectxCurrencyStep }}" class="form-control form-control-solid form-control-sm" data-field="surcharge" name="lines[__INDEX__][surcharge]" value="0"></td>
-            <td><input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid form-control-sm" data-field="finish_uplift_pct" name="lines[__INDEX__][finish_uplift_pct]" value="0"></td>
-            <td><input type="number" min="{{ $projectxZeroMin }}" max="1" step="{{ $projectxRateStep }}" class="form-control form-control-solid form-control-sm" data-field="waste_pct" name="lines[__INDEX__][waste_pct]" value="0"></td>
             <td>
                 <select class="form-select form-select-solid form-select-sm" data-field="currency" name="lines[__INDEX__][currency]">
                     @foreach($costingDropdowns['currency'] as $code => $label)
@@ -239,8 +209,9 @@
             </td>
             <td>
                 <select class="form-select form-select-solid form-select-sm" data-field="incoterm" name="lines[__INDEX__][incoterm]">
+                    <option value="" selected></option>
                     @foreach($costingDropdowns['incoterm'] as $option)
-                        <option value="{{ $option }}" {{ $loop->first ? 'selected' : '' }}>{{ $option }}</option>
+                        <option value="{{ $option }}">{{ $option }}</option>
                     @endforeach
                 </select>
             </td>
@@ -361,29 +332,18 @@
             return value.toFixed(precision);
         };
 
+        const shipmentPortInput = document.getElementById('quote_edit_shipment_port');
+
         const computeLine = (row) => {
             const qty = parseNum(row.querySelector('[data-field="qty"]').value);
             const base = parseNum(row.querySelector('[data-field="base_mill_price"]').value);
-            const testCost = parseNum(row.querySelector('[data-field="test_cost"]').value);
-            const surcharge = parseNum(row.querySelector('[data-field="surcharge"]').value);
-            const finish = parseNum(row.querySelector('[data-field="finish_uplift_pct"]').value);
-            const waste = parseNum(row.querySelector('[data-field="waste_pct"]').value);
-
-            const unit = base + testCost + surcharge + (base * finish) + (base * waste);
-            return unit * qty;
-        };
-
-        const getLineType = (row) => {
-            const typeValue = (row.querySelector('[data-field="line_type"]').value || '').toLowerCase();
-            return typeValue === 'trim' ? 'trim' : 'fabric';
+            return base * qty;
         };
 
         const applyDefaultBasePrice = (row) => {
-            const lineType = getLineType(row);
             const baseInput = row.querySelector('[data-field="base_mill_price"]');
             const currentBase = parseNum(baseInput.value);
-            const selector = lineType === 'trim' ? '[data-field="trim_id"]' : '[data-field="id"]';
-            const itemSelect = row.querySelector(selector);
+            const itemSelect = row.querySelector('[data-field="id"]');
             const selected = itemSelect ? itemSelect.options[itemSelect.selectedIndex] : null;
 
             if (!selected || !selected.dataset.basePrice || currentBase > 0) {
@@ -393,28 +353,44 @@
             baseInput.value = formatDecimal(parseNum(selected.dataset.basePrice), currencyPrecision);
         };
 
-        const updateLineTypeState = (row) => {
-            const lineType = getLineType(row);
-            const fabricCell = row.querySelector('[data-role="fabric-cell"]');
-            const trimCell = row.querySelector('[data-role="trim-cell"]');
-            const fabricSelect = row.querySelector('[data-field="id"]');
-            const trimSelect = row.querySelector('[data-field="trim_id"]');
+        const syncLineMeta = (row) => {
+            const itemSelect = row.querySelector('[data-field="id"]');
+            const selected = itemSelect ? itemSelect.options[itemSelect.selectedIndex] : null;
+            const category = (selected && selected.dataset.category) ? selected.dataset.category : '';
+            const purchaseUom = (selected && selected.dataset.unit) ? selected.dataset.unit : '';
 
-            const isTrim = lineType === 'trim';
+            const categoryEl = row.querySelector('.category-name');
+            const purchaseUomDisplay = row.querySelector('[data-role="purchase-uom-display"]');
+            const purchaseUomField = row.querySelector('[data-field="purchase_uom"]');
 
-            fabricCell.classList.toggle('d-none', isTrim);
-            trimCell.classList.toggle('d-none', !isTrim);
-
-            fabricSelect.disabled = isTrim;
-            trimSelect.disabled = !isTrim;
-
-            if (isTrim) {
-                fabricSelect.value = '';
-            } else {
-                trimSelect.value = '';
+            if (categoryEl) {
+                categoryEl.textContent = category;
             }
+            if (purchaseUomDisplay) {
+                purchaseUomDisplay.value = purchaseUom;
+            }
+            if (purchaseUomField) {
+                purchaseUomField.value = purchaseUom;
+            }
+        };
 
-            applyDefaultBasePrice(row);
+        const syncIncotermRequirement = () => {
+            const isLocalDelivery = !shipmentPortInput || shipmentPortInput.value.trim() === '';
+
+            lineBody.querySelectorAll('.quote-line-row').forEach((row) => {
+                const incotermSelect = row.querySelector('[data-field="incoterm"]');
+                if (!incotermSelect) {
+                    return;
+                }
+
+                incotermSelect.required = !isLocalDelivery;
+                if (!isLocalDelivery && (incotermSelect.value || '') === '') {
+                    const firstNonEmpty = Array.from(incotermSelect.options).find((option) => option.value !== '');
+                    if (firstNonEmpty) {
+                        incotermSelect.value = firstNonEmpty.value;
+                    }
+                }
+            });
         };
 
         const recomputeTotals = () => {
@@ -441,11 +417,12 @@
             row.querySelectorAll('input, select').forEach((field) => {
                 field.addEventListener('input', recomputeTotals);
                 field.addEventListener('change', () => {
-                    if (field.dataset.field === 'line_type') {
-                        updateLineTypeState(row);
-                    }
-                    if (field.dataset.field === 'id' || field.dataset.field === 'trim_id') {
+                    if (field.dataset.field === 'id') {
+                        syncLineMeta(row);
                         applyDefaultBasePrice(row);
+                    }
+                    if (field.dataset.field === 'incoterm' || field.dataset.field === 'id') {
+                        syncIncotermRequirement();
                     }
                     recomputeTotals();
                 });
@@ -457,10 +434,12 @@
                 }
                 row.remove();
                 reindexRows();
+                syncIncotermRequirement();
                 recomputeTotals();
             });
 
-            updateLineTypeState(row);
+            syncLineMeta(row);
+            applyDefaultBasePrice(row);
         };
 
         const addRow = () => {
@@ -473,15 +452,22 @@
             lineBody.appendChild(row);
             attachRowEvents(row);
             reindexRows();
+            syncIncotermRequirement();
             recomputeTotals();
         };
 
         addLineBtn.addEventListener('click', addRow);
 
+        if (shipmentPortInput) {
+            shipmentPortInput.addEventListener('input', syncIncotermRequirement);
+            shipmentPortInput.addEventListener('change', syncIncotermRequirement);
+        }
+
         lineBody.querySelectorAll('.quote-line-row').forEach((row) => {
             attachRowEvents(row);
         });
 
+        syncIncotermRequirement();
         recomputeTotals();
     })();
 </script>

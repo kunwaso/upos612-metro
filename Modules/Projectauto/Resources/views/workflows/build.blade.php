@@ -111,11 +111,11 @@
         </div>
     </div>
 
-    <script type="application/json" id="projectauto-builder-data">@json([
+    <script type="application/json" id="projectauto-builder-data">{!! json_encode([
         'workflow' => $workflow,
         'definitions' => $definitions,
         'pageConfig' => $pageConfig,
-    ])</script>
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
 
     <style>
         .projectauto-node-card.is-selected {
@@ -588,7 +588,8 @@
                     }
                 }
 
-                input.addEventListener(field.type === 'boolean' ? 'change' : 'input', function () {
+                const inputEvent = (field.type === 'boolean' || fieldType === 'select') ? 'change' : 'input';
+                input.addEventListener(inputEvent, function () {
                     if (field.type === 'boolean') {
                         model[field.key] = input.checked;
                     } else if (field.type === 'integer') {

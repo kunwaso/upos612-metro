@@ -547,7 +547,8 @@
                     }
                 }
 
-                input.addEventListener(field.type === 'boolean' ? 'change' : 'input', function () {
+                const inputEvent = (field.type === 'boolean' || fieldType === 'select') ? 'change' : 'input';
+                input.addEventListener(inputEvent, function () {
                     if (field.type === 'boolean') {
                         model[field.key] = input.checked;
                     } else if (field.type === 'integer') {

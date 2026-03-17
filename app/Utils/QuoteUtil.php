@@ -23,7 +23,12 @@ class QuoteUtil
 
     public function createSingleProductQuote(int $business_id, int $product_id, array $payload, ?int $created_by = null): ProductQuote
     {
-        $product = Product::where('business_id', $business_id)->findOrFail($product_id);
+        $product = Product::where('business_id', $business_id)
+            ->with([
+                'unit:id,short_name',
+                'category:id,name',
+            ])
+            ->findOrFail($product_id);
         $contact = $this->resolveCustomerContact($business_id, (int) $payload['contact_id']);
 
         $linePayload = $this->costingUtil->buildLinePayload($product, $payload);
@@ -52,7 +57,10 @@ class QuoteUtil
 
         $products = Product::where('business_id', $business_id)
             ->whereIn('id', $productIds)
-            ->with('unit:id,short_name')
+            ->with([
+                'unit:id,short_name',
+                'category:id,name',
+            ])
             ->get()
             ->keyBy('id');
 
@@ -135,7 +143,11 @@ class QuoteUtil
             ));
 
             $quantity = (float) ($costingInput['qty'] ?? 0);
-            $purchaseUom = trim((string) ($costingInput['purchase_uom'] ?? ''));
+            $purchaseUom = trim((string) (
+                $costingInput['purchase_uom']
+                ?? ($snapshot['unit'] ?? optional(optional($line->product)->unit)->short_name)
+                ?? ''
+            ));
             $unitCost = (float) ($costingBreakdown['unit_cost'] ?? 0);
             $totalCost = (float) ($costingBreakdown['total_cost'] ?? 0);
 
@@ -500,7 +512,10 @@ class QuoteUtil
 
         $products = Product::where('business_id', $business_id)
             ->whereIn('id', $productIds)
-            ->with('unit:id,short_name')
+            ->with([
+                'unit:id,short_name',
+                'category:id,name',
+            ])
             ->get()
             ->keyBy('id');
 
@@ -556,7 +571,9 @@ class QuoteUtil
         return [
             'contact:id,name,supplier_business_name,email,contact_id',
             'location:id,name,landmark,city,state,country,zip_code,mobile,alternate_number,email',
-            'lines.product:id,name,sku',
+            'lines.product:id,name,sku,unit_id,category_id',
+            'lines.product.unit:id,short_name',
+            'lines.product.category:id,name',
             'transaction:id,invoice_no,status,type',
             'creator:id,surname,first_name,last_name,email,username',
         ];

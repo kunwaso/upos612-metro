@@ -193,6 +193,7 @@
                         <thead>
                             <tr class="fw-bold text-muted text-uppercase fs-7">
                                 <th>{{ __('product.quote_line_item') }}</th>
+                                <th>{{ __('product.category') }}</th>
                                 <th>{{ __('product.quantity') }}</th>
                                 <th>{{ __('product.purchase_uom') }}</th>
                                 <th>{{ __('product.unit_cost') }}</th>
@@ -208,20 +209,21 @@
                                             <div class="text-muted fs-7">{{ $line['itemCodeLabel'] ?? __('product.sku') }}: {{ $line['itemCode'] }}</div>
                                         @endif
                                     </td>
+                                    <td>{{ $line['categoryName'] ?? '' }}</td>
                                     <td>@num_format($line['quantity'] ?? 0)</td>
-                                    <td>{{ $line['purchaseUom'] ?? '-' }}</td>
+                                    <td>{{ $line['purchaseUom'] ?? '' }}</td>
                                     <td>@format_currency($line['unitCost'] ?? 0)</td>
                                     <td class="text-end fw-bold">@format_currency($line['totalCost'] ?? 0)</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">{{ __('product.no_records_found') }}</td>
+                                    <td colspan="6" class="text-center text-muted">{{ __('product.no_records_found') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr class="border-top border-gray-300">
-                                <td colspan="4" class="text-end fw-bolder text-gray-900 fs-4">{{ __('product.grand_total') }}</td>
+                                <td colspan="5" class="text-end fw-bolder text-gray-900 fs-4">{{ __('product.grand_total') }}</td>
                                 <td class="text-end fw-bolder text-gray-900 fs-4">@format_currency($quoteDisplay['quoteGrandTotalValue'] ?? 0)</td>
                             </tr>
                         </tfoot>

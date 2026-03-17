@@ -10,6 +10,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\BusinessLocationController;
 use App\Http\Controllers\CashRegisterController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CombinedPurchaseReturnController;
 use App\Http\Controllers\ContactController;
@@ -122,7 +123,11 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::get('/home/purchase-payment-dues', [HomeController::class, 'getPurchasePaymentDues']);
     Route::get('/home/sales-payment-dues', [HomeController::class, 'getSalesPaymentDues']);
     Route::post('/attach-medias-to-model', [HomeController::class, 'attachMediasToGivenModel'])->name('attach.medias.to.model');
-    Route::get('/calendar', [HomeController::class, 'getCalendar'])->name('calendar');
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
+    Route::get('/calendar/create-flow', [CalendarController::class, 'createFlow'])->name('calendar.create_flow');
+    Route::post('/calendar/schedules', [CalendarController::class, 'storeSchedule'])->name('calendar.schedules.store');
+    Route::match(['put', 'patch'], '/calendar/schedules/{id}', [CalendarController::class, 'updateSchedule'])->whereNumber('id')->name('calendar.schedules.update');
+    Route::delete('/calendar/schedules/{id}', [CalendarController::class, 'destroySchedule'])->whereNumber('id')->name('calendar.schedules.destroy');
 
     Route::post('/test-email', [BusinessController::class, 'testEmailConfiguration']);
     Route::post('/test-sms', [BusinessController::class, 'testSmsConfiguration']);

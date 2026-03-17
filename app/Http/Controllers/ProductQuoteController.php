@@ -645,9 +645,11 @@ class ProductQuoteController extends Controller
                     $query->select(['id', 'product_id', 'default_sell_price'])
                         ->orderBy('id');
                 },
+                'unit:id,short_name',
+                'category:id,name',
             ])
             ->orderBy('name')
-            ->get(['id', 'name', 'sku']);
+            ->get(['id', 'name', 'sku', 'unit_id', 'category_id']);
 
         $products->each(function (Product $product): void {
             $firstVariation = optional($product->variations)->first();
@@ -660,12 +662,11 @@ class ProductQuoteController extends Controller
     protected function resolveQuoteLineDefaults(array $costingDropdowns, ?string $defaultCurrencyCode = null): array
     {
         $currencyOptions = (array) ($costingDropdowns['currency'] ?? []);
-        $purchaseOptions = array_values(array_unique(array_filter(array_values((array) ($costingDropdowns['purchase_uom'] ?? [])))));
 
         return [
             'currency' => (string) ($defaultCurrencyCode ?: (array_key_first($currencyOptions) ?? '')),
-            'incoterm' => (string) ($costingDropdowns['incoterm'][0] ?? ''),
-            'purchase_uom' => (string) ($purchaseOptions[0] ?? ''),
+            'incoterm' => '',
+            'purchase_uom' => '',
         ];
     }
 
@@ -678,30 +679,20 @@ class ProductQuoteController extends Controller
                 continue;
             }
 
-            $lineType = strtolower((string) ($line['line_type'] ?? ''));
-            if ($lineType !== 'trim') {
-                $lineType = 'fabric';
-            }
-
             $productId = (string) (
                 $line['product_id']
                 ?? $line['id']
-                ?? ($lineType === 'trim' ? ($line['trim_id'] ?? '') : '')
                 ?? ''
             );
 
             $normalizedLines[] = [
-                'line_type' => $lineType,
-                'id' => (string) ($line['id'] ?? ($lineType !== 'trim' ? $productId : '')),
-                'trim_id' => (string) ($line['trim_id'] ?? ($lineType === 'trim' ? $productId : '')),
+                'line_type' => 'fabric',
+                'id' => (string) ($line['id'] ?? $productId),
                 'product_id' => $productId,
                 'qty' => $line['qty'] ?? 1,
                 'purchase_uom' => $line['purchase_uom'] ?? ($defaults['purchase_uom'] ?? ''),
                 'base_mill_price' => $line['base_mill_price'] ?? 0,
-                'test_cost' => $line['test_cost'] ?? 0,
-                'surcharge' => $line['surcharge'] ?? 0,
-                'finish_uplift_pct' => $line['finish_uplift_pct'] ?? 0,
-                'waste_pct' => $line['waste_pct'] ?? 0,
+                'category' => (string) ($line['category'] ?? ''),
                 'currency' => $line['currency'] ?? ($defaults['currency'] ?? ''),
                 'incoterm' => $line['incoterm'] ?? ($defaults['incoterm'] ?? ''),
             ];
@@ -714,15 +705,11 @@ class ProductQuoteController extends Controller
         return [[
             'line_type' => 'fabric',
             'id' => '',
-            'trim_id' => '',
             'product_id' => '',
             'qty' => 1,
             'purchase_uom' => $defaults['purchase_uom'] ?? '',
             'base_mill_price' => 0,
-            'test_cost' => 0,
-            'surcharge' => 0,
-            'finish_uplift_pct' => 0,
-            'waste_pct' => 0,
+            'category' => '',
             'currency' => $defaults['currency'] ?? '',
             'incoterm' => $defaults['incoterm'] ?? '',
         ]];
@@ -738,15 +725,16 @@ class ProductQuoteController extends Controller
             $lineInputs[] = [
                 'line_type' => 'fabric',
                 'id' => $line->product_id,
-                'trim_id' => '',
                 'product_id' => $line->product_id,
                 'qty' => $input['qty'] ?? 1,
-                'purchase_uom' => $input['purchase_uom'] ?? ($defaults['purchase_uom'] ?? ''),
+                'purchase_uom' => $input['purchase_uom']
+                    ?? ((array) ($line->product_snapshot ?? []))['unit']
+                    ?? optional(optional($line->product)->unit)->short_name
+                    ?? ($defaults['purchase_uom'] ?? ''),
                 'base_mill_price' => $input['base_mill_price'] ?? 0,
-                'test_cost' => $input['test_cost'] ?? 0,
-                'surcharge' => $input['surcharge'] ?? 0,
-                'finish_uplift_pct' => $input['finish_uplift_pct'] ?? 0,
-                'waste_pct' => $input['waste_pct'] ?? 0,
+                'category' => ((array) ($line->product_snapshot ?? []))['category']
+                    ?? optional(optional($line->product)->category)->name
+                    ?? '',
                 'currency' => $input['currency'] ?? ($quote->currency ?: ($defaults['currency'] ?? '')),
                 'incoterm' => $input['incoterm'] ?? ($quote->incoterm ?: ($defaults['incoterm'] ?? '')),
             ];

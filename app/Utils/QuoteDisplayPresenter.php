@@ -38,6 +38,16 @@ class QuoteDisplayPresenter
                 ?? optional($line->product)->sku
                 ?? ''
             );
+            $categoryName = trim((string) (
+                $snapshot['category']
+                ?? optional(optional($line->product)->category)->name
+                ?? ''
+            ));
+            $purchaseUom = trim((string) (
+                $snapshot['unit']
+                ?? optional(optional($line->product)->unit)->short_name
+                ?? ($input['purchase_uom'] ?? '')
+            ));
 
             $qty = (float) ($input['qty'] ?? 0);
             $unitCost = (float) ($breakdown['unit_cost'] ?? 0);
@@ -48,7 +58,8 @@ class QuoteDisplayPresenter
                 'itemName' => $itemName,
                 'itemCode' => $itemCode,
                 'itemCodeLabel' => __('product.sku'),
-                'purchaseUom' => (string) ($input['purchase_uom'] ?? '-'),
+                'categoryName' => $categoryName,
+                'purchaseUom' => $purchaseUom,
                 'quantity' => $qty,
                 'quantityPublicDisplay' => $this->formatTrimmedNumber($qty, $quantityPrecision),
                 'unitCost' => $unitCost,

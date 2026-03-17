@@ -18,8 +18,6 @@ class StoreProductBudgetQuoteRequest extends FormRequest
         $business_id = (int) $this->session()->get('user.business_id');
         $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
         $allowedCurrencies = array_keys((array) ($costingOptions['currency'] ?? []));
-        $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
-        $allowedPurchaseUom = array_values((array) ($costingOptions['purchase_uom'] ?? []));
 
         return [
             'contact_id' => [
@@ -39,15 +37,37 @@ class StoreProductBudgetQuoteRequest extends FormRequest
             ],
             'customer_email' => 'nullable|email|max:255',
             'customer_name' => 'nullable|string|max:255',
+            'shipment_port' => 'nullable|string|max:255',
             'qty' => 'required|numeric|gt:0',
-            'purchase_uom' => ['required', 'string', 'max:20', Rule::in($allowedPurchaseUom)],
+            'purchase_uom' => 'nullable|string|max:20',
             'base_mill_price' => 'nullable|numeric|min:0',
             'test_cost' => 'nullable|numeric|min:0',
             'surcharge' => 'nullable|numeric|min:0',
             'finish_uplift_pct' => 'nullable|numeric|between:0,1',
             'waste_pct' => 'nullable|numeric|between:0,1',
             'currency' => ['required', 'string', 'max:20', Rule::in($allowedCurrencies)],
-            'incoterm' => ['required', 'string', 'max:50', Rule::in($allowedIncoterms)],
+            'incoterm' => 'nullable|string|max:50',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $business_id = (int) $this->session()->get('user.business_id');
+            $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
+            $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
+            $incoterm = trim((string) ($this->input('incoterm') ?? ''));
+            $shipmentPort = trim((string) ($this->input('shipment_port') ?? ''));
+            $isLocalDelivery = $shipmentPort === '';
+
+            if (! $isLocalDelivery && $incoterm === '') {
+                $validator->errors()->add('incoterm', __('validation.required', ['attribute' => __('product.incoterm')]));
+                return;
+            }
+
+            if ($incoterm !== '' && ! in_array($incoterm, $allowedIncoterms, true)) {
+                $validator->errors()->add('incoterm', __('product.quote_dropdown_invalid', ['field' => 'incoterm']));
+            }
+        });
     }
 }

@@ -1,7 +1,12 @@
 <div class="modal-dialog" role="document">
   <div class="modal-content">
     <div class="modal-header">
-      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')">
+    <i class="ki-duotone ki-cross fs-2x">
+        <span class="path1"></span>
+        <span class="path2"></span>
+    </i>
+</button>
       <h4 class="modal-title"><b>@lang('product.product_name'):</b> {{$purchase_line->name}}, <b>@lang('purchase.ref_no'):</b> {{$purchase_line->ref_no}}</h4>
     </div>
     <form id="stock_exp_modal_form" method="post" action="{{route('updateStockExpiryReport')}}">
@@ -19,7 +24,7 @@
     </div>
     <div class="modal-footer">
       <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white">@lang('messages.update')</button>
-      <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">@lang('messages.cancel')</button>
+      <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang('messages.cancel')</button>
     </div>
     </form>
   </div><!-- /.modal-content -->

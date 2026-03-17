@@ -94,9 +94,10 @@
             <div class="modal-footer"> <!-- Footer Section -->
                 <div class="col-md-12">
                     <button class="tw-dw-btn tw-dw-btn-primary tw-text-white"> {{ __('messages.save') }} </button>
-                    <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">Close</button>
                 </div>
             </div>
             {!! Form::close() !!}
         </div>
     </div>
+

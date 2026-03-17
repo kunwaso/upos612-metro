@@ -45,7 +45,7 @@ class ProductCostingUtil
     public function buildLinePayload(Product $product, array $input): array
     {
         $fallbackBasePrice = $this->resolveFallbackPrice($product);
-        $normalized = $this->normalizeInput((int) $product->business_id, $input, $fallbackBasePrice);
+        $normalized = $this->normalizeInput((int) $product->business_id, $input, $fallbackBasePrice, $product);
         $breakdown = $this->calculateBreakdown($normalized);
 
         return [
@@ -56,7 +56,7 @@ class ProductCostingUtil
         ];
     }
 
-    public function normalizeInput(int $business_id, array $input, float $fallbackBasePrice = 0.0): array
+    public function normalizeInput(int $business_id, array $input, float $fallbackBasePrice = 0.0, ?Product $product = null): array
     {
         $options = $this->getDropdownOptions($business_id);
 
@@ -65,13 +65,14 @@ class ProductCostingUtil
             throw new \InvalidArgumentException(__('product.quote_qty_invalid'));
         }
 
-        $purchaseUom = trim((string) ($input['purchase_uom'] ?? ''));
+        $purchaseUom = trim((string) optional(optional($product)->unit)->short_name);
         $currency = trim((string) ($input['currency'] ?? ''));
         $incoterm = trim((string) ($input['incoterm'] ?? ''));
 
-        $this->assertValueInConfiguredOptions('purchase_uom', $purchaseUom, (array) ($options['purchase_uom'] ?? []));
         $this->assertValueInConfiguredOptions('currency', $currency, (array) ($options['currency'] ?? []));
-        $this->assertValueInConfiguredOptions('incoterm', $incoterm, (array) ($options['incoterm'] ?? []));
+        if ($incoterm !== '') {
+            $this->assertValueInConfiguredOptions('incoterm', $incoterm, (array) ($options['incoterm'] ?? []));
+        }
 
         $baseMillPrice = $input['base_mill_price'] ?? $input['base_price'] ?? $fallbackBasePrice;
         $baseMillPrice = (float) ($baseMillPrice ?? 0);
@@ -79,26 +80,14 @@ class ProductCostingUtil
             throw new \InvalidArgumentException(__('product.quote_base_mill_price_invalid'));
         }
 
-        $testCost = (float) ($input['test_cost'] ?? 0);
-        $surcharge = (float) ($input['surcharge'] ?? 0);
-        $finishUpliftPct = (float) ($input['finish_uplift_pct'] ?? 0);
-        $wastePct = (float) ($input['waste_pct'] ?? 0);
-
-        if ($testCost < 0 || $surcharge < 0) {
-            throw new \InvalidArgumentException(__('product.quote_adders_invalid'));
-        }
-
-        $this->assertPercentRange('finish_uplift_pct', $finishUpliftPct);
-        $this->assertPercentRange('waste_pct', $wastePct);
-
         return [
             'qty' => round($qty, 4),
             'purchase_uom' => $purchaseUom,
             'base_mill_price' => round($baseMillPrice, 4),
-            'test_cost' => round($testCost, 4),
-            'surcharge' => round($surcharge, 4),
-            'finish_uplift_pct' => round($finishUpliftPct, 6),
-            'waste_pct' => round($wastePct, 6),
+            'test_cost' => 0.0,
+            'surcharge' => 0.0,
+            'finish_uplift_pct' => 0.0,
+            'waste_pct' => 0.0,
             'currency' => $currency,
             'incoterm' => $incoterm,
         ];
@@ -108,14 +97,11 @@ class ProductCostingUtil
     {
         $baseMillPrice = (float) ($normalizedInput['base_mill_price'] ?? 0);
         $qty = (float) ($normalizedInput['qty'] ?? 0);
-        $testCost = (float) ($normalizedInput['test_cost'] ?? 0);
-        $surcharge = (float) ($normalizedInput['surcharge'] ?? 0);
-        $finishUpliftPct = (float) ($normalizedInput['finish_uplift_pct'] ?? 0);
-        $wastePct = (float) ($normalizedInput['waste_pct'] ?? 0);
-
-        $finishUpliftAmount = $baseMillPrice * $finishUpliftPct;
-        $wasteAmount = $baseMillPrice * $wastePct;
-        $unitCost = $baseMillPrice + $testCost + $surcharge + $finishUpliftAmount + $wasteAmount;
+        $testCost = 0.0;
+        $surcharge = 0.0;
+        $finishUpliftAmount = 0.0;
+        $wasteAmount = 0.0;
+        $unitCost = $baseMillPrice;
         $totalCost = $unitCost * $qty;
 
         return [
@@ -158,6 +144,8 @@ class ProductCostingUtil
             'sku' => (string) ($product->sku ?? ''),
             'name' => (string) ($product->name ?? ''),
             'type' => (string) ($product->type ?? ''),
+            'category_id' => (int) ($product->category_id ?? 0),
+            'category' => (string) (optional($product->category)->name ?? ''),
             'unit_id' => (int) ($product->unit_id ?? 0),
             'unit' => (string) (optional($product->unit)->short_name ?? ''),
             'selling_price' => (float) ($product->selling_price ?? 0),

@@ -12,7 +12,7 @@ return [
     ],
 
     'quote_costing_options' => [
-        'incoterm' => ['FOB', 'CIF'],
+        'incoterm' => ['FOB', 'CIF', 'LOCAL'],
         'purchase_uom' => ['pcs', 'yds'],
     ],
 

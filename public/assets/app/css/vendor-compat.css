@@ -592,3 +592,185 @@
   background: rgba(0, 0, 0, 0.2);
   z-index: 1049;
 }
+
+/* -------------------------------------------------------------------------
+   App button classes (from app.css) — Metronic 8.3.3 aligned
+   ------------------------------------------------------------------------- */
+.btn-big {
+  padding: 0.65rem 1.875rem;
+  font-size: 1.125rem;
+  line-height: 1.3333333;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  font-weight: 500;
+}
+
+.btn-app > .fas,
+.btn-app > .fab {
+  font-size: 1.25rem;
+  display: block;
+}
+
+.btn-login {
+  padding: 0.375rem 3.25rem !important;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  font-weight: 500;
+}
+
+.input-number .btn-default {
+  background-color: var(--bs-body-bg, #fff);
+  padding: 0.375rem 0.5625rem;
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  color: var(--bs-body-color, #071437);
+}
+
+ul.dt-button-collection {
+  background-color: var(--bs-info, #00c0ef);
+  border-radius: var(--bs-border-radius, 0.95rem);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+}
+
+/* -------------------------------------------------------------------------
+   App component/utility classes (from app.css) — Metronic 8.3.3 aligned
+   ------------------------------------------------------------------------- */
+.bg-danger {
+  background-color: var(--bs-danger-bg-subtle, #fed4de) !important;
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.bg-info {
+  background-color: var(--bs-info, #00c0ef) !important;
+  color: var(--bs-body-bg, #fff);
+}
+
+.bg-light-gray,
+.bg-lightgray {
+  background-color: var(--bs-secondary-bg, #f1f1f4) !important;
+}
+
+.bg-transparent {
+  background-color: transparent !important;
+}
+
+.discount-badge {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.625rem;
+  font-size: 1.125rem;
+  padding: 0.4375rem;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  font-weight: 500;
+}
+
+.discount-badge-small {
+  position: absolute;
+  top: -0.125rem;
+  left: 0.625rem;
+  font-size: 0.75rem;
+  padding: 0.375rem;
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  font-weight: 500;
+}
+
+.img-thumbnail {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  background-color: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dbdfe9);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  transition: border-color 0.2s ease-in-out;
+  padding: 0.25rem;
+  margin: 0.1875rem;
+  text-align: center;
+}
+
+.img-thumbnail > .badge {
+  position: absolute;
+  top: -0.3125rem;
+  right: -0.4375rem;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--bs-border-radius-pill, 50rem);
+}
+
+.div-overlay {
+  cursor: not-allowed;
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.5;
+}
+
+.table-transparent,
+.table-transparent th {
+  background-color: transparent !important;
+  color: var(--bs-body-color, #071437) !important;
+}
+
+.error {
+  color: var(--bs-danger, #f8285a) !important;
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+.text-white {
+  color: var(--bs-body-bg, #fff) !important;
+}
+
+.product-info-table td,
+.product-info-table th {
+  font-size: 0.75rem;
+}
+
+.active-cell {
+  border: 2px dotted var(--bs-primary, #1b84ff) !important;
+}
+
+.option-div {
+  padding: 0.9375rem;
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  color: var(--bs-body-color, #071437);
+  border: 1px solid var(--bs-border-color, #dbdfe9);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.option-div:hover {
+  border-color: var(--bs-primary, #1b84ff);
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+}
+
+.option-div-group .option-div:hover {
+  border-color: var(--bs-border-color-translucent, rgba(0, 0, 0, 0.175));
+  background-color: var(--bs-tertiary-bg, #f9f9f9);
+}
+
+.option-div-group .active .option-div,
+.option-div-group .option-div:focus {
+  border-color: var(--bs-primary, #1b84ff);
+  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+  color: var(--bs-primary-text-emphasis, #0b3566);
+}
+
+.option-div-group .icon {
+  color: var(--bs-danger, #f8285a);
+  display: none;
+}
+
+.option-div-group .active .icon {
+  display: block;
+}
+
+.option-div input[type="radio"] {
+  display: none;
+}
