@@ -38,7 +38,9 @@ Pick one lane first:
 |---|---|---|
 | `tiny` | Single file or tightly scoped change | restate -> inspect -> edit -> verify |
 | `explain` | User wants understanding only | search -> read -> answer |
-| `analyze` | Audit module, clone, or understand codebase | grep first -> targeted/parallel reads -> full read only when editing |
+| `analyze` | Audit module, clone, or understand codebase | project_map/filesystem -> grep first -> targeted/parallel reads -> full read only when editing |
+| `dependency-eval` | Evaluate a GitHub repo, library, or dependency before adoption | project_map -> composer/manifests -> fetch upstream docs -> compare -> adopt/adapt/reject |
+| `external-adapt` | Adapt a pattern or example from an external repo | project_map -> closest local example -> fetch upstream docs -> map into route/Form Request/Util/controller/view/module |
 | `investigate` | "doesn't work", "stops after X" | grep -> read -> compare bind vs DOM update |
 | `review` | User asks for review/audit | findings first -> evidence -> brief summary |
 | `implement` | Default for fix/feature | inspect -> plan -> edit -> verify |
@@ -49,11 +51,24 @@ Pick one lane first:
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area -> apply mitigations/fixes |
 | `full-autofix` | "run all autofixes", "check project", "health check", "autofix everything" | log-scan -> lint-fix -> optional tenant-audit / known-issues-fix |
 | `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome -> interactive `audit_web` -> read persisted report -> optional Chrome DevTools escalation -> fix -> Playwright + `audit_web` verify |
+| `product-copilot-eval` | User asks about an in-app assistant, guided UI helper, or ERP copilot | read product-copilot patterns -> read security/ui/Aichat docs -> define safe first use case |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade -> checklist (focus, contrast, structure, assets) -> report (and fix within Metronic if implement mode) |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components -> improve hierarchy, spacing, copy within Metronic only; no new classes |
 | `design-critique` | User asks for UX/review of a screen or flow | read view -> assess clarity, hierarchy, empty/error states -> short critique + Metronic-safe suggestions |
 
 Use full `AGENTS.md` process for multi-file or higher-risk work.
+
+## 3.1) Skill-First Flow
+
+For anything larger than `tiny`, use this compact sequence:
+
+1. Clarify intent and pick the lane.
+2. Design in chunks instead of guessing the whole solution at once.
+3. Write a verification-aware plan.
+4. Execute in bounded tasks with clear file responsibility.
+5. Review with evidence before finishing.
+
+If a matching helper already exists in `.cursor/skills/` or `.cursor/prompts/`, use it.
 
 ---
 
@@ -93,14 +108,17 @@ Optional:
 
 Session-start check:
 
-1. Run `php scripts/check-mcp-health.php` from repo root after installing MCP deps, warming caches, or changing local MCP config.
-2. Treat `semantic_code_search` warnings as non-blocking unless the task needs behavior-level discovery.
+1. Keep exact startup commands centralized in `mcp/CODEX-SETUP.md`.
+2. Run `php scripts/check-mcp-health.php` from repo root after installing MCP deps, warming caches, or changing local MCP config.
+3. For deep or external work, start with: `project_map` -> `resource://composer` -> `index_status` after cache warm-up.
+4. Treat `semantic_code_search` warnings as non-blocking unless the task needs behavior-level discovery.
 
 If a preferred tool is available but unhealthy/degraded (for example timeout, empty content, metadata-only responses, stale index, repeated failure):
 
 1. Use the next fastest repo-aware tool for that step.
 2. Keep the same split: grep for exact, semantic for meaning, read tool for content.
-3. Note the fallback briefly when it affects confidence or speed.
+3. Do not loop on the failing tool; fall back immediately.
+4. Note the fallback briefly when it affects confidence or speed.
 
 ---
 
@@ -116,9 +134,18 @@ Read only the domain doc(s) you touch:
 | Auth/security/permissions | `ai/security-and-auth.md` |
 | Existing bug-prone areas | `ai/known-issues.md` |
 | MCP/tool choice | `ai/agent-tools-and-mcp.md` |
+| External repo / GitHub / trending evaluation | `ai/external-adoption.md` |
+| Deep research / bounded delegation | `ai/research-and-delegation.md` |
+| In-app agent / product copilot evaluation | `ai/product-copilot-patterns.md` + `Modules/Aichat/README.md` |
 | Browser audit workflow | `ai/browser-audit-workflow.md` |
 | Workflow tuning | `ai/agent-improvement.md` |
 | ProjectX <-> root integration | `ai/projectx-integration.md` |
+
+Read order for new lanes:
+
+1. `dependency-eval`: `ai/external-adoption.md` -> `ai/agent-tools-and-mcp.md` -> relevant domain docs
+2. `external-adapt`: `ai/research-and-delegation.md` -> `ai/external-adoption.md` -> closest local feature/docs
+3. `product-copilot-eval`: `ai/product-copilot-patterns.md` -> `ai/security-and-auth.md` -> `ai/ui-components.md` -> `Modules/Aichat/README.md`
 
 ---
 

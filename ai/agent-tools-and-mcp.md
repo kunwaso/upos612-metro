@@ -62,6 +62,18 @@ Availability is not enough; do a quick health check for each server you depend o
 
 Treat a tool as degraded if it repeatedly times out, returns empty/partial payloads, loops on stale index errors, or returns metadata without the expected content body.
 
+### 0.3a Deep/external task startup macro
+
+For **deep research**, **GitHub/trending intake**, or **external adaptation** tasks, use this startup order once the required MCPs are available:
+
+1. Call `warm_cache` if `read_file_cache` is available and the session is cold.
+2. Read `resource://project/map` (or use `project_map`) to confirm the live checkout shape before naming landing files or modules.
+3. Read `resource://composer` to understand the current dependency surface before suggesting new packages.
+4. Call `index_status` only if the task actually needs behavior-level discovery beyond exact search.
+5. Only then branch into web fetch/search for upstream README, license, manifests, examples, and release notes.
+
+This keeps external evaluation grounded in local repo truth instead of drifting toward generic advice.
+
 ### 0.4 Which MCPs use a disk cache or build step?
 
 **semantic_code_search** and **read_file_cache** both support a disk-backed cache and a build/pre-warm step:
@@ -186,6 +198,18 @@ For tasks like **auditing a module**, **cloning/porting code**, or **understandi
 4. **No shell reads** — Use the platform read tool (or `read_file_cache`) with offset/limit instead of `Get-Content` or shell line-range hacks.
 
 This keeps analysis fast: **grep → targeted/parallel reads → full read only when editing**.
+
+### 2.9 External repo intake and deep research
+
+Use this workflow when evaluating a GitHub repository, trending library, or external example:
+
+1. **Confirm local truth first** — read `project_map`, `resource://composer`, and any relevant module manifest before discussing landing paths.
+2. **Classify the upstream source** — dependency, pattern-only, reference-only, or product-copilot inspiration.
+3. **Fetch upstream facts** — README, license, package manifests, release cadence, and security notes.
+4. **Compare to repo conventions** — tenant scope, permissions, Form Requests, Utils, module boundaries, Metronic UI, asset/build flow, and MCP/tooling expectations.
+5. **Finish with a decision** — `adopt`, `adapt`, or `reject`, plus landing files, verification, and rollback notes.
+
+If exact or semantic search becomes degraded during this workflow, fall back immediately instead of retrying in a loop; external-repo work already spans local and web context, so repeated tool retries waste time fastest here.
 
 ---
 

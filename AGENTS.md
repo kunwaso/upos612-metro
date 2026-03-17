@@ -1,6 +1,6 @@
 # AGENTS.md — AI Coding Guide for This Project
 
-**Last verified:** 2026-03-06  
+**Last verified:** 2026-03-17
 **Owner:** UPOS Engineering (AI Workflow Maintainers)
 
 This file is the complete policy reference for any AI coding agent working on this codebase.
@@ -8,6 +8,7 @@ For routine work, start with `AGENTS-FAST.md`, then use this file for full polic
 Before writing code, read the relevant domain document in `ai/`.
 
 Process lives here (design → plan → execute, TDD, verification, five checks). Domain reference (UI, DB, auth, conventions, known issues) lives in `ai/`. Fast execution defaults live in `AGENTS-FAST.md`.
+Repo-local workflow helpers live in `.cursor/skills/` and `.cursor/prompts/`; use them when a task matches instead of re-deriving the same workflow from scratch.
 
 ---
 
@@ -47,7 +48,9 @@ Use the first matching lane before doing broader workflow:
 |---|---|---|---|
 | `tiny` | Single-file or tightly scoped request | restate goal → inspect target → edit → verify | Prefer this lane for low-risk, bounded changes. |
 | `explain` | User wants understanding, not changes | grep/semantic search → read → answer | No code edits. |
-| `analyze` | Audit module, clone, or understand codebase | grep first → targeted/parallel reads → full read only when editing | See ai/agent-tools-and-mcp.md §2.8. |
+| `analyze` | Audit module, clone, or understand codebase | project_map/filesystem → grep first → targeted/parallel reads → full read only when editing | See ai/agent-tools-and-mcp.md §2.8. |
+| `dependency-eval` | Evaluate a GitHub repo, package, or dependency before adoption | project_map/filesystem → `resource://composer`/manifests → fetch upstream docs → compare to repo conventions → recommend adopt/adapt/reject | Use for external code that could change repo dependencies or architecture. |
+| `external-adapt` | Adapt a pattern or example from an external repo into this codebase | project_map/filesystem → grep for closest local example → fetch upstream docs/examples → map to route/Form Request/Util/controller/view/module → plan or implement | Prefer adapting the minimum useful pattern; do not copy upstream structure wholesale. |
 | `investigate` | Something is broken or unclear | grep → read → compare render/update flow → answer or fix | Use 0.4a/0.4b for “stops working” bugs. |
 | `review` | User asks for a review or audit | grep/read changed area → identify findings → verify evidence | Findings first, summary second. |
 | `plan` | User wants design or implementation plan | inspect repo truth → write numbered plan → list verification | Do not invent missing repo facts. |
@@ -59,11 +62,24 @@ Use the first matching lane before doing broader workflow:
 | `tenant-audit` | User asks to audit/fix tenant security, missing business_id, or route auth | grep checklist → fix or report each finding | See 0.4h. Use implement mode. |
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area → apply mitigations/fixes | See 0.4i. Use implement mode. |
 | `full-autofix` | User says "run all autofixes", "check project", "health check", or "autofix everything" | log-scan → lint-fix → optional tenant-audit / known-issues-fix | See 0.4j. Use implement mode. |
+| `product-copilot-eval` | Evaluate adding an in-app assistant, guided UI helper, or ERP copilot | read ai/product-copilot-patterns.md → read security/ui/Aichat docs → define approval boundaries, safe first use case, and rollout scope | Treat page-agent-like ideas as product patterns, not default coding-agent dependencies. |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade → checklist (focus, contrast, structure, assets) → report (and fix within Metronic if implement mode) | Scope: Metronic only; no theme change. |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components → improve hierarchy, spacing, copy within Metronic only; no new classes | Scope: Metronic only. |
 | `design-critique` | User asks for UX review of a screen or flow | read view → assess clarity, hierarchy, empty/error states → short critique + Metronic-safe suggestions | Findings first; no theme change. |
 
 For trivial single-file or tightly scoped work, use the `tiny` lane with a **2–3 step micro-plan**: restate goal → inspect the file/area → edit and verify. Use the full long-form plan for multi-file or higher-risk work.
+
+### 0.1c Skill-First Workflow
+
+For non-trivial work, prefer this skill-first sequence before you start writing code:
+
+1. **Clarify intent** — restate the task in repo terms and choose the correct lane.
+2. **Design in chunks** — break the work into small decisions the user or repo truth can validate.
+3. **Plan with verification** — write steps that each end with lints, tests, or a smoke check.
+4. **Execute in bounded tasks** — keep file lists and responsibility clear; prefer repo-local skills or prompts when they already match the job.
+5. **Review before finish** — check caller impact, confirm evidence, and close with the five checks in 0.3.
+
+When a matching helper exists under `.cursor/skills/` or `.cursor/prompts/`, use it instead of improvising a brand-new workflow.
 
 ### 0.2 How to think and solve coding (six steps)
 
@@ -614,6 +630,9 @@ ai/                           ← AI reference documents (this folder)
 ├── known-issues.md           ← Bugs, debt, traps
 ├── agent-improvement.md      ← Workflow improvement (reasoning, preferences; what’s in-repo vs training)
 ├── agent-tools-and-mcp.md    ← Tool choice, MCP usage, and speed guidance for agents
+├── external-adoption.md      ← GitHub/trending intake and safe adaptation checklist
+├── research-and-delegation.md ← Bounded deep research and synthesis guidance
+├── product-copilot-patterns.md ← In-app assistant and product copilot evaluation
 └── projectx-integration.md   ← ProjectX hooks, view composers, root compatibility
 
 mcp/                          ← MCP servers and related docs
@@ -625,7 +644,11 @@ mcp/                          ← MCP servers and related docs
 .cursor/rules/                 ← Cursor rule files (*.mdc); applied by editor when relevant
 ├── laravel-coding-constitution.mdc   ← Blade/view-data separation, validation, testing
 ├── blade-refactor-clean-architecture.mdc
+├── external-adaptation-safety.mdc    ← Safe external adaptation and dependency checks
 └── (other project-specific rules)
+
+.cursor/skills/                ← Repo-local reusable workflow skills
+.cursor/prompts/               ← Repo-local prompt templates for repeatable tasks
 ```
 
 ---
@@ -635,6 +658,8 @@ mcp/                          ← MCP servers and related docs
 **What `ai/` is for:** `ai/` holds **domain reference** — project-specific knowledge the agent must read before writing code in that domain. It does **not** define the process (that lives in AGENTS.md: six steps, design → plan → execute, five checks). Use `ai/` to answer “how does this project do X?” and “what patterns and traps exist here?” so the agent builds in line with the codebase.
 
 Fast path: for routine tasks, start with `AGENTS-FAST.md`, then read only the domain doc(s) below for the area you are touching.
+
+Repo-local helpers matter too: `.cursor/skills/` holds reusable workflow instructions and `.cursor/prompts/` holds repeatable request templates. Treat them as versioned project guidance, not as optional personal shortcuts.
 
 Always read the relevant document before writing code in that domain:
 
@@ -647,8 +672,19 @@ Always read the relevant document before writing code in that domain:
 | Working on any existing file or fixing bugs | `ai/known-issues.md` |
 | Improving agent workflow (reasoning, preferences, minimize tool calls; what works in-repo vs training-only) | `ai/agent-improvement.md` |
 | Agent tools, MCP, or speeding up answers and implementation | `ai/agent-tools-and-mcp.md` |
+| External repo / GitHub / trending evaluation | `ai/external-adoption.md` |
+| Deep research, bounded delegation, or long investigations | `ai/research-and-delegation.md` |
+| In-app agent / product copilot evaluation | `ai/product-copilot-patterns.md` + `Modules/Aichat/README.md` |
 | Formatting (currency, quantity, numbers) in root or modules | `ai/laravel-conventions.md` §5.3 and §6.4; modules follow the same session-driven rules via `ModuleUtil` |
 | ProjectX or any module extending core (root) via hooks/views | [Section 10.6](#106-projectx-integration-with-root-core) and `ai/projectx-integration.md` |
+
+Current repo-local helpers:
+
+- `.cursor/skills/cursor-tool-behavior/SKILL.md` — search/read/tool selection
+- `.cursor/skills/senior-laravel-developer/SKILL.md` — architecture, review, performance, security
+- `.cursor/skills/external-adaptation/SKILL.md` — adapting external repos safely
+- `.cursor/skills/deep-research/SKILL.md` — bounded parallel research and synthesis
+- `.cursor/prompts/evaluate-github-repo.md` — structured upstream intake prompt
 
 When you discover a new trap or fix something already documented in `ai/known-issues.md`, update that file (see "When to update this document" at the top of `ai/known-issues.md`).
 
@@ -734,6 +770,8 @@ Run through this checklist:
 - [ ] If a documented known issue was fixed or a new trap was discovered, `ai/known-issues.md` was updated (see that file for how)
 - [ ] Asset paths and Metronic reference followed (Section 10)
 - [ ] Every new or changed persisted field (including settings/form fields) has a migration that adds or alters the column; migration has been run (or documented to run)
+- [ ] External repo or GitHub intake ended with an explicit `adopt`, `adapt`, or `reject` decision using `ai/external-adoption.md`
+- [ ] Product copilot or in-app agent work checked human approval, tenant boundaries, and PII handling using `ai/product-copilot-patterns.md`
 
 ### 9.1 Minimal Test Matrix (Run Based on Change Type)
 
@@ -746,6 +784,8 @@ Run through this checklist:
 | Multi-tenant data access | Confirm all tenant queries include `where('business_id', $business_id)` and cross-business access fails |
 | Module wiring/autoload | `composer dump-autoload` + `php artisan module:enable ModuleName` (if needed) + route smoke test |
 | Caches/permissions side effects | Run `php artisan permission:cache-reset` when roles/permissions are touched |
+| External dependency or upstream pattern adoption | Compatibility review against `resource://composer`, module manifests, license, maintenance, security, landing path, and rollback note |
+| In-app product copilot / assistant concept | Confirm human approval boundary, tenant isolation, auth, PII handling, audit trail, and one-module rollout scope |
 
 If automated tests are missing in the touched area, document the manual checks performed in the PR/task notes.
 
