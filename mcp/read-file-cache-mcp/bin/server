@@ -1,0 +1,168 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Mcp\Server;
+use Mcp\Server\Transport\StdioTransport;
+use ReadFileCacheMcp\DiskCache;
+use ReadFileCacheMcp\FileCache;
+use ReadFileCacheMcp\FileDiscovery;
+use ReadFileCacheMcp\PathGuard;
+use ReadFileCacheMcp\ReadFileTool;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '0');
+
+$serverRoot = realpath(__DIR__.'/..');
+$workspaceRoot = getenv('MCP_READ_FILE_WORKSPACE_ROOT') ?: realpath(__DIR__.'/../../..');
+
+if ($serverRoot === false || $workspaceRoot === false) {
+    fwrite(STDERR, "Unable to resolve server or workspace root.\n");
+    exit(1);
+}
+
+$cacheRoot = getenv('MCP_READ_FILE_CACHE_ROOT');
+if ($cacheRoot === false || $cacheRoot === '') {
+    $cacheRoot = $workspaceRoot.\DIRECTORY_SEPARATOR.'.cache'.\DIRECTORY_SEPARATOR.'read-file-cache-mcp';
+}
+
+$autoload = $serverRoot.'/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Missing vendor/autoload.php. Run composer install in mcp/read-file-cache-mcp.\n");
+    exit(1);
+}
+
+require_once $autoload;
+
+try {
+    $readPositiveInt = static function (string $name, int $default): int {
+        $raw = getenv($name);
+        if ($raw === false || $raw === '') {
+            return $default;
+        }
+
+        $value = filter_var($raw, FILTER_VALIDATE_INT);
+        if ($value === false || $value < 1) {
+            throw new RuntimeException(sprintf('%s must be a positive integer.', $name));
+        }
+
+        return $value;
+    };
+
+    $defaultLimit = $readPositiveInt('MCP_READ_FILE_DEFAULT_LIMIT', 200);
+    $maxLimit = $readPositiveInt('MCP_READ_FILE_MAX_LIMIT', 1000);
+    $maxResponseBytes = $readPositiveInt('MCP_READ_FILE_MAX_RESPONSE_BYTES', 262144);
+    $maxFileBytes = $readPositiveInt('MCP_READ_FILE_MAX_FILE_BYTES', 2097152);
+    $maxCacheFiles = $readPositiveInt('MCP_READ_FILE_MAX_CACHE_FILES', 128);
+    $maxCacheBytes = $readPositiveInt('MCP_READ_FILE_MAX_CACHE_BYTES', 33554432);
+    $maxDiskCacheFiles = $readPositiveInt('MCP_READ_FILE_MAX_DISK_CACHE_FILES', 10000);
+    $maxDiskCacheBytes = $readPositiveInt('MCP_READ_FILE_MAX_DISK_CACHE_BYTES', 134217728);
+
+    if ($defaultLimit > $maxLimit) {
+        throw new RuntimeException('MCP_READ_FILE_DEFAULT_LIMIT must be less than or equal to MCP_READ_FILE_MAX_LIMIT.');
+    }
+
+    $pathGuard = new PathGuard($workspaceRoot);
+    $diskCache = new DiskCache($cacheRoot, $maxFileBytes, $maxDiskCacheFiles, $maxDiskCacheBytes);
+    $cache = new FileCache($maxFileBytes, $maxCacheFiles, $maxCacheBytes, $diskCache);
+    $fileDiscovery = new FileDiscovery($pathGuard);
+    $tool = new ReadFileTool($pathGuard, $cache, $defaultLimit, $maxLimit, $maxResponseBytes, $fileDiscovery);
+
+    $builder = Server::builder()
+        ->setServerInfo('read_file_cache', '1.0.0', 'Standalone MCP server for cached workspace file reads.')
+        ->setInstructions('Use read_file for workspace text-file reads and line slices. Omitted limit uses the configured default limit, not EOF.')
+        ->setPaginationLimit(50);
+
+    $string = static fn (): array => ['type' => 'string'];
+    $integer = static fn (): array => ['type' => 'integer'];
+    $boolean = static fn (): array => ['type' => 'boolean'];
+    $integerOrNull = static fn (): array => [
+        'anyOf' => [
+            ['type' => 'integer'],
+            ['type' => 'null'],
+        ],
+    ];
+
+    $builder->addTool($tool->read_file(...), 'read_file', 'Read a safe, line-based slice from a workspace text file.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'path' => [
+                'type' => 'string',
+                'description' => 'Relative path from workspace root, or absolute path inside workspace.',
+            ],
+            'offset' => [
+                'type' => 'integer',
+                'minimum' => 1,
+                'description' => '1-based start line. Defaults to 1.',
+            ],
+            'limit' => [
+                'type' => 'integer',
+                'minimum' => 1,
+                'description' => 'Number of lines to return. Defaults to the configured default limit.',
+            ],
+        ],
+        'required' => ['path'],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'path' => $string(),
+            'requested_offset' => $integer(),
+            'requested_limit' => $integer(),
+            'start_line' => $integer(),
+            'end_line' => $integer(),
+            'total_lines' => $integer(),
+            'eof' => $boolean(),
+            'truncated' => $boolean(),
+            'next_offset' => $integerOrNull(),
+            'cache_hit' => $boolean(),
+        ],
+        'required' => [
+            'path',
+            'requested_offset',
+            'requested_limit',
+            'start_line',
+            'end_line',
+            'total_lines',
+            'eof',
+            'truncated',
+            'next_offset',
+            'cache_hit',
+        ],
+        'additionalProperties' => false,
+    ]);
+
+    $builder->addTool($tool->warm_cache(...), 'warm_cache', 'Pre-build the persistent disk cache by reading allowed workspace files. Call once so subsequent read_file calls are faster.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'path' => [
+                'type' => 'string',
+                'description' => 'Optional subdirectory (relative to workspace) to warm. Omit to warm from workspace root.',
+            ],
+            'max_files' => [
+                'type' => 'integer',
+                'minimum' => 1,
+                'description' => 'Maximum number of files to warm. Default 5000, max 50000.',
+            ],
+        ],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'warmed' => $integer(),
+            'skipped' => $integer(),
+            'errors' => $integer(),
+            'paths_scanned' => $integer(),
+        ],
+        'required' => ['warmed', 'skipped', 'errors', 'paths_scanned'],
+        'additionalProperties' => false,
+    ]);
+
+    $server = $builder->build();
+    $transport = new StdioTransport(STDIN, STDOUT);
+    $server->run($transport);
+} catch (Throwable $exception) {
+    fwrite(STDERR, sprintf("MCP server fatal error: %s\n", $exception->getMessage()));
+    exit(1);
+}

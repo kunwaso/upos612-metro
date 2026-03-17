@@ -1,0 +1,184 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Mcp\Server;
+use Mcp\Server\Transport\StdioTransport;
+use SemanticCodeSearchMcp\Embeddings\DeterministicEmbedder;
+use SemanticCodeSearchMcp\Embeddings\Embedder;
+use SemanticCodeSearchMcp\Embeddings\OllamaEmbedder;
+use SemanticCodeSearchMcp\Index\Chunker;
+use SemanticCodeSearchMcp\Index\FileDiscovery;
+use SemanticCodeSearchMcp\Index\Indexer;
+use SemanticCodeSearchMcp\Index\IndexRepository;
+use SemanticCodeSearchMcp\PathGuard;
+use SemanticCodeSearchMcp\SemanticSearchTool;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '0');
+
+$serverRoot = realpath(__DIR__.'/..');
+$workspaceRoot = getenv('MCP_SEMANTIC_WORKSPACE_ROOT') ?: realpath(__DIR__.'/../../..');
+$indexRoot = getenv('MCP_SEMANTIC_INDEX_ROOT') ?: realpath(__DIR__.'/../../..').'/.cache/semantic-code-search-mcp';
+
+if ($serverRoot === false || $workspaceRoot === false) {
+    fwrite(STDERR, "Unable to resolve server or workspace root.\n");
+    exit(1);
+}
+
+$autoload = $serverRoot.'/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Missing vendor/autoload.php. Run composer install in mcp/semantic-code-search-mcp.\n");
+    exit(1);
+}
+
+require_once $autoload;
+
+try {
+    $readPositiveInt = static function (string $name, int $default): int {
+        $raw = getenv($name);
+        if ($raw === false || $raw === '') {
+            return $default;
+        }
+
+        $value = filter_var($raw, FILTER_VALIDATE_INT);
+        if ($value === false || $value < 1) {
+            throw new RuntimeException(sprintf('%s must be a positive integer.', $name));
+        }
+
+        return $value;
+    };
+
+    $maxFileBytes = $readPositiveInt('MCP_SEMANTIC_MAX_FILE_BYTES', 2097152);
+    $chunkLines = $readPositiveInt('MCP_SEMANTIC_CHUNK_LINES', 60);
+    $chunkOverlap = $readPositiveInt('MCP_SEMANTIC_CHUNK_OVERLAP', 15);
+    $ollamaHost = getenv('MCP_SEMANTIC_OLLAMA_HOST') ?: 'http://127.0.0.1:11434';
+    $model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
+    $normalizedWorkspaceRoot = str_replace('\\', '/', realpath($workspaceRoot) ?: $workspaceRoot);
+
+    $pathGuard = new PathGuard($workspaceRoot);
+    $discovery = new FileDiscovery($pathGuard, $maxFileBytes);
+    $chunker = new Chunker($chunkLines, min($chunkOverlap, max(0, $chunkLines - 1)));
+    $repository = new IndexRepository(rtrim(str_replace('\\', '/', $indexRoot), '/').'/semantic-code-search.sqlite');
+
+    /** @var Embedder $embedder */
+    $embedder = str_starts_with($ollamaHost, 'mock://')
+        ? new DeterministicEmbedder($model)
+        : new OllamaEmbedder($ollamaHost, $model);
+
+    $indexer = new Indexer($discovery, $chunker, $repository, $embedder, $normalizedWorkspaceRoot);
+    $tool = new SemanticSearchTool($pathGuard, $indexer, $repository, $embedder, $normalizedWorkspaceRoot);
+
+    $builder = Server::builder()
+        ->setServerInfo('semantic_code_search', '1.0.0', 'Standalone MCP server for local semantic code search.')
+        ->setInstructions('Use search_code for semantic or natural-language codebase queries. Use grep for exact string or regex search.')
+        ->setPaginationLimit(50);
+
+    $string = static fn (): array => ['type' => 'string'];
+    $integer = static fn (): array => ['type' => 'integer'];
+    $boolean = static fn (): array => ['type' => 'boolean'];
+    $number = static fn (): array => ['type' => 'number'];
+    $stringOrNull = static fn (): array => [
+        'anyOf' => [
+            ['type' => 'string'],
+            ['type' => 'null'],
+        ],
+    ];
+
+    $builder->addTool($tool->index_codebase(...), 'index_codebase', 'Index the workspace into the local semantic search database.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'workspace_path' => [
+                'type' => 'string',
+                'description' => 'Optional relative or absolute path inside the workspace to index instead of the default scope.',
+            ],
+            'force' => [
+                'type' => 'boolean',
+                'description' => 'Re-index matching files even when size and mtime did not change.',
+            ],
+        ],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'files_scanned' => $integer(),
+            'files_indexed' => $integer(),
+            'files_removed' => $integer(),
+            'chunks_written' => $integer(),
+            'model' => $string(),
+            'index_path' => $string(),
+        ],
+        'required' => ['files_scanned', 'files_indexed', 'files_removed', 'chunks_written', 'model', 'index_path'],
+        'additionalProperties' => false,
+    ]);
+
+    $builder->addTool($tool->search_code(...), 'search_code', 'Search the indexed codebase by semantic meaning.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'query' => [
+                'type' => 'string',
+                'description' => 'Required natural-language or semantic query.',
+            ],
+            'limit' => [
+                'type' => 'integer',
+                'minimum' => 1,
+                'description' => 'Maximum number of results to return. Values above 50 are clamped.',
+            ],
+            'path' => [
+                'type' => 'string',
+                'description' => 'Optional relative or absolute path inside the workspace to narrow the search.',
+            ],
+        ],
+        'required' => ['query'],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'results' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'file' => $string(),
+                        'start_line' => $integer(),
+                        'end_line' => $integer(),
+                        'score' => $number(),
+                        'snippet' => $string(),
+                    ],
+                    'required' => ['file', 'start_line', 'end_line', 'score', 'snippet'],
+                    'additionalProperties' => false,
+                ],
+            ],
+        ],
+        'required' => ['results'],
+        'additionalProperties' => false,
+    ]);
+
+    $builder->addTool($tool->index_status(...), 'index_status', 'Report semantic index readiness, model metadata, and index location.', inputSchema: [
+        'type' => 'object',
+        'properties' => (object) [],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'ready' => $boolean(),
+            'stale' => $boolean(),
+            'workspace_root' => $stringOrNull(),
+            'model' => $stringOrNull(),
+            'last_indexed_at' => $stringOrNull(),
+            'files_indexed' => $integer(),
+            'chunks_indexed' => $integer(),
+            'index_path' => $string(),
+        ],
+        'required' => ['ready', 'stale', 'workspace_root', 'model', 'last_indexed_at', 'files_indexed', 'chunks_indexed', 'index_path'],
+        'additionalProperties' => false,
+    ]);
+
+    $server = $builder->build();
+    $transport = new StdioTransport(STDIN, STDOUT);
+    $server->run($transport);
+} catch (Throwable $exception) {
+    fwrite(STDERR, sprintf("MCP server fatal error: %s\n", $exception->getMessage()));
+    exit(1);
+}

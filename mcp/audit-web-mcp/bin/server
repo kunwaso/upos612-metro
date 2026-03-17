@@ -1,0 +1,163 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use AuditWebMcp\AuditWebTool;
+use Mcp\Server;
+use Mcp\Server\Transport\StdioTransport;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '0');
+
+$serverRoot = realpath(__DIR__.'/..');
+$workspaceRoot = getenv('MCP_AUDIT_WEB_WORKSPACE_ROOT') ?: realpath(__DIR__.'/../../..');
+$nodeBinary = getenv('MCP_AUDIT_WEB_NODE_BINARY') ?: 'node';
+$phpBinary = getenv('MCP_AUDIT_WEB_PHP_BINARY') ?: PHP_BINARY;
+
+if ($serverRoot === false || $workspaceRoot === false) {
+    fwrite(STDERR, "Unable to resolve server or workspace root.\n");
+    exit(1);
+}
+
+$autoload = $serverRoot.'/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Missing vendor/autoload.php. Run composer install in mcp/audit-web-mcp.\n");
+    exit(1);
+}
+
+require_once $autoload;
+
+try {
+    $tool = new AuditWebTool($workspaceRoot, $serverRoot, $nodeBinary, $phpBinary);
+
+    $builder = Server::builder()
+        ->setServerInfo('audit_web', '1.0.0', 'Standalone MCP server for Playwright-based URL and prefix audits.')
+        ->setInstructions('Use audit_web to detect client-side and API failures without treating audit findings as tool crashes.')
+        ->setPaginationLimit(50);
+
+    $schemaString = static fn (): array => ['type' => 'string'];
+    $schemaInteger = static fn (): array => ['type' => 'integer'];
+
+    $builder->addTool($tool->audit_web(...), 'audit_web', 'Audit a URL or route prefix and return structured findings.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'url' => [
+                'type' => 'string',
+                'description' => 'Target URL for single scope or base URL for prefix scope.',
+            ],
+            'scope' => [
+                'type' => 'string',
+                'enum' => ['single', 'prefix'],
+                'description' => 'Audit scope. Use "single" for one URL or "prefix" for route-prefix batch audit.',
+            ],
+            'pathPrefix' => [
+                'type' => 'string',
+                'description' => 'Required for prefix scope. Matches route URIs that start with this prefix.',
+            ],
+            'storage_state_path' => [
+                'type' => 'string',
+                'description' => 'Optional Playwright storage state file path for authenticated pages.',
+            ],
+            'login_url' => [
+                'type' => 'string',
+                'description' => 'Optional login URL for credential-based auth when storage state is unavailable.',
+            ],
+            'login_username' => [
+                'type' => 'string',
+                'description' => 'Optional login username used with login_url + login_password.',
+            ],
+            'login_password' => [
+                'type' => 'string',
+                'description' => 'Optional login password used with login_url + login_username.',
+            ],
+            'steps' => [
+                'type' => 'array',
+                'description' => 'Optional interaction steps to run before collecting the final report.',
+                'items' => ['type' => 'object'],
+            ],
+            'timeout' => [
+                'type' => 'integer',
+                'minimum' => 1,
+                'description' => 'Optional timeout in seconds.',
+            ],
+            'waitUntil' => [
+                'type' => 'string',
+                'description' => 'Optional Playwright waitUntil mode: domcontentloaded | load | networkidle | commit.',
+            ],
+            'waitAfterLoadMs' => [
+                'type' => 'integer',
+                'minimum' => 0,
+                'description' => 'Optional post-load wait in milliseconds to capture delayed errors.',
+            ],
+        ],
+        'required' => ['url'],
+        'additionalProperties' => false,
+    ], outputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'auditStatus' => ['type' => 'string', 'enum' => ['pass', 'fail']],
+            'url' => $schemaString(),
+            'scope' => $schemaString(),
+            'baseUrl' => $schemaString(),
+            'pathPrefix' => $schemaString(),
+            'total' => $schemaInteger(),
+            'passed' => $schemaInteger(),
+            'failed' => $schemaInteger(),
+            'findings' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'kind' => $schemaString(),
+                        'severity' => $schemaString(),
+                        'url' => $schemaString(),
+                        'method' => $schemaString(),
+                        'status' => $schemaInteger(),
+                        'statusText' => $schemaString(),
+                        'resourceType' => $schemaString(),
+                        'failureReason' => $schemaString(),
+                        'message' => $schemaString(),
+                        'stack' => $schemaString(),
+                        'file' => $schemaString(),
+                        'line' => $schemaInteger(),
+                        'column' => $schemaInteger(),
+                        'requestBodySnippet' => $schemaString(),
+                        'responseBodySnippet' => $schemaString(),
+                        'fingerprint' => $schemaString(),
+                        'artifactRefs' => [
+                            'type' => 'array',
+                            'items' => $schemaString(),
+                        ],
+                    ],
+                    'additionalProperties' => true,
+                ],
+            ],
+            'results' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'url' => $schemaString(),
+                        'auditStatus' => ['type' => 'string', 'enum' => ['pass', 'fail']],
+                        'findings' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'object'],
+                        ],
+                        'runnerError' => $schemaString(),
+                    ],
+                    'additionalProperties' => true,
+                ],
+            ],
+            'runnerError' => $schemaString(),
+        ],
+        'additionalProperties' => true,
+    ]);
+
+    $server = $builder->build();
+    $transport = new StdioTransport(STDIN, STDOUT);
+    $server->run($transport);
+} catch (Throwable $exception) {
+    fwrite(STDERR, sprintf("MCP server fatal error: %s\n", $exception->getMessage()));
+    exit(1);
+}

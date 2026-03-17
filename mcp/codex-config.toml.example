@@ -1,0 +1,26 @@
+# Codex MCP config for this project.
+# Copy this file to your Codex config and adjust if your repo is elsewhere:
+#   Windows: %USERPROFILE%\.codex\config.toml
+#   macOS/Linux: ~/.codex/config.toml
+#
+# If you already have [mcp_servers] in config.toml, merge these entries into it.
+
+[mcp_servers.laravel_mysql]
+command = "php"
+args = ["D:/wamp64/www/projectx/mcp/laravel-mysql-mcp/bin/server"]
+
+[mcp_servers.grep]
+command = "php"
+args = ["D:/wamp64/www/projectx/mcp/grep-mcp/bin/server"]
+env = { MCP_GREP_WORKSPACE_ROOT = "D:/wamp64/www/projectx" }
+
+[mcp_servers.read_file_cache]
+command = "php"
+args = ["D:/wamp64/www/projectx/mcp/read-file-cache-mcp/bin/server"]
+env = { MCP_READ_FILE_WORKSPACE_ROOT = "D:/wamp64/www/projectx", MCP_READ_FILE_CACHE_ROOT = "D:/wamp64/www/projectx/.cache/read-file-cache-mcp" }
+
+# Optional: requires Ollama + nomic-embed-text (ollama pull nomic-embed-text)
+[mcp_servers.semantic_code_search]
+command = "php"
+args = ["D:/wamp64/www/projectx/mcp/semantic-code-search-mcp/bin/server"]
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "D:/wamp64/www/projectx", MCP_SEMANTIC_INDEX_ROOT = "D:/wamp64/www/projectx/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text" }

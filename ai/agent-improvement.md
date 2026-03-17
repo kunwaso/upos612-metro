@@ -1,0 +1,85 @@
+# Improving Agent Workflow (What Works in This Repo)
+
+This document explains how to make Codex and Cursor agents **faster and more consistent** using only this repo (`ai/` + AGENTS.md). It also clarifies which ML/training techniques **cannot** be applied here.
+
+---
+
+## 1. What You Cannot Do in This Repo
+
+These techniques require **model training, fine-tuning, or platform-level inference control**. They are not something you implement in `ai/` or AGENTS.md; Cursor uses pre-built models and controls inference.
+
+| Technique | What it is | Why it's not in-repo |
+|-----------|------------|----------------------|
+| **Reward models** | A model trained to score outputs (e.g. good vs bad code). | Training happens in ML pipelines; you don't train models inside the project. |
+| **DPO (Direct Preference Optimization)** | Training the LLM on preference pairs (chosen vs rejected). | Requires training runs and updated model weights; not configurable in docs. |
+| **RLHF-style pipelines** | Human feedback → reward model → policy update. | Same as above; no training pipeline in the repo. |
+| **Parameter pruning** | Removing weights to shrink the model. | Model architecture; done by the model provider. |
+| **Low-rank adaptation (LoRA)** | Small adapter layers for fine-tuning. | Fine-tuning; requires training infrastructure. |
+| **Knowledge distillation (KL)** | Training a smaller model to mimic a larger one. | Training-time loss; not something you set in `ai/`. |
+| **Temperature scaling** | Inference parameter controlling randomness. | Set in the **platform** (Cursor settings or API), not in project files. |
+
+**Bottom line:** You cannot run DPO, RLHF, LoRA, or distillation from AGENTS.md or `ai/`. To improve the agent with those, you'd need your own training pipeline or platform features (e.g. Cursor exposing temperature).
+
+---
+
+## 2. What You Can Do in This Repo (Faster, More Consistent Workflow)
+
+You **can** approximate the *goals* of “better behavior” and “faster convergence” by **capturing reasoning**, **documenting preferences**, and **distilling knowledge** into `ai/` and AGENTS.md. The model then reads these at runtime — no training.
+
+### 2.1 Capture reasoning
+
+- **Idea:** When a fix or design decision is non-obvious, document *how* it was reasoned (not just the outcome).
+- **Where:** Add a short “Reasoning” or “How we diagnosed” section in `ai/known-issues.md` for that area, or create `ai/reasoning-patterns.md` for cross-cutting patterns.
+- **Example:** “For ‘button stops working after tab switch,’ we always: grep for the button ID → find handler → find where the node is rendered → check if that DOM is replaced (tabs/AJAX) → fix via event delegation or re-bind. See AGENTS.md 0.4a/0.4b.”
+- **Effect:** The agent reuses the same reasoning path instead of re-deriving it → **faster** and more consistent.
+
+### 2.2 Document preferences (reward-like signal)
+
+- **Idea:** Encode “we prefer X, avoid Y” so the agent behaves as if it had been trained on preferences — without a reward model.
+- **Where:** In `ai/laravel-conventions.md`, `ai/ui-components.md`, or a dedicated `ai/preferences.md`: short “Preferred” / “Avoid” lists per domain.
+- **Example:** “Preferred: one controller method per endpoint; avoid: adding more than 20 lines to HomeController.” Or: “Preferred: Metronic classes from ui-components.md; avoid: any new custom utility class.”
+- **Effect:** Fewer bad patterns and rework → **faster** iteration and fewer five-check failures.
+
+### 2.3 Distill knowledge into `ai/`
+
+- **Idea:** When something is learned (from debugging, refactors, or reviews), add it to the right `ai/` doc so the next run doesn’t reason from scratch.
+- **Where:** `ai/known-issues.md` for traps; `ai/database-map.md` for schema/relationships; `ai/ui-components.md` for UI; `ai/laravel-conventions.md` for structure.
+- **Effect:** More answers come from “read ai/” instead of long search chains → **faster** and more accurate.
+
+### 2.4 Keep AGENTS.md process tight
+
+- **Idea:** Clear steps (0.2, 0.2a, 0.4a/0.4b, 0.5, five checks) reduce wandering and rework.
+- **Already in place:** Design → plan → execute, TDD, verification before completion, mandatory lints.
+- **Optional:** Add one-line “read ai/agent-improvement.md when considering workflow changes.”
+
+### 2.5 Platform tools and MCP
+
+- **Idea:** Speed and consistency also improve when the agent uses the right platform tools, not just better written instructions.
+- **Use cases:** Fetch URL for live docs, subagents for parallel exploration or shell work, and the Laravel MySQL MCP server for routes, schema, migrations, and tests when it is enabled in the environment.
+- **Why this is still in-repo:** The repo can document which tools to prefer and when to reach for them. No model training is required.
+- **Read next:** `ai/agent-tools-and-mcp.md` is the reference for tool families, speed-oriented tool choice, and Laravel MCP setup for Codex and Cursor.
+
+### 2.6 Minimize tool calls (faster execution)
+
+- **Idea:** Total execution time is roughly **(number of tool calls) × (round-trip + MCP overhead)**. More, smaller steps → more time even when the total code change is small. Improve the agent’s logic so it does **fewer, smarter** steps.
+- **Preferred:**
+  - **Plan first:** For multi-file work, list all target files and directories from the plan (or a quick glob/grep) before editing. Create any missing directories in one go at the start.
+  - **One Write per file:** When creating or heavily changing a file, prefer a single Write (full file) over many small Edit/Replace calls. Use Search-replace only when the change is small and localized.
+  - **Strict plan-then-execute:** Follow AGENTS.md 0.5: design → plan (with file list + dirs) → execute. Do not “discover as you go” (e.g. finding “directory missing” mid-task).
+- **Avoid:**
+  - Dozens of small Edit File calls when one Write per file would suffice.
+  - Discovering “directory doesn’t exist” mid-task — check or create required dirs at the start.
+  - Starting edits before the full file/directory list is known.
+- **Plans:** When writing a plan (e.g. in `.cursor/plans/` or AGENTS.md), include a **“Directories to create (if missing)”** line and a **file list summary** so the agent doesn’t have to infer or discover layout mid-run.
+- **Effect:** Fewer round-trips and less backtracking → faster runs. See `ai/agent-tools-and-mcp.md` §2.7 for edit/write preferences.
+
+---
+
+## 3. Summary
+
+| Goal | In-repo approach | Not in-repo |
+|------|------------------|-------------|
+| **Faster workflow** | Capture reasoning in `ai/`, document preferences, distill solutions into `ai/`, use the right platform tools and MCP, **minimize tool calls** (plan first, one Write per file, dirs up front), keep AGENTS.md process strict. | DPO, RLHF, reward models, LoRA, pruning, KL distillation. |
+| **More consistent behavior** | Same: preferences + reasoning patterns in `ai/`; five checks and verification in AGENTS.md. | Temperature (set in the client/platform if available). |
+
+Use `ai/` to **capture reasoning**, **document preferences**, **distill knowledge**, **minimize tool calls**, and **document tool choice**. Read `ai/agent-tools-and-mcp.md` for the full tool list and when to use Fetch URL, subagents, and MCP for faster answers and implementation.

@@ -1,0 +1,14 @@
+{
+    "name": "ProjectX",
+    "alias": "projectx",
+    "description": "Products and Sales data management module with Metronic UI.",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\ProjectX\\Providers\\ProjectXServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

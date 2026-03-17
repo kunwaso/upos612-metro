@@ -1,0 +1,14 @@
+{
+    "name": "Projectauto",
+    "alias": "projectauto",
+    "description": "Approval-gated automation tasks for invoice, product, and stock actions.",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\Projectauto\\Providers\\ProjectautoServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

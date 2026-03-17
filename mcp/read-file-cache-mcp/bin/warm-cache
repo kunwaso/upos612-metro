@@ -1,0 +1,109 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * CLI to pre-build the read-file-cache disk cache (same as MCP tool warm_cache).
+ * Run from repo root so MCP_READ_FILE_* env defaults resolve correctly.
+ * Use before or when starting Codex so read_file is faster.
+ *
+ * Usage:
+ *   php mcp/read-file-cache-mcp/bin/warm-cache
+ *   php mcp/read-file-cache-mcp/bin/warm-cache --max-files=10000
+ *   php mcp/read-file-cache-mcp/bin/warm-cache --path=app
+ */
+
+use ReadFileCacheMcp\DiskCache;
+use ReadFileCacheMcp\FileCache;
+use ReadFileCacheMcp\FileDiscovery;
+use ReadFileCacheMcp\PathGuard;
+use ReadFileCacheMcp\ReadFileException;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '1');
+
+$serverRoot = realpath(__DIR__ . '/..');
+$workspaceRoot = getenv('MCP_READ_FILE_WORKSPACE_ROOT') ?: realpath(__DIR__ . '/../../..');
+$cacheRoot = getenv('MCP_READ_FILE_CACHE_ROOT');
+if ($cacheRoot === false || $cacheRoot === '') {
+    $cacheRoot = ($workspaceRoot !== false ? $workspaceRoot : realpath(__DIR__ . '/../../..')) . '/.cache/read-file-cache-mcp';
+} else {
+    $cacheRoot = realpath($cacheRoot) ?: $cacheRoot;
+}
+
+if ($serverRoot === false || $workspaceRoot === false) {
+    fwrite(STDERR, "Unable to resolve server or workspace root. Set MCP_READ_FILE_WORKSPACE_ROOT if needed.\n");
+    exit(1);
+}
+
+$autoload = $serverRoot . '/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Missing vendor/autoload.php. Run: cd mcp/read-file-cache-mcp && composer install\n");
+    exit(1);
+}
+
+require_once $autoload;
+
+$pathArg = '';
+$maxFiles = 5000;
+foreach (array_slice($argv ?? [], 1) as $arg) {
+    if (str_starts_with($arg, '--path=')) {
+        $pathArg = trim(substr($arg, 7));
+    } elseif (str_starts_with($arg, '--max-files=')) {
+        $maxFiles = (int) substr($arg, 12);
+        $maxFiles = $maxFiles >= 1 ? min($maxFiles, 50000) : 5000;
+    }
+}
+
+$readPositiveInt = static function (string $name, int $default): int {
+    $raw = getenv($name);
+    if ($raw === false || $raw === '') {
+        return $default;
+    }
+    $value = filter_var($raw, FILTER_VALIDATE_INT);
+    return ($value !== false && $value >= 1) ? $value : $default;
+};
+
+$maxFileBytes = $readPositiveInt('MCP_READ_FILE_MAX_FILE_BYTES', 2097152);
+$maxDiskCacheFiles = $readPositiveInt('MCP_READ_FILE_MAX_DISK_CACHE_FILES', 10000);
+$maxDiskCacheBytes = $readPositiveInt('MCP_READ_FILE_MAX_DISK_CACHE_BYTES', 134217728);
+
+$pathGuard = new PathGuard($workspaceRoot);
+$diskCache = new DiskCache($cacheRoot, $maxFileBytes, $maxDiskCacheFiles, $maxDiskCacheBytes);
+$cache = new FileCache($maxFileBytes, 128, 33554432, $diskCache);
+$fileDiscovery = new FileDiscovery($pathGuard);
+
+$paths = $fileDiscovery->discover($pathArg, $maxFiles);
+$warmed = 0;
+$skipped = 0;
+$errors = 0;
+
+echo "Workspace: " . str_replace('\\', '/', $workspaceRoot) . "\n";
+echo "Cache:     " . str_replace('\\', '/', $cacheRoot) . "\n";
+echo "Path:      " . ($pathArg === '' ? '(root)' : $pathArg) . "\n";
+echo "Max files: {$maxFiles}\n";
+echo "Warming…\n";
+
+foreach ($paths as $absolutePath) {
+    try {
+        $resolved = $pathGuard->assertReadableFile($absolutePath);
+        $cache->get($resolved);
+        $warmed++;
+    } catch (ReadFileException $e) {
+        if ($e->errorCode() === 'BINARY_FILE' || $e->errorCode() === 'FILE_TOO_LARGE') {
+            $skipped++;
+        } else {
+            $errors++;
+        }
+    } catch (Throwable) {
+        $errors++;
+    }
+}
+
+echo sprintf(
+    "Done. Warmed %d files, skipped %d (binary/too large), %d errors. Disk cache is ready for read_file.\n",
+    $warmed,
+    $skipped,
+    $errors
+);

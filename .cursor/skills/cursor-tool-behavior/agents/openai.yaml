@@ -1,0 +1,7 @@
+interface:
+  display_name: "Cursor-Style Tool Use"
+  short_description: "Use Cursor-style file reading and code discovery rules for Cursor or Codex."
+  default_prompt: "Use $cursor-tool-behavior when Cursor or Codex should read code with read_file or read_file_cache, choose grep vs semantic search, and parallelize independent discovery steps."
+
+policy:
+  allow_implicit_invocation: true

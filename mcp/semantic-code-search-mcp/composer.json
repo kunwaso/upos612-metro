@@ -1,0 +1,34 @@
+{
+  "name": "upos/semantic-code-search-mcp",
+  "description": "Standalone MCP server for local semantic code search.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.1",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-pdo_sqlite": "*",
+    "mcp/sdk": "^0.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "SemanticCodeSearchMcp\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "SemanticCodeSearchMcp\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

@@ -1,0 +1,308 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use LaravelMysqlMcp\Bootstrap\BootstrapLaravel;
+use LaravelMysqlMcp\Cache\InMemoryTtlCache;
+use LaravelMysqlMcp\Prompts\LaravelPrompts;
+use LaravelMysqlMcp\Resources\LaravelResources;
+use LaravelMysqlMcp\Safety\Mode;
+use LaravelMysqlMcp\Safety\PathGuard;
+use LaravelMysqlMcp\Services\MigrationsService;
+use LaravelMysqlMcp\Services\ProjectMapService;
+use LaravelMysqlMcp\Services\RoutesService;
+use LaravelMysqlMcp\Services\SchemaService;
+use LaravelMysqlMcp\Support\CommandRunner;
+use LaravelMysqlMcp\Support\OutputLimiter;
+use LaravelMysqlMcp\Support\ResponseShape;
+use LaravelMysqlMcp\Tools\LaravelTools;
+use Mcp\Server;
+use Mcp\Server\Transport\StdioTransport;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '0');
+
+$serverRoot = realpath(__DIR__.'/..');
+$projectRoot = realpath(__DIR__.'/../../..');
+
+if ($serverRoot === false || $projectRoot === false) {
+    fwrite(STDERR, "Unable to resolve MCP server or project root.\n");
+    exit(1);
+}
+
+$projectAutoload = $projectRoot.'/vendor/autoload.php';
+$serverAutoload = $serverRoot.'/vendor/autoload.php';
+
+if (!is_file($projectAutoload) || !is_file($serverAutoload)) {
+    fwrite(STDERR, "Missing autoload files for project or MCP package.\n");
+    exit(1);
+}
+
+require_once $projectAutoload;
+require_once $serverAutoload;
+
+try {
+    BootstrapLaravel::bootstrap($projectRoot);
+
+    $mode = Mode::resolve(getenv('LARAVEL_MCP_MODE') ?: null);
+    $maxOutputBytes = (int) (getenv('LARAVEL_MCP_MAX_OUTPUT_BYTES') ?: 204800);
+    $maxPatchLines = (int) (getenv('LARAVEL_MCP_MAX_PATCH_LINES') ?: 400);
+    $ttlRoutes = (int) (getenv('LARAVEL_MCP_CACHE_TTL_ROUTES') ?: 45);
+    $ttlSchema = (int) (getenv('LARAVEL_MCP_CACHE_TTL_SCHEMA') ?: 90);
+    $ttlProject = (int) (getenv('LARAVEL_MCP_CACHE_TTL_PROJECT') ?: 90);
+
+    $pathGuard = new PathGuard($projectRoot);
+    $cache = new InMemoryTtlCache();
+    $response = new ResponseShape($projectRoot, app()->version(), $mode);
+    $outputLimiter = new OutputLimiter();
+    $runner = new CommandRunner($projectRoot);
+
+    $projectMapService = new ProjectMapService($projectRoot, $pathGuard);
+    $routesService = new RoutesService();
+    $migrationsService = new MigrationsService($projectRoot);
+    $schemaService = new SchemaService();
+
+    $tools = new LaravelTools(
+        projectRoot: $projectRoot,
+        mode: $mode,
+        pathGuard: $pathGuard,
+        response: $response,
+        cache: $cache,
+        outputLimiter: $outputLimiter,
+        runner: $runner,
+        projectMapService: $projectMapService,
+        routesService: $routesService,
+        migrationsService: $migrationsService,
+        schemaService: $schemaService,
+        maxOutputBytes: max(1, $maxOutputBytes),
+        maxPatchLines: max(1, $maxPatchLines),
+        ttlRoutes: max(1, $ttlRoutes),
+        ttlSchema: max(1, $ttlSchema),
+        ttlProject: max(1, $ttlProject),
+    );
+
+    $resources = new LaravelResources(
+        projectRoot: $projectRoot,
+        cache: $cache,
+        response: $response,
+        projectMapService: $projectMapService,
+        routesService: $routesService,
+        migrationsService: $migrationsService,
+        schemaService: $schemaService,
+        ttlRoutes: max(1, $ttlRoutes),
+        ttlSchema: max(1, $ttlSchema),
+        ttlProject: max(1, $ttlProject),
+    );
+
+    $prompts = new LaravelPrompts();
+
+    $builder = Server::builder()
+        ->setServerInfo('laravel_mysql', '1.0.0', 'Laravel + MySQL MCP server for routes, schema, migrations, and quality checks.')
+        ->setInstructions('Use this server for Laravel project mapping, route/schema inspection, migration checks, quality tooling, and controlled PATCH-mode patch application.')
+        ->setPaginationLimit(200);
+
+    $schemaString = static fn (): array => ['type' => 'string'];
+    $schemaBool = static fn (): array => ['type' => 'boolean'];
+    $schemaInt = static fn (): array => ['type' => 'integer'];
+
+    $builder->addTool($tools->project_map(...), 'project_map', 'Build project structure map.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'include_files' => $schemaBool(),
+            'max_files' => $schemaInt(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->routes_list(...), 'routes_list', 'List application routes.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'method' => $schemaString(),
+            'name' => $schemaString(),
+            'path' => $schemaString(),
+            'domain' => $schemaString(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->route_details(...), 'route_details', 'Get a single route detail by name or method/path.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'name' => $schemaString(),
+            'method' => $schemaString(),
+            'path' => $schemaString(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->controller_source(...), 'controller_source', 'Fetch controller source with output limits.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'class' => $schemaString(),
+            'max_bytes' => $schemaInt(),
+        ],
+        'required' => ['class'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->controller_methods(...), 'controller_methods', 'Reflect public methods of a controller.', inputSchema: [
+        'type' => 'object',
+        'properties' => ['class' => $schemaString()],
+        'required' => ['class'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->find_symbols(...), 'find_symbols', 'Search symbols across repository.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'query' => $schemaString(),
+            'type' => $schemaString(),
+            'limit' => $schemaInt(),
+            'context_lines' => $schemaInt(),
+        ],
+        'required' => ['query'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->migrations_status(...), 'migrations_status', 'Show migration ran/pending status.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'pending_only' => $schemaBool(),
+            'database' => $schemaString(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->migrations_list_files(...), 'migrations_list_files', 'List migration files from core or all scopes.', inputSchema: [
+        'type' => 'object',
+        'properties' => ['path_scope' => $schemaString()],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->migration_show(...), 'migration_show', 'Show one migration file source.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'migration' => $schemaString(),
+            'max_bytes' => $schemaInt(),
+        ],
+        'required' => ['migration'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->schema_snapshot(...), 'schema_snapshot', 'Read MySQL schema snapshot.', inputSchema: [
+        'type' => 'object',
+        'properties' => ['connection' => $schemaString()],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->show_create_table(...), 'show_create_table', 'Run SHOW CREATE TABLE for one table.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'table' => $schemaString(),
+            'connection' => $schemaString(),
+        ],
+        'required' => ['table'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->schema_diff(...), 'schema_diff', 'Diff expected schema file against current schema.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'expected_schema_path' => $schemaString(),
+            'format' => $schemaString(),
+        ],
+        'required' => ['expected_schema_path'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->explain_query(...), 'explain_query', 'Run EXPLAIN on a single SELECT statement.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'sql' => $schemaString(),
+            'connection' => $schemaString(),
+        ],
+        'required' => ['sql'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->index_health(...), 'index_health', 'Analyze index health recommendations.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'connection' => $schemaString(),
+            'min_rows' => $schemaInt(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->config_snapshot(...), 'config_snapshot', 'Read allowlisted config values.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'keys' => ['type' => 'array', 'items' => $schemaString()],
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->container_bindings(...), 'container_bindings', 'List IoC container bindings.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'prefix' => $schemaString(),
+            'limit' => $schemaInt(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->run_phpstan(...), 'run_phpstan', 'Run phpstan if available.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'paths' => ['type' => 'array', 'items' => $schemaString()],
+            'level' => $schemaString(),
+            'memory_limit' => $schemaString(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->run_pint(...), 'run_pint', 'Run pint --test if available.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'paths' => ['type' => 'array', 'items' => $schemaString()],
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->run_tests(...), 'run_tests', 'Run pest/phpunit tests.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'filter' => $schemaString(),
+            'suite' => $schemaString(),
+            'testsuite' => $schemaString(),
+            'path' => $schemaString(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->apply_patch(...), 'apply_patch', 'Validate/apply unified diff in PATCH mode.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'patch' => $schemaString(),
+            'check_only' => $schemaBool(),
+        ],
+        'required' => ['patch'],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->git_status(...), 'git_status', 'Return git status porcelain entries.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'include_untracked' => $schemaBool(),
+        ],
+        'additionalProperties' => false,
+    ]);
+    $builder->addTool($tools->list_env(...), 'list_env', 'Read allowlisted env values.', inputSchema: [
+        'type' => 'object',
+        'properties' => [
+            'keys' => ['type' => 'array', 'items' => $schemaString()],
+        ],
+        'additionalProperties' => false,
+    ]);
+
+    $builder->addResource($resources->project_map(...), 'resource://project/map', 'project_map', 'Project map snapshot', 'application/json');
+    $builder->addResource($resources->routes(...), 'resource://routes', 'routes', 'Routes list snapshot', 'application/json');
+    $builder->addResource($resources->schema_snapshot(...), 'resource://schema/snapshot', 'schema_snapshot', 'Database schema snapshot', 'application/json');
+    $builder->addResource($resources->migrations_status(...), 'resource://migrations/status', 'migrations_status', 'Migration status snapshot', 'application/json');
+    $builder->addResource($resources->composer(...), 'resource://composer', 'composer_metadata', 'Composer dependency metadata', 'application/json');
+    $builder->addResource($resources->conventions(...), 'resource://conventions', 'conventions', 'Project coding conventions', 'application/json');
+    $builder->addResource($resources->examples_golden(...), 'resource://examples/golden', 'examples_golden', 'Representative examples and paths', 'application/json');
+    $builder->addResource($resources->prompts_catalog(...), 'resource://prompts/catalog', 'prompts_catalog', 'Prompt catalog mirror', 'application/json');
+
+    $builder->addPrompt($prompts->optimize_controller(...), 'optimize_controller', 'Optimize a Laravel controller with schema and route context.');
+    $builder->addPrompt($prompts->migration_safety_check(...), 'migration_safety_check', 'Run migration safety analysis workflow.');
+    $builder->addPrompt($prompts->perf_tuning_sql(...), 'perf_tuning_sql', 'Tune SQL performance using explain/index context.');
+
+    $server = $builder->build();
+    $transport = new StdioTransport(STDIN, STDOUT);
+    $server->run($transport);
+} catch (Throwable $exception) {
+    fwrite(STDERR, sprintf("MCP server fatal error: %s\n", $exception->getMessage()));
+    exit(1);
+}

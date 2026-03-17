@@ -1,0 +1,14 @@
+{
+    "name": "Aichat",
+    "alias": "aichat",
+    "description": "AI Chat assistant drawer and full-page chat for tenant-scoped organization data.",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\Aichat\\Providers\\AichatServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

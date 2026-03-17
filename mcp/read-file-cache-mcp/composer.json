@@ -1,0 +1,31 @@
+{
+  "name": "upos/read-file-cache-mcp",
+  "description": "Standalone MCP server for cached file reads with line slicing.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.1",
+    "mcp/sdk": "^0.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "ReadFileCacheMcp\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ReadFileCacheMcp\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
