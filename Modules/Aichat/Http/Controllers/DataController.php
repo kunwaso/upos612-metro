@@ -26,6 +26,11 @@ class DataController extends Controller
                 'label' => __('aichat::lang.permission_chat_settings'),
                 'default' => false,
             ],
+            [
+                'value' => 'aichat.quote_wizard.use',
+                'label' => __('aichat::lang.permission_quote_wizard_use'),
+                'default' => false,
+            ],
         ];
     }
 

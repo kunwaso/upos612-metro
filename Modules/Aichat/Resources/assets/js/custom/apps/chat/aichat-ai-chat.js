@@ -201,6 +201,249 @@
         }, 6000);
     }
 
+    function quoteFeatureEnabled() {
+        return !!(((config || {}).features || {}).quote_wizard_enabled) && !!(((config || {}).permissions || {}).can_use_quote_wizard);
+    }
+
+    function isQuoteMode(container) {
+        return !!container.__aichatQuoteMode;
+    }
+
+    function setQuoteMode(container, enabled) {
+        container.__aichatQuoteMode = !!enabled;
+        var button = container.querySelector('[data-chat-quote-mode-toggle]');
+        if (button) {
+            button.setAttribute('data-chat-quote-mode', enabled ? 'on' : 'off');
+            button.classList.toggle('btn-warning', !!enabled);
+            button.classList.toggle('btn-light-warning', !enabled);
+        }
+
+        if (!enabled) {
+            renderQuoteDraft(container, null);
+            return;
+        }
+
+        renderQuoteDraft(container, container.__aichatQuoteDraft || null);
+        warning(container, t('quote_assistant_mode_on', 'Quote assistant mode is on.'));
+    }
+
+    function quoteRoute(templateKey, conversationId) {
+        return routeConversation(((config || {}).routes || {})[templateKey] || '', conversationId);
+    }
+
+    function getQuoteMissingModalNode(container) {
+        return container.querySelector('[data-chat-quote-missing-modal]');
+    }
+
+    function getQuoteMissingModalInstance(modalNode) {
+        if (!modalNode || !window.bootstrap || !window.bootstrap.Modal) {
+            return null;
+        }
+
+        return window.bootstrap.Modal.getOrCreateInstance(modalNode);
+    }
+
+    function openQuoteMissingModal(container) {
+        var modalNode = getQuoteMissingModalNode(container);
+        var draft = container.__aichatQuoteDraft || null;
+        var missing = (draft && Array.isArray(draft.missing_fields)) ? draft.missing_fields : [];
+        if (!modalNode || !missing.length) {
+            return;
+        }
+
+        var listNode = modalNode.querySelector('[data-chat-quote-missing-modal-list]');
+        var inputNode = modalNode.querySelector('[data-chat-quote-missing-modal-input]');
+        var errorNode = modalNode.querySelector('[data-chat-quote-missing-modal-error]');
+        if (listNode) {
+            listNode.innerHTML = missing.map(function (item) {
+                return '<span class="badge badge-light-warning">' + e(item.label || item.key || '') + '</span>';
+            }).join('');
+        }
+        if (errorNode) {
+            errorNode.textContent = '';
+        }
+        if (inputNode) {
+            inputNode.value = '';
+        }
+
+        var modal = getQuoteMissingModalInstance(modalNode);
+        if (!modal) {
+            warning(container, t('quote_assistant_fill_modal_unavailable', 'Modal is unavailable. Please type the missing details in chat.'));
+            var chatInput = container.querySelector('[data-kt-element="input"]');
+            if (chatInput) {
+                chatInput.focus();
+            }
+            return;
+        }
+
+        modal.show();
+        setTimeout(function () {
+            if (inputNode) {
+                inputNode.focus();
+            }
+        }, 120);
+    }
+
+    function submitQuoteMissingModal(container) {
+        if (isBusy(container)) {
+            return;
+        }
+
+        var modalNode = getQuoteMissingModalNode(container);
+        if (!modalNode) {
+            return;
+        }
+
+        var inputNode = modalNode.querySelector('[data-chat-quote-missing-modal-input]');
+        var errorNode = modalNode.querySelector('[data-chat-quote-missing-modal-error]');
+        var message = inputNode ? String(inputNode.value || '').trim() : '';
+        if (!message) {
+            if (errorNode) {
+                errorNode.textContent = t('quote_assistant_fill_modal_error_required', 'Please enter the missing details before submitting.');
+            }
+            if (inputNode) {
+                inputNode.focus();
+            }
+            return;
+        }
+
+        var modal = getQuoteMissingModalInstance(modalNode);
+        if (modal) {
+            modal.hide();
+        }
+        if (inputNode) {
+            inputNode.value = '';
+        }
+        if (errorNode) {
+            errorNode.textContent = '';
+        }
+
+        warning(container, '');
+        setBusy(container, true);
+        processQuoteWizard(container, { message: message }).catch(function (error) {
+            warning(container, error.message || t('chat_provider_error', 'Unable to process quote draft.'));
+        }).finally(function () {
+            setBusy(container, false);
+        });
+    }
+
+    function renderQuoteDraft(container, draft) {
+        var panel = container.querySelector('[data-chat-quote-panel]');
+        if (!panel || !quoteFeatureEnabled()) {
+            return;
+        }
+
+        container.__aichatQuoteDraft = draft || null;
+        container.__aichatQuoteConversationId = draft ? String(getActiveConversationId(container) || '') : '';
+
+        if (!isQuoteMode(container) && !draft) {
+            panel.classList.add('d-none');
+            return;
+        }
+
+        panel.classList.remove('d-none');
+
+        var statusNode = container.querySelector('[data-chat-quote-status-text]');
+        var summaryNode = container.querySelector('[data-chat-quote-summary]');
+        var missingNode = container.querySelector('[data-chat-quote-missing]');
+        var picksNode = container.querySelector('[data-chat-quote-picks]');
+        var linksNode = container.querySelector('[data-chat-quote-links]');
+        var fillMissingButton = container.querySelector('[data-chat-quote-fill-missing]');
+        var confirmButton = container.querySelector('[data-chat-quote-confirm]');
+        var missing = (draft && Array.isArray(draft.missing_fields)) ? draft.missing_fields : [];
+
+        if (statusNode) {
+            if (!draft) {
+                statusNode.textContent = t('quote_assistant_mode_on', 'Quote assistant mode is on.');
+            } else if (draft.status === 'ready') {
+                statusNode.textContent = t('quote_assistant_ready', 'Quote draft is ready to confirm.');
+            } else {
+                statusNode.textContent = t('quote_assistant_mode_on', 'Quote assistant mode is on.');
+            }
+        }
+
+        if (summaryNode) {
+            var summary = (draft && draft.summary) || null;
+            if (!summary) {
+                summaryNode.innerHTML = '<div class="text-muted fs-8">' + e(t('quote_assistant_summary_empty', 'No draft details yet.')) + '</div>';
+            } else {
+                var lines = Array.isArray(summary.lines) ? summary.lines : [];
+                var canRemoveLine = !!(draft && draft.status !== 'consumed');
+                var linesHtml = lines.map(function (line) {
+                    var textHtml = '<div class="fs-8 text-gray-800">' + e(line.label || '') + ': ' + e(line.text || '') + '</div>';
+                    var removeButtonHtml = '';
+                    if (canRemoveLine && line && line.line_uid) {
+                        removeButtonHtml = '<button type="button" class="btn btn-xs btn-light-danger" data-chat-quote-remove-line="' + e(String(line.line_uid || '')) + '">' + e(t('quote_assistant_remove_line', 'Remove')) + '</button>';
+                    }
+
+                    return '<div class="d-flex align-items-center justify-content-between gap-2 mb-1">' + textHtml + removeButtonHtml + '</div>';
+                }).join('');
+
+                summaryNode.innerHTML =
+                    '<div class="fw-semibold text-gray-900 mb-2">' + e(t('quote_assistant_current_summary', 'Current Draft')) + '</div>' +
+                    '<div class="fs-8 text-gray-700 mb-1"><strong>' + e(t('quote_assistant_customer_required', 'Customer')) + ':</strong> ' + e(summary.customer || '-') + '</div>' +
+                    '<div class="fs-8 text-gray-700 mb-1"><strong>' + e(t('quote_assistant_location_required', 'Location')) + ':</strong> ' + e(summary.location || '-') + '</div>' +
+                    '<div class="fs-8 text-gray-700 mb-2"><strong>' + e(t('quote_assistant_expires_label', 'Expires')) + ':</strong> ' + e(summary.expires_at || '-') + '</div>' +
+                    linesHtml;
+            }
+        }
+
+        if (missingNode) {
+            missingNode.innerHTML = missing.length
+                ? '<div class="fw-semibold text-gray-900 mb-2">' + e(t('quote_assistant_missing', 'Still needed')) + '</div>' + missing.map(function (item) {
+                    return '<span class="badge badge-light-warning me-2 mb-2">' + e(item.label || item.key || '') + '</span>';
+                }).join('')
+                : '';
+        }
+
+        if (fillMissingButton) {
+            fillMissingButton.classList.toggle('d-none', !(draft && draft.status !== 'ready' && missing.length > 0));
+            fillMissingButton.textContent = t('quote_assistant_fill_missing', 'Fill Still Needed');
+        }
+
+        if (picksNode) {
+            picksNode.innerHTML = '';
+            var pickLists = (draft && draft.pick_lists) || {};
+            (pickLists.contacts || []).forEach(function (contact) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-sm btn-light-warning';
+                button.setAttribute('data-chat-quote-pick', 'contact');
+                button.setAttribute('data-chat-quote-contact-id', String(contact.id || ''));
+                button.textContent = contact.label || contact.name || '';
+                picksNode.appendChild(button);
+            });
+
+            (pickLists.products || []).forEach(function (productGroup) {
+                (productGroup.options || []).forEach(function (product) {
+                    var productButton = document.createElement('button');
+                    productButton.type = 'button';
+                    productButton.className = 'btn btn-sm btn-light-warning';
+                    productButton.setAttribute('data-chat-quote-pick', 'product');
+                    productButton.setAttribute('data-chat-quote-product-id', String(product.id || ''));
+                    productButton.setAttribute('data-chat-quote-line-uid', String(productGroup.line_uid || ''));
+                    productButton.textContent = (productGroup.label ? productGroup.label + ': ' : '') + (product.label || product.name || '');
+                    picksNode.appendChild(productButton);
+                });
+            });
+        }
+
+        if (linksNode) {
+            linksNode.innerHTML = '';
+            var result = (draft && draft.result) || {};
+            if (result.public_url) {
+                linksNode.innerHTML += '<a class="btn btn-sm btn-light-primary" target="_blank" href="' + e(result.public_url) + '">' + e(t('quote_assistant_open_public', 'Open Public Quote')) + '</a>';
+            }
+            if (result.admin_url) {
+                linksNode.innerHTML += '<a class="btn btn-sm btn-light-info" target="_blank" href="' + e(result.admin_url) + '">' + e(t('quote_assistant_open_admin', 'Open In Admin')) + '</a>';
+            }
+        }
+
+        if (confirmButton) {
+            confirmButton.classList.toggle('d-none', !(draft && draft.status === 'ready'));
+        }
+    }
+
     function setBusy(container, isBusy) {
         container.__aichatBusy = !!isBusy;
         var input = container.querySelector('[data-kt-element="input"]');
@@ -408,6 +651,7 @@
         if (!id) {
             setTitle(container, t('new_chat', 'New Chat'));
             renderMessages(container, []);
+            renderQuoteDraft(container, null);
             return Promise.resolve(null);
         }
 
@@ -421,6 +665,9 @@
             var payload = (json && json.data) || {};
             var conversation = payload.conversation || {};
             setActiveConversationId(container, conversation.id || id);
+            if (String(container.__aichatQuoteConversationId || '') !== String(conversation.id || id)) {
+                renderQuoteDraft(container, null);
+            }
             setTitle(container, conversation.title || t('new_chat', 'New Chat'));
             renderMessages(container, payload.messages || []);
             return payload;
@@ -563,6 +810,95 @@
         }
     }
 
+    function processQuoteWizard(container, payload) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Conversation is required.')));
+        }
+
+        var url = quoteRoute('quote_wizard_process_url_template', conversationId);
+        if (!url) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Quote wizard route is missing.')));
+        }
+
+        var draft = container.__aichatQuoteDraft || null;
+        var body = Object.assign({
+            draft_id: draft && draft.id ? draft.id : null,
+            provider: selectedProvider(container) || config.default_provider,
+            model: selectedModel(container) || config.default_model
+        }, payload || {});
+
+        return request(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (json) {
+            var data = (json && json.data) || {};
+            renderQuoteDraft(container, data.draft || null);
+            return sync(container).then(function () {
+                return data;
+            });
+        });
+    }
+
+    function confirmQuoteWizard(container) {
+        var conversationId = getActiveConversationId(container);
+        var draft = container.__aichatQuoteDraft || null;
+        if (!conversationId || !draft || !draft.id) {
+            return Promise.resolve(null);
+        }
+
+        var url = quoteRoute('quote_wizard_confirm_url_template', conversationId);
+        if (!url) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Quote confirm route is missing.')));
+        }
+
+        return request(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ draft_id: draft.id })
+        }).then(function (json) {
+            var data = (json && json.data) || {};
+            renderQuoteDraft(container, data.draft || null);
+            return sync(container).then(function () {
+                return data;
+            });
+        });
+    }
+
+    function parseQuoteStartCommand(prompt) {
+        var match = String(prompt || '').trim().match(/^\/quote(?:\s+(.*))?$/i);
+        if (!match) {
+            return null;
+        }
+
+        return {
+            message: String(match[1] || '').trim()
+        };
+    }
+
+    function isQuoteCancelCommand(prompt) {
+        return /^\/cancel(?:\s+.*)?$/i.test(String(prompt || '').trim());
+    }
+
+    function submitQuoteWizard(container, message) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return createConversation(container).then(function () {
+                return submitQuoteWizard(container, message);
+            });
+        }
+
+        warning(container, '');
+        setBusy(container, true);
+
+        return processQuoteWizard(container, { message: String(message || '') }).catch(function (error) {
+            warning(container, error.message || t('chat_provider_error', 'Unable to process quote draft.'));
+        }).finally(function () {
+            setBusy(container, false);
+        });
+    }
+
     function send(container) {
         if (isBusy(container)) {
             return;
@@ -575,6 +911,34 @@
 
         var prompt = String(input.value || '').trim();
         if (!prompt) {
+            return;
+        }
+
+        var quoteStartCommand = parseQuoteStartCommand(prompt);
+        if (quoteStartCommand) {
+            input.value = '';
+            if (!quoteFeatureEnabled()) {
+                warning(container, t('quote_assistant_feature_disabled', 'Quote assistant is disabled for this business.'));
+                return;
+            }
+            setQuoteMode(container, true);
+            submitQuoteWizard(container, quoteStartCommand.message);
+
+            return;
+        }
+
+        if (quoteFeatureEnabled() && isQuoteMode(container) && isQuoteCancelCommand(prompt)) {
+            input.value = '';
+            setQuoteMode(container, false);
+            warning(container, t('quote_assistant_mode_off', 'Quote assistant mode is off.'));
+
+            return;
+        }
+
+        if (quoteFeatureEnabled() && isQuoteMode(container)) {
+            input.value = '';
+            submitQuoteWizard(container, prompt);
+
             return;
         }
 
@@ -883,6 +1247,9 @@
 
         updateModelOptions(container);
         renderReplies(container, []);
+        if (quoteFeatureEnabled()) {
+            setQuoteMode(container, false);
+        }
 
         container.addEventListener('click', function (event) {
             var deleteButton = event.target.closest('[data-chat-delete-conversation]');
@@ -919,6 +1286,96 @@
             if (sendButton && container.contains(sendButton)) {
                 event.preventDefault();
                 send(container);
+                return;
+            }
+
+            var quoteModeButton = event.target.closest('[data-chat-quote-mode-toggle]');
+            if (quoteModeButton && container.contains(quoteModeButton)) {
+                event.preventDefault();
+                var enableQuoteMode = !isQuoteMode(container);
+                setQuoteMode(container, enableQuoteMode);
+                if (!enableQuoteMode) {
+                    warning(container, t('quote_assistant_mode_off', 'Quote assistant mode is off.'));
+                }
+                return;
+            }
+
+            var quoteFillMissingButton = event.target.closest('[data-chat-quote-fill-missing]');
+            if (quoteFillMissingButton && container.contains(quoteFillMissingButton)) {
+                event.preventDefault();
+                openQuoteMissingModal(container);
+                return;
+            }
+
+            var quoteMissingModalSubmit = event.target.closest('[data-chat-quote-missing-modal-submit]');
+            if (quoteMissingModalSubmit && container.contains(quoteMissingModalSubmit)) {
+                event.preventDefault();
+                submitQuoteMissingModal(container);
+                return;
+            }
+
+            var quoteRemoveLineButton = event.target.closest('[data-chat-quote-remove-line]');
+            if (quoteRemoveLineButton && container.contains(quoteRemoveLineButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                var removeLineUid = String(quoteRemoveLineButton.getAttribute('data-chat-quote-remove-line') || '');
+                if (!removeLineUid) {
+                    return;
+                }
+
+                warning(container, '');
+                setBusy(container, true);
+                processQuoteWizard(container, { selected_remove_line_uid: removeLineUid }).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to update quote draft.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+                return;
+            }
+
+            var quotePickButton = event.target.closest('[data-chat-quote-pick]');
+            if (quotePickButton && container.contains(quotePickButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                var pickType = String(quotePickButton.getAttribute('data-chat-quote-pick') || '');
+                var pickPayload = {};
+                if (pickType === 'contact') {
+                    pickPayload.selected_contact_id = Number(quotePickButton.getAttribute('data-chat-quote-contact-id') || 0);
+                } else if (pickType === 'product') {
+                    pickPayload.selected_product_id = Number(quotePickButton.getAttribute('data-chat-quote-product-id') || 0);
+                    pickPayload.selected_line_uid = String(quotePickButton.getAttribute('data-chat-quote-line-uid') || '');
+                }
+
+                warning(container, '');
+                setBusy(container, true);
+                processQuoteWizard(container, pickPayload).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to update quote draft.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+                return;
+            }
+
+            var quoteConfirmButton = event.target.closest('[data-chat-quote-confirm]');
+            if (quoteConfirmButton && container.contains(quoteConfirmButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                warning(container, '');
+                setBusy(container, true);
+                confirmQuoteWizard(container).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to confirm quote draft.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
                 return;
             }
 
@@ -979,6 +1436,17 @@
         if (providerNode) {
             providerNode.addEventListener('change', function () {
                 updateModelOptions(container);
+            });
+        }
+
+        var quoteMissingInputNode = container.querySelector('[data-chat-quote-missing-modal-input]');
+        if (quoteMissingInputNode) {
+            quoteMissingInputNode.addEventListener('input', function () {
+                var modalNode = getQuoteMissingModalNode(container);
+                var errorNode = modalNode ? modalNode.querySelector('[data-chat-quote-missing-modal-error]') : null;
+                if (errorNode) {
+                    errorNode.textContent = '';
+                }
             });
         }
 

@@ -137,4 +137,12 @@ return [
         'chat_rate_limit_per_minute' => (int) env('AICHAT_TELEGRAM_CHAT_RATE_LIMIT_PER_MINUTE', 20),
         'business_rate_limit_per_minute' => (int) env('AICHAT_TELEGRAM_BUSINESS_RATE_LIMIT_PER_MINUTE', 100),
     ],
+    'quote_wizard' => [
+        'enabled' => filter_var(env('AICHAT_QUOTE_WIZARD_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'draft_ttl_hours' => (int) env('AICHAT_QUOTE_WIZARD_DRAFT_TTL_HOURS', 24),
+        'max_contact_results' => (int) env('AICHAT_QUOTE_WIZARD_MAX_CONTACT_RESULTS', 8),
+        'max_product_results' => (int) env('AICHAT_QUOTE_WIZARD_MAX_PRODUCT_RESULTS', 8),
+        'process_throttle_per_minute' => (int) env('AICHAT_QUOTE_WIZARD_PROCESS_THROTTLE_PER_MINUTE', env('AICHAT_CHAT_THROTTLE_PER_MINUTE', 30)),
+        'confirm_throttle_per_minute' => (int) env('AICHAT_QUOTE_WIZARD_CONFIRM_THROTTLE_PER_MINUTE', 10),
+    ],
 ];

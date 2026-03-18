@@ -2,6 +2,7 @@
 
 use Modules\Aichat\Http\Controllers\ChatController;
 use Modules\Aichat\Http\Controllers\ChatMemoryAdminController;
+use Modules\Aichat\Http\Controllers\ChatQuoteWizardController;
 use Modules\Aichat\Http\Controllers\ChatSettingsController;
 use Modules\Aichat\Http\Controllers\TelegramWebhookController;
 
@@ -21,6 +22,18 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
             Route::get('/conversations/{id}', [ChatController::class, 'showConversation'])->whereUuid('id')->name('conversations.show');
             Route::post('/conversations/{id}/send', [ChatController::class, 'send'])->whereUuid('id')->middleware('throttle:' . ((int) config('aichat.chat.throttle_per_minute', 30)) . ',1')->name('conversations.send');
             Route::post('/conversations/{id}/stream', [ChatController::class, 'stream'])->whereUuid('id')->middleware('throttle:' . ((int) config('aichat.chat.throttle_per_minute', 30)) . ',1')->name('conversations.stream');
+            Route::prefix('/conversations/{id}/quote-wizard')->whereUuid('id')->middleware('can:aichat.quote_wizard.use')->name('conversations.quote_wizard.')->group(function () {
+                Route::get('/contacts', [ChatQuoteWizardController::class, 'contacts'])->name('contacts');
+                Route::get('/locations', [ChatQuoteWizardController::class, 'locations'])->name('locations');
+                Route::get('/products', [ChatQuoteWizardController::class, 'products'])->name('products');
+                Route::get('/costing-defaults', [ChatQuoteWizardController::class, 'costingDefaults'])->name('costing_defaults');
+                Route::post('/process', [ChatQuoteWizardController::class, 'process'])
+                    ->middleware('throttle:' . ((int) config('aichat.quote_wizard.process_throttle_per_minute', 30)) . ',1')
+                    ->name('process');
+                Route::post('/confirm', [ChatQuoteWizardController::class, 'confirm'])
+                    ->middleware('throttle:' . ((int) config('aichat.quote_wizard.confirm_throttle_per_minute', 10)) . ',1')
+                    ->name('confirm');
+            });
             Route::post('/messages/{message}/feedback', [ChatController::class, 'feedback'])->whereNumber('message')->name('messages.feedback.store');
             Route::post('/messages/{message}/regenerate', [ChatController::class, 'regenerate'])->whereNumber('message')->middleware('throttle:' . ((int) config('aichat.chat.throttle_per_minute', 30)) . ',1')->name('messages.regenerate');
             Route::post('/conversations/{id}/share', [ChatController::class, 'share'])->whereUuid('id')->name('conversations.share');

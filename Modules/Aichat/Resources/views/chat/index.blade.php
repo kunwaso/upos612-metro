@@ -43,6 +43,11 @@
                     <h3 class="fw-bold text-gray-900 mb-0" data-chat-conversation-title>{{ __('aichat::lang.new_chat') }}</h3>
                 </div>
                 <div class="card-toolbar gap-2 flex-wrap justify-content-start justify-content-lg-end">
+                    @if(!empty($aiChatConfig['permissions']['can_use_quote_wizard']) && !empty($aiChatConfig['features']['quote_wizard_enabled']))
+                        <button class="btn btn-light-warning btn-sm" type="button" data-chat-quote-mode-toggle data-chat-quote-mode="off">
+                            {{ __('aichat::lang.quote_assistant') }}
+                        </button>
+                    @endif
                     <select class="form-select form-select-solid form-select-sm w-110px" data-chat-provider-select>
                         @foreach(($aiChatConfig['enabled_providers'] ?? []) as $providerCode)
                             <option value="{{ $providerCode }}" {{ $providerCode === ($aiChatConfig['default_provider'] ?? '') ? 'selected' : '' }}>
@@ -120,6 +125,46 @@
 
             <div class="card-footer pt-4" id="aichat_chat_main_footer">
                 <input type="hidden" data-chat-active-conversation value="{{ $initialConversationId }}" />
+                @if(!empty($aiChatConfig['permissions']['can_use_quote_wizard']) && !empty($aiChatConfig['features']['quote_wizard_enabled']))
+                    <div class="border border-warning border-dashed rounded p-4 mb-4 d-none" data-chat-quote-panel>
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="fw-bold text-gray-900" data-chat-quote-title>{{ __('aichat::lang.quote_assistant') }}</div>
+                                <div class="text-muted fs-8" data-chat-quote-status-text>{{ __('aichat::lang.quote_assistant_description') }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-light-warning btn-sm d-none" type="button" data-chat-quote-fill-missing>{{ __('aichat::lang.quote_assistant_fill_missing') }}</button>
+                                <button class="btn btn-warning btn-sm d-none" type="button" data-chat-quote-confirm>{{ __('aichat::lang.quote_assistant_confirm') }}</button>
+                            </div>
+                        </div>
+                        <div class="mt-3" data-chat-quote-summary></div>
+                        <div class="mt-3" data-chat-quote-missing></div>
+                        <div class="mt-3 d-flex flex-wrap gap-2" data-chat-quote-picks></div>
+                        <div class="mt-3 d-flex flex-wrap gap-2" data-chat-quote-links></div>
+                    </div>
+                    <div class="modal fade" tabindex="-1" aria-hidden="true" data-chat-quote-missing-modal>
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">{{ __('aichat::lang.quote_assistant_fill_modal_title') }}</h5>
+                                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="{{ __('aichat::lang.quote_assistant_fill_modal_cancel') }}">
+                                        <i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="text-muted fs-7 mb-3">{{ __('aichat::lang.quote_assistant_fill_modal_help') }}</div>
+                                    <div class="mb-3 d-flex flex-wrap gap-2" data-chat-quote-missing-modal-list></div>
+                                    <textarea class="form-control" rows="4" data-chat-quote-missing-modal-input placeholder="{{ __('aichat::lang.quote_assistant_fill_modal_placeholder') }}"></textarea>
+                                    <div class="text-danger fs-8 mt-2" data-chat-quote-missing-modal-error></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('aichat::lang.quote_assistant_fill_modal_cancel') }}</button>
+                                    <button type="button" class="btn btn-warning" data-chat-quote-missing-modal-submit>{{ __('aichat::lang.quote_assistant_fill_modal_submit') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 <textarea class="form-control form-control-flush mb-3" rows="1" data-kt-element="input" placeholder="{{ __('aichat::lang.type_message') }}"></textarea>
                 <div class="d-flex flex-stack">
                     <div class="d-flex align-items-center me-2">

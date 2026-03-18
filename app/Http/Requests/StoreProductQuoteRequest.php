@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Utils\ProductCostingUtil;
+use Illuminate\Validation\Validator;
 
 class StoreProductQuoteRequest extends FormRequest
 {
@@ -46,6 +47,11 @@ class StoreProductQuoteRequest extends FormRequest
     public function rules()
     {
         $business_id = (int) $this->session()->get('user.business_id');
+        return self::buildRules($business_id);
+    }
+
+    public static function buildRules(int $business_id): array
+    {
         $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
         $allowedCurrencies = array_keys((array) ($costingOptions['currency'] ?? []));
 
@@ -94,16 +100,20 @@ class StoreProductQuoteRequest extends FormRequest
 
     public function withValidator($validator)
     {
-        $validator->after(function ($validator) {
-            $lines = $this->input('lines', []);
+        self::applyAdditionalValidation($validator, $this->all(), (int) $this->session()->get('user.business_id'));
+    }
+
+    public static function applyAdditionalValidation(Validator $validator, array $payload, int $business_id): void
+    {
+        $validator->after(function (Validator $validator) use ($payload, $business_id) {
+            $lines = (array) ($payload['lines'] ?? []);
             if (empty($lines)) {
                 return;
             }
 
-            $business_id = (int) $this->session()->get('user.business_id');
             $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
             $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
-            $shipmentPort = trim((string) ($this->input('shipment_port') ?? ''));
+            $shipmentPort = trim((string) ($payload['shipment_port'] ?? ''));
             $isLocalDelivery = $shipmentPort === '';
 
             $firstCurrency = (string) ($lines[0]['currency'] ?? '');

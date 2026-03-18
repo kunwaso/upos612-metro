@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Utils\ProductCostingUtil;
+use Illuminate\Validation\Validator;
 
 class StoreProductBudgetQuoteRequest extends FormRequest
 {
@@ -16,6 +17,11 @@ class StoreProductBudgetQuoteRequest extends FormRequest
     public function rules()
     {
         $business_id = (int) $this->session()->get('user.business_id');
+        return self::buildRules($business_id);
+    }
+
+    public static function buildRules(int $business_id): array
+    {
         $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
         $allowedCurrencies = array_keys((array) ($costingOptions['currency'] ?? []));
 
@@ -52,12 +58,16 @@ class StoreProductBudgetQuoteRequest extends FormRequest
 
     public function withValidator($validator)
     {
-        $validator->after(function ($validator) {
-            $business_id = (int) $this->session()->get('user.business_id');
+        self::applyAdditionalValidation($validator, $this->all(), (int) $this->session()->get('user.business_id'));
+    }
+
+    public static function applyAdditionalValidation(Validator $validator, array $payload, int $business_id): void
+    {
+        $validator->after(function (Validator $validator) use ($payload, $business_id) {
             $costingOptions = app(ProductCostingUtil::class)->getDropdownOptions($business_id);
             $allowedIncoterms = array_values((array) ($costingOptions['incoterm'] ?? []));
-            $incoterm = trim((string) ($this->input('incoterm') ?? ''));
-            $shipmentPort = trim((string) ($this->input('shipment_port') ?? ''));
+            $incoterm = trim((string) ($payload['incoterm'] ?? ''));
+            $shipmentPort = trim((string) ($payload['shipment_port'] ?? ''));
             $isLocalDelivery = $shipmentPort === '';
 
             if (! $isLocalDelivery && $incoterm === '') {

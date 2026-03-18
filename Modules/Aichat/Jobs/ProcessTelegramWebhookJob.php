@@ -2,6 +2,7 @@
 
 namespace Modules\Aichat\Jobs;
 
+use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -9,7 +10,9 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Aichat\Entities\ChatMessage;
+use Modules\Aichat\Entities\ProductQuoteDraft;
 use Modules\Aichat\Utils\AIChatUtil;
+use Modules\Aichat\Utils\ChatProductQuoteWizardUtil;
 use Modules\Aichat\Utils\ChatUtil;
 use Modules\Aichat\Utils\ChatWorkflowUtil;
 use Modules\Aichat\Utils\TelegramApiUtil;
@@ -31,8 +34,13 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         $this->update = $update;
     }
 
-    public function handle(ChatUtil $chatUtil, ChatWorkflowUtil $chatWorkflowUtil, AIChatUtil $aiChatUtil, TelegramApiUtil $telegramApi): void
-    {
+    public function handle(
+        ChatUtil $chatUtil,
+        ChatWorkflowUtil $chatWorkflowUtil,
+        AIChatUtil $aiChatUtil,
+        TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil
+    ): void {
         $bot = $chatUtil->findTelegramBotByWebhookKey($this->webhookKey);
         if (! $bot) {
             return;
@@ -68,7 +76,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
 
         if ($chatType === 'private') {
-            $this->handlePrivateMessage($chatUtil, $chatWorkflowUtil, $aiChatUtil, $telegramApi, $bot, $chatId, $text);
+            $this->handlePrivateMessage($chatUtil, $chatWorkflowUtil, $aiChatUtil, $telegramApi, $quoteWizardUtil, $bot, $chatId, $text);
         }
     }
 
@@ -127,6 +135,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         ChatWorkflowUtil $chatWorkflowUtil,
         AIChatUtil $aiChatUtil,
         TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
         $bot,
         int $chatId,
         string $text
@@ -153,6 +162,13 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
 
         $userId = (int) $telegramChat->user_id;
+        $user = $this->resolveTelegramUser($userId);
+        if (! $user) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_user_not_allowed'));
+
+            return;
+        }
+
         if (! $chatUtil->isUserAllowedForTelegram((int) $bot->business_id, $userId)) {
             $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_user_not_allowed'));
 
@@ -172,12 +188,265 @@ class ProcessTelegramWebhookJob implements ShouldQueue
             return;
         }
 
+        if ($this->isCommand($text, 'quote')) {
+            $this->handleQuoteWizardStart($chatUtil, $telegramApi, $quoteWizardUtil, $bot, $chatId, $userId, $user);
+
+            return;
+        }
+
+        if ($this->isCommand($text, 'cancel')) {
+            $this->handleQuoteWizardCancel($chatUtil, $telegramApi, $quoteWizardUtil, $bot, $chatId, $userId, $user);
+
+            return;
+        }
+
         if ($text === '') {
+            return;
+        }
+
+        $activeDraft = $quoteWizardUtil->getLatestActiveDraftForChannel((int) $bot->business_id, $userId, null, $chatId);
+        if ($activeDraft) {
+            $this->handleQuoteWizardActiveMessage(
+                $chatUtil,
+                $telegramApi,
+                $quoteWizardUtil,
+                $bot,
+                $chatId,
+                $userId,
+                $user,
+                $text,
+                $activeDraft
+            );
+
             return;
         }
 
         $conversation = $chatUtil->getOrCreateTelegramConversation((int) $bot->business_id, $chatId, $userId);
         $this->processAiAndReply($chatUtil, $chatWorkflowUtil, $aiChatUtil, $telegramApi, $bot, $chatId, $userId, $text, $conversation);
+    }
+
+    protected function handleQuoteWizardStart(
+        ChatUtil $chatUtil,
+        TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
+        $bot,
+        int $chatId,
+        int $userId,
+        User $user
+    ): void {
+        $businessId = (int) $bot->business_id;
+        if (! $this->isQuoteWizardEnabled()) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.quote_assistant_feature_disabled'));
+
+            return;
+        }
+
+        if (! $this->userCan($user, 'aichat.quote_wizard.use')) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('messages.unauthorized_action'));
+
+            return;
+        }
+
+        $conversation = $chatUtil->getOrCreateTelegramConversation($businessId, $chatId, $userId);
+        $draft = $quoteWizardUtil->getOrCreateDraft(null, $userId, $businessId, null, $chatId);
+        $result = $quoteWizardUtil->processStep($draft, $conversation, $userId, $businessId, [
+            'message' => '',
+            'channel' => 'telegram',
+        ]);
+
+        $chatUtil->audit($businessId, $userId, 'quote_wizard_step_processed', (string) $conversation->id, null, null, [
+            'draft_id' => (string) $result['draft']->id,
+            'status' => (string) ($result['state']['status'] ?? ProductQuoteDraft::STATUS_COLLECTING),
+            'channel' => 'telegram',
+            'command' => '/quote',
+        ]);
+
+        $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, (string) $result['assistant_message']->content);
+    }
+
+    protected function handleQuoteWizardCancel(
+        ChatUtil $chatUtil,
+        TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
+        $bot,
+        int $chatId,
+        int $userId,
+        User $user
+    ): void {
+        if (! $this->userCan($user, 'aichat.quote_wizard.use')) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('messages.unauthorized_action'));
+
+            return;
+        }
+
+        $businessId = (int) $bot->business_id;
+        $draft = $quoteWizardUtil->getLatestActiveDraftForChannel($businessId, $userId, null, $chatId);
+        if (! $draft) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_quote_wizard_no_active_draft'));
+
+            return;
+        }
+
+        $quoteWizardUtil->expireDraft($draft);
+        $chatUtil->audit($businessId, $userId, 'quote_wizard_cancelled', null, null, null, [
+            'draft_id' => (string) $draft->id,
+            'channel' => 'telegram',
+        ]);
+
+        $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_quote_wizard_cancelled'));
+    }
+
+    protected function handleQuoteWizardActiveMessage(
+        ChatUtil $chatUtil,
+        TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
+        $bot,
+        int $chatId,
+        int $userId,
+        User $user,
+        string $text,
+        ProductQuoteDraft $activeDraft
+    ): void {
+        if (! $this->isQuoteWizardEnabled()) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.quote_assistant_feature_disabled'));
+
+            return;
+        }
+
+        if (! $this->userCan($user, 'aichat.quote_wizard.use')) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('messages.unauthorized_action'));
+
+            return;
+        }
+
+        $normalizedText = trim($text);
+        if (strtoupper($normalizedText) === 'CONFIRM') {
+            $this->handleQuoteWizardConfirm($chatUtil, $telegramApi, $quoteWizardUtil, $bot, $chatId, $userId, $user, $activeDraft);
+
+            return;
+        }
+
+        $businessId = (int) $bot->business_id;
+        $conversation = $chatUtil->getOrCreateTelegramConversation($businessId, $chatId, $userId);
+        $serializedDraft = $quoteWizardUtil->serializeDraft($activeDraft);
+
+        $customerPick = $this->parseTelegramCustomerPickIndex($normalizedText);
+        if ($customerPick !== null) {
+            $contactOptions = array_values((array) data_get($serializedDraft, 'pick_lists.contacts', []));
+            $selectedContact = $contactOptions[$customerPick - 1] ?? null;
+
+            if (! is_array($selectedContact) || empty($selectedContact['id'])) {
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $this->buildInvalidPickMessage());
+
+                return;
+            }
+
+            $result = $quoteWizardUtil->processStep($activeDraft, $conversation, $userId, $businessId, [
+                'message' => '',
+                'channel' => 'telegram',
+                'selected_contact_id' => (int) $selectedContact['id'],
+            ]);
+
+            $chatUtil->audit($businessId, $userId, 'quote_wizard_step_processed', (string) $conversation->id, null, null, [
+                'draft_id' => (string) $result['draft']->id,
+                'status' => (string) ($result['state']['status'] ?? ProductQuoteDraft::STATUS_COLLECTING),
+                'channel' => 'telegram',
+                'selection' => 'customer',
+                'selection_index' => $customerPick,
+            ]);
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, (string) $result['assistant_message']->content);
+
+            return;
+        }
+
+        $productPick = $this->parseTelegramProductPick($normalizedText);
+        if ($productPick !== null) {
+            $groupIndex = (int) $productPick['group_index'];
+            $optionIndex = (int) $productPick['option_index'];
+            $productGroups = array_values((array) data_get($serializedDraft, 'pick_lists.products', []));
+            $selectedGroup = $productGroups[$groupIndex - 1] ?? null;
+            $selectedProduct = is_array($selectedGroup)
+                ? ((array) ($selectedGroup['options'] ?? []))[$optionIndex - 1] ?? null
+                : null;
+
+            if (! is_array($selectedGroup) || ! is_array($selectedProduct) || empty($selectedProduct['id'])) {
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $this->buildInvalidPickMessage());
+
+                return;
+            }
+
+            $result = $quoteWizardUtil->processStep($activeDraft, $conversation, $userId, $businessId, [
+                'message' => '',
+                'channel' => 'telegram',
+                'selected_product_id' => (int) $selectedProduct['id'],
+                'selected_line_uid' => (string) ($selectedGroup['line_uid'] ?? ''),
+            ]);
+
+            $chatUtil->audit($businessId, $userId, 'quote_wizard_step_processed', (string) $conversation->id, null, null, [
+                'draft_id' => (string) $result['draft']->id,
+                'status' => (string) ($result['state']['status'] ?? ProductQuoteDraft::STATUS_COLLECTING),
+                'channel' => 'telegram',
+                'selection' => 'product',
+                'line_index' => $groupIndex,
+                'selection_index' => $optionIndex,
+            ]);
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, (string) $result['assistant_message']->content);
+
+            return;
+        }
+
+        $result = $quoteWizardUtil->processStep($activeDraft, $conversation, $userId, $businessId, [
+            'message' => $normalizedText,
+            'channel' => 'telegram',
+        ]);
+
+        $chatUtil->audit($businessId, $userId, 'quote_wizard_step_processed', (string) $conversation->id, null, null, [
+            'draft_id' => (string) $result['draft']->id,
+            'status' => (string) ($result['state']['status'] ?? ProductQuoteDraft::STATUS_COLLECTING),
+            'channel' => 'telegram',
+        ]);
+        $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, (string) $result['assistant_message']->content);
+    }
+
+    protected function handleQuoteWizardConfirm(
+        ChatUtil $chatUtil,
+        TelegramApiUtil $telegramApi,
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
+        $bot,
+        int $chatId,
+        int $userId,
+        User $user,
+        ProductQuoteDraft $draft
+    ): void {
+        if (! $this->userCan($user, 'product_quote.create')) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('messages.unauthorized_action'));
+
+            return;
+        }
+
+        $businessId = (int) $bot->business_id;
+        $conversation = $chatUtil->getOrCreateTelegramConversation($businessId, $chatId, $userId);
+
+        try {
+            $confirmResult = $quoteWizardUtil->confirmDraft($draft, $businessId, $userId);
+            $assistantText = __('aichat::lang.quote_assistant_success_prompt')
+                . "\n"
+                . (string) $confirmResult['public_url']
+                . "\n"
+                . (string) $confirmResult['admin_url'];
+
+            $chatUtil->appendMessage($conversation, ChatMessage::ROLE_ASSISTANT, $assistantText, null, null, $userId);
+            $chatUtil->audit($businessId, $userId, 'quote_created_from_chat', (string) $conversation->id, null, null, [
+                'draft_id' => (string) data_get($confirmResult, 'draft.id'),
+                'quote_id' => (int) data_get($confirmResult, 'quote.id'),
+                'channel' => 'telegram',
+            ]);
+
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $assistantText);
+        } catch (\Throwable $exception) {
+            $errorMessage = (string) ($exception->getMessage() ?: __('aichat::lang.quote_assistant_validation_failed'));
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $errorMessage);
+        }
     }
 
     protected function processAiAndReply(
@@ -272,6 +541,49 @@ class ProcessTelegramWebhookJob implements ShouldQueue
     protected function isCommand(string $text, string $command): bool
     {
         return (bool) preg_match('/^\/' . preg_quote($command, '/') . '(?:@[a-zA-Z0-9_]+)?(?:\s+.*)?$/', trim($text));
+    }
+
+    protected function parseTelegramCustomerPickIndex(string $text): ?int
+    {
+        if (! preg_match('/^C\s+(\d+)$/i', trim($text), $matches)) {
+            return null;
+        }
+
+        return max(1, (int) ($matches[1] ?? 0));
+    }
+
+    protected function parseTelegramProductPick(string $text): ?array
+    {
+        if (! preg_match('/^P\s+(\d+)\s+(\d+)$/i', trim($text), $matches)) {
+            return null;
+        }
+
+        return [
+            'group_index' => max(1, (int) ($matches[1] ?? 0)),
+            'option_index' => max(1, (int) ($matches[2] ?? 0)),
+        ];
+    }
+
+    protected function buildInvalidPickMessage(): string
+    {
+        return __('aichat::lang.telegram_quote_wizard_invalid_pick')
+            . "\n"
+            . __('aichat::lang.telegram_quote_wizard_pick_help');
+    }
+
+    protected function resolveTelegramUser(int $userId): ?User
+    {
+        return User::find($userId);
+    }
+
+    protected function userCan(?User $user, string $permission): bool
+    {
+        return $user ? (bool) $user->can($permission) : false;
+    }
+
+    protected function isQuoteWizardEnabled(): bool
+    {
+        return (bool) config('aichat.quote_wizard.enabled', true);
     }
 
     protected function isRateLimited(int $businessId, int $chatId): bool
