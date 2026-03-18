@@ -358,6 +358,15 @@ class AdminSidebarMenu
                                 ['icon' => '', 'active' => request()->get('status') == 'quotation']
                             );
                         }
+                        $showQuotesHub = auth()->user()->can('product_quote.view')
+                            || (in_array('add_sale', $enabled_modules) && ($is_admin || auth()->user()->hasAnyPermission(['quotation.view_all', 'quotation.view_own'])));
+                        if ($showQuotesHub) {
+                            $sub->url(
+                                action([\App\Http\Controllers\UnifiedQuoteController::class, 'index']),
+                                __('lang_v1.unified_quotes'),
+                                ['icon' => '', 'active' => request()->segment(1) == 'quotes' && request()->segment(2) == 'hub']
+                            );
+                        }
                         if (in_array('add_sale', $enabled_modules) && ($is_admin || auth()->user()->hasAnyPermission(['quotation.view_all', 'quotation.view_own']))) {
                             $sub->url(
                                 action([\App\Http\Controllers\SellController::class, 'getQuotations']),

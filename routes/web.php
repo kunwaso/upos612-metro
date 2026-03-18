@@ -41,6 +41,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductQuoteController;
 use App\Http\Controllers\ProductSalesOrderController;
 use App\Http\Controllers\PublicQuoteController;
+use App\Http\Controllers\UnifiedQuoteController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequisitionController;
@@ -209,6 +210,9 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::get('/products/detail/{id}/files/{media_id}/download', [ProductController::class, 'downloadDetailFile'])->name('product.detail.files.download');
     Route::delete('/products/detail/{id}/files/{media_id}', [ProductController::class, 'deleteDetailFile'])->name('product.detail.files.delete');
     Route::delete('/products/detail/{id}/activity/{log_id}', [ProductController::class, 'deleteDetailActivity'])->name('product.detail.activity.delete');
+
+    Route::get('/quotes/hub', [UnifiedQuoteController::class, 'index'])->name('quotes.hub');
+    Route::get('/quotes/hub/data', [UnifiedQuoteController::class, 'data'])->name('quotes.hub.data');
 
     Route::prefix('product/quotes')->name('product.quotes.')->group(function () {
         Route::get('/', [ProductQuoteController::class, 'index'])->name('index');
