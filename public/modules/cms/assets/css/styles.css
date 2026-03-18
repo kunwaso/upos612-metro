@@ -238,7 +238,7 @@ html {
 }
 
 body {
-  font-family: "Urbanist", sans-serif;
+  font-family: "Roboto", sans-serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
@@ -246,7 +246,7 @@ body {
   background-color: var(--body);
 }
 body::-webkit-scrollbar {
-  width: 0px;
+  width: 7px;
 }
 body::-webkit-scrollbar-thumb {
   cursor: grab;
@@ -346,7 +346,7 @@ a {
   text-decoration: none;
   cursor: pointer;
   display: inline-block;
-  font-family: "Urbanist", sans-serif;
+  font-family: "Roboto", sans-serif;
   color: var(--primary);
 }
 a:focus, a:hover {
@@ -649,7 +649,7 @@ h5,
 .h5,
 h6,
 .h6 {
-  font-family: "Urbanist", sans-serif;
+  font-family: "Roboto", sans-serif;
   text-rendering: optimizeLegibility;
   font-weight: 400;
   margin-bottom: 0;
@@ -742,7 +742,7 @@ h6,
 
 /* Font custom */
 .font-main {
-  font-family: "Urbanist", sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 .text-display-1 {
@@ -1265,6 +1265,16 @@ h6,
   padding-bottom: 7px;
   margin-bottom: -7px;
 }
+
+.text-gradient-4 {
+  background: linear-gradient(95.5deg, #ff0080 1.91%, #ff4800 43.92%);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0px transparent;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 7px;
+  margin-bottom: -7px;
+}
+
 
 @keyframes bghover {
   0% {
@@ -3159,7 +3169,7 @@ header.header-sticky {
   font-weight: 400;
   border-radius: 8px;
   text-align: center;
-  font-family: "Urbanist", sans-serif;
+  font-family: "Roboto", sans-serif;
   display: none;
 }
 .hover-tooltip .tooltip::before {

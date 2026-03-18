@@ -8,149 +8,118 @@
 <!-- Hero Banner -->
 <div class="section-hero">
     <div class="hero-image">
-        <video class="" muted="" autoplay="" loop="" playsinline="">
-            <source src="{{ asset('modules/cms/assets/images/video/hero.mp4') }}" type="video/mp4">
-        </video>
+        <img src="{{ asset('modules/cms/assets/images/banner/banner-1.png') }}" alt="Hero Banner">
     </div>
     <div class="container">
         <div class="content-wrap text-center">
             <div class="title text-display-2 effectFade fadeRotateX">
-                <span class="title1 fw-semibold text-gradient-1">Your AI Sprint Team</span>
+                <span class="title1 fw-semibold text-gradient-4">Packaging </span>
                 <br>
                 <div class="title2 d-flex gap-20 justify-content-center flex-wrap">
-                    <span class="fw-semibold text-gradient-1">on Demand</span>
+                    <span class="fw-semibold text-white">Solutions.</span>
                     
                 </div>
             </div>
             <p class="text effectFade fadeUp">
-                From discovery to deployment, we plug into your stack to prototype, <br> validate, and launch AI experiences your users actually love.
+                Giải pháp về đóng gói, in ấn, và cung cấp các sản phẩm đóng gói cho các doanh nghiệp trong và ngoài nước.
             </p>
             <div class="bot-btns effectFade fadeRotateX">
                 <a href="{{ url('c/page/services') }}" class="tf-btn">
-                    Explore Services
+                    Xem chi tiết
                 </a>
                 <a href="#pricing" class="tf-btn-2">
-                    View Pricing Plans
+                    Liên hệ ngay
                 </a>
             </div>
         </div>
     </div>
     <a href="#about" class="scroll-more">
-        <span class="fw-semibold link1">Scroll for more</span>
+        <span class="fw-semibold link1">Cuộn xuống để xem thêm</span>
         <i class="icon icon-long-arrow-alt-down-solid"></i>
     </a>
 </div>
-<!-- /Hero Banner -->
-<!-- section-about-us -->
-<div class="section-about-us flat-spacing" id="about">
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <div class="heading-section">
-                    <div class="heading-sub fw-semibold effectFade fadeUp">About Us</div>
-                    <div class="heading-title text-gradient-2 effectFade fadeRotateX">Human-Centered AI, <br> Built for Production</div>
-                </div>
-            </div>
-            <div class="col-xxl-7 col-lg-6 lg-mb-24">
-                <div class="col-left">
-                    <div class="position-relative z-5">
-                        <div class="sub text-white">
-                            <span class="dot"></span>
-                            Available for worldwide project
+
+    <!-- section-Catalog -->
+    <div class="section-catalog flat-spacing pt-10">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="process-heading h-100">
+                        <div class="heading-section mb-80">
+                            <div class="heading-sub fw-semibold effectFade fadeUp">Catalog</div>
+                            <div class="heading-title text-gradient-3 effectFade fadeRotateX">Danh mục sản phẩm</div>
                         </div>
-                        <h5 class="title fw-semibold text-white">Based in <span class="text-brand">Montréal, Canada</span></h5>
-                        <a href="{{ route('cms.contact.us') }}" class="tf-btn">
-                            Start a Project
-                        </a>
-                    </div>
-                    <img class="effectFade fadeRotateX" src="{{ asset('modules/cms/assets/images/item/earth.png') }}" alt="">
-                </div>
-            </div>
-            <div class="col-xxl-5 col-lg-6">
-                <div class="review-box mb-24">
-                    <div class="desc fw-semibold text-body-1">Trusted by 120+ clients across 4 industries - <br> shipping AI from idea to production in 8–10 weeks</div>
-                    <div class="d-flex justify-content-between flex-wrap align-items-end gap-12">
-                        <div class="">
-                            <div class="d-flex gap-4 text mb-10">
-                                <svg width="26" height="24" viewBox="0 0 26 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12.6792 18.3019L18.1887 16.9057L20.4906 24L12.6792 18.3019ZM25.3585 9.13208H15.6604L12.6792 0L9.69811 9.13208H0L7.84906 14.7925L4.86792 23.9245L12.717 18.2641L17.5472 14.7925L25.3585 9.13208Z" fill="#219653"/>
-                                </svg>
-                                Trustpilot
+                        <div class="group-btn-slider">
+                            <div class="nav-prev-swiper">
+                                <i class="icon icon-angle-left-solid"></i>
                             </div>
-                            <div class="d-flex gap-2">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="24" height="24" fill="#3F3F46"/>
-                                    <path d="M11.9996 16.4114L15.6496 15.4341L17.1746 20.4001L11.9996 16.4114ZM20.3996 9.99255H13.9746L11.9996 3.6001L10.0246 9.99255H3.59961L8.79961 13.9548L6.82461 20.3473L12.0246 16.385L15.2246 13.9548L20.3996 9.99255Z" fill="white"/>
-                                </svg>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="24" height="24" fill="#3F3F46"/>
-                                    <path d="M11.9996 16.4114L15.6496 15.4341L17.1746 20.4001L11.9996 16.4114ZM20.3996 9.99255H13.9746L11.9996 3.6001L10.0246 9.99255H3.59961L8.79961 13.9548L6.82461 20.3473L12.0246 16.385L15.2246 13.9548L20.3996 9.99255Z" fill="white"/>
-                                </svg>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="24" height="24" fill="#3F3F46"/>
-                                    <path d="M11.9996 16.4114L15.6496 15.4341L17.1746 20.4001L11.9996 16.4114ZM20.3996 9.99255H13.9746L11.9996 3.6001L10.0246 9.99255H3.59961L8.79961 13.9548L6.82461 20.3473L12.0246 16.385L15.2246 13.9548L20.3996 9.99255Z" fill="white"/>
-                                </svg>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="24" height="24" fill="#3F3F46"/>
-                                    <path d="M11.9996 16.4114L15.6496 15.4341L17.1746 20.4001L11.9996 16.4114ZM20.3996 9.99255H13.9746L11.9996 3.6001L10.0246 9.99255H3.59961L8.79961 13.9548L6.82461 20.3473L12.0246 16.385L15.2246 13.9548L20.3996 9.99255Z" fill="white"/>
-                                </svg>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="24" height="24" fill="#3F3F46"/>
-                                    <path d="M11.9996 16.4114L15.6496 15.4341L17.1746 20.4001L11.9996 16.4114ZM20.3996 9.99255H13.9746L11.9996 3.6001L10.0246 9.99255H3.59961L8.79961 13.9548L6.82461 20.3473L12.0246 16.385L15.2246 13.9548L20.3996 9.99255Z" fill="white"/>
-                                </svg>
+                            <div class="nav-next-swiper">
+                                <i class="icon icon-angle-right-solid"></i>
                             </div>
                         </div>
-                        <div class="counter text-neutral-200">
-                            <span class="number" data-speed="1500" data-to="120" data-inviewport="yes">10</span><span>+</span>
-                        </div>
                     </div>
                 </div>
-                <div class="box-quotes effectFade fadeRotateX">
-                    <div class="image ">
-                        <img src="{{ asset('modules/cms/assets/images/section/quotes-1.jpg') }}" alt="">
-                    </div>
-                    <div class="content">
-                        <div class="icon mb-8">
-                            <svg width="23" height="20" viewBox="0 0 23 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12.9375 20V10.3597C12.9375 7.72182 13.824 5.51559 15.5969 3.74101C17.4177 1.91847 19.8854 0.671463 23 0V6.40288C21.8021 6.78657 21.0115 7.26619 20.6281 7.84173C20.2448 8.3693 20.0292 9.04077 19.9813 9.85612H23V20H12.9375ZM0 20V10.3597C0 7.72182 0.886459 5.51559 2.65938 3.74101C4.48021 1.91847 6.94792 0.671463 10.0625 0V6.40288C8.9125 6.78657 8.12187 7.26619 7.69062 7.84173C7.30729 8.3693 7.09167 9.04077 7.04375 9.85612H10.0625V20H0Z" fill="#E4E4E7"/>
-                            </svg>
-                        </div>
-                        <div class="text-body-1 fw-semibold desc">Good AI feels obvious—because the hard work is hidden.</div>
-                        <div class="cite">
-                            <div class="name text-body-3 fw-semibold">Ava Collins</div>
-                            <div class="line"></div>
-                            <div class="sub text-body-3">Aigocy’s Design Lead</div>
+                <div class="col-lg-8">
+                    <div class="process-slide">
+                        <div dir="ltr" class="swiper tf-swiper swiper-box-shadow" data-preview="1.78" data-tablet="2" data-mobile-sm="1" data-mobile="1"
+                            data-loop="false" data-center="false" data-space-lg="24" data-space-md="24" data-space="30" >
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <div class="process-card">
+                                        <i class="icon fa-solid fa-scroll"></i>
+                                        <div class="content">
+                                            <h4 class="title fw-semibold">Cuộn (Roll Pack)</h4>
+                                            <p class="text text-secondary">các sản phẩm dạng cuộn như giấy, nhựa, vải, và các vật liệu khác. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
+                                        </div>
+                                        <div class="bot">
+                                            <img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt="">
+                                            <div class="number">
+                                                <span class="text-neutral-400">01</span>
+                                                <span class="text-neutral-200">/03</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="swiper-slide">
+                                    <div class="process-card">
+                                        <i class="icon fas fa-box-open"></i>
+                                        <div class="content">
+                                            <h4 class="title fw-semibold">Hộp (Box Pack)</h4>
+                                            <p class="text text-secondary">các sản phẩm dạng hộp giấy. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
+                                        </div>
+                                        <div class="bot">
+                                            <img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt="">
+                                            <div class="number">
+                                                <span class="text-neutral-400">02</span>
+                                                <span class="text-neutral-200">/03</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="swiper-slide">
+                                    <div class="process-card">
+                                        <i class="icon icon-user-check-solid-1"></i>
+                                        <div class="content">
+                                            <h4 class="title fw-semibold">Validate & Evals</h4>
+                                            <p class="text text-secondary">Prove accuracy, usability, safety, and cost. Eval dashboard, acceptance thresholds, decision to iterate/ship.</p>
+                                        </div>
+                                        <div class="bot">
+                                            <div class="time fw-semibold">1 WEEKS</div>
+                                            <div class="number">
+                                                <span class="text-neutral-400">03</span>
+                                                <span class="text-neutral-200">/03</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<!-- /section-about-us -->
-<!-- section-partner -->
-<div class="section-partner">
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <div class="partner-wrap">
-                    <p class="text-secondary text fw-semibold">Trusted by 100+ <br> top-tier brands</p>
-                    <div class="infiniteSlide_tech_main d-grid">
-                        <div class="infiniteSlide infiniteSlide_partner" data-clone="5">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-1.svg') }}" alt="">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-2.svg') }}" alt="">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-3.svg') }}" alt="">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-4.svg') }}" alt="">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-5.svg') }}" alt="">
-                            <img src="{{ asset('modules/cms/assets/images/partner/partner-6.svg') }}" alt="">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- /section-partner -->
+    <!-- /section-Catalog -->
 
 <div class="box-white">
     <!-- section-services -->
@@ -410,87 +379,7 @@
         </div>
     </div>
     <!-- /section-featured-works -->
-    <!-- section-process -->
-    <div class="section-process flat-spacing pt-0">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-5">
-                    <div class="process-heading h-100">
-                        <div class="heading-section mb-80">
-                            <div class="heading-sub fw-semibold effectFade fadeUp">Process</div>
-                            <div class="heading-title text-gradient-3 effectFade fadeRotateX">From Idea <br> to Production</div>
-                        </div>
-                        <div class="group-btn-slider">
-                            <div class="nav-prev-swiper">
-                                <i class="icon icon-angle-left-solid"></i>
-                            </div>
-                            <div class="nav-next-swiper">
-                                <i class="icon icon-angle-right-solid"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-7">
-                    <div class="process-slide">
-                        <div dir="ltr" class="swiper tf-swiper swiper-box-shadow" data-preview="1.78" data-tablet="2" data-mobile-sm="1" data-mobile="1"
-                            data-loop="false" data-center="false" data-space-lg="24" data-space-md="24" data-space="30" >
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon icon-search-solid"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Discover & Scope</h4>
-                                            <p class="text text-secondary">Align on problems, data reality, and success metrics. Opportunity brief, KPI model, phased roadmap, effort/cost ranges.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <div class="time fw-semibold">3-7 DAYS</div>
-                                            <div class="number">
-                                                <span class="text-neutral-400">01</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon icon-bolt-solid"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Prototype</h4>
-                                            <p class="text text-secondary">De-risk unknowns and validate value quickly. Clickable UX, tech spike repo, initial eval rubric, demo.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <div class="time fw-semibold">1-2 WEEKS</div>
-                                            <div class="number">
-                                                <span class="text-neutral-400">02</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon icon-user-check-solid-1"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Validate & Evals</h4>
-                                            <p class="text text-secondary">Prove accuracy, usability, safety, and cost. Eval dashboard, acceptance thresholds, decision to iterate/ship.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <div class="time fw-semibold">1 WEEKS</div>
-                                            <div class="number">
-                                                <span class="text-neutral-400">03</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /section-process -->
+
     <!-- section-benefits -->
     <div class="section-benefits flat-spacing pt-0">
         <div class="container">

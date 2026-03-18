@@ -246,7 +246,7 @@ body {
   background-color: var(--body);
 }
 body::-webkit-scrollbar {
-  width: 0px;
+  width: 5px;
 }
 body::-webkit-scrollbar-thumb {
   cursor: grab;
@@ -1259,6 +1259,15 @@ h6,
 
 .text-gradient-3 {
   background: linear-gradient(95.5deg, #61666A 1.91%, #292C2E 43.92%);
+  -webkit-background-clip: text;
+  -webkit-text-stroke: 0px transparent;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 7px;
+  margin-bottom: -7px;
+}
+
+.text-gradient-4 {
+  background: linear-gradient(95.5deg, #ff008c 1.91%, #ff3c00 43.92%);
   -webkit-background-clip: text;
   -webkit-text-stroke: 0px transparent;
   -webkit-text-fill-color: transparent;

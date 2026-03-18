@@ -69,7 +69,7 @@
 }
 
 .swiper-slide {
-    flex-shrink: 0;
+    flex-shrink: 0; 
     width: 100%;
     height: 100%;
     position: relative;
@@ -81,6 +81,13 @@
     visibility: hidden;
 }
 
+
+
+ 
+/* .section-catalog .swiper-slide {
+    width: 430px !important;  
+
+} */
 .swiper-autoheight,
 .swiper-autoheight .swiper-slide {
     height: auto;
