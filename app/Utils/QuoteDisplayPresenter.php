@@ -17,9 +17,8 @@ class QuoteDisplayPresenter
     public function presentQuote(ProductQuote $quote): array
     {
         $business = $this->resolveBusinessFromQuote($quote);
-        $currencyPrecision = $this->getNumberFormatUtil()->getCurrencyPrecision($business);
-        $quantityPrecision = $this->getNumberFormatUtil()->getQuantityPrecision($business);
         $currencyCode = trim((string) ($quote->currency ?? ''));
+        $numberFormat = $this->getNumberFormatUtil();
 
         $lineRows = [];
 
@@ -61,11 +60,11 @@ class QuoteDisplayPresenter
                 'categoryName' => $categoryName,
                 'purchaseUom' => $purchaseUom,
                 'quantity' => $qty,
-                'quantityPublicDisplay' => $this->formatTrimmedNumber($qty, $quantityPrecision),
+                'quantityPublicDisplay' => $numberFormat->formatQuantityDisplay($qty, $business),
                 'unitCost' => $unitCost,
-                'unitCostPublicDisplay' => $this->formatCurrencyCodeNumber($unitCost, $currencyPrecision, $currencyCode),
+                'unitCostPublicDisplay' => $numberFormat->formatCurrencyCodeDisplay($unitCost, $business, $currencyCode),
                 'totalCost' => $totalCost,
-                'totalCostPublicDisplay' => $this->formatCurrencyCodeNumber($totalCost, $currencyPrecision, $currencyCode),
+                'totalCostPublicDisplay' => $numberFormat->formatCurrencyCodeDisplay($totalCost, $business, $currencyCode),
             ];
         }
 
@@ -81,7 +80,7 @@ class QuoteDisplayPresenter
             'validUntilDisplay' => $this->formatDate($quote->expires_at),
             'quoteLineCount' => (int) ($quote->line_count ?: count($lineRows)),
             'quoteGrandTotalValue' => (float) ($quote->grand_total ?? 0),
-            'quoteGrandTotalPublicDisplay' => $this->formatCurrencyCodeNumber((float) ($quote->grand_total ?? 0), $currencyPrecision, $currencyCode),
+            'quoteGrandTotalPublicDisplay' => $numberFormat->formatCurrencyCodeDisplay((float) ($quote->grand_total ?? 0), $business, $currencyCode),
             'quoteDisplayLines' => $lineRows,
             'hasTrimLines' => false,
             'quoteStateBadgeClass' => $stateMeta['class'],
@@ -114,8 +113,7 @@ class QuoteDisplayPresenter
         }
 
         $business = $this->resolveBusinessFromQuote($quote);
-        $currencyPrecision = $this->getNumberFormatUtil()->getCurrencyPrecision($business);
-        $quantityPrecision = $this->getNumberFormatUtil()->getQuantityPrecision($business);
+        $numberFormat = $this->getNumberFormatUtil();
 
         $input = (array) ($quoteLine->costing_input ?? []);
         $breakdown = (array) ($quoteLine->costing_breakdown ?? []);
@@ -126,9 +124,9 @@ class QuoteDisplayPresenter
             'quoteNumber' => (string) ($quote->quote_number ?: $quote->uuid),
             'createdAtDisplay' => $this->formatDateTime($quote->created_at),
             'validUntilDisplay' => $this->formatDate($quote->expires_at),
-            'quantityDisplay' => $this->formatTrimmedNumber((float) ($input['qty'] ?? 0), $quantityPrecision),
-            'unitCostDisplay' => $this->formatNumber((float) ($breakdown['unit_cost'] ?? 0), $currencyPrecision),
-            'totalCostDisplay' => $this->formatCurrencyCodeNumber((float) ($breakdown['total_cost'] ?? 0), $currencyPrecision, $currencyCode),
+            'quantityDisplay' => $this->getNumberFormatUtil()->formatQuantityDisplay((float) ($input['qty'] ?? 0), $business),
+            'unitCostDisplay' => $numberFormat->formatCurrencyAmountDisplay((float) ($breakdown['unit_cost'] ?? 0), $business),
+            'totalCostDisplay' => $numberFormat->formatCurrencyCodeDisplay((float) ($breakdown['total_cost'] ?? 0), $business, $currencyCode),
             'recipientEmail' => (string) ($quote->customer_email ?: (optional($quote->contact)->email ?? '')),
             'canCreateSaleFromQuote' => ! empty($quote->confirmed_at) && empty($quote->transaction_id),
         ];
@@ -212,25 +210,6 @@ class QuoteDisplayPresenter
         }
 
         return null;
-    }
-
-    protected function formatCurrencyCodeNumber(float $value, int $precision, string $currencyCode): string
-    {
-        $formatted = $this->formatNumber($value, $precision);
-
-        return trim($formatted . ' ' . $currencyCode);
-    }
-
-    protected function formatNumber(float $value, int $precision): string
-    {
-        return number_format($value, max(0, $precision), '.', '');
-    }
-
-    protected function formatTrimmedNumber(float $value, int $precision): string
-    {
-        $formatted = $this->formatNumber($value, $precision);
-
-        return rtrim(rtrim($formatted, '0'), '.');
     }
 
     protected function formatDate($value): string

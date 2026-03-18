@@ -678,6 +678,18 @@ class SellController extends Controller
 
         $change_return = $this->dummyPaymentLine;
 
+        $create_page_title = __('sale.add_sale');
+        if ($sale_type == 'sales_order') {
+            $create_page_title = __('lang_v1.sales_order');
+        } else {
+            $req_status = request()->get('status', '');
+            if ($req_status === 'quotation') {
+                $create_page_title = __('lang_v1.add_quotation');
+            } elseif ($req_status === 'draft') {
+                $create_page_title = __('lang_v1.add_draft');
+            }
+        }
+
         return view('sell.create')
             ->with(compact(
                 'business_details',
@@ -705,7 +717,8 @@ class SellController extends Controller
                 'is_order_request_enabled',
                 'users',
                 'default_price_group_id',
-                'change_return'
+                'change_return',
+                'create_page_title'
             ));
     }
 

@@ -191,7 +191,7 @@ class PublicQuoteController extends Controller
     protected function findQuoteByPublicToken(string $publicToken): ?ProductQuote
     {
         return ProductQuote::with([
-            'business:id,name,tax_label_1,tax_number_1,tax_label_2,tax_number_2',
+            'business:id,name,tax_label_1,tax_number_1,tax_label_2,tax_number_2,currency_id,quantity_precision,currency_precision',
             'location:id,name,landmark,city,state,country,zip_code,mobile,alternate_number,email',
             'contact:id,name,supplier_business_name',
             'creator:id,surname,first_name,last_name,email,username',
