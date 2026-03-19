@@ -212,19 +212,133 @@
             }
         });
 
-        $(document).on('click', function (e) {
-            $('[data-toggle="popover"]').popover();
+        var popoverSelector = '[data-toggle="popover"], [data-bs-toggle="popover"]';
 
-            $(document).on('click', function (e) {
-                $('[data-toggle="popover"]').each(function () {
-                    // Check if the clicked element is the popover button or inside the popover
-                    if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
-                        $(this).popover('hide');
+        var getPopoverAttribute = function($element, name) {
+            var legacyValue = $element.attr('data-' + name);
+
+            if (typeof legacyValue !== 'undefined') {
+                return legacyValue;
+            }
+
+            return $element.attr('data-bs-' + name);
+        };
+
+        var parsePopoverBoolean = function(value, fallback) {
+            if (typeof value === 'undefined' || value === null || value === '') {
+                return fallback;
+            }
+
+            if (typeof value === 'boolean') {
+                return value;
+            }
+
+            return value === 'true';
+        };
+
+        var normalizePopoverPlacement = function(value) {
+            if (typeof value === 'undefined' || value === null || value === '') {
+                return 'right';
+            }
+
+            var normalizedValue = value.toString().trim().toLowerCase();
+            var validPlacements = [
+                'auto',
+                'auto-start',
+                'auto-end',
+                'top',
+                'top-start',
+                'top-end',
+                'bottom',
+                'bottom-start',
+                'bottom-end',
+                'left',
+                'left-start',
+                'left-end',
+                'right',
+                'right-start',
+                'right-end'
+            ];
+
+            if (validPlacements.indexOf(normalizedValue) !== -1) {
+                return normalizedValue;
+            }
+
+            var placementParts = normalizedValue.split(/\s+/);
+            var nonAutoPart = placementParts.filter(function(part) {
+                return part !== 'auto';
+            })[0];
+
+            if (nonAutoPart && validPlacements.indexOf(nonAutoPart) !== -1) {
+                return nonAutoPart;
+            }
+
+            return placementParts[0] || 'right';
+        };
+
+        var getPopoverConfig = function(element) {
+            var $element = $(element);
+            var html = parsePopoverBoolean(getPopoverAttribute($element, 'html'), false);
+            var container = getPopoverAttribute($element, 'container');
+            var content = getPopoverAttribute($element, 'content');
+            var placement = getPopoverAttribute($element, 'placement');
+            var trigger = getPopoverAttribute($element, 'trigger');
+            var title = $element.attr('data-original-title')
+                || $element.attr('data-bs-original-title')
+                || $element.attr('title')
+                || '';
+
+            return {
+                container: container || false,
+                content: typeof content === 'undefined' ? '' : content,
+                html: html,
+                placement: normalizePopoverPlacement(placement),
+                sanitize: !html,
+                title: title,
+                trigger: trigger || 'click'
+            };
+        };
+
+        window.__init_popovers = function(scope) {
+            if (typeof $ === 'undefined' || typeof $.fn.popover !== 'function') {
+                return;
+            }
+
+            var $scope = scope ? $(scope) : $(document);
+            var $targets = $scope.find(popoverSelector);
+
+            if ($scope.is(popoverSelector)) {
+                $targets = $targets.add($scope);
+            }
+
+            $targets.each(function() {
+                if (!$(this).data('bs.popover')) {
+                    $(this).popover(getPopoverConfig(this));
+                }
+            });
+        };
+
+        window.__init_popovers(document);
+
+        $(document)
+            .off('shown.bs.modal.popoverInit')
+            .on('shown.bs.modal.popoverInit', '.modal', function() {
+                window.__init_popovers(this);
+            });
+
+        $(document)
+            .off('click.popoverHide')
+            .on('click.popoverHide', function(e) {
+                $(popoverSelector).each(function() {
+                    var $trigger = $(this);
+                    var isTriggerClick = $trigger.is(e.target) || $trigger.has(e.target).length > 0;
+                    var isPopoverClick = $('.popover').has(e.target).length > 0;
+
+                    if (!isTriggerClick && !isPopoverClick) {
+                        $trigger.popover('hide');
                     }
                 });
             });
-            
-        });
 
         $('.side-bar-collapse').click(function() {
             $('.side-bar').toggle('slow');
@@ -239,5 +353,3 @@
    
     });
 </script>
-
-

@@ -22,11 +22,14 @@ $(document).ready(function() {
     __select2($('.select2'));
 
     // popover
-    $('body').on('mouseover', '[data-toggle="popover"]', function() {
+    $('body').on('mouseenter', '[data-toggle="popover"], [data-bs-toggle="popover"]', function() {
         if ($(this).hasClass('popover-default')) {
             return false;
         }
-        $(this).popover('show');
+
+        if (typeof window.__init_popovers === 'function' && !$(this).data('bs.popover')) {
+            window.__init_popovers(this);
+        }
     });
 
     //Date picker
@@ -42,9 +45,12 @@ $(document).ready(function() {
             url: $(this).data('href'),
             dataType: 'html',
             success: function(result) {
-                $(container)
-                    .html(result)
-                    .modal('show');
+                var $container = $(container);
+                $container.html(result);
+                if (typeof window.__init_popovers === 'function') {
+                    window.__init_popovers($container);
+                }
+                $container.modal('show');
             },
         });
     });
@@ -2297,7 +2303,11 @@ function show_product_type_form() {
         data: { type: $('#type').val(), product_id: product_id, action: action },
         success: function(result) {
             if (result) {
-                $('#product_form_part').html(result);
+                var $productFormPart = $('#product_form_part');
+                $productFormPart.html(result);
+                if (typeof window.__init_popovers === 'function') {
+                    window.__init_popovers($productFormPart);
+                }
                 toggle_dsp_input();
             }
         },
