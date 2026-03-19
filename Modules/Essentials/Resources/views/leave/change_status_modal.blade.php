@@ -75,7 +75,7 @@
         </div>
 
         <div class="modal-footer">
-            <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white ladda-button update-leave-status"
+            <button type="submit" class="btn btn-primary ladda-button update-leave-status"
                 data-style="expand-right">
                 <span class="ladda-label">@lang('messages.update')</span>
             </button>

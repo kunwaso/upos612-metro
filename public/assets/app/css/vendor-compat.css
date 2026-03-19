@@ -774,3 +774,29 @@ ul.dt-button-collection {
 .option-div input[type="radio"] {
   display: none;
 }
+
+/* Ensure jQuery Bootstrap 4 popovers are visible and on top */
+.popover.in,
+.popover.show {
+    display: block !important;
+    z-index: 1070 !important;
+}
+/* Match Bootstrap 4 content class used by jQuery popover */
+.popover .popover-content {
+    padding: 9px 14px;
+}
+
+/* hover-q: info icon for tooltips/popovers (Metronic-aligned) */
+.hover-q {
+    font-size: var(--bs-body-font-size, 1rem);
+    margin-left: 0.25rem;
+    cursor: help;
+    color: var(--bs-gray-600);
+    transition: color 0.15s ease;
+}
+.hover-q:hover {
+    color: var(--bs-primary);
+}
+.input-group-addon .hover-q {
+    margin-left: 0;
+}

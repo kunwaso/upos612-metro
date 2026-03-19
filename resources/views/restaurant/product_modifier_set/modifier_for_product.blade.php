@@ -69,7 +69,7 @@
     </div>
 
     <div class="modal-footer">
-      <button data-url="{{action([\App\Http\Controllers\Restaurant\ProductModifierSetController::class, 'add_selected_modifiers'])}}" type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white add_modifier" data-dismiss="modal">
+      <button data-url="{{action([\App\Http\Controllers\Restaurant\ProductModifierSetController::class, 'add_selected_modifiers'])}}" type="button" class="btn btn-primary add_modifier" data-dismiss="modal">
         @lang( 'messages.add' )</button>
       <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
     </div>

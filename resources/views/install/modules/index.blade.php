@@ -13,12 +13,12 @@
         <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
         <li class="active">Here</li>
     </ol> -->
-    <button class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm upload_module_btn tw-mt-4">
+    <button class="btn btn-primary btn-sm upload_module_btn tw-mt-4">
         <i class="fas fa-upload"></i>
         @lang('lang_v1.upload_module')
     </button>
 
-    <a class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm pull-right tw-mt-4" href="{{action([\App\Http\Controllers\Install\ModulesController::class, 'regenerate'])}}">
+    <a class="btn btn-primary btn-sm pull-right tw-mt-4" href="{{action([\App\Http\Controllers\Install\ModulesController::class, 'regenerate'])}}">
         <i class="fas fa-tools"></i>
         Regenerate @show_tooltip("<br/>1. Regenerate/publish modules css/js to fix not found issue. <br/> 2. Publish api module oauth files")
     </a>
@@ -43,7 +43,7 @@
                     </div>
                     <div class="clearfix"></div>
                     <div class="col-sm-4">
-                        <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm">
+                        <button type="submit" class="btn btn-primary btn-sm">
                             @lang('lang_v1.upload')
                         </button>
                         &nbsp;

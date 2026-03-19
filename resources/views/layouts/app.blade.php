@@ -961,6 +961,9 @@
 		</div>
 		<!--end::Scrolltop-->
 		<!--begin::Modals-->
+		<!--begin::Generic view modal (quick-add unit, brand, etc.)-->
+		<div class="modal fade view_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel"></div>
+		<!--end::Generic view modal-->
 		<!--begin::Modal - Create Project-->
 		<div class="modal fade" id="kt_modal_create_project" tabindex="-1" aria-hidden="true">
 			<!--begin::Modal dialog-->

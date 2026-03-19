@@ -69,7 +69,7 @@
                     <div class="tab-pane" id="tab_2">
                         <div class="row">
                             <div class="col-md-12">
-                                <h4>@lang( 'invoice.all_your_invoice_layouts' ) <a class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm pull-right" href="{{action([\App\Http\Controllers\InvoiceLayoutController::class, 'create'])}}">
+                                <h4>@lang( 'invoice.all_your_invoice_layouts' ) <a class="btn btn-primary btn-sm pull-right" href="{{action([\App\Http\Controllers\InvoiceLayoutController::class, 'create'])}}">
                                         <i class="fa fa-plus"></i> @lang( 'messages.add' )</a></h4>
                             </div>
                             <div class="col-md-12">

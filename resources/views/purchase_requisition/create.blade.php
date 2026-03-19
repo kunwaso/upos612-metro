@@ -95,7 +95,7 @@
 
 	<div class="row">
 		<div class="col-sm-12 text-center">
-			<button type="button" class="tw-dw-btn tw-dw-btn-primary tw-dw-btn-lg tw-text-white" id="submit_pr_form">@lang('messages.save')</button>
+			<button type="button" class="btn btn-primary btn-lg" id="submit_pr_form">@lang('messages.save')</button>
 		</div>
 	</div>
 

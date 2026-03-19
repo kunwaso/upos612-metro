@@ -25,7 +25,7 @@
 		</div>
 
 		<div class="modal-footer">
-			<button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white">@lang( 'messages.update' )</button>
+			<button type="submit" class="btn btn-primary">@lang( 'messages.update' )</button>
 			<button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
 		</div>
 

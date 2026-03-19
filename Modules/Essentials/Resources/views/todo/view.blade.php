@@ -67,7 +67,7 @@
 								</div>
 							</div>
 							<div class="col-md-12">
-								<button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white pull-right ladda-button add-comment-btn" data-style="expand-right">
+								<button type="submit" class="btn btn-primary pull-right ladda-button add-comment-btn" data-style="expand-right">
 									<span class="ladda-label">
 										@lang('messages.add')
 									</span>
@@ -103,7 +103,7 @@
 								</div>
 							</div>
 							<div class="col-md-12">
-								<button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white pull-right">@lang('essentials::lang.upload')</button>
+								<button type="submit" class="btn btn-primary pull-right">@lang('essentials::lang.upload')</button>
 							</div>
 							{!! Form::close() !!}
 							<div class="col-md-12">

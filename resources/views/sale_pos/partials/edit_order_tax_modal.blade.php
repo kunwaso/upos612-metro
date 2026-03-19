@@ -27,7 +27,7 @@
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white" id="posEditOrderTaxModalUpdate">@lang('messages.update')</button>
+				<button type="button" class="btn btn-primary" id="posEditOrderTaxModalUpdate">@lang('messages.update')</button>
 			    <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang('messages.cancel')</button>
 			</div>
 		</div><!-- /.modal-content -->

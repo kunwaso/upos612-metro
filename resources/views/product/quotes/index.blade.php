@@ -80,7 +80,7 @@
                 {data: 'customer_name', name: 'customer_name', defaultContent: '-'},
                 {data: 'quote_type', name: 'quote_type', orderable: false, searchable: false},
                 {data: 'line_count', name: 'product_quotes.line_count'},
-                {data: 'location_name', name: 'location_name', defaultContent: '-'},
+                {data: 'location_name', name: 'bl.name', defaultContent: '-'},
                 {data: 'grand_total', name: 'product_quotes.grand_total'},
                 {data: 'currency', name: 'product_quotes.currency', defaultContent: '-'},
                 {data: 'incoterm', name: 'product_quotes.incoterm', defaultContent: '-'},

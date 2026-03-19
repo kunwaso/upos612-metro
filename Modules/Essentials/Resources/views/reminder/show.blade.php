@@ -32,7 +32,7 @@
                       <!-- /btn-group -->
                       {!! Form::select('repeat', $repeat, $reminder->repeat, ['class' => 'form-control', 'required']) !!}
                       <div class="input-group-btn">
-                        <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm change_reminder_repeat">@lang('messages.update')</button>
+                        <button type="submit" class="btn btn-primary btn-sm change_reminder_repeat">@lang('messages.update')</button>
                       </div>
                    </div>
                   {!! Form::close() !!}

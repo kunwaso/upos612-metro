@@ -127,7 +127,7 @@
                                 <div class="tab-pane" id="account_types">
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm btn-modal pull-right"
+                                            <button type="button" class="btn btn-primary btn-sm btn-modal pull-right"
                                                 data-href="{{ action([\App\Http\Controllers\AccountTypeController::class, 'create']) }}"
                                                 data-container="#account_type_modal">
                                                 <i class="fa fa-plus"></i> @lang('messages.add')</button>

@@ -20,7 +20,7 @@
                     
                 </div>
             </div>
-            <p class="text effectFade fadeUp">
+            <p class="text effectFade fadeUp fs-24">
                 Giải pháp về đóng gói, in ấn, và cung cấp các sản phẩm đóng gói cho các doanh nghiệp trong và ngoài nước.
             </p>
             <div class="bot-btns effectFade fadeRotateX">
@@ -38,444 +38,81 @@
         <i class="icon icon-long-arrow-alt-down-solid"></i>
     </a>
 </div>
-
-    <!-- section-Catalog -->
-    <div class="section-catalog flat-spacing pt-10">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4">
-                    <div class="process-heading h-100">
-                        <div class="heading-section mb-80">
-                            <div class="heading-sub fw-semibold effectFade fadeUp">Catalog</div>
-                            <div class="heading-title text-gradient-3 effectFade fadeRotateX">Danh mục sản phẩm</div>
-                        </div>
-                        <div class="group-btn-slider">
-                            <div class="nav-prev-swiper">
-                                <i class="icon icon-angle-left-solid"></i>
-                            </div>
-                            <div class="nav-next-swiper">
-                                <i class="icon icon-angle-right-solid"></i>
-                            </div>
-                        </div>
+<!-- section-Catalog -->
+<div id="about" class="section-benefits flat-spacing pt-0">
+    <div class="container">
+        <div class="heading-section center mb-70 pt-30">
+          
+            <div class="heading-title text-gradient-3 effectFade fadeRotateX">Danh mục sản phẩm</div>
+        </div>
+        <div class="row col-lg-12 mb-30">
+            <div class="col-lg-4">
+                <div class="benefits-box benefits-secure has-transition hov-shadow-out">
+                    <i class="catalogicon fa-solid fa-scroll"></i>
+                    <div class="benefits-secure-inner text-center">
+                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt=""></a>
+                    </div>
+                    <div class="content">
+                        <h6 class="fw-semibold title">Bao bì dạng cuộn</h6>
+                        <p class="text text-secondary">các sản phẩm dạng cuộn như giấy, nhựa, vải, và các vật liệu khác. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
                     </div>
                 </div>
-                <div class="col-lg-8">
-                    <div class="process-slide">
-                        <div dir="ltr" class="swiper tf-swiper swiper-box-shadow" data-preview="1.78" data-tablet="2" data-mobile-sm="1" data-mobile="1"
-                            data-loop="false" data-center="false" data-space-lg="24" data-space-md="24" data-space="30" >
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon fa-solid fa-scroll"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Cuộn (Roll Pack)</h4>
-                                            <p class="text text-secondary">các sản phẩm dạng cuộn như giấy, nhựa, vải, và các vật liệu khác. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt="">
-                                            <div class="number">
-                                                <span class="text-neutral-400">01</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon fas fa-box-open"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Hộp (Box Pack)</h4>
-                                            <p class="text text-secondary">các sản phẩm dạng hộp giấy. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt="">
-                                            <div class="number">
-                                                <span class="text-neutral-400">02</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="process-card">
-                                        <i class="icon icon-user-check-solid-1"></i>
-                                        <div class="content">
-                                            <h4 class="title fw-semibold">Validate & Evals</h4>
-                                            <p class="text text-secondary">Prove accuracy, usability, safety, and cost. Eval dashboard, acceptance thresholds, decision to iterate/ship.</p>
-                                        </div>
-                                        <div class="bot">
-                                            <div class="time fw-semibold">1 WEEKS</div>
-                                            <div class="number">
-                                                <span class="text-neutral-400">03</span>
-                                                <span class="text-neutral-200">/03</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="benefits-box benefits-secure has-transition hov-shadow-out">
+                    <i class="catalogicon fa-solid fa-box-open"></i>
+                    <div class="benefits-secure-inner text-center">
+                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt=""></a>
+                    </div>
+                    <div class="content">
+                        <h6 class="fw-semibold title">Hộp - Thùng carton</h6>
+                        <p class="text text-secondary">các sản phẩm dạng hộp giấy, thùng carton. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="benefits-box benefits-secure has-transition hov-shadow-out">
+                    <i class="catalogicon fa-solid fa-link"></i>
+                    <div class="benefits-secure-inner text-center">
+                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
+                    </div>
+                    <div class="content">
+                        <h6 class="fw-semibold title">Dây đai</h6>
+                        <p class="text text-secondary">các sản phẩm dạng dây đai từ nhựa và các vật liệu khác.</p>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="row mb-24">
+            <div class="col-lg-7">
+                <div class="benefits-box benefits-progress has-transition hov-shadow-out">
+                    <i class="catalogicon fa-solid fa-soap"></i>
+                    <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/air/air-packaging.png') }}" alt=""></a>
+                    <div class="content">
+                        <h6 class="fw-semibold title">Túi chống sốc - silica gel</h6>
+                        <p class="text text-secondary">các sản phẩm dạng túi chống sốc và silica gel bảo quản sản phẩm khô ráo chống va đập</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="benefits-box benefits-step effectFade fadeUp">
+                    <i class="catalogicon fa-solid fa-box-open"></i>
+                    <img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt="">
+                    <div class="content">
+                        <h6 class="fw-semibold title">Kệ - pallet </h6>
+                        <p class="text text-secondary">các sản phẩm dạng kệ, pallet giúp sản phẩm khô ráo dễ vận chuyển</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
-    <!-- /section-Catalog -->
+</div>
+<!-- /section-benefits -->
+
 
 <div class="box-white">
-    <!-- section-services -->
-    <div id="services" class="section-services flat-spacing">
-        <div class="container">
-            <div class="row justify-content-between">
-                <div class="col-xxl-4 col-lg-6">
-                    <div class="d-flex flex-column justify-content-between h-100">
-                        <div class="col-left">
-                            <div class="heading-section mb-48">
-                                <div class="heading-sub fw-semibold effectFade fadeUp">Services</div>
-                                <div class="heading-title text-gradient-3 effectFade fadeRotateX">End-to-End <br> AI Services</div>
-                            </div>
-                            <p class="effectFade fadeUp">We turn ambiguous AI ideas into production features your users trust—combining strategy, design, engineering, and rigorous evaluation.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xxl-6 col-lg-6">
-                    <div class="accordion-faq_list" id="accordion-services">
-                        <div class="accordion-faq_item effectFade fadeUp" role="presentation">
-                            <div class="accordion-action services-image-btn active-img" data-img="{{ asset('modules/cms/assets/images/section/service-1.jpg') }}" data-bs-target="#faq-1" role="button"
-                                data-bs-toggle="collapse" aria-controls="faq-1" aria-expanded="true">
-                                <div class="accordion-title">
-                                    AI Strategy <br> & Mapping
-                                    <div class="text-body-1 num">(01)</div>
-                                </div>
-                            </div>
-                            <div id="faq-1" class="collapse show" data-bs-parent="#accordion-services">
-                                <div class="accordion-content">
-                                    <div class="text-body-3 text-neutral-300 text">Identify high-ROI use cases and define a realistic, measurable AI roadmap.</div>
-                                    <div class="list-tags">
-                                        <a href="#" class="tags-item fw-semibold">Stakeholder discovery</a>
-                                        <a href="#" class="tags-item fw-semibold">Value model & KPI definition</a>
-                                        <a href="#" class="tags-item fw-semibold">Data readiness assessment</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-faq_item effectFade fadeUp" role="presentation">
-                            <div class="accordion-action services-image-btn collapsed" data-img="{{ asset('modules/cms/assets/images/section/service-2.jpg') }}" data-bs-target="#faq-2" role="button"
-                                data-bs-toggle="collapse" aria-controls="faq-2" aria-expanded="false">
-                                <div class="accordion-title">
-                                    AI UX <br> & Product Design
-                                    <div class="text-body-1 num">(02)</div>
-                                </div>
-                            </div>
-                            <div id="faq-2" class="collapse" data-bs-parent="#accordion-services">
-                                <div class="accordion-content">
-                                    <div class="text-body-3 text-neutral-300 text">Human-centered flows, prompts, and interfaces that build trust and adoption.</div>
-                                    <div class="list-tags">
-                                        <a href="#" class="tags-item fw-semibold">Prototype flows</a>
-                                        <a href="#" class="tags-item fw-semibold">Prompt UX patterns</a>
-                                        <a href="#" class="tags-item fw-semibold">Usability testing with real users</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-faq_item effectFade fadeUp" role="presentation">
-                            <div class="accordion-action services-image-btn collapsed" data-img="{{ asset('modules/cms/assets/images/section/service-3.jpg') }}" data-bs-target="#faq-3" role="button"
-                                data-bs-toggle="collapse" aria-controls="faq-3" aria-expanded="false">
-                                <div class="accordion-title">
-                                    LLM / Agent <br> Development
-                                    <div class="text-body-1 num">(03)</div>
-                                </div>
-                            </div>
-                            <div id="faq-3" class="collapse" data-bs-parent="#accordion-services">
-                                <div class="accordion-content">
-                                    <div class="text-body-3 text-neutral-300 text">Domain-specific copilots and agents that plan, execute, and report.</div>
-                                    <div class="list-tags">
-                                        <a href="#" class="tags-item fw-semibold">Multi-step planning</a>
-                                        <a href="#" class="tags-item fw-semibold">Function calling & toolchains</a>
-                                        <a href="#" class="tags-item fw-semibold">Guardrails and audit trails</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-faq_item effectFade fadeUp" role="presentation">
-                            <div class="accordion-action services-image-btn collapsed" data-img="{{ asset('modules/cms/assets/images/section/service-4.jpg') }}" data-bs-target="#faq-4" role="button"
-                                data-bs-toggle="collapse" aria-controls="faq-4" aria-expanded="false">
-                                <div class="accordion-title">
-                                    Data Engineering <br> & Pipelines
-                                    <div class="text-body-1 num">(04)</div>
-                                </div>
-                            </div>
-                            <div id="faq-4" class="collapse" data-bs-parent="#accordion-services">
-                                <div class="accordion-content">
-                                    <div class="text-body-3 text-neutral-300 text">Reliable data flows from ingestion to features, built for scale and cost control.</div>
-                                    <div class="list-tags">
-                                        <a href="#" class="tags-item fw-semibold">Data cleaning & chunking</a>
-                                        <a href="#" class="tags-item fw-semibold">Hybrid search</a>
-                                        <a href="#" class="tags-item fw-semibold">Freshness, citations, and re-ranking</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="services-image effectFade fadeUp">
-                    <img src="{{ asset('modules/cms/assets/images/section/service-1.jpg') }}" alt="">
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /section-services -->
-    <!-- section-featured-works -->
-    <div id="works" class="section-featured-works flat-spacing pt-0">
-        <div class="container">
-            <div class="heading-section mb-0">
-                <div class="heading-sub fw-semibold mx-auto effectFade fadeUp">Featured Works</div>
-            </div>
-            <div class="featured-works-list position-relative">
-                <div class="">
-                    <div class="featured-works-item  effectFade fadeUp no-div">
-                        <div class="image main-mouse-hover">
-                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-1.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
-                                View Project
-                                <i class="icon icon-arrow-top-right"></i>
-                            </a>
-                        </div>
-                        <div class="content">
-                            <div class="pagi-dot">
-                                <span class="active"></span>
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="bot">
-                                <h4 class="heading fw-semibold">Support Copilot <br> for SaaS</h4>
-                                <div class="grid-text">
-                                    <div class="item">
-                                        <div class="title text-secondary">DESCRIPTION</div>
-                                        <div class="text-body-3 fw-semibold">Draft replies and pulls account context; reduced first-response time by 38%.</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">DELIVERABLES</div>
-                                        <div class="fw-semibold text-body-3">AI strategy, AI UX flows, <br> LLM agent, RAG</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">INDUSTRY</div>
-                                        <div class="fw-semibold text-body-3">SaaS</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="">
-                    <div class="featured-works-item ">
-                        <div class="image main-mouse-hover">
-                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-2.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
-                                View Project
-                                <i class="icon icon-arrow-top-right"></i>
-                            </a>
-                        </div>
-                        <div class="content">
-                            <div class="pagi-dot">
-                                <span></span>
-                                <span class="active"></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="bot">
-                                <h4 class="heading fw-semibold">Underwriting <br> Risk Copilot</h4>
-                                <div class="grid-text">
-                                    <div class="item">
-                                        <div class="title text-secondary">DESCRIPTION</div>
-                                        <div class="text-body-3 fw-semibold">Built a triage assistant to summarize claims; cut manual review time by 42%.</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">DELIVERABLES</div>
-                                        <div class="fw-semibold">Use-case mapping, Prompt & UI patterns</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">INDUSTRY</div>
-                                        <div class="fw-semibold">Fintech</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="">
-                    <div class="featured-works-item ">
-                        <div class="image main-mouse-hover">
-                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-3.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
-                                View Project
-                                <i class="icon icon-arrow-top-right"></i>
-                            </a>
-                        </div>
-                        <div class="content">
-                            <div class="pagi-dot">
-                                <span></span>
-                                <span></span>
-                                <span class="active"></span>
-                                <span></span>
-                            </div>
-                            <div class="bot">
-                                <h4 class="heading fw-semibold">Clinical Note <br> Summarizer</h4>
-                                <div class="grid-text">
-                                    <div class="item">
-                                        <div class="title text-secondary">DESCRIPTION</div>
-                                        <div class="text-body-3 fw-semibold">Clinic-lobby assistant answering pre-visit questions; decreased front-desk calls by 28%.</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">DELIVERABLES</div>
-                                        <div class="fw-semibold">PHI-safe RAG, HIPAA-aligned workflows</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">INDUSTRY</div>
-                                        <div class="fw-semibold">Healthcare</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="">
-                    <div class="featured-works-item ">
-                        <div class="image main-mouse-hover">
-                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-4.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
-                                View Project
-                                <i class="icon icon-arrow-top-right"></i>
-                            </a>
-                        </div>
-                        <div class="content">
-                            <div class="pagi-dot">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                                <span class="active"></span>
-                            </div>
-                            <div class="bot">
-                                <h4 class="heading fw-semibold">Catalog Intelligence <br> Engine</h4>
-                                <div class="grid-text">
-                                    <div class="item">
-                                        <div class="title text-secondary">DESCRIPTION</div>
-                                        <div class="text-body-3 fw-semibold">Launched a shopping copilot that understands attributes; raised add-to-cart by 12%.</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">DELIVERABLES</div>
-                                        <div class="fw-semibold">Data cleaning & embeddings</div>
-                                    </div>
-                                    <div class="item">
-                                        <div class="title text-secondary">INDUSTRY</div>
-                                        <div class="fw-semibold">Ecommerce/Retail</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /section-featured-works -->
-
-    <!-- section-benefits -->
-    <div class="section-benefits flat-spacing pt-0">
-        <div class="container">
-            <div class="heading-section center mb-70">
-                <div class="heading-sub fw-semibold effectFade fadeUp">Benefits</div>
-                <div class="heading-title text-gradient-3 effectFade fadeRotateX">Why Choose Us</div>
-            </div>
-            <div class="row mb-24">
-                <div class="col-lg-7">
-                    <div class="benefits-box benefits-progress">
-                        <div class="benefits-progress-inner">
-                            <div class="benefits-progress-item">
-                                <div class="progress-line" data-progress="60"></div>
-                                <div class="progress-text fw-semibold">
-                                    <i class="icon icon-bullseye-solid"></i>
-                                    Accuracy
-                                </div>
-                            </div>
-                            <div class="benefits-progress-item">
-                                <div class="progress-line" data-progress="100"></div>
-                                <div class="progress-text fw-semibold">
-                                    <i class="icon icon-tachometer-alt-solid"></i>
-                                    Latency
-                                </div>
-                            </div>
-                            <div class="benefits-progress-item">
-                                <div class="progress-line" data-progress="40"></div>
-                                <div class="progress-text fw-semibold">
-                                    <i class="icon icon-shield-alt-solid"></i>
-                                    Safety
-                                </div>
-                            </div>
-                            <div class="benefits-progress-item">
-                                <div class="progress-line" data-progress="80"></div>
-                                <div class="progress-text fw-semibold">
-                                    <i class="icon icon-coins-solid"></i>
-                                    Cost
-                                </div>
-                            </div>
-                        </div>
-                        <div class="content">
-                            <h6 class="fw-semibold title">Outcome over Output</h6>
-                            <p class="text text-secondary">We measure what matters - accuracy, latency, safety, and <br> cost - so every sprint ships business value, not just features.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-5">
-                    <div class="benefits-box benefits-step effectFade fadeUp">
-                        <div class="benefits-step-inner">
-                            <div class="line-step"></div>
-                            <div class="step-item">
-                                <i class="icon icon-check-solid"></i>
-                            </div>
-                            <div class="step-item">
-                                <i class="icon icon-check-solid"></i>
-                            </div>
-                            <div class="step-item">
-                                <i class="icon icon-check-solid"></i>
-                            </div>
-                        </div>
-                        <div class="content">
-                            <h6 class="fw-semibold title">Eval-First Reliability</h6>
-                            <p class="text text-secondary">From day one, we run offline/online evals, canary tests, and tracing. You see how models perform - and why.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-5">
-                    <div class="benefits-box benefits-secure ">
-                        <div class="benefits-secure-inner text-center">
-                            <img src="{{ asset('modules/cms/assets/images/item/benefits-1.svg') }}" alt="">
-                        </div>
-                        <div class="content">
-                            <h6 class="fw-semibold title">Secure by Design</h6>
-                            <p class="text text-secondary">PII handling, SSO/SAML, RBAC, encryption, and audit trails -built in, not bolted on. Enterprise-ready from the start.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-7">
-                    <div class="benefits-box benefits-design">
-                        <div class="benefits-design-inner">
-                            <img class="item-img-1" src="{{ asset('modules/cms/assets/images/item/benefits-2.svg') }}" alt="">
-                            <img class="item-img-2 rightleft" src="{{ asset('modules/cms/assets/images/item/benefits-3.png') }}" alt="">
-                            <img class="item-img-3 updown" src="{{ asset('modules/cms/assets/images/item/benefits-4.png') }}" alt="">
-                        </div>
-                        <div class="content">
-                            <h6 class="fw-semibold title">Design-Led AI Experiences</h6>
-                            <p class="text text-secondary">We craft prompts, interfaces, and guardrails that feel intuitive - so adoption rises and support tickets fall.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /section-benefits -->
+    
     <!-- section-features -->
     <div class="section-features flat-spacing pt-0">
         <div class="container">
@@ -565,6 +202,164 @@
         </div>
     </div>
     <!-- /section-features -->
+    <!-- section-featured-works -->
+    <div id="works" class="section-featured-works flat-spacing pt-0">
+        <div class="container">
+            <div class="heading-section mb-0">
+                <div class="heading-sub fw-semibold mx-auto effectFade fadeUp">Featured Works</div>
+            </div>
+            <div class="featured-works-list position-relative">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                    <div class="featured-works-item  effectFade fadeUp no-div">
+                        <div class="image main-mouse-hover">
+                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-1.jpg') }}" alt="">
+                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                                View Project
+                                <i class="icon icon-arrow-top-right"></i>
+                            </a>
+                        </div>
+                        <div class="content">
+                            <div class="pagi-dot">
+                                <span class="active"></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <div class="bot">
+                                <h4 class="heading fw-semibold">Support Copilot <br> for SaaS</h4>
+                                <div class="grid-text">
+                                    <div class="item">
+                                        <div class="title text-secondary">DESCRIPTION</div>
+                                        <div class="text-body-3 fw-semibold">Draft replies and pulls account context; reduced first-response time by 38%.</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">DELIVERABLES</div>
+                                        <div class="fw-semibold text-body-3">AI strategy, AI UX flows, <br> LLM agent, RAG</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">INDUSTRY</div>
+                                        <div class="fw-semibold text-body-3">SaaS</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="featured-works-item ">
+                        <div class="image main-mouse-hover">
+                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-2.jpg') }}" alt="">
+                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                                View Project
+                                <i class="icon icon-arrow-top-right"></i>
+                            </a>
+                        </div>
+                        <div class="content">
+                            <div class="pagi-dot">
+                                <span></span>
+                                <span class="active"></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <div class="bot">
+                                <h4 class="heading fw-semibold">Underwriting <br> Risk Copilot</h4>
+                                <div class="grid-text">
+                                    <div class="item">
+                                        <div class="title text-secondary">DESCRIPTION</div>
+                                        <div class="text-body-3 fw-semibold">Built a triage assistant to summarize claims; cut manual review time by 42%.</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">DELIVERABLES</div>
+                                        <div class="fw-semibold">Use-case mapping, Prompt & UI patterns</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">INDUSTRY</div>
+                                        <div class="fw-semibold">Fintech</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="featured-works-item ">
+                        <div class="image main-mouse-hover">
+                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-3.jpg') }}" alt="">
+                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                                View Project
+                                <i class="icon icon-arrow-top-right"></i>
+                            </a>
+                        </div>
+                        <div class="content">
+                            <div class="pagi-dot">
+                                <span></span>
+                                <span></span>
+                                <span class="active"></span>
+                                <span></span>
+                            </div>
+                            <div class="bot">
+                                <h4 class="heading fw-semibold">Clinical Note <br> Summarizer</h4>
+                                <div class="grid-text">
+                                    <div class="item">
+                                        <div class="title text-secondary">DESCRIPTION</div>
+                                        <div class="text-body-3 fw-semibold">Clinic-lobby assistant answering pre-visit questions; decreased front-desk calls by 28%.</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">DELIVERABLES</div>
+                                        <div class="fw-semibold">PHI-safe RAG, HIPAA-aligned workflows</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">INDUSTRY</div>
+                                        <div class="fw-semibold">Healthcare</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="featured-works-item ">
+                        <div class="image main-mouse-hover">
+                            <img src="{{ asset('modules/cms/assets/images/section/featured-works-4.jpg') }}" alt="">
+                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                                View Project
+                                <i class="icon icon-arrow-top-right"></i>
+                            </a>
+                        </div>
+                        <div class="content">
+                            <div class="pagi-dot">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span class="active"></span>
+                            </div>
+                            <div class="bot">
+                                <h4 class="heading fw-semibold">Catalog Intelligence <br> Engine</h4>
+                                <div class="grid-text">
+                                    <div class="item">
+                                        <div class="title text-secondary">DESCRIPTION</div>
+                                        <div class="text-body-3 fw-semibold">Launched a shopping copilot that understands attributes; raised add-to-cart by 12%.</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">DELIVERABLES</div>
+                                        <div class="fw-semibold">Data cleaning & embeddings</div>
+                                    </div>
+                                    <div class="item">
+                                        <div class="title text-secondary">INDUSTRY</div>
+                                        <div class="fw-semibold">Ecommerce/Retail</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /section-featured-works -->
+
 </div>
 
 <!-- section-tools -->
@@ -593,6 +388,89 @@
     </div>
 </div>
 <!-- /section-tools -->
+
+
+<!-- section-new arrivals -->
+<div class="section-catalog flat-spacing pt-10">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="process-heading h-100">
+                    <div class="heading-section mb-80">
+                        <div class="heading-sub fw-semibold effectFade fadeUp">Catalog</div>
+                        <div class="heading-title text-gradient-3 effectFade fadeRotateX">Danh mục sản phẩm</div>
+                    </div>
+                    <div class="group-btn-slider">
+                        <div class="nav-prev-swiper">
+                            <i class="icon icon-angle-left-solid"></i>
+                        </div>
+                        <div class="nav-next-swiper">
+                            <i class="icon icon-angle-right-solid"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="process-slide">
+                    <div dir="ltr" class="swiper tf-swiper swiper-box-shadow" data-preview="1.78" data-tablet="2" data-mobile-sm="1" data-mobile="1"
+                        data-loop="false" data-center="false" data-space-lg="24" data-space-md="24" data-space="30" >
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide">
+                                <div class="process-card">
+                                    <i class="icon fa-solid fa-scroll"></i>
+                                    <div class="content">
+                                        <h4 class="title fw-semibold">Cuộn (Roll Pack)</h4>
+                                        <p class="text text-secondary">các sản phẩm dạng cuộn như giấy, nhựa, vải, và các vật liệu khác. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
+                                    </div>
+                                    <div class="bot">
+                                        <img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt="">
+                                        <div class="number">
+                                            <span class="text-neutral-400">01</span>
+                                            <span class="text-neutral-200">/03</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <div class="process-card">
+                                    <i class="icon fas fa-box-open"></i>
+                                    <div class="content">
+                                        <h4 class="title fw-semibold">Hộp (Box Pack)</h4>
+                                        <p class="text text-secondary">các sản phẩm dạng hộp giấy. Phương pháp này giúp bảo quản và vận chuyển sản phẩm một cách an toàn và hiệu quả.</p>
+                                    </div>
+                                    <div class="bot">
+                                        <img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt="">
+                                        <div class="number">
+                                            <span class="text-neutral-400">02</span>
+                                            <span class="text-neutral-200">/03</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <div class="process-card">
+                                    <i class="icon icon-user-check-solid-1"></i>
+                                    <div class="content">
+                                        <h4 class="title fw-semibold">Validate & Evals</h4>
+                                        <p class="text text-secondary">Prove accuracy, usability, safety, and cost. Eval dashboard, acceptance thresholds, decision to iterate/ship.</p>
+                                    </div>
+                                    <div class="bot">
+                                        <div class="time fw-semibold">1 WEEKS</div>
+                                        <div class="number">
+                                            <span class="text-neutral-400">03</span>
+                                            <span class="text-neutral-200">/03</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /section-new arrivals -->
 
 <div class="box-black">
     <div class="light-box"></div>

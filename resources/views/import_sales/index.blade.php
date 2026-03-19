@@ -38,7 +38,7 @@
                         </div>
                         <div class="col-sm-4">
                         <br>
-                            <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white">@lang('lang_v1.upload_and_review')</button>
+                            <button type="submit" class="btn btn-primary">@lang('lang_v1.upload_and_review')</button>
                         </div>
                         </div>
                     </div>

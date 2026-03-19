@@ -54,7 +54,7 @@
                         </div>
                         <div class="row">
                             <div class="col-md-12">
-                                <button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm tw-w-full"
+                                <button type="button" class="btn btn-primary btn-sm w-100"
                                     id="add-payment-row">@lang('sale.add_payment_row')</button>
                             </div>
                         </div>
@@ -206,7 +206,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang('messages.close')</button>
-                <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white" id="pos-save">@lang('sale.finalize_payment')</button>
+                <button type="submit" class="btn btn-primary" id="pos-save">@lang('sale.finalize_payment')</button>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -300,7 +300,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white" id="pos-save-card">@lang('sale.finalize_payment')</button>
+                <button type="button" class="btn btn-primary" id="pos-save-card">@lang('sale.finalize_payment')</button>
             </div>
         </div>
     </div>

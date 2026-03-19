@@ -11,7 +11,7 @@
                 </div>
                 <div class="col-sm-4">
                 <br>
-                    <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm">@lang('messages.submit')</button>
+                    <button type="submit" class="btn btn-primary btn-sm">@lang('messages.submit')</button>
                 </div>
                 </div>
             </div>

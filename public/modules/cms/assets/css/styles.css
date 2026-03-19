@@ -246,7 +246,7 @@ body {
   background-color: var(--body);
 }
 body::-webkit-scrollbar {
-  width: 7px;
+  width: 5px;
 }
 body::-webkit-scrollbar-thumb {
   cursor: grab;
@@ -1267,14 +1267,13 @@ h6,
 }
 
 .text-gradient-4 {
-  background: linear-gradient(95.5deg, #ff0080 1.91%, #ff4800 43.92%);
+  background: linear-gradient(95.5deg, #ff008c 1.91%, #ff3c00 43.92%);
   -webkit-background-clip: text;
   -webkit-text-stroke: 0px transparent;
   -webkit-text-fill-color: transparent;
   padding-bottom: 7px;
   margin-bottom: -7px;
 }
-
 
 @keyframes bghover {
   0% {
@@ -2286,7 +2285,7 @@ header.header-sticky {
   font-size: 20px;
   line-height: 28px;
   letter-spacing: 0;
-  font-family: var(--font_instrument);
+  font-family: "Roboto", sans-serif;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -2297,7 +2296,7 @@ header.header-sticky {
   line-height: 20px;
   margin: 0;
   letter-spacing: 0;
-  font-family: var(--font_instrument);
+  font-family: "Roboto", sans-serif;
   font-weight: 500;
 }
 
@@ -2305,7 +2304,7 @@ header.header-sticky {
   color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  font-family: var(--font_instrument);
+  font-family: "Roboto", sans-serif;
   display: block;
   line-height: 20px;
   font-weight: 500;
@@ -4893,7 +4892,7 @@ button.animate-btn::after,
   margin-bottom: 52px;
 }
 .section-about-us .review-box .text {
-  font-family: "Roboto";
+  font-family: "Roboto", sans-serif;
   font-weight: 500;
   font-size: 16px;
   line-height: 26px;
@@ -8521,7 +8520,7 @@ button.animate-btn::after,
   margin-bottom: 8px;
 }
 .benefits-box.benefits-secure img {
-  transform: rotateY(0deg);
+  transform: scale(1);
   -webkit-transition: all 0.8s ease-in-out;
   -moz-transition: all 0.8s ease-in-out;
   -ms-transition: all 0.8s ease-in-out;
@@ -8529,7 +8528,7 @@ button.animate-btn::after,
   transition: all 0.8s ease-in-out;
 }
 .benefits-box.benefits-secure:hover img {
-  transform: rotateY(180deg);
+  transform: scale(1.1);
 }
 @media (max-width: 991px) {
   .benefits-box {
@@ -9809,4 +9808,55 @@ footer .footer-bottom::before {
   }
 }
 
+a.tf-btn:hover {
+  color: #FF3B26;
+}
+
 /*# sourceMappingURL=styles.css.map */
+
+.catalogicon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  font-size: 32px;
+  color: var(--white);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #EA2B16 0%, #FF3B26 100%);
+  box-shadow: 0px 3.44px 5.57px 0px rgba(0, 0, 0, 0.0862745098), 0px 22.91px 37.08px 0px rgb(234 106 68 / 16%), 0px 76px 123px 0px rgba(255, 59, 0, 0.0509803922), 0px 5.05px 8.18px 0px rgba(255, 59, 0, 0.1019607843), 0px 16.98px 27.47px 0px rgba(255, 59, 0, 0.0470588235), 0px 56px 83px 0px rgb(255 59 0 / 8%), 0px 14px 34px 0px rgb(255 59 0 / 13%), 0px 1px 2px 0px rgb(235 197 185 / 26%), 0px -3px 0px 0px rgba(0, 0, 0, 0.0588235294) inset, 0px 1px 0px 0px rgba(255, 255, 255, 0.6) inset;
+  /* box-shadow: 0px 3.44px 5.57px 0px rgba(0, 0, 0, 0.0862745098), 0px 22.91px 37.08px 0px rgba(255, 59, 0, 0.1647058824), 0px 76px 123px 0px rgba(255, 59, 0, 0.0509803922), 0px 5.05px 8.18px 0px rgba(255, 59, 0, 0.1019607843), 0px 16.98px 27.47px 0px rgba(255, 59, 0, 0.0470588235), 0px 56px 83px 0px rgba(255, 59, 0, 0.2509803922), 0px 14px 34px 0px rgba(255, 59, 0, 0.2509803922), 0px 1px 2px 0px rgba(255, 59, 0, 0.4), 0px -3px 0px 0px rgba(0, 0, 0, 0.0588235294) inset, 0px 1px 0px 0px rgba(255, 255, 255, 0.6) inset; */
+  margin-bottom: 96px;
+}
+
+.has-transition {
+  -webkit-transition: all 0.5s ease;
+  transition: all 0.5s ease;
+}
+
+.shadow-out,
+.hov-shadow-out:hover {
+    z-index: 2 !important;
+    box-shadow: 0px 20px 40px rgb(0 0 0 / 16%) !important;
+    /* box-shadow: 0px 2px 30px -7px rgb(0 0 0 / 30%) !important; */
+}
+
+.shadow-xs,
+.hov-shadow-xs:hover {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+.shadow-sm,
+.hov-shadow-sm:hover {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.shadow,
+.hov-shadow:hover {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+.shadow-red,
+.hov-shadow-red:hover {
+box-shadow: 0px 3.44px 5.57px 0px rgba(0, 0, 0, 0.0862745098), 0px 22.91px 37.08px 0px rgba(255, 59, 0, 0.1647058824), 0px 76px 123px 0px rgba(255, 59, 0, 0.0509803922), 0px 5.05px 8.18px 0px rgba(255, 59, 0, 0.1019607843), 0px 16.98px 27.47px 0px rgba(255, 59, 0, 0.0470588235), 0px 56px 83px 0px rgba(255, 59, 0, 0.2509803922), 0px 14px 34px 0px rgba(255, 59, 0, 0.2509803922), 0px 1px 2px 0px rgba(255, 59, 0, 0.4), 0px -3px 0px 0px rgba(0, 0, 0, 0.0588235294) inset, 0px 1px 0px 0px rgba(255, 255, 255, 0.6) inset;
+}

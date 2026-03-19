@@ -27,7 +27,7 @@
 	    					@lang( 'essentials::lang.commission_percent')
 	    				</th>
 	    				<th>
-	    					<button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm" id="add_target"><i class="fas fa-plus"></i></button>
+	    					<button type="button" class="btn btn-primary btn-sm" id="add_target"><i class="fas fa-plus"></i></button>
 	    				</th>
 	    			</tr>
 	    			</thead>
@@ -63,7 +63,7 @@
 	    	</table>
 	    </div>
 	    <div class="modal-footer">
-	      	<button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white">@lang( 'messages.submit' )</button>
+	      	<button type="submit" class="btn btn-primary">@lang( 'messages.submit' )</button>
 	      	<button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
 	    </div>
 	    {!! Form::close() !!}

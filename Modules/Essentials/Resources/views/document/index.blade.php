@@ -49,7 +49,7 @@
 	                            </div>
 	                            <div class="clearfix"></div>
                         		<div class="col-sm-4">
-                                	<button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-dw-btn-sm tw-text-white">
+                                	<button type="submit" class="btn btn-primary btn-sm">
                                 		@lang('essentials::lang.submit')
                                 	</button>
                                 	&nbsp;
