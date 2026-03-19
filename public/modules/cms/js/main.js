@@ -246,7 +246,12 @@
         if ($(document.body).hasClass("counter-scroll")) {
           var a = 0;
           $(window).scroll(function () {
-            var oTop = $(".counter").offset().top - window.innerHeight;
+            var $counter = $(".counter");
+            var counterOffset = $counter.offset();
+            if (!counterOffset) {
+              return;
+            }
+            var oTop = counterOffset.top - window.innerHeight;
             if (a == 0 && $(window).scrollTop() > oTop) {
               if ($().countTo) {
                 $(".counter")

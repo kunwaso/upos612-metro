@@ -87,7 +87,12 @@
             <div class="col-lg-7">
                 <div class="benefits-box benefits-progress has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-soap"></i>
+                    {{-- <div class="benefits-secure-inner text-center">
                     <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/air/air-packaging.png') }}" alt=""></a>
+                    </div> --}}
+                    <div class="benefits-secure-inner text-center">
+                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
+                    </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Túi chống sốc - silica-gel</h6>
                         <p class="text text-secondary">các sản phẩm dạng túi chống sốc và silica gel bảo quản sản phẩm khô ráo chống va đập</p>
@@ -97,7 +102,9 @@
             <div class="col-lg-5">
                 <div class="benefits-box benefits-step effectFade fadeUp">
                     <i class="catalogicon fa-solid fa-boxes-packing"></i>
-                    <img src="{{ asset('modules/cms/assets/images/products/other/other-packaging.png') }}" alt="">
+                    <div class="benefits-secure-inner text-center">
+                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/other/other-packaging.png') }}" alt=""></a>
+                    </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Đóng gói - dụng cụ</h6>
                         <p class="text text-secondary">các sản phẩm dạng kệ, pallet, dụng cụ đóng gói hỗ trợ đóng gói bảo quản</p>
@@ -126,6 +133,7 @@
                     <div class="features-col col-left lg-mb-24">
                         <div class="features-item effectFade fadeUp">
                             <i class="icon icon-robot-solid"></i>
+                            {{-- <img class="image-service img-fluid" src="{{ asset('modules/cms/assets/images/services/design-service.jpg') }}" alt=""> --}}
                             <h6 class="title fw-semibold">Thiết kế nhãn hiệu</h6>
                             <p class="text-secondary">
                                 Thiết kế nhãn hiệu đẹp và hiệu quả.

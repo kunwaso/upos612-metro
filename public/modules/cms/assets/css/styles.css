@@ -9860,3 +9860,157 @@ a.tf-btn:hover {
 .hov-shadow-red:hover {
 box-shadow: 0px 3.44px 5.57px 0px rgba(0, 0, 0, 0.0862745098), 0px 22.91px 37.08px 0px rgba(255, 59, 0, 0.1647058824), 0px 76px 123px 0px rgba(255, 59, 0, 0.0509803922), 0px 5.05px 8.18px 0px rgba(255, 59, 0, 0.1019607843), 0px 16.98px 27.47px 0px rgba(255, 59, 0, 0.0470588235), 0px 56px 83px 0px rgba(255, 59, 0, 0.2509803922), 0px 14px 34px 0px rgba(255, 59, 0, 0.2509803922), 0px 1px 2px 0px rgba(255, 59, 0, 0.4), 0px -3px 0px 0px rgba(0, 0, 0, 0.0588235294) inset, 0px 1px 0px 0px rgba(255, 255, 255, 0.6) inset;
 }
+.image-service{
+  position: relative;
+  border-radius: 32px;
+  overflow: hidden;
+
+}
+
+.featured-works-item {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--neutral-100);
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 
+  0px -8px 0px 0px #EAEAEA inset,
+  0px 4px 0px 0px #FFFFFF99 inset,
+  0px 7.77px 2.21px 0px #0000000F,
+  0px 3px 3px 0px #0000001A;
+  .image {
+      position: relative;
+      border-radius: 32px;
+      overflow: hidden;
+      img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: all 1s;
+      }
+      &:after {
+          content: "";
+          position: absolute;
+          width: 200%;
+          height: 0%;
+          left: 50%;
+          top: 50%;
+          background-color: rgba(255, 255, 255, 0.3);
+          transform: translate(-50%, -50%) rotate(-45deg);
+          z-index: 1;
+          pointer-events: none;
+      }
+      .view-project {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%,-50%);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: max-content;
+          letter-spacing: 0.01em;
+          color: var(--white);
+          padding: 16px 24px;
+          border-radius: 99px;
+          background: #00000033;
+          backdrop-filter: blur(44px);
+          opacity: 0;
+          visibility: hidden;
+          .icon {
+              font-size: 24px;
+          }
+          &:hover {
+              color: var(--brand);
+          }
+      }
+  }
+  .content {
+      flex-shrink: 0;
+      padding: 32px 40px 16px;
+      .pagi-dot {
+          display: flex;
+          gap: 10px;
+          padding-bottom: 23px;
+          border-bottom: 1px solid var(--neutral-300);
+          margin-bottom: 24px;
+          span {
+              display: flex;
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: var(--neutral-300);
+              @include transition3;
+              &.active {
+                  background-color: var(--brand);
+              }
+          }
+      }
+      .bot {
+          display: flex;
+          gap: 24px;
+          .heading {
+              width: 39.765%;
+          }
+      }
+      .grid-text {
+          width: 58.22%;
+          display: flex;
+          gap: 12px 40px;
+          .item {
+              &:nth-child(1) {
+                  width: 42.363%;
+              }
+              &:nth-child(2) {
+                  width: 23%;
+              }
+              &:nth-child(3) {
+                  width: 23%;
+              }
+          }
+      }
+  }
+  &:hover {
+      .image {
+          &:after {
+              height: 250%;
+              transition: all 600ms linear;
+              background-color: transparent;
+          }
+
+          img {
+              transform: scale(1.1);
+          }
+          .view-project {
+              opacity: 1;
+              visibility: visible;
+          }
+      }
+  }
+  @include res(xl) {
+      .content {
+          padding: 32px 20px 16px;
+      }
+  }
+  @include res(md) {
+      border-radius: 24px;
+      .image {
+          border-radius: 14px;
+          .view-project {
+              top: 15px !important;
+              left: 15px !important;
+              transform: none;
+              gap: 5px;
+              padding: 7px 13px;
+              opacity: 1;
+              visibility: visible;
+              font-size: 14px;
+              line-height: 20px;
+              .icon {
+                  font-size: 14px;
+              }
+          }
+      }
+
+  }
+}
