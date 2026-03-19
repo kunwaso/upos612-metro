@@ -181,30 +181,30 @@ class ExpenseController extends Controller
                 ->addColumn(
                     'action',
                     '<div class="btn-group">
-                        <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info tw-w-max dropdown-toggle" 
-                            data-toggle="dropdown" aria-expanded="false"> @lang("messages.actions")<span class="caret"></span><span class="sr-only">Toggle Dropdown
+                        <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                            data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false"> @lang("messages.actions")<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                 </span>
                         </button>
-                    <ul class="dropdown-menu dropdown-menu-left" role="menu">
+                    <ul class="dropdown-menu dropdown-menu-left shadow-sm" role="menu">
                     @if(auth()->user()->can("expense.edit"))
-                        <li><a href="{{action(\'App\Http\Controllers\ExpenseController@edit\', [$id])}}"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a></li>
+                        <li><a href="{{action(\'App\Http\Controllers\ExpenseController@edit\', [$id])}}" class="dropdown-item"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a></li>
                     @endif
                     @if($document)
-                        <li><a href="{{ url(\'uploads/documents/\' . $document)}}" 
+                        <li><a href="{{ url(\'uploads/documents/\' . $document)}}" class="dropdown-item" 
                         download=""><i class="fa fa-download" aria-hidden="true"></i> @lang("purchase.download_document")</a></li>
                         @if(isFileImage($document))
-                            <li><a href="#" data-href="{{ url(\'uploads/documents/\' . $document)}}" class="view_uploaded_document"><i class="fas fa-file-image" aria-hidden="true"></i>@lang("lang_v1.view_document")</a></li>
+                            <li><a href="#" data-href="{{ url(\'uploads/documents/\' . $document)}}" class="dropdown-item view_uploaded_document"><i class="fas fa-file-image" aria-hidden="true"></i>@lang("lang_v1.view_document")</a></li>
                         @endif
                     @endif
                     @if(auth()->user()->can("expense.delete"))
                         <li>
-                        <a href="#" data-href="{{action(\'App\Http\Controllers\ExpenseController@destroy\', [$id])}}" class="delete_expense"><i class="glyphicon glyphicon-trash"></i> @lang("messages.delete")</a></li>
+                        <a href="#" data-href="{{action(\'App\Http\Controllers\ExpenseController@destroy\', [$id])}}" class="dropdown-item delete_expense"><i class="glyphicon glyphicon-trash"></i> @lang("messages.delete")</a></li>
                     @endif
-                    <li class="divider"></li> 
+                    <li class="divider dropdown-divider"></li> 
                     @if($payment_status != "paid")
-                        <li><a href="{{action([\App\Http\Controllers\TransactionPaymentController::class, \'addPayment\'], [$id])}}" class="add_payment_modal"><i class="fas fa-money-bill-alt" aria-hidden="true"></i> @lang("purchase.add_payment")</a></li>
+                        <li><a href="{{action([\App\Http\Controllers\TransactionPaymentController::class, \'addPayment\'], [$id])}}" class="dropdown-item add_payment_modal"><i class="fas fa-money-bill-alt" aria-hidden="true"></i> @lang("purchase.add_payment")</a></li>
                     @endif
-                    <li><a href="{{action([\App\Http\Controllers\TransactionPaymentController::class, \'show\'], [$id])}}" class="view_payment_modal"><i class="fas fa-money-bill-alt" aria-hidden="true" ></i> @lang("purchase.view_payments")</a></li>
+                    <li><a href="{{action([\App\Http\Controllers\TransactionPaymentController::class, \'show\'], [$id])}}" class="dropdown-item view_payment_modal"><i class="fas fa-money-bill-alt" aria-hidden="true" ></i> @lang("purchase.view_payments")</a></li>
                     </ul></div>'
                 )
                 ->removeColumn('id')

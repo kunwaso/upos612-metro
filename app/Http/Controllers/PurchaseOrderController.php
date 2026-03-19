@@ -151,41 +151,41 @@ class PurchaseOrderController extends Controller
             return Datatables::of($purchase_orders)
                 ->addColumn('action', function ($row) use ($is_admin) {
                     $html = '<div class="btn-group">
-                            <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle" 
-                                data-toggle="dropdown" aria-expanded="false">'.
+                            <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                                data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">'.
                                 __('messages.actions').
                                 '<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                 </span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-left" role="menu">';
+                            <ul class="dropdown-menu dropdown-menu-left shadow-sm" role="menu">';
                     if (auth()->user()->can('purchase_order.view_all') || auth()->user()->can('purchase_order.view_own')) {
-                        $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'show'], [$row->id]).'" class="btn-modal" data-container=".view_modal"><i class="fas fa-eye" aria-hidden="true"></i>'.__('messages.view').'</a></li>';
+                        $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'show'], [$row->id]).'" class="dropdown-item btn-modal" data-container=".view_modal"><i class="fas fa-eye" aria-hidden="true"></i>'.__('messages.view').'</a></li>';
 
-                        $html .= '<li><a href="#" class="print-invoice" data-href="'.action([\App\Http\Controllers\PurchaseController::class, 'printInvoice'], [$row->id]).'"><i class="fas fa-print" aria-hidden="true"></i>'.__('messages.print').'</a></li>';
+                        $html .= '<li><a href="#" class="dropdown-item print-invoice" data-href="'.action([\App\Http\Controllers\PurchaseController::class, 'printInvoice'], [$row->id]).'"><i class="fas fa-print" aria-hidden="true"></i>'.__('messages.print').'</a></li>';
                     }
                     if ((auth()->user()->can('purchase_order.view_all') || auth()->user()->can('purchase_order.view_own'))) {
-                        $html .= '<li><a href="'.route('purchaseOrder.downloadPdf', [$row->id]).'" target="_blank"><i class="fas fa-print" aria-hidden="true"></i> '.__('lang_v1.download_pdf').'</a></li>';
+                        $html .= '<li><a href="'.route('purchaseOrder.downloadPdf', [$row->id]).'" target="_blank" class="dropdown-item"><i class="fas fa-print" aria-hidden="true"></i> '.__('lang_v1.download_pdf').'</a></li>';
                     }
                     if (auth()->user()->can('purchase_order.update')) {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'edit'], [$row->id]).'"><i class="fas fa-edit"></i>'.__('messages.edit').'</a></li>';
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'edit'], [$row->id]).'" class="dropdown-item"><i class="fas fa-edit"></i>'.__('messages.edit').'</a></li>';
                     }
                     if (auth()->user()->can('purchase_order.delete')) {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'destroy'], [$row->id]).'" class="delete-purchase-order"><i class="fas fa-trash"></i>'.__('messages.delete').'</a></li>';
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseOrderController::class, 'destroy'], [$row->id]).'" class="dropdown-item delete-purchase-order"><i class="fas fa-trash"></i>'.__('messages.delete').'</a></li>';
                     }
 
                     if ($is_admin || auth()->user()->hasAnyPermission(['access_shipping', 'access_own_shipping', 'access_commission_agent_shipping'])) {
-                        $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\SellController::class, 'editShipping'], [$row->id]).'" class="btn-modal" data-container=".view_modal"><i class="fas fa-truck" aria-hidden="true"></i>'.__('lang_v1.edit_shipping').'</a></li>';
+                        $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\SellController::class, 'editShipping'], [$row->id]).'" class="dropdown-item btn-modal" data-container=".view_modal"><i class="fas fa-truck" aria-hidden="true"></i>'.__('lang_v1.edit_shipping').'</a></li>';
                     }
 
                     if ((auth()->user()->can('purchase_order.view_all') || auth()->user()->can('purchase_order.view_own')) && ! empty($row->document)) {
                         $document_name = ! empty(explode('_', $row->document, 2)[1]) ? explode('_', $row->document, 2)[1] : $row->document;
-                        $html .= '<li><a href="'.url('uploads/documents/'.$row->document).'" download="'.$document_name.'"><i class="fas fa-download" aria-hidden="true"></i>'.__('purchase.download_document').'</a></li>';
+                        $html .= '<li><a href="'.url('uploads/documents/'.$row->document).'" download="'.$document_name.'" class="dropdown-item"><i class="fas fa-download" aria-hidden="true"></i>'.__('purchase.download_document').'</a></li>';
                         if (isFileImage($document_name)) {
-                            $html .= '<li><a href="#" data-href="'.url('uploads/documents/'.$row->document).'" class="view_uploaded_document"><i class="fas fa-image" aria-hidden="true"></i>'.__('lang_v1.view_document').'</a></li>';
+                            $html .= '<li><a href="#" data-href="'.url('uploads/documents/'.$row->document).'" class="dropdown-item view_uploaded_document"><i class="fas fa-image" aria-hidden="true"></i>'.__('lang_v1.view_document').'</a></li>';
                         }
                     }
 
-                    $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\NotificationController::class, 'getTemplate'], ['transaction_id' => $row->id, 'template_for' => 'purchase_order']).'" class="btn-modal" data-container=".view_modal"><i class="fas fa-envelope" aria-hidden="true"></i> '.__('lang_v1.send_notification').'</a></li>';
+                    $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\NotificationController::class, 'getTemplate'], ['transaction_id' => $row->id, 'template_for' => 'purchase_order']).'" class="dropdown-item btn-modal" data-container=".view_modal"><i class="fas fa-envelope" aria-hidden="true"></i> '.__('lang_v1.send_notification').'</a></li>';
 
                     $html .= '</ul></div>';
 

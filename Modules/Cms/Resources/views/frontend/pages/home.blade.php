@@ -89,17 +89,17 @@
                     <i class="catalogicon fa-solid fa-soap"></i>
                     <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/air/air-packaging.png') }}" alt=""></a>
                     <div class="content">
-                        <h6 class="fw-semibold title">Túi chống sốc - silica gel</h6>
+                        <h6 class="fw-semibold title">Túi chống sốc - silica-gel</h6>
                         <p class="text text-secondary">các sản phẩm dạng túi chống sốc và silica gel bảo quản sản phẩm khô ráo chống va đập</p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-5">
                 <div class="benefits-box benefits-step effectFade fadeUp">
-                    <i class="catalogicon fa-solid fa-box-open"></i>
-                    <img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt="">
+                    <i class="catalogicon fa-solid fa-boxes-packing"></i>
+                    <img src="{{ asset('modules/cms/assets/images/products/other/other-packaging.png') }}" alt="">
                     <div class="content">
-                        <h6 class="fw-semibold title">Sản phẩm khác</h6>
+                        <h6 class="fw-semibold title">Đóng gói - dụng cụ</h6>
                         <p class="text text-secondary">các sản phẩm dạng kệ, pallet, dụng cụ đóng gói hỗ trợ đóng gói bảo quản</p>
                     </div>
                 </div>
@@ -116,9 +116,8 @@
     <!-- section-features -->
     <div class="section-features flat-spacing pt-0">
         <div class="container">
-            <div class="heading-section center mb-64">
-                <div class="heading-sub fw-semibold effectFade fadeUp">Features</div>
-                <div class="heading-title text-gradient-3 effectFade fadeRotateX">All Features in One</div>
+            <div class="heading-section center mb-64 mt-30">
+                <div class="heading-title text-gradient-3 effectFade fadeRotateX">Dịch vụ</div>
             </div>
         </div>
         <div class="position-relative">
@@ -127,23 +126,23 @@
                     <div class="features-col col-left lg-mb-24">
                         <div class="features-item effectFade fadeUp">
                             <i class="icon icon-robot-solid"></i>
-                            <h6 class="title fw-semibold">Agent-Powered Workflows</h6>
+                            <h6 class="title fw-semibold">Thiết kế nhãn hiệu</h6>
                             <p class="text-secondary">
-                                Turn repetitive tasks into autonomous flows—agents plan, execute, and report with guardrails, audit trails, and clear handoff to humans.
+                                Thiết kế nhãn hiệu đẹp và hiệu quả.
                             </p>
                         </div>
                         <div class="features-item effectFade fadeUp">
                             <i class="icon icon-clipboard-check-solid"></i>
-                            <h6 class="title fw-semibold">Eval-First Quality</h6>
+                            <h6 class="title fw-semibold">In ấn nhãn hiệu</h6>
                             <p class="text-secondary">
-                                Measure accuracy, latency, safety, and cost from day one. Our evals and dashboards keep models reliable and budgets predictable.
+                                In ấn nhãn hiệu trên vật liệu đóng gói, phù hợp với nhu cầu của bạn.
                             </p>
                         </div>
                         <div class="features-item effectFade fadeUp">
                             <i class="icon icon-book-solid"></i>
-                            <h6 class="title fw-semibold">Private Knowledge RAG</h6>
+                            <h6 class="title fw-semibold">Thi công đóng gói</h6>
                             <p class="text-secondary">
-                                Make your docs, tickets, and wikis instantly useful with retrieval augmented generation—freshness, citations, and explainability built in.
+                                Bạn đang tìm kiếm công ty thi công đóng gói hàng hóa theo yêu cầu của bạn? Chúng tôi cung cấp dịch vụ thi công đóng gói hàng hóa theo yêu cầu của bạn.
                             </p>
                         </div>
                     </div>
@@ -153,9 +152,9 @@
                     <div class="features-col col-right">
                         <div class="features-item effectFade fadeUp" data-delay="0.1">
                             <i class="icon icon-user-check-solid"></i>
-                            <h6 class="title fw-semibold">Human-Centered AI UX</h6>
+                            <h6 class="title fw-semibold">In ấn thùng carton</h6>
                             <p class="text-secondary">
-                                Interfaces, prompts, and error states designed for trust and adoption—so the smart thing is also the obvious thing to do.
+                                In ấn thùng carton trên vật liệu đóng gói chi tiết sản phẩm
                             </p>
                         </div>
                         <div class="features-item effectFade fadeUp" data-delay="0.1">

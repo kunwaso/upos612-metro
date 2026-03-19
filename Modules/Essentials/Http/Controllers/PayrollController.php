@@ -118,20 +118,20 @@ class PayrollController extends Controller
                     'action',
                     function ($row) {
                         $html = '<div class="btn-group">
-                                    <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle" 
-                                        data-toggle="dropdown" aria-expanded="false">'.
+                                    <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                                        data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">'.
                                         __('messages.actions').
                                         '<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                         </span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-right" role="menu">';
+                                    <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-sm" role="menu">';
 
-                        $html .= '<li><a href="#" data-href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'show'], [$row->id]).'" data-container=".view_modal" class="btn-modal"><i class="fa fa-eye" aria-hidden="true"></i> '.__('messages.view').'</a></li>';
+                        $html .= '<li><a href="#" data-href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'show'], [$row->id]).'" data-container=".view_modal" class="dropdown-item btn-modal"><i class="fa fa-eye" aria-hidden="true"></i> '.__('messages.view').'</a></li>';
 
                         // $html .= '<li><a href="' . action([\App\Http\Controllers\TransactionPaymentController::class, 'show'], [$row->id]) . '" class="view_payment_modal"><i class="fa fa-money"></i> ' . __("purchase.view_payments") . '</a></li>';
 
                         if (empty($row->payroll_group_id) && $row->payment_status != 'paid' && auth()->user()->can('essentials.create_payroll')) {
-                            $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'addPayment'], [$row->id]).'" class="add_payment_modal"><i class="fa fa-money"></i> '.__('purchase.add_payment').'</a></li>';
+                            $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'addPayment'], [$row->id]).'" class="dropdown-item add_payment_modal"><i class="fa fa-money"></i> '.__('purchase.add_payment').'</a></li>';
                         }
 
                         $html .= '</ul></div>';
@@ -689,23 +689,23 @@ class PayrollController extends Controller
                     'action',
                     function ($row) {
                         $html = '<div class="btn-group">
-                                    <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle" 
-                                        data-toggle="dropdown" aria-expanded="false">'.
+                                    <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                                        data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">'.
                                         __('messages.actions').
                                         '<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                         </span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-right" role="menu">';
+                                    <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-sm" role="menu">';
 
                         $html .= '<li>
-                                    <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'viewPayrollGroup'], [$row->id]).'" target="_blank">
+                                    <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'viewPayrollGroup'], [$row->id]).'" target="_blank" class="dropdown-item">
                                             <i class="fa fa-eye" aria-hidden="true"></i> '
                                             .__('messages.view').
                                     '</a>
                                 </li>';
                         if (auth()->user()->can('essentials.update_payroll')) {
                             $html .= '<li>
-                                        <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'getEditPayrollGroup'], [$row->id]).'" target="_blank">
+                                        <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'getEditPayrollGroup'], [$row->id]).'" target="_blank" class="dropdown-item">
                                                 <i class="fas fa-edit" aria-hidden="true"></i> '
                                                 .__('messages.edit').
                                         '</a>
@@ -713,12 +713,12 @@ class PayrollController extends Controller
                         }
 
                         if (auth()->user()->can('essentials.delete_payroll') && $row->status == 'draft') {
-                            $html .= '<li><a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'destroy'], [$row->id]).'" class="delete-payroll"><i class="fa fa-trash" aria-hidden="true"></i> '.__('messages.delete').'</a></li>';
+                            $html .= '<li><a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'destroy'], [$row->id]).'" class="dropdown-item delete-payroll"><i class="fa fa-trash" aria-hidden="true"></i> '.__('messages.delete').'</a></li>';
                         }
 
                         if ($row->status == 'final' && $row->payment_status != 'paid') {
                             $html .= '<li>
-                                    <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'addPayment'], [$row->id]).'" target="_blank">
+                                    <a href="'.action([\Modules\Essentials\Http\Controllers\PayrollController::class, 'addPayment'], [$row->id]).'" target="_blank" class="dropdown-item">
                                             <i class="fas fa-money-check" aria-hidden="true"></i> '
                                             .__('purchase.add_payment').
                                     '</a>

@@ -120,17 +120,17 @@ class PurchaseRequisitionController extends Controller
             return Datatables::of($purchase_requisitions)
                 ->addColumn('action', function ($row) {
                     $html = '<div class="btn-group">
-                            <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info tw-w-max  dropdown-toggle" 
-                                data-toggle="dropdown" aria-expanded="false">'.
+                            <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                                data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">'.
                                 __('messages.actions').
                                 '<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                 </span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-left" role="menu">';
-                    $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\PurchaseRequisitionController::class, 'show'], [$row->id]).'" class="btn-modal" data-container=".view_modal"><i class="fas fa-eye" aria-hidden="true"></i>'.__('messages.view').'</a></li>';
+                            <ul class="dropdown-menu dropdown-menu-left shadow-sm" role="menu">';
+                    $html .= '<li><a href="#" data-href="'.action([\App\Http\Controllers\PurchaseRequisitionController::class, 'show'], [$row->id]).'" class="dropdown-item btn-modal" data-container=".view_modal"><i class="fas fa-eye" aria-hidden="true"></i>'.__('messages.view').'</a></li>';
 
                     if (auth()->user()->can('purchase_requisition.delete')) {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseRequisitionController::class, 'destroy'], [$row->id]).'" class="delete-purchase-requisition"><i class="fas fa-trash"></i>'.__('messages.delete').'</a></li>';
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseRequisitionController::class, 'destroy'], [$row->id]).'" class="dropdown-item delete-purchase-requisition"><i class="fas fa-trash"></i>'.__('messages.delete').'</a></li>';
                     }
 
                     $html .= '</ul></div>';

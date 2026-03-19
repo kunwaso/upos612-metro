@@ -108,30 +108,30 @@ class PurchaseReturnController extends Controller
             return Datatables::of($purchases_returns)
                 ->addColumn('action', function ($row) {
                     $html = '<div class="btn-group">
-                                    <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info tw-w-max dropdown-toggle" 
-                                        data-toggle="dropdown" aria-expanded="false">'.
+                                    <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" 
+                                        data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">'.
                                         __('messages.actions').
                                         '<span class="caret"></span><span class="sr-only">Toggle Dropdown
                                         </span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-right" role="menu">';
+                                    <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-sm" role="menu">';
                     if (! empty($row->return_parent_id)) {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseReturnController::class, 'add'], $row->return_parent_id).'" ><i class="glyphicon glyphicon-edit"></i>'.
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseReturnController::class, 'add'], $row->return_parent_id).'" class="dropdown-item" ><i class="glyphicon glyphicon-edit"></i>'.
                                 __('messages.edit').
                                 '</a></li>';
                     } else {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\CombinedPurchaseReturnController::class, 'edit'], $row->id).'" ><i class="glyphicon glyphicon-edit"></i>'.
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\CombinedPurchaseReturnController::class, 'edit'], $row->id).'" class="dropdown-item" ><i class="glyphicon glyphicon-edit"></i>'.
                                 __('messages.edit').
                                 '</a></li>';
                     }
 
                     if ($row->payment_status != 'paid') {
-                        $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'addPayment'], [$row->id]).'" class="add_payment_modal"><i class="fas fa-money-bill-alt"></i>'.__('purchase.add_payment').'</a></li>';
+                        $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'addPayment'], [$row->id]).'" class="dropdown-item add_payment_modal"><i class="fas fa-money-bill-alt"></i>'.__('purchase.add_payment').'</a></li>';
                     }
 
-                    $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'show'], [$row->id]).'" class="view_payment_modal"><i class="fas fa-money-bill-alt"></i>'.__('purchase.view_payments').'</a></li>';
+                    $html .= '<li><a href="'.action([\App\Http\Controllers\TransactionPaymentController::class, 'show'], [$row->id]).'" class="dropdown-item view_payment_modal"><i class="fas fa-money-bill-alt"></i>'.__('purchase.view_payments').'</a></li>';
 
-                    $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseReturnController::class, 'destroy'], $row->id).'" class="delete_purchase_return" ><i class="fa fa-trash"></i>'.
+                    $html .= '<li><a href="'.action([\App\Http\Controllers\PurchaseReturnController::class, 'destroy'], $row->id).'" class="dropdown-item delete_purchase_return" ><i class="fa fa-trash"></i>'.
                                 __('messages.delete').
                                 '</a></li>';
                     $html .= '</ul></div>';

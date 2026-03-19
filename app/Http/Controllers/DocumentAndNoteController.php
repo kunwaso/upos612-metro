@@ -61,19 +61,19 @@ class DocumentAndNoteController extends Controller
                 return Datatables::of($document_note)
                     ->addColumn('action', function ($row) use ($notable_type, $permissions) {
                         $html = '<div class="btn-group">
-                                    <button class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle" type="button"  data-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle" type="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         '.__('messages.action').'
                                         <span class="caret"></span>
                                         <span class="sr-only">
                                             '.__('messages.action').'
                                         </span>
                                     </button>
-                                      <ul class="dropdown-menu dropdown-menu-left" role="menu">
+                                      <ul class="dropdown-menu dropdown-menu-left shadow-sm" role="menu">
                                         ';
 
                         if (in_array('view', $permissions)) {
                             $html .= '<li>
-                                        <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'show'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'" class="cursor-pointer view_a_docs_note">
+                                        <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'show'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'" class="dropdown-item cursor-pointer view_a_docs_note">
                                             <i class="fa fa-eye"></i>
                                             '.__('messages.view').'
                                         </a>
@@ -81,7 +81,7 @@ class DocumentAndNoteController extends Controller
                         }
                         if (in_array('create', $permissions)) {
                             $html .= '<li>
-                                    <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'edit'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'"  class="cursor-pointer docs_and_notes_btn">
+                                    <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'edit'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'"  class="dropdown-item cursor-pointer docs_and_notes_btn">
                                         <i class="fa fa-edit"></i>
                                         '.__('messages.edit').'
                                     </a>
@@ -89,7 +89,7 @@ class DocumentAndNoteController extends Controller
                         }
                         if (in_array('delete', $permissions)) {
                             $html .= '<li>
-                                    <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'destroy'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'"  id="delete_docus_note" class="cursor-pointer">
+                                    <a data-href="'.action([\App\Http\Controllers\DocumentAndNoteController::class, 'destroy'], [$row->id, 'notable_id' => $row->notable_id, 'notable_type' => $notable_type]).'"  id="delete_docus_note" class="dropdown-item cursor-pointer">
                                         <i class="fas fa-trash"></i>
                                         '.__('messages.delete').'
                                     </a>

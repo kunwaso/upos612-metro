@@ -168,19 +168,19 @@ class SellReturnController extends Controller
                         if ($is_zatca) {
                             if ($row->zatca_status == 'success') {
                                 return '<div class="btn-group">
-                                <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle"
-                                    data-toggle="dropdown" aria-expanded="false">' .
+                                <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle"
+                                    data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">' .
                                     __('messages.actions') .
                                     '<span class="caret"></span><span class="sr-only">Toggle Dropdown</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-left" role="menu">
+                                <ul class="dropdown-menu dropdown-menu-left shadow-sm" role="menu">
                                     <li>
-                                        <a class="download-xml" href="'.action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'downloadXml'], [$row->id]).'">
+                                        <a class="dropdown-item download-xml" href="'.action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'downloadXml'], [$row->id]).'">
                                             <i class="fas fa-file-download"></i> '.__('zatcaintegrationksa::lang.download_xml').'
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="download-a3-pdf" target="_blank"  href="'.action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'return_print_pdf'], [$row->id]).'">
+                                        <a class="dropdown-item download-a3-pdf" target="_blank"  href="'.action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'return_print_pdf'], [$row->id]).'">
                                             <i class="fas fa-file-download"></i> '.__('zatcaintegrationksa::lang.download_a3_pdf').'
                                         </a>
                                     </li>
@@ -190,44 +190,44 @@ class SellReturnController extends Controller
                             }
                         }
             $returnString = '<div class="btn-group">
-                                <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max dropdown-toggle"
-                                    data-toggle="dropdown" aria-expanded="false">' . 
+                                <button type="button" class="btn btn-sm btn-light-primary text-nowrap dropdown-toggle"
+                                    data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">' . 
                                     __('messages.actions') . 
                                     '<span class="caret"></span>
                                     <span class="sr-only">Toggle Dropdown</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                                <ul class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-sm" role="menu">
                                     <li>
-                                        <a href="#" class="btn-modal" data-container=".view_modal" 
+                                        <a href="#" class="dropdown-item btn-modal" data-container=".view_modal" 
                                             data-href="' . action('App\Http\Controllers\SellReturnController@show', [$row->parent_sale_id]) . '">
                                             <i class="fas fa-eye" aria-hidden="true"></i> ' . __('messages.view') . '
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="' . action('App\Http\Controllers\SellReturnController@add', [$row->parent_sale_id]) . '">
+                                        <a href="' . action('App\Http\Controllers\SellReturnController@add', [$row->parent_sale_id]) . '" class="dropdown-item">
                                             <i class="fa fa-edit" aria-hidden="true"></i> ' . __('messages.edit') . '
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="' . action('App\Http\Controllers\SellReturnController@destroy', [$row->id]) . '" class="delete_sell_return">
+                                        <a href="' . action('App\Http\Controllers\SellReturnController@destroy', [$row->id]) . '" class="dropdown-item delete_sell_return">
                                             <i class="fa fa-trash" aria-hidden="true"></i> ' . __('messages.delete') . '
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="#" class="print-invoice" data-href="' . action('App\Http\Controllers\SellReturnController@printInvoice', [$row->id]) . '">
+                                        <a href="#" class="dropdown-item print-invoice" data-href="' . action('App\Http\Controllers\SellReturnController@printInvoice', [$row->id]) . '">
                                             <i class="fa fa-print" aria-hidden="true"></i> ' . __('messages.print') . '
                                         </a>
                                     </li>';
                             if ($row->payment_status != "paid") {
                     $returnString .= '<li>
-                                        <a href="' . action('App\Http\Controllers\TransactionPaymentController@addPayment', [$row->id]) . '" class="add_payment_modal">
+                                        <a href="' . action('App\Http\Controllers\TransactionPaymentController@addPayment', [$row->id]) . '" class="dropdown-item add_payment_modal">
                                             <i class="fas fa-money-bill-alt"></i> ' . __('purchase.add_payment') . '
                                         </a>
                                     </li>';
                             }
 
                 $returnString .= '<li>
-                                    <a href="' . action('App\Http\Controllers\TransactionPaymentController@show', [$row->id]) . '" class="view_payment_modal">
+                                    <a href="' . action('App\Http\Controllers\TransactionPaymentController@show', [$row->id]) . '" class="dropdown-item view_payment_modal">
                                         <i class="fas fa-money-bill-alt"></i> ' . __('purchase.view_payments') . '
                                     </a>
                                 </li>
