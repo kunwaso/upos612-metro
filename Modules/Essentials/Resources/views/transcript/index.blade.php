@@ -44,7 +44,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold">@lang('essentials::lang.source_language')</label>
-                                <select id="upload-source-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                <select name="source_language" id="upload-source-language" class="form-select form-select-solid select2" data-control="select2" data-hide-search="false">
                                     @foreach($languageOptions as $languageKey => $languageLabel)
                                         <option value="{{ $languageKey }}" {{ $languageKey === $default_source_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
                                     @endforeach
@@ -52,7 +52,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold">@lang('essentials::lang.target_language')</label>
-                                <select id="upload-target-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                <select name="target_language" id="upload-target-language" class="form-select form-select-solid select2" data-control="select2" data-hide-search="false">
                                     @foreach($languageOptions as $languageKey => $languageLabel)
                                         <option value="{{ $languageKey }}" {{ $languageKey === $default_target_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
                                     @endforeach
@@ -85,7 +85,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">@lang('essentials::lang.source_language')</label>
-                            <select id="live-source-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                            <select name="live_source_language" id="live-source-language" class="form-select form-select-solid select2" data-control="select2" data-hide-search="false">
                                 @foreach($languageOptions as $languageKey => $languageLabel)
                                     <option value="{{ $languageKey }}" {{ $languageKey === $default_source_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
                                 @endforeach
@@ -93,7 +93,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">@lang('essentials::lang.target_language')</label>
-                            <select id="live-target-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                            <select name="live_target_language" id="live-target-language" class="form-select form-select-solid select2" data-control="select2" data-hide-search="false">
                                 @foreach($languageOptions as $languageKey => $languageLabel)
                                     <option value="{{ $languageKey }}" {{ $languageKey === $default_target_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
                                 @endforeach
@@ -129,6 +129,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">@lang('essentials::lang.live_translation')</label>
                             <textarea id="live-translation-text" class="form-control form-control-solid" rows="8" readonly placeholder="@lang('essentials::lang.live_translation')"></textarea>
+                            <div id="live-translation-status" class="form-text mt-2 d-none" aria-live="polite"></div>
                         </div>
                     </div>
                 </div>
@@ -290,13 +291,48 @@ $(document).ready(function () {
         isRecording: false,
         timerInterval: null,
         elapsedSeconds: 0,
+        liveTranscriptLines: [],
         liveTranscriptFinal: '',
+        liveTranscriptInterim: '',
+        liveTranslationLines: [],
         liveTranslationFinal: '',
+        liveTranslationInterim: '',
         translationQueue: [],
         translationDebounceTimer: null,
+        translationRequestInFlight: false,
+        translationPreviewQueueText: '',
+        translationPreviewDebounceTimer: null,
+        translationPreviewRequestInFlight: false,
+        lastTranslationError: '',
         pending: null,
         saveInProgress: false
     };
+
+    function initLanguageSelectors() {
+        var $selectors = $('#upload-source-language, #upload-target-language, #live-source-language, #live-target-language');
+        if (!$selectors.length || !$.fn || !$.fn.select2) {
+            return;
+        }
+
+        $selectors.each(function () {
+            var $select = $(this);
+            if (!$select.hasClass('select2')) {
+                $select.addClass('select2');
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                return;
+            }
+
+            if (typeof __select2 === 'function') {
+                __select2($select);
+            } else {
+                $select.select2();
+            }
+        });
+    }
+
+    initLanguageSelectors();
 
     var table = $('#transcripts-table').DataTable({
         processing: true,
@@ -305,7 +341,7 @@ $(document).ready(function () {
         columns: [
             { data: 'title', name: 'essentials_transcripts.title' },
             { data: 'source', name: 'essentials_transcripts.source', orderable: false, searchable: false },
-            { data: 'language_pair', name: 'language_pair', orderable: false, searchable: false },
+            { data: 'language_pair', name: 'language_pair', orderable: false },
             { data: 'user_name', name: 'user_name', orderable: false },
             { data: 'created_at', name: 'essentials_transcripts.created_at' },
             { data: 'transcript', name: 'essentials_transcripts.transcript', orderable: false },
@@ -313,6 +349,35 @@ $(document).ready(function () {
             { data: 'action', name: 'action', orderable: false, searchable: false }
         ]
     });
+
+    function extractAjaxErrorMessage(xhr, fallbackMessage) {
+        var fallback = fallbackMessage || '{{ __("messages.something_went_wrong") }}';
+        var response = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+
+        if (response && typeof response.msg === 'string' && response.msg.trim()) {
+            return response.msg;
+        }
+
+        if (response && typeof response.message === 'string' && response.message.trim()) {
+            return response.message;
+        }
+
+        if (response && response.errors && typeof response.errors === 'object') {
+            var fields = Object.keys(response.errors);
+            for (var i = 0; i < fields.length; i++) {
+                var fieldErrors = response.errors[fields[i]];
+                if (Array.isArray(fieldErrors) && fieldErrors.length && typeof fieldErrors[0] === 'string') {
+                    return fieldErrors[0];
+                }
+
+                if (typeof fieldErrors === 'string' && fieldErrors.trim()) {
+                    return fieldErrors;
+                }
+            }
+        }
+
+        return fallback;
+    }
 
     function getLanguagePairLabel(sourceLanguage, targetLanguage) {
         var source = languageLabels[sourceLanguage] || (sourceLanguage || '').toUpperCase();
@@ -338,11 +403,15 @@ $(document).ready(function () {
         }
     }
 
-    function showResult(payload) {
+    function syncResultCard(payload) {
         $('#result-language-pair').text(getLanguagePairLabel(payload.source_language, payload.target_language));
         $('#transcript-result-text').val(payload.transcript_text || '');
         $('#translation-result-text').val(payload.translated_text || '');
         $('#transcript-result-card').removeClass('d-none');
+    }
+
+    function showResult(payload) {
+        syncResultCard(payload);
         $('html, body').animate({ scrollTop: $('#transcript-result-card').offset().top - 70 }, 300);
     }
 
@@ -379,16 +448,24 @@ $(document).ready(function () {
             return;
         }
 
-        $('#save-modal-language-pair').text(getLanguagePairLabel(state.pending.source_language, state.pending.target_language));
-        $('#save-modal-source').text(state.pending.source === 'live' ? '{{ __("essentials::lang.record_live") }}' : '{{ __("essentials::lang.upload_audio") }}');
-        $('#save-modal-transcript-text').val(state.pending.transcript_text || '');
-        $('#save-modal-translation-text').val(state.pending.translated_text || '');
+        syncSaveModal();
 
         if (saveModal) {
             saveModal.show();
         } else {
             $('#save-transcript-modal').modal('show');
         }
+    }
+
+    function syncSaveModal() {
+        if (!state.pending) {
+            return;
+        }
+
+        $('#save-modal-language-pair').text(getLanguagePairLabel(state.pending.source_language, state.pending.target_language));
+        $('#save-modal-source').text(state.pending.source === 'live' ? '{{ __("essentials::lang.record_live") }}' : '{{ __("essentials::lang.upload_audio") }}');
+        $('#save-modal-transcript-text').val(state.pending.transcript_text || '');
+        $('#save-modal-translation-text').val(state.pending.translated_text || '');
     }
 
     function closeSaveModal() {
@@ -400,11 +477,22 @@ $(document).ready(function () {
     }
 
     function resetLivePanel() {
+        state.liveTranscriptLines = [];
         state.liveTranscriptFinal = '';
+        state.liveTranscriptInterim = '';
+        state.liveTranslationLines = [];
         state.liveTranslationFinal = '';
+        state.liveTranslationInterim = '';
         state.translationQueue = [];
+        state.translationPreviewQueueText = '';
+        state.translationRequestInFlight = false;
+        state.translationPreviewRequestInFlight = false;
+        state.lastTranslationError = '';
+        clearTimeout(state.translationDebounceTimer);
+        clearTimeout(state.translationPreviewDebounceTimer);
         $('#live-transcript-text').val('');
         $('#live-translation-text').val('');
+        clearLiveTranslationStatus();
     }
 
     function stopMediaTracks() {
@@ -433,36 +521,246 @@ $(document).ready(function () {
         $('#recording-timer').text('0s');
     }
 
-    function updateLiveTranscript(interimText) {
-        var text = state.liveTranscriptFinal;
-        if (interimText) {
-            text = (text ? text + "\\n" : '') + interimText;
+    function getCurrentLiveTranscriptText() {
+        return ($('#live-transcript-text').val() || '').trim();
+    }
+
+    function getCurrentLiveTranslationText() {
+        return ($('#live-translation-text').val() || '').trim();
+    }
+
+    function getLineCollectionText(lines) {
+        return (lines || [])
+            .map(function (line) {
+                return (line || '').trim();
+            })
+            .filter(function (line) {
+                return line !== '';
+            })
+            .join("\n");
+    }
+
+    function syncLiveTextCaches() {
+        state.liveTranscriptFinal = getLineCollectionText(state.liveTranscriptLines);
+        state.liveTranslationFinal = getLineCollectionText(state.liveTranslationLines);
+    }
+
+    function buildLivePanelText(lines, interimText) {
+        var finalPart = getLineCollectionText(lines);
+        var interimPart = (interimText || '').trim();
+
+        if (finalPart && interimPart) {
+            return finalPart + "\n" + interimPart;
         }
-        $('#live-transcript-text').val(text);
+
+        return finalPart || interimPart;
+    }
+
+    function buildLivePending(blob, mimeType) {
+        return {
+            source: 'live',
+            title: ($('#live-title-input').val() || '').trim(),
+            source_language: $('#live-source-language').val(),
+            target_language: $('#live-target-language').val(),
+            transcript_text: getCurrentLiveTranscriptText(),
+            translated_text: getCurrentLiveTranslationText(),
+            blob: blob || null,
+            blobMimeType: mimeType || ''
+        };
+    }
+
+    function syncLivePendingFromPanels() {
+        if (!state.pending || state.pending.source !== 'live') {
+            return;
+        }
+
+        state.pending.title = ($('#live-title-input').val() || '').trim();
+        state.pending.source_language = $('#live-source-language').val();
+        state.pending.target_language = $('#live-target-language').val();
+        state.pending.transcript_text = getCurrentLiveTranscriptText();
+        state.pending.translated_text = getCurrentLiveTranslationText();
+
+        syncResultCard(state.pending);
+        syncSaveModal();
+    }
+
+    function clearTranslationError() {
+        state.lastTranslationError = '';
+        clearLiveTranslationStatus();
+    }
+
+    function showTranslationError(message) {
+        var msg = (message || '').trim();
+        if (!msg) {
+            return;
+        }
+
+        setLiveTranslationStatus(msg, 'error');
+        if (state.lastTranslationError === msg) {
+            return;
+        }
+
+        state.lastTranslationError = msg;
+        toastr.error(msg);
+    }
+
+    function clearLiveTranslationStatus() {
+        $('#live-translation-status')
+            .addClass('d-none')
+            .removeClass('text-danger text-muted')
+            .text('');
+    }
+
+    function setLiveTranslationStatus(message, tone) {
+        var msg = (message || '').trim();
+        if (!msg) {
+            clearLiveTranslationStatus();
+            return;
+        }
+
+        var statusClass = tone === 'error' ? 'text-danger' : 'text-muted';
+        $('#live-translation-status')
+            .removeClass('d-none text-danger text-muted')
+            .addClass(statusClass)
+            .text(msg);
+    }
+
+    function updateLiveTranscript(interimText) {
+        state.liveTranscriptInterim = (interimText || '').trim();
+
+        if (!state.liveTranscriptInterim) {
+            state.liveTranslationInterim = '';
+            state.translationPreviewQueueText = '';
+            clearTimeout(state.translationPreviewDebounceTimer);
+        }
+
+        $('#live-transcript-text').val(buildLivePanelText(state.liveTranscriptLines, state.liveTranscriptInterim));
+        syncLivePendingFromPanels();
     }
 
     function updateLiveTranslation() {
-        $('#live-translation-text').val(state.liveTranslationFinal);
+        $('#live-translation-text').val(buildLivePanelText(state.liveTranslationLines, state.liveTranslationInterim));
+        syncLivePendingFromPanels();
     }
 
-    function flushLiveTranslationQueue() {
-        if (!state.translationQueue.length) {
+    function flushLiveTranslationPreview() {
+        if (!state.translationPreviewQueueText || state.translationPreviewRequestInFlight) {
             return;
         }
 
         var sourceLanguage = $('#live-source-language').val();
         var targetLanguage = $('#live-target-language').val();
-        var segment = state.translationQueue.join("\\n");
-        state.translationQueue = [];
+        var previewText = (state.translationPreviewQueueText || '').trim();
+        state.translationPreviewQueueText = '';
 
-        if (sourceLanguage === targetLanguage) {
-            state.liveTranslationFinal = state.liveTranslationFinal
-                ? state.liveTranslationFinal + "\\n" + segment
-                : segment;
+        if (!previewText) {
+            state.liveTranslationInterim = '';
             updateLiveTranslation();
             return;
         }
 
+        if (sourceLanguage === targetLanguage) {
+            state.liveTranslationInterim = previewText;
+            clearTranslationError();
+            updateLiveTranslation();
+            return;
+        }
+
+        state.translationPreviewRequestInFlight = true;
+        $.ajax({
+            url: translateUrl,
+            method: 'POST',
+            data: {
+                _token: csrfToken,
+                text: previewText,
+                source_language: sourceLanguage,
+                target_language: targetLanguage
+            },
+            success: function (res) {
+                if (!res.success || !res.data) {
+                    showTranslationError(res.msg || '{{ __("messages.something_went_wrong") }}');
+                    return;
+                }
+
+                var translated = (res.data.translated_text || '').trim();
+                if (!translated) {
+                    showTranslationError('{{ __("essentials::lang.translation_empty_response") }}');
+                    return;
+                }
+
+                if (state.liveTranscriptInterim !== previewText) {
+                    return;
+                }
+
+                state.liveTranslationInterim = translated;
+                clearTranslationError();
+                updateLiveTranslation();
+            },
+            error: function (xhr) {
+                if (state.liveTranscriptInterim !== previewText) {
+                    return;
+                }
+
+                state.liveTranslationInterim = '';
+                updateLiveTranslation();
+                showTranslationError(extractAjaxErrorMessage(xhr, '{{ __("messages.something_went_wrong") }}'));
+            },
+            complete: function () {
+                state.translationPreviewRequestInFlight = false;
+                if (state.translationPreviewQueueText && state.translationPreviewQueueText !== previewText) {
+                    flushLiveTranslationPreview();
+                }
+            }
+        });
+    }
+
+    function queueLiveTranslationPreview(text) {
+        var cleanText = (text || '').trim();
+        state.translationPreviewQueueText = cleanText;
+        clearTimeout(state.translationPreviewDebounceTimer);
+
+        if (!cleanText) {
+            state.liveTranslationInterim = '';
+            updateLiveTranslation();
+            return;
+        }
+
+        state.translationPreviewDebounceTimer = setTimeout(function () {
+            flushLiveTranslationPreview();
+        }, 450);
+    }
+
+    function flushLiveTranslationQueue() {
+        if (!state.translationQueue.length || state.translationRequestInFlight) {
+            return;
+        }
+
+        var sourceLanguage = $('#live-source-language').val();
+        var targetLanguage = $('#live-target-language').val();
+        var segmentEntry = state.translationQueue.shift();
+        var segment = segmentEntry && segmentEntry.text ? segmentEntry.text.trim() : '';
+        var segmentIndex = segmentEntry && typeof segmentEntry.index === 'number' ? segmentEntry.index : null;
+
+        if (!segment || segmentIndex === null) {
+            if (state.translationQueue.length) {
+                flushLiveTranslationQueue();
+            }
+            return;
+        }
+
+        if (sourceLanguage === targetLanguage) {
+            state.liveTranslationLines[segmentIndex] = segment;
+            syncLiveTextCaches();
+            clearTranslationError();
+            updateLiveTranslation();
+
+            if (state.translationQueue.length) {
+                flushLiveTranslationQueue();
+            }
+            return;
+        }
+
+        state.translationRequestInFlight = true;
         $.ajax({
             url: translateUrl,
             method: 'POST',
@@ -474,28 +772,32 @@ $(document).ready(function () {
             },
             success: function (res) {
                 if (!res.success || !res.data) {
-                    if (res.msg) {
-                        toastr.error(res.msg);
-                    }
+                    showTranslationError(res.msg || '{{ __("messages.something_went_wrong") }}');
                     return;
                 }
 
                 var translated = (res.data.translated_text || '').trim();
                 if (!translated) {
+                    showTranslationError('{{ __("essentials::lang.translation_empty_response") }}');
                     return;
                 }
 
-                state.liveTranslationFinal = state.liveTranslationFinal
-                    ? state.liveTranslationFinal + "\\n" + translated
-                    : translated;
-
+                state.liveTranslationLines[segmentIndex] = translated;
+                syncLiveTextCaches();
+                clearTranslationError();
                 updateLiveTranslation();
             },
             error: function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.msg
-                    ? xhr.responseJSON.msg
-                    : '{{ __("messages.something_went_wrong") }}';
-                toastr.error(msg);
+                state.liveTranslationLines[segmentIndex] = '{{ __("essentials::lang.live_translation_updating") }}';
+                syncLiveTextCaches();
+                updateLiveTranslation();
+                showTranslationError(extractAjaxErrorMessage(xhr, '{{ __("messages.something_went_wrong") }}'));
+            },
+            complete: function () {
+                state.translationRequestInFlight = false;
+                if (state.translationQueue.length) {
+                    flushLiveTranslationQueue();
+                }
             }
         });
     }
@@ -506,7 +808,15 @@ $(document).ready(function () {
             return;
         }
 
-        state.translationQueue.push(cleanText);
+        var lineIndex = state.liveTranscriptLines.length - 1;
+        if (lineIndex < 0) {
+            return;
+        }
+
+        state.translationQueue.push({
+            index: lineIndex,
+            text: cleanText
+        });
         clearTimeout(state.translationDebounceTimer);
         state.translationDebounceTimer = setTimeout(function () {
             flushLiveTranslationQueue();
@@ -533,9 +843,10 @@ $(document).ready(function () {
                 }
 
                 if (event.results[i].isFinal) {
-                    state.liveTranscriptFinal = state.liveTranscriptFinal
-                        ? state.liveTranscriptFinal + "\\n" + currentText
-                        : currentText;
+                    state.liveTranscriptLines.push(currentText);
+                    state.liveTranslationLines.push('{{ __("essentials::lang.live_translation_updating") }}');
+                    syncLiveTextCaches();
+                    state.liveTranslationInterim = '';
                     queueLiveTranslation(currentText);
                 } else {
                     interim += (interim ? ' ' : '') + currentText;
@@ -543,6 +854,9 @@ $(document).ready(function () {
             }
 
             updateLiveTranscript(interim);
+            if (state.liveTranscriptInterim) {
+                queueLiveTranslationPreview(state.liveTranscriptInterim);
+            }
         };
 
         recognition.onerror = function () {
@@ -578,9 +892,7 @@ $(document).ready(function () {
                 onSuccess(res.data);
             },
             error: function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.msg
-                    ? xhr.responseJSON.msg
-                    : '{{ __("messages.something_went_wrong") }}';
+                var msg = extractAjaxErrorMessage(xhr, '{{ __("messages.something_went_wrong") }}');
                 toastr.error(msg);
             },
             complete: function () {
@@ -695,6 +1007,9 @@ $(document).ready(function () {
                 }
 
                 $('#live-spinner-row').removeClass('d-none');
+                state.pending = buildLivePending(blob, mimeType);
+                showResult(state.pending);
+                openSaveModal();
 
                 var formData = new FormData();
                 formData.append('_token', csrfToken);
@@ -703,19 +1018,19 @@ $(document).ready(function () {
                 formData.append('target_language', targetLang);
 
                 requestPreview(formData, function (data) {
-                    state.pending = {
+                    state.pending = $.extend({}, state.pending || buildLivePending(blob, mimeType), {
                         source: 'live',
                         title: ($('#live-title-input').val() || '').trim(),
                         source_language: sourceLang,
                         target_language: targetLang,
-                        transcript_text: data.transcript_text || '',
-                        translated_text: data.translated_text || '',
+                        transcript_text: (data.transcript_text || state.pending.transcript_text || '').trim(),
+                        translated_text: (data.translated_text || state.pending.translated_text || '').trim(),
                         blob: blob,
                         blobMimeType: mimeType
-                    };
+                    });
 
                     showResult(state.pending);
-                    openSaveModal();
+                    syncSaveModal();
                 }, function () {
                     $('#live-spinner-row').addClass('d-none');
                     finishStopState();
@@ -755,7 +1070,9 @@ $(document).ready(function () {
         }
 
         clearTimeout(state.translationDebounceTimer);
+        clearTimeout(state.translationPreviewDebounceTimer);
         flushLiveTranslationQueue();
+        flushLiveTranslationPreview();
 
         state.isRecording = false;
         stopRecognition();
@@ -833,9 +1150,7 @@ $(document).ready(function () {
                 closeSaveModal();
             },
             error: function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.msg
-                    ? xhr.responseJSON.msg
-                    : '{{ __("messages.something_went_wrong") }}';
+                var msg = extractAjaxErrorMessage(xhr, '{{ __("messages.something_went_wrong") }}');
                 toastr.error(msg);
             },
             complete: function () {

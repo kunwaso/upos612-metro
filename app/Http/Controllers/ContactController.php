@@ -700,8 +700,29 @@ class ContactController extends Controller
            ->latest()
            ->get();
 
+        $custom_labels = json_decode(session('business.custom_labels', '{}'), true);
+        $custom_labels = is_array($custom_labels) ? $custom_labels : [];
+        $purchase_custom_labels = $custom_labels['purchase'] ?? [];
+        $purchase_custom_labels = is_array($purchase_custom_labels) ? $purchase_custom_labels : [];
+        $purchase_custom_field_visibility = [
+            'custom_field_1' => ! empty($purchase_custom_labels['custom_field_1']),
+            'custom_field_2' => ! empty($purchase_custom_labels['custom_field_2']),
+            'custom_field_3' => ! empty($purchase_custom_labels['custom_field_3']),
+            'custom_field_4' => ! empty($purchase_custom_labels['custom_field_4']),
+        ];
+
         return view('contact.show')
-             ->with(compact('contact', 'reward_enabled', 'contact_dropdown', 'business_locations', 'view_type', 'contact_view_tabs', 'activities'));
+             ->with(compact(
+                 'contact',
+                 'reward_enabled',
+                 'contact_dropdown',
+                 'business_locations',
+                 'view_type',
+                 'contact_view_tabs',
+                 'activities',
+                 'purchase_custom_labels',
+                 'purchase_custom_field_visibility'
+             ));
     }
 
     /**

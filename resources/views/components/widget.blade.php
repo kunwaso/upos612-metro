@@ -1,30 +1,23 @@
-<div class="{{$class ?? ''}} tw-mb-4 tw-transition-all lg:tw-col-span-2 tw-duration-200 tw-bg-white tw-shadow-sm tw-rounded-xl tw-ring-1 hover:tw-shadow-md  tw-ring-gray-200"
-    @if (!empty($id)) id="{{ $id }}" @endif>
-    <div class="tw-p-2 sm:tw-p-3">
-        @if (empty($header))
-            @if (!empty($title) || !empty($tool))
-                <div class="box-header">
-                    {!! $icon ?? '' !!}
-                    <h3 class="box-title">{{ $title ?? '' }}</h3>
-                    {!! $tool ?? '' !!}
-
-                    @if (isset($help_text))
-                        <br />
-                        <small>{!! $help_text !!}</small>
-                    @endif
-                </div>
+<div class="card card-flush {{ $class ?? '' }}" @if(!empty($id)) id="{{ $id }}" @endif>
+    @if(empty($header))
+        @if(!empty($title) || !empty($tool))
+        <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+            <h3 class="card-title">
+                {!! $icon ?? '' !!}
+                {{ $title ?? '' }}
+            </h3>
+            @if(!empty($help_text))
+                <small class="text-muted ms-2">{!! $help_text !!}</small>
             @endif
-        @else
-            <div class="box-header">
-                {!! $header !!}
-            </div>
-        @endif
-        <div class="tw-flow-root tw-border-gray-200">
-            <div class="">
-                <div class="tw-py-2 tw-align-middle sm:tw-px-5">
-                    {{ $slot }}
-                </div>
-            </div>
+            @if(!empty($tool))
+            <div class="card-toolbar">{!! $tool !!}</div>
+            @endif
         </div>
-    </div>
+        @endif
+    @else
+        <div class="card-header align-items-center py-5">
+            {!! $header !!}
+        </div>
+    @endif
+    <div class="card-body pt-0">{{ $slot }}</div>
 </div>

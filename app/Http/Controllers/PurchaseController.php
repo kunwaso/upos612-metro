@@ -218,8 +218,25 @@ class PurchaseController extends Controller
         $suppliers = Contact::suppliersDropdown($business_id, false);
         $orderStatuses = $this->productUtil->orderStatuses();
 
+        $custom_labels = json_decode(session('business.custom_labels', '{}'), true);
+        $custom_labels = is_array($custom_labels) ? $custom_labels : [];
+        $purchase_custom_labels = $custom_labels['purchase'] ?? [];
+        $purchase_custom_labels = is_array($purchase_custom_labels) ? $purchase_custom_labels : [];
+        $purchase_custom_field_visibility = [
+            'custom_field_1' => ! empty($purchase_custom_labels['custom_field_1']),
+            'custom_field_2' => ! empty($purchase_custom_labels['custom_field_2']),
+            'custom_field_3' => ! empty($purchase_custom_labels['custom_field_3']),
+            'custom_field_4' => ! empty($purchase_custom_labels['custom_field_4']),
+        ];
+
         return view('purchase.index')
-            ->with(compact('business_locations', 'suppliers', 'orderStatuses'));
+            ->with(compact(
+                'business_locations',
+                'suppliers',
+                'orderStatuses',
+                'purchase_custom_labels',
+                'purchase_custom_field_visibility'
+            ));
     }
 
     /**

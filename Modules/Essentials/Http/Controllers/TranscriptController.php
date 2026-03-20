@@ -4,6 +4,7 @@ namespace Modules\Essentials\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Utils\ModuleUtil;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,8 +48,23 @@ class TranscriptController extends Controller
         }
 
         $languageOptions = $this->transcriptUtil->getLanguageOptions();
+        if (empty($languageOptions)) {
+            $languageOptions = [
+                'en' => 'English',
+                'ce' => 'Chinese',
+                'vi' => 'Vietnamese',
+            ];
+        }
 
         if ($request->ajax()) {
+            // DataTables search map:
+            // title -> essentials_transcripts.title
+            // source -> essentials_transcripts.source (search disabled in UI)
+            // language_pair -> computed from source_language/target_language (custom filterColumn)
+            // user_name -> users name CONCAT alias (custom filterColumn)
+            // created_at -> essentials_transcripts.created_at with display + ISO date token matching
+            // transcript -> essentials_transcripts.transcript
+            // translated_preview -> essentials_transcripts.translated_text
             $transcripts = EssentialsTranscript::where('essentials_transcripts.business_id', $business_id)
                 ->join('users', 'users.id', '=', 'essentials_transcripts.user_id')
                 ->select([
@@ -92,6 +108,22 @@ class TranscriptController extends Controller
                 })
                 ->editColumn('created_at', function ($row) {
                     return $row->created_at ? $row->created_at->format('d M Y H:i') : '';
+                })
+                ->filterColumn('user_name', function ($query, $keyword) {
+                    $normalizedKeyword = $this->normalizeSearchToken((string) $keyword);
+                    $query->whereRaw(
+                        "LOWER(CONCAT(COALESCE(users.surname, ''), ' ', COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) LIKE ?",
+                        ['%' . $normalizedKeyword . '%']
+                    );
+                })
+                ->filterColumn('language_pair', function ($query, $keyword) use ($languageOptions) {
+                    $this->applyLanguagePairFilter($query, (string) $keyword, $languageOptions);
+                })
+                ->filterColumn('essentials_transcripts.created_at', function ($query, $keyword) {
+                    $this->applyCreatedAtFilter($query, (string) $keyword);
+                })
+                ->filterColumn('created_at', function ($query, $keyword) {
+                    $this->applyCreatedAtFilter($query, (string) $keyword);
                 })
                 ->rawColumns(['action', 'source', 'language_pair', 'transcript', 'translated_preview'])
                 ->make(true);
@@ -289,5 +321,139 @@ class TranscriptController extends Controller
         $target = $this->transcriptUtil->getLanguageLabel($targetLanguage);
 
         return $source . ' -> ' . $target;
+    }
+
+    protected function applyLanguagePairFilter($query, string $keyword, array $languageOptions): void
+    {
+        $normalizedKeyword = $this->normalizeSearchToken($keyword);
+        if ($normalizedKeyword === '') {
+            return;
+        }
+
+        $query->where(function ($languageQuery) use ($normalizedKeyword, $languageOptions) {
+            [$sourceToken, $targetToken] = $this->extractLanguagePairParts($normalizedKeyword);
+
+            if (! is_null($sourceToken) && ! is_null($targetToken)) {
+                $sourceCandidates = $this->resolveLanguageCandidates($sourceToken, $languageOptions);
+                $targetCandidates = $this->resolveLanguageCandidates($targetToken, $languageOptions);
+
+                foreach ($sourceCandidates as $sourceCode) {
+                    foreach ($targetCandidates as $targetCode) {
+                        $languageQuery->orWhere(function ($pairQuery) use ($sourceCode, $targetCode) {
+                            $pairQuery->where('essentials_transcripts.source_language', $sourceCode)
+                                ->where('essentials_transcripts.target_language', $targetCode);
+                        });
+                    }
+                }
+            }
+
+            $singleCandidates = $this->resolveLanguageCandidates($normalizedKeyword, $languageOptions);
+            if (! empty($singleCandidates)) {
+                $languageQuery->orWhereIn('essentials_transcripts.source_language', $singleCandidates)
+                    ->orWhereIn('essentials_transcripts.target_language', $singleCandidates);
+            }
+
+            $languageQuery->orWhereRaw(
+                "LOWER(CONCAT(COALESCE(essentials_transcripts.source_language, ''), ' -> ', COALESCE(essentials_transcripts.target_language, ''))) LIKE ?",
+                ['%' . $normalizedKeyword . '%']
+            );
+        });
+    }
+
+    protected function applyCreatedAtFilter($query, string $keyword): void
+    {
+        $normalizedKeyword = $this->normalizeSearchToken($keyword);
+        if ($normalizedKeyword === '') {
+            return;
+        }
+
+        $driver = DB::connection()->getDriverName();
+        $likeValue = '%' . $normalizedKeyword . '%';
+
+        $query->where(function ($dateQuery) use ($driver, $likeValue, $keyword) {
+            if ($driver === 'sqlite') {
+                $dateQuery->orWhereRaw("LOWER(strftime('%Y-%m-%d %H:%M:%S', essentials_transcripts.created_at)) LIKE ?", [$likeValue])
+                    ->orWhereRaw("LOWER(strftime('%Y-%m-%d', essentials_transcripts.created_at)) LIKE ?", [$likeValue]);
+            } else {
+                $dateQuery->orWhereRaw("LOWER(DATE_FORMAT(essentials_transcripts.created_at, '%d %b %Y %H:%i')) LIKE ?", [$likeValue])
+                    ->orWhereRaw("LOWER(DATE_FORMAT(essentials_transcripts.created_at, '%d %b %Y')) LIKE ?", [$likeValue])
+                    ->orWhereRaw("LOWER(DATE_FORMAT(essentials_transcripts.created_at, '%Y-%m-%d %H:%i:%s')) LIKE ?", [$likeValue])
+                    ->orWhereRaw("LOWER(DATE_FORMAT(essentials_transcripts.created_at, '%Y-%m-%d')) LIKE ?", [$likeValue]);
+            }
+
+            $parsedDate = $this->parseDateToken($keyword);
+            if (! is_null($parsedDate)) {
+                $dateQuery->orWhereDate('essentials_transcripts.created_at', $parsedDate);
+            }
+        });
+    }
+
+    protected function parseDateToken(string $keyword): ?string
+    {
+        $value = trim($keyword);
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (['d M Y', 'd M Y H:i', 'Y-m-d', 'Y-m-d H:i', 'Y/m/d', 'd/m/Y', 'm/d/Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value)->toDateString();
+            } catch (\Exception $exception) {
+                // Try the next known date format.
+            }
+        }
+
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Exception $exception) {
+            return null;
+        }
+    }
+
+    protected function extractLanguagePairParts(string $keyword): array
+    {
+        $parts = preg_split('/\s*(?:->|=>|\bto\b|-)\s*/i', $keyword);
+        if (is_array($parts) && count($parts) === 2) {
+            $sourceToken = $this->normalizeSearchToken((string) $parts[0]);
+            $targetToken = $this->normalizeSearchToken((string) $parts[1]);
+
+            if ($sourceToken !== '' && $targetToken !== '') {
+                return [$sourceToken, $targetToken];
+            }
+        }
+
+        return [null, null];
+    }
+
+    protected function resolveLanguageCandidates(string $token, array $languageOptions): array
+    {
+        $normalizedToken = $this->normalizeSearchToken($token);
+        if ($normalizedToken === '') {
+            return [];
+        }
+
+        $candidates = [];
+        foreach ($languageOptions as $code => $label) {
+            $normalizedCode = $this->normalizeSearchToken((string) $code);
+            $normalizedLabel = $this->normalizeSearchToken((string) $label);
+
+            if (
+                $normalizedCode === $normalizedToken
+                || $normalizedLabel === $normalizedToken
+                || str_contains($normalizedLabel, $normalizedToken)
+                || (strlen($normalizedToken) > 2 && str_contains($normalizedToken, $normalizedCode))
+            ) {
+                $candidates[] = (string) $code;
+            }
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
+    protected function normalizeSearchToken(string $value): string
+    {
+        return (string) Str::of(Str::lower(trim($value)))
+            ->replaceMatches('/\s+/', ' ')
+            ->trim();
     }
 }

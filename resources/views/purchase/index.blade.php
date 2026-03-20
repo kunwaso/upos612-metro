@@ -2,100 +2,108 @@
 @section('title', __('purchase.purchases'))
 
 @section('content')
+    <div class="no-print w-100">
+        <div class="mb-5">
+            <h1 class="mb-1 text-gray-900 fw-bolder fs-2x">@lang('purchase.purchases')</h1>
+            <div class="text-muted fw-semibold fs-6">
+                @lang('purchase.list_purchase')
+            </div>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7 my-1">
+                <li class="breadcrumb-item text-gray-600">
+                    <a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a>
+                </li>
+                <li class="breadcrumb-item text-gray-500">@lang('purchase.purchases')</li>
+            </ul>
+        </div>
 
-    <!-- Content Header (Page header) -->
-    <section class="content-header no-print">
-        <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">@lang('purchase.purchases')
-            <small></small>
-        </h1>
-        <!-- <ol class="breadcrumb">
-            <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
-            <li class="active">Here</li>
-        </ol> -->
-    </section>
-
-    <!-- Main content -->
-    <section class="content no-print">
-        @component('components.filters', ['title' => __('report.filters')])
-            <div class="col-md-3">
-                <div class="form-group">
-                    {!! Form::label('purchase_list_filter_location_id', __('purchase.business_location') . ':') !!}
-                    {!! Form::select('purchase_list_filter_location_id', $business_locations, null, [
-                        'class' => 'form-control select2',
-                        'style' => 'width:100%',
-                        'placeholder' => __('lang_v1.all'),
-                    ]) !!}
+        <div class="card card-flush mb-5">
+            <div class="card-header border-0 pt-6 align-items-center">
+                <div class="card-title"></div>
+                <div class="card-toolbar">
+                    <button type="button" class="btn btn-light-primary" data-bs-toggle="collapse"
+                        data-bs-target="#purchase_list_filters_panel" aria-expanded="false"
+                        aria-controls="purchase_list_filters_panel">
+                        <i class="ki-duotone ki-filter fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        @lang('report.filters')
+                    </button>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    {!! Form::label('purchase_list_filter_supplier_id', __('purchase.supplier') . ':') !!}
-                    {!! Form::select('purchase_list_filter_supplier_id', $suppliers, null, [
-                        'class' => 'form-control select2',
-                        'style' => 'width:100%',
-                        'placeholder' => __('lang_v1.all'),
-                    ]) !!}
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    {!! Form::label('purchase_list_filter_status', __('purchase.purchase_status') . ':') !!}
-                    {!! Form::select('purchase_list_filter_status', $orderStatuses, null, [
-                        'class' => 'form-control select2',
-                        'style' => 'width:100%',
-                        'placeholder' => __('lang_v1.all'),
-                    ]) !!}
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    {!! Form::label('purchase_list_filter_payment_status', __('purchase.payment_status') . ':') !!}
-                    {!! Form::select(
-                        'purchase_list_filter_payment_status',
-                        [
-                            'paid' => __('lang_v1.paid'),
-                            'due' => __('lang_v1.due'),
-                            'partial' => __('lang_v1.partial'),
-                            'overdue' => __('lang_v1.overdue'),
-                        ],
-                        null,
-                        ['class' => 'form-control select2', 'style' => 'width:100%', 'placeholder' => __('lang_v1.all')],
-                    ) !!}
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    {!! Form::label('purchase_list_filter_date_range', __('report.date_range') . ':') !!}
-                    {!! Form::text('purchase_list_filter_date_range', null, [
-                        'placeholder' => __('lang_v1.select_a_date_range'),
-                        'class' => 'form-control',
-                        'readonly',
-                    ]) !!}
-                </div>
-            </div>
-        @endcomponent
-
-        @component('components.widget', ['class' => 'box-primary', 'title' => __('purchase.all_purchases')])
-            @can('purchase.create')
-                @slot('tool')
-                    <div class="box-tools">
-                        {{-- <a class="btn btn-block btn-primary" href="{{action([\App\Http\Controllers\PurchaseController::class, 'create'])}}">
-                    <i class="fa fa-plus"></i> @lang('messages.add')</a> --}}
-                        <a class="tw-dw-btn tw-bg-gradient-to-r tw-from-indigo-600 tw-to-blue-500 tw-font-bold tw-text-white tw-border-none tw-rounded-full pull-right"
-                            href="{{action([\App\Http\Controllers\PurchaseController::class, 'create'])}}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                class="icon icon-tabler icons-tabler-outline icon-tabler-plus">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                <path d="M12 5l0 14" />
-                                <path d="M5 12l14 0" />
-                            </svg> @lang('messages.add')
-                        </a>
+            <div class="collapse" id="purchase_list_filters_panel">
+                <div class="card-body border-top border-gray-200 pt-6">
+                    <div class="row g-5">
+                        <div class="col-md-6 col-xl-3">
+                            {!! Form::label('purchase_list_filter_location_id', __('purchase.business_location'), ['class' => 'form-label fw-semibold']) !!}
+                            {!! Form::select('purchase_list_filter_location_id', $business_locations, null, [
+                                'class' => 'form-control select2 w-100',
+                                'placeholder' => __('lang_v1.all'),
+                            ]) !!}
+                        </div>
+                        <div class="col-md-6 col-xl-3">
+                            {!! Form::label('purchase_list_filter_supplier_id', __('purchase.supplier'), ['class' => 'form-label fw-semibold']) !!}
+                            {!! Form::select('purchase_list_filter_supplier_id', $suppliers, null, [
+                                'class' => 'form-control select2 w-100',
+                                'placeholder' => __('lang_v1.all'),
+                            ]) !!}
+                        </div>
+                        <div class="col-md-6 col-xl-3">
+                            {!! Form::label('purchase_list_filter_status', __('purchase.purchase_status'), ['class' => 'form-label fw-semibold']) !!}
+                            {!! Form::select('purchase_list_filter_status', $orderStatuses, null, [
+                                'class' => 'form-control select2 w-100',
+                                'placeholder' => __('lang_v1.all'),
+                            ]) !!}
+                        </div>
+                        <div class="col-md-6 col-xl-3">
+                            {!! Form::label('purchase_list_filter_payment_status', __('purchase.payment_status'), ['class' => 'form-label fw-semibold']) !!}
+                            {!! Form::select(
+                                'purchase_list_filter_payment_status',
+                                [
+                                    'paid' => __('lang_v1.paid'),
+                                    'due' => __('lang_v1.due'),
+                                    'partial' => __('lang_v1.partial'),
+                                    'overdue' => __('lang_v1.overdue'),
+                                ],
+                                null,
+                                ['class' => 'form-control select2 w-100', 'placeholder' => __('lang_v1.all')],
+                            ) !!}
+                        </div>
+                        <div class="col-md-6 col-xl-3">
+                            {!! Form::label('purchase_list_filter_date_range', __('report.date_range'), ['class' => 'form-label fw-semibold']) !!}
+                            {!! Form::text('purchase_list_filter_date_range', null, [
+                                'placeholder' => __('lang_v1.select_a_date_range'),
+                                'class' => 'form-control form-control-solid',
+                                'readonly',
+                            ]) !!}
+                        </div>
                     </div>
-                @endslot
-            @endcan
-            @include('purchase.partials.purchase_table')
-        @endcomponent
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title">
+                    <span class="fs-4 fw-bold text-gray-900">@lang('purchase.all_purchases')</span>
+                </div>
+                <div class="card-toolbar">
+                    @can('purchase.create')
+                        <a class="btn btn-primary"
+                            href="{{ action([\App\Http\Controllers\PurchaseController::class, 'create']) }}">
+                            <i class="ki-duotone ki-plus fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                            </i>
+                            @lang('messages.add')
+                        </a>
+                    @endcan
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                @include('purchase.partials.purchase_table')
+            </div>
+        </div>
 
         <div class="modal fade product_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
         </div>
@@ -107,30 +115,24 @@
         </div>
 
         @include('purchase.partials.update_purchase_status_modal')
-
-    </section>
+    </div>
 
     <section id="receipt_section" class="print_section"></section>
-
-    <!-- /.content -->
 @stop
+
 @section('javascript')
-    @php
-        $custom_labels = json_decode(session('business.custom_labels'), true);
-    @endphp
     <script>
-        // Custom field visibility configuration
-        var customFieldVisibility = {
-            custom_field_1: @json(!empty($custom_labels['purchase']['custom_field_1'])),
-            custom_field_2: @json(!empty($custom_labels['purchase']['custom_field_2'])),
-            custom_field_3: @json(!empty($custom_labels['purchase']['custom_field_3'])),
-            custom_field_4: @json(!empty($custom_labels['purchase']['custom_field_4']))
-        };
+        var customFieldVisibility = @json($purchase_custom_field_visibility);
     </script>
     <script src="{{ asset('assets/app/js/purchase.js?v=' . $asset_v) }}"></script>
     <script src="{{ asset('assets/app/js/payment.js?v=' . $asset_v) }}"></script>
     <script>
-        //Date range as a button
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip && !bootstrap.Tooltip.getInstance(el)) {
+                new bootstrap.Tooltip(el);
+            }
+        });
+
         $('#purchase_list_filter_date_range').daterangepicker(
             dateRangeSettings,
             function(start, end) {
@@ -179,6 +181,4 @@
             });
         });
     </script>
-
 @endsection
-

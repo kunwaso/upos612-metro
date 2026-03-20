@@ -6,15 +6,29 @@
 @php
 	$custom_labels = json_decode(session('business.custom_labels'), true);
 @endphp
-<!-- Content Header (Page header) -->
-<section class="content-header">
-    <div class="tw-flex tw-justify-between tw-items-center">
-        <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black use_ai_btn">@lang('purchase.add_purchase') <i class="fa fa-keyboard hover-q text-muted" aria-hidden="true" data-container="body" data-toggle="popover" data-placement="bottom" data-content="@include('purchase.partials.keyboard_shortcuts_details')" data-html="true" data-trigger="hover" data-original-title="" title=""></i></h1>
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0 use_ai_btn">
+                @lang('purchase.add_purchase')
+                <i class="fa fa-keyboard hover-q text-muted ms-2 fs-5" aria-hidden="true"
+                    data-container="body" data-toggle="popover" data-placement="bottom"
+                    data-content="@include('purchase.partials.keyboard_shortcuts_details')"
+                    data-html="true" data-trigger="hover"></i>
+            </h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600">
+                    <a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a>
+                </li>
+                <li class="breadcrumb-item text-gray-900">@lang('purchase.add_purchase')</li>
+            </ul>
+        </div>
     </div>
-</section>
-
-<!-- Main content -->
-<section class="content">
+</div>
+{{-- Content --}}
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
 
 	<!-- Page level currency setting -->
 	<input type="hidden" id="p_code" value="{{$currency_details->code}}">
@@ -576,7 +590,8 @@
 	@endcomponent
 
 {!! Form::close() !!}
-</section>
+    </div>
+</div>
 <!-- quick product modal -->
 <div class="modal fade quick_add_product_modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"></div>
 <div class="modal fade contact_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">

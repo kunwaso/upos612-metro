@@ -1,47 +1,20 @@
-{{-- <div class="box @if (!empty($class)) {{$class}} @else box-solid @endif" id="accordion">
-  <div class="box-header with-border" style="cursor: pointer;">
-    <h3 class="box-title">
-      <a data-toggle="collapse" data-parent="#accordion" href="#collapseFilter">
-        @if (!empty($icon)) {!! $icon !!} @else <i class="fa fa-filter" aria-hidden="true"></i> @endif {{$title ?? ''}}
-      </a>
-    </h3>
-  </div>
-  @php
-    if(isMobile()) {
-      $closed = true;
-    }
-  @endphp
-  <div id="collapseFilter" class="panel-collapse active collapse @if (empty($closed)) in @endif" aria-expanded="true">
-    <div class="box-body">
-      {{$slot}}
-    </div>
-  </div>
-</div> --}}
-
-
-<div
-    class="tw-transition-all tw-mb-4 lg:tw-col-span-1 tw-duration-200 tw-bg-white tw-shadow-sm tw-rounded-xl tw-ring-1 hover:tw-shadow-md tw-ring-gray-200">
-    <div class="box-header with-border" style="cursor: pointer;">
-        <h3 class="box-title tw-pt-2 tw-pb-2 tw-pl-2">
-            <a data-toggle="collapse" data-parent="#accordion" href="#collapseFilter">
-                @if (!empty($icon))
-                    {!! $icon !!}
-                @else
-                    <i class="fa fa-filter" aria-hidden="true"></i>
-                @endif {{ $title ?? '' }}
-            </a>
+<div class="card card-flush mb-5">
+    <div class="card-header cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="true">
+        <h3 class="card-title">
+            <i class="ki-duotone ki-filter fs-2 me-2"><span class="path1"></span><span class="path2"></span></i>
+            {{ $title ?? __('report.filters') }}
         </h3>
+        <div class="card-toolbar">
+            <button type="button" class="btn btn-sm btn-light-primary">
+                <i class="ki-duotone ki-down fs-5"><span class="path1"></span></i>
+            </button>
+        </div>
     </div>
-    @php
-        if (isMobile()) {
-            $closed = true;
-        }
-        $closed = true;
-    @endphp
-    <div id="collapseFilter" class="panel-collapse active collapse @if (empty($closed)) in @endif tw-pt-4 tw-pb-4"
-        aria-expanded="true">
-        <div class="box-body">
-            {{ $slot }}
+    <div class="collapse show" id="collapseFilter">
+        <div class="card-body pt-2 pb-4">
+            <div class="row g-3">
+                {{ $slot }}
+            </div>
         </div>
     </div>
 </div>

@@ -46,9 +46,15 @@
                         </li>
                     </ul>
                 </div>
-                <a href="{{ route('cms.contact.us') }}" class="tf-btn d-lg-flex d-none">
-                    Start a Project
-                </a>
+                @if(auth()->check())
+                    <a href="{{ url('c/dashboard') }}" class="tf-btn d-lg-flex d-none">
+                        Start a Project
+                    </a>
+                @else
+                    <a href="{{ url('c/login') }}" class="tf-btn d-lg-flex d-none">
+                        Login
+                    </a>
+                @endif
                 <a href="#" class="tf-btn open-mb-menu mobile-menu d-lg-none d-flex">
                     <i class="icon icon-grip-lines-solid"></i>
                 </a>

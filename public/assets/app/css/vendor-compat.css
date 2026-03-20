@@ -1127,3 +1127,195 @@ ul.dt-button-collection {
 .nav-tabs-custom.tab-default > .nav-tabs > li.active {
   border-top-color: var(--bs-gray-400, #c4cada);
 }
+
+/* -------------------------------------------------------------------------
+   AdminLTE legacy — .content-header / .content inside Metronic #kt_content
+   Pages still wrap yield content in these sections; align spacing + type.
+   ------------------------------------------------------------------------- */
+#kt_content > section.content-header {
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+#kt_content > section.content-header h1,
+#kt_content > section.content-header .h1 {
+  color: var(--bs-gray-900, #071437);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+#kt_content > section.content-header small {
+  color: var(--bs-gray-600, #78829d);
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+#kt_content > section.content {
+  width: 100%;
+  padding: 0;
+}
+
+/* -------------------------------------------------------------------------
+   AdminLTE box-header / box-title (components/widget, filters, legacy blades)
+   Metronic-aligned flex header without loading full AdminLTE vendor.css
+   ------------------------------------------------------------------------- */
+.box-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.box-header.with-border {
+  border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
+}
+
+.box-title {
+  margin: 0;
+  font-size: 1.075rem;
+  font-weight: 600;
+  color: var(--bs-gray-900, #071437);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.box-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.box-title a:hover {
+  color: var(--bs-primary, #1b84ff);
+}
+
+.box-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.box-body {
+  padding-top: 0.25rem;
+}
+
+/* Accent hint when widget passes box-primary (outer wrapper may include it) */
+.box-primary .box-header {
+  border-bottom-color: var(--bs-border-color, #f1f1f4);
+}
+
+/* -------------------------------------------------------------------------
+   AdminLTE small-box (POS / kitchen partials) — minimal Metronic-like card
+   ------------------------------------------------------------------------- */
+.small-box {
+  position: relative;
+  display: block;
+  border-radius: var(--bs-border-radius, 0.95rem);
+  box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+  background: var(--bs-body-bg, #fff);
+}
+
+.small-box .inner {
+  padding: 0.75rem 1rem;
+  color: var(--bs-body-color, #071437);
+}
+
+.small-box .inner h3,
+.small-box .inner p {
+  margin: 0;
+}
+
+.small-box .icon {
+  color: var(--bs-gray-400, #c4cada);
+  opacity: 0.35;
+}
+
+.small-box-footer {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+  color: var(--bs-body-color, #071437);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.small-box-footer:hover {
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  color: var(--bs-primary, #1b84ff);
+}
+
+.small-box.bg-green,
+.small-box.bg-yellow,
+.small-box.bg-red,
+.small-box.bg-gray,
+.small-box.bg-orange,
+.small-box.bg-aqua,
+.small-box.bg-light-blue,
+.small-box.bg-info {
+  border: none;
+}
+
+.small-box.bg-green {
+  background-color: var(--bs-success, #17c653);
+  color: #fff;
+}
+.small-box.bg-yellow {
+  background-color: var(--bs-warning, #f6c000);
+  color: var(--bs-gray-900, #071437);
+}
+.small-box.bg-red {
+  background-color: var(--bs-danger, #f8285a);
+  color: #fff;
+}
+.small-box.bg-gray {
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  color: var(--bs-body-color, #071437);
+}
+.small-box.bg-orange {
+  background-color: #f6a100;
+  color: #fff;
+}
+.small-box.bg-aqua,
+.small-box.bg-light-blue,
+.small-box.bg-info {
+  background-color: var(--bs-info, #00c0ef);
+  color: #fff;
+}
+
+.small-box.bg-green .small-box-footer,
+.small-box.bg-yellow .small-box-footer,
+.small-box.bg-red .small-box-footer,
+.small-box.bg-orange .small-box-footer,
+.small-box.bg-aqua .small-box-footer,
+.small-box.bg-light-blue .small-box-footer,
+.small-box.bg-info .small-box-footer {
+  background: rgba(0, 0, 0, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+.small-box.bg-green .small-box-footer:hover,
+.small-box.bg-red .small-box-footer:hover,
+.small-box.bg-orange .small-box-footer:hover,
+.small-box.bg-aqua .small-box-footer:hover,
+.small-box.bg-light-blue .small-box-footer:hover,
+.small-box.bg-info .small-box-footer:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.small-box.bg-yellow .small-box-footer:hover,
+.small-box.bg-gray .small-box-footer:hover {
+  color: var(--bs-primary, #1b84ff);
+}

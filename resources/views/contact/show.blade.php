@@ -560,6 +560,9 @@ $(document).on('click', '#print_ledger_pdf', function() {
 @include('sale_pos.partials.sale_table_javascript')
 <script src="{{ asset('assets/app/js/payment.js?v=' . $asset_v) }}"></script>
 @if(in_array($contact->type, ['both', 'supplier']))
+    <script>
+        var customFieldVisibility = @json($purchase_custom_field_visibility);
+    </script>
     <script src="{{ asset('assets/app/js/purchase.js?v=' . $asset_v) }}"></script>
 @endif
 
