@@ -56,9 +56,6 @@ The Ultimate POS software is licensed under the [Codecanyon license](https://cod
 
 
 
-
-grod api: [redacted rotate key at console.groq.com]
-
 git init
 git add README.md
 git commit -m "first commit"
