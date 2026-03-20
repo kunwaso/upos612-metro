@@ -13,6 +13,9 @@ class EssentialsTranscript extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
+        'source_language' => 'string',
+        'target_language' => 'string',
+        'translated_text' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

@@ -45,6 +45,8 @@ Route::middleware('web', 'authh', 'auth', 'SetSessionData', 'language', 'timezon
 
         // Voice transcript
         Route::get('transcripts', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'index'])->name('essentials.transcripts.index');
+        Route::post('transcripts/preview', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'preview'])->name('essentials.transcripts.preview');
+        Route::post('transcripts/translate', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'translate'])->name('essentials.transcripts.translate');
         Route::post('transcripts', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'store'])->name('essentials.transcripts.store');
         Route::delete('transcripts/{id}', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'destroy'])->name('essentials.transcripts.destroy');
     });

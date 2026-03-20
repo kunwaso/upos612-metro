@@ -40,15 +40,21 @@ class PublicQuoteController extends Controller
         }
 
         if ($this->isPasswordProtected($quote) && ! $this->isQuoteUnlocked($publicToken, $quote)) {
-            $locked = $this->isQuoteUnlockBlocked($publicToken, $request->ip());
+            $isLocked = $this->isQuoteUnlockBlocked($publicToken, $request->ip());
+            $unlockInputMode = $this->resolvedPublicQuoteUnlockInputMode();
+            $unlockOtpLength = $this->resolvedPublicQuoteUnlockOtpLength();
 
             return response()
                 ->view('quotes.public_quote_password', [
                     'publicToken' => $publicToken,
-                    'locked' => $locked,
-                    'lockedMessage' => $locked ? __('product.quote_unlock_blocked_10min') : null,
+                    'isLocked' => $isLocked,
+                    'lockedMessage' => $isLocked ? __('product.quote_unlock_blocked_10min') : null,
+                    'unlockInputMode' => $unlockInputMode,
+                    'unlockOtpLength' => $unlockOtpLength,
+                    'unlockOtpDigitsOnly' => (bool) config('product.public_quote_unlock.otp_digits_only', true),
+                    'unlockFormAction' => route('product.quotes.public.unlock', ['publicToken' => $publicToken]),
                 ])
-                ->setStatusCode($locked ? 429 : 200)
+                ->setStatusCode($isLocked ? 429 : 200)
                 ->header('X-Robots-Tag', 'noindex, nofollow');
         }
 
@@ -232,5 +238,17 @@ class PublicQuoteController extends Controller
     {
         Cache::forget($this->passwordAttemptsKey($publicToken, $ipAddress));
         Cache::forget($this->passwordCooldownKey($publicToken, $ipAddress));
+    }
+
+    protected function resolvedPublicQuoteUnlockInputMode(): string
+    {
+        $mode = strtolower((string) config('product.public_quote_unlock.input_mode', 'password'));
+
+        return in_array($mode, ['password', 'otp'], true) ? $mode : 'password';
+    }
+
+    protected function resolvedPublicQuoteUnlockOtpLength(): int
+    {
+        return min(32, max(1, (int) config('product.public_quote_unlock.otp_length', 6)));
     }
 }

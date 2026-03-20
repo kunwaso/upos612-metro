@@ -2,11 +2,11 @@
 
 namespace Modules\Essentials\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Utils\ModuleUtil;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreTranscriptRequest extends FormRequest
+class PreviewTranscriptRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -22,12 +22,8 @@ class StoreTranscriptRequest extends FormRequest
         $languageKeys = array_keys((array) config('constants.langs', []));
 
         return [
-            'title' => ['nullable', 'string', 'max:255'],
-            'source' => ['required', Rule::in(['upload', 'live'])],
             'source_language' => ['required', 'string', Rule::in($languageKeys)],
             'target_language' => ['required', 'string', Rule::in($languageKeys)],
-            'transcript_text' => ['required', 'string'],
-            'translated_text' => ['required', 'string'],
             'audio' => [
                 'required_without:recorded_audio',
                 'file',
@@ -45,14 +41,10 @@ class StoreTranscriptRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'source.required'                 => __('essentials::lang.source_required'),
-            'source.in'                       => __('essentials::lang.source_invalid'),
             'source_language.required'        => __('essentials::lang.language_required'),
             'source_language.in'              => __('essentials::lang.language_invalid'),
             'target_language.required'        => __('essentials::lang.language_required'),
             'target_language.in'              => __('essentials::lang.language_invalid'),
-            'transcript_text.required'        => __('essentials::lang.transcript_text_required'),
-            'translated_text.required'        => __('essentials::lang.translated_text_required'),
             'audio.required_without'          => __('essentials::lang.audio_required'),
             'recorded_audio.required_without' => __('essentials::lang.audio_required'),
             'audio.mimes'                     => __('essentials::lang.audio_invalid_format'),

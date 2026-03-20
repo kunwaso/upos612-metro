@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Route;
 use Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 use App\Events\ProductsCreatedOrModified;
@@ -147,6 +148,21 @@ class ProductController extends Controller
             //if woocomerce enabled add field to query
             if ($is_woocommerce) {
                 $products->addSelect('woocommerce_disable_sync');
+            }
+
+            if (Schema::hasTable('storage_slots')) {
+                $products->addSelect(DB::raw(
+                    '(SELECT GROUP_CONCAT(DISTINCT SS.slot_code ORDER BY SS.slot_code SEPARATOR \', \')
+                    FROM product_racks AS PR
+                    INNER JOIN storage_slots AS SS ON PR.slot_id = SS.id AND SS.business_id = PR.business_id
+                    WHERE PR.product_id = products.id
+                    AND PR.business_id = products.business_id
+                    AND PR.slot_id IS NOT NULL
+                    AND SS.slot_code IS NOT NULL
+                    AND SS.slot_code != \'\') AS slot_codes'
+                ));
+            } else {
+                $products->addSelect(DB::raw('NULL AS slot_codes'));
             }
 
             $products->groupBy('products.id');
@@ -283,6 +299,15 @@ class ProductController extends Controller
                     'purchase_price',
                     '<div style="white-space: nowrap;">@format_currency($min_purchase_price) @if($max_purchase_price != $min_purchase_price && $type == "variable") -  @format_currency($max_purchase_price)@endif </div>'
                 )
+                ->editColumn('slot_codes', function ($row) {
+                    $codes = trim((string) ($row->slot_codes ?? ''));
+
+                    if ($codes === '') {
+                        return '--';
+                    }
+
+                    return '<span class="fw-semibold text-gray-800">'.e($codes).'</span>';
+                })
                 ->addColumn(
                     'selling_price',
                     '<div style="white-space: nowrap;">@format_currency($min_price) @if($max_price != $min_price && $type == "variable") -  @format_currency($max_price)@endif </div>'
@@ -304,7 +329,7 @@ class ProductController extends Controller
                             return '';
                         }
                     }, ])
-                ->rawColumns(['action', 'image', 'mass_delete', 'product', 'selling_price', 'purchase_price', 'category', 'current_stock', 'status'])
+                ->rawColumns(['action', 'image', 'mass_delete', 'product', 'selling_price', 'purchase_price', 'category', 'current_stock', 'status', 'slot_codes'])
                 ->make(true);
         }
 

@@ -183,7 +183,7 @@
                                 <th class="text-end min-w-100px">SKU</th>
                                 <th class="text-end min-w-70px">Qty</th>
                                 <th class="text-end min-w-100px">Price</th>
-                                <th class="text-end min-w-100px">Rating</th>
+                                <th class="text-end min-w-125px">{{ __('lang_v1.storage_slot_code') }}</th>
                                 <th class="text-end min-w-100px">Status</th>
                                 <th class="text-end min-w-70px">Actions</th>
                             </tr>
@@ -298,8 +298,8 @@
                     className: 'text-end pe-0'
                 },
                 {
-                    data: null,
-                    name: 'rating',
+                    data: 'slot_codes',
+                    name: 'slot_codes',
                     className: 'text-end pe-0',
                     orderable: false,
                     searchable: false,

@@ -6,134 +6,183 @@
 @include('essentials::layouts.nav_essentials')
 
 <section class="content-header">
-    <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">
-        @lang('essentials::lang.voice_transcripts')
-        <small class="tw-text-sm md:tw-text-base tw-text-gray-700 tw-font-semibold">
-            @lang('essentials::lang.manage_transcripts')
-        </small>
-    </h1>
+    <div class="mb-5">
+        <h1 class="mb-1 text-gray-900 fw-bolder fs-2x">@lang('essentials::lang.voice_transcripts')</h1>
+        <div class="text-muted fw-semibold fs-6">@lang('essentials::lang.manage_transcripts')</div>
+    </div>
 </section>
 
 <section class="content">
-
-    {{-- Input card --}}
-    <div class="box box-solid">
-        <div class="box-header with-border">
-            <h3 class="box-title">@lang('essentials::lang.new_transcript')</h3>
+    <div class="card card-flush mb-6">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="fw-bold text-gray-900 m-0">@lang('essentials::lang.new_transcript')</h3>
+            </div>
         </div>
-        <div class="box-body">
-
-            {{-- Tabs --}}
-            <ul class="nav nav-pills nav-justified" id="transcript-tabs" role="tablist">
-                <li class="active">
-                    <a href="#tab-upload" data-toggle="tab" role="tab">
-                        <i class="fa fa-upload"></i> @lang('essentials::lang.upload_audio')
+        <div class="card-body pt-0">
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-semibold mb-8" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link text-active-primary active" data-bs-toggle="tab" href="#kt_transcript_upload_tab" role="tab">
+                        <i class="fa fa-upload me-2"></i>@lang('essentials::lang.upload_audio')
                     </a>
                 </li>
-                <li>
-                    <a href="#tab-live" data-toggle="tab" role="tab">
-                        <i class="fa fa-microphone"></i> @lang('essentials::lang.record_live')
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link text-active-primary" data-bs-toggle="tab" href="#kt_transcript_live_tab" role="tab">
+                        <i class="fa fa-microphone me-2"></i>@lang('essentials::lang.record_live')
                     </a>
                 </li>
             </ul>
 
-            <div class="tab-content" style="margin-top:20px;">
-
-                {{-- Tab 1: Upload File --}}
-                <div class="tab-pane active" id="tab-upload">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="kt_transcript_upload_tab" role="tabpanel">
                     <form id="upload-transcript-form" enctype="multipart/form-data">
                         @csrf
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>@lang('essentials::lang.transcript_title') <small class="text-muted">(@lang('messages.optional'))</small></label>
-                                    <input type="text" name="title" class="form-control" placeholder="@lang('essentials::lang.transcript_title_placeholder')">
-                                </div>
+                        <div class="row g-5">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">@lang('essentials::lang.transcript_title') <small class="text-muted">(@lang('messages.optional'))</small></label>
+                                <input type="text" name="title" id="upload-title-input" class="form-control form-control-solid" placeholder="@lang('essentials::lang.transcript_title_placeholder')">
                             </div>
-                            <div class="col-md-5">
-                                <div class="form-group">
-                                    <label>@lang('essentials::lang.upload_audio') <span class="text-danger">*</span></label>
-                                    <input type="file" name="audio" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac" class="form-control" id="audio-file-input">
-                                    <p class="help-block">@lang('essentials::lang.audio_format_help')</p>
-                                </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">@lang('essentials::lang.source_language')</label>
+                                <select id="upload-source-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                    @foreach($languageOptions as $languageKey => $languageLabel)
+                                        <option value="{{ $languageKey }}" {{ $languageKey === $default_source_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <div class="col-md-3" style="padding-top:25px;">
-                                <button type="submit" class="btn btn-primary btn-block" id="btn-upload-transcribe">
-                                    <i class="fa fa-magic"></i> @lang('essentials::lang.transcribe')
-                                    <span class="spinner-upload" style="display:none;"><i class="fa fa-spinner fa-spin"></i></span>
-                                </button>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">@lang('essentials::lang.target_language')</label>
+                                <select id="upload-target-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                    @foreach($languageOptions as $languageKey => $languageLabel)
+                                        <option value="{{ $languageKey }}" {{ $languageKey === $default_target_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
+                                    @endforeach
+                                </select>
                             </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">@lang('essentials::lang.upload_audio') <span class="text-danger">*</span></label>
+                                <input type="file" name="audio" id="audio-file-input" accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac" class="form-control form-control-solid">
+                                <div class="form-text">@lang('essentials::lang.audio_format_help')</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end mt-6">
+                            <button type="submit" class="btn btn-primary" id="btn-upload-preview">
+                                <span class="indicator-label"><i class="fa fa-language me-2"></i>@lang('essentials::lang.preview_translate')</span>
+                                <span class="indicator-progress d-none">@lang('messages.please_wait') <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                            </button>
                         </div>
                     </form>
                 </div>
 
-                {{-- Tab 2: Live Record --}}
-                <div class="tab-pane" id="tab-live">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>@lang('essentials::lang.transcript_title') <small class="text-muted">(@lang('messages.optional'))</small></label>
-                                <input type="text" id="live-title-input" class="form-control" placeholder="@lang('essentials::lang.transcript_title_placeholder')">
+                <div class="tab-pane fade" id="kt_transcript_live_tab" role="tabpanel">
+                    <div class="alert alert-warning d-none" id="live-unsupported-alert">
+                        <i class="fa fa-exclamation-triangle me-2"></i>@lang('essentials::lang.live_transcript_unavailable')
+                    </div>
+
+                    <div class="row g-5">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">@lang('essentials::lang.transcript_title') <small class="text-muted">(@lang('messages.optional'))</small></label>
+                            <input type="text" id="live-title-input" class="form-control form-control-solid" placeholder="@lang('essentials::lang.transcript_title_placeholder')">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">@lang('essentials::lang.source_language')</label>
+                            <select id="live-source-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                @foreach($languageOptions as $languageKey => $languageLabel)
+                                    <option value="{{ $languageKey }}" {{ $languageKey === $default_source_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">@lang('essentials::lang.target_language')</label>
+                            <select id="live-target-language" class="form-select form-select-solid" data-control="select2" data-hide-search="false">
+                                @foreach($languageOptions as $languageKey => $languageLabel)
+                                    <option value="{{ $languageKey }}" {{ $languageKey === $default_target_language ? 'selected' : '' }}>{{ $languageLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-danger" id="btn-start-record">
+                                    <i class="fa fa-microphone me-2"></i>@lang('essentials::lang.start_recording')
+                                </button>
+                                <button type="button" class="btn btn-light-danger" id="btn-stop-record" disabled>
+                                    <i class="fa fa-stop me-2"></i>@lang('essentials::lang.stop_transcribe')
+                                </button>
                             </div>
                         </div>
-                        <div class="col-md-8" style="padding-top:25px;">
-                            <button type="button" class="btn btn-danger" id="btn-start-record">
-                                <i class="fa fa-microphone"></i> @lang('essentials::lang.start_recording')
-                            </button>
-                            <button type="button" class="btn btn-default" id="btn-stop-record" disabled>
-                                <i class="fa fa-stop"></i> @lang('essentials::lang.stop_transcribe')
-                            </button>
-                            <span id="recording-indicator" style="display:none; margin-left:10px;">
-                                <span class="label label-danger">
-                                    <i class="fa fa-circle fa-blink"></i> @lang('essentials::lang.recording')
-                                </span>
-                                <span id="recording-timer" class="text-muted" style="margin-left:6px;">0s</span>
-                            </span>
-                        </div>
                     </div>
-                    <div class="row" id="live-spinner-row" style="display:none; margin-top:10px;">
-                        <div class="col-xs-12">
-                            <i class="fa fa-spinner fa-spin text-primary"></i>
-                            <span class="text-muted"> @lang('essentials::lang.transcribing_please_wait')</span>
+
+                    <div class="d-flex align-items-center mt-4 d-none" id="recording-indicator">
+                        <span class="badge badge-light-danger me-3"><i class="fa fa-circle me-1"></i>@lang('essentials::lang.recording_in_progress')</span>
+                        <span id="recording-timer" class="text-muted fw-semibold">0s</span>
+                    </div>
+
+                    <div class="d-flex align-items-center mt-3 d-none" id="live-spinner-row">
+                        <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                        <span class="text-muted fw-semibold">@lang('essentials::lang.transcribing_please_wait')</span>
+                    </div>
+
+                    <div class="row g-5 mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">@lang('essentials::lang.live_transcript')</label>
+                            <textarea id="live-transcript-text" class="form-control form-control-solid" rows="8" readonly placeholder="@lang('essentials::lang.live_transcript')"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">@lang('essentials::lang.live_translation')</label>
+                            <textarea id="live-translation-text" class="form-control form-control-solid" rows="8" readonly placeholder="@lang('essentials::lang.live_translation')"></textarea>
                         </div>
                     </div>
                 </div>
-
-            </div>{{-- /tab-content --}}
-
-        </div>{{-- /box-body --}}
-    </div>{{-- /box --}}
-
-    {{-- Result preview --}}
-    <div id="transcript-result-box" class="box box-solid box-success" style="display:none;">
-        <div class="box-header with-border">
-            <h3 class="box-title">@lang('essentials::lang.transcript_result')</h3>
-            <div class="box-tools pull-right">
-                <button type="button" class="btn btn-xs btn-default" id="btn-copy-transcript">
-                    <i class="fa fa-copy"></i> @lang('essentials::lang.copy')
-                </button>
             </div>
-        </div>
-        <div class="box-body">
-            <p id="transcript-result-text" class="text-muted" style="white-space:pre-wrap;"></p>
         </div>
     </div>
 
-    {{-- Listing card --}}
-    <div class="box box-solid">
-        <div class="box-header with-border">
-            <h3 class="box-title">@lang('essentials::lang.all_transcripts')</h3>
+    <div id="transcript-result-card" class="card card-flush mb-6 d-none">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="fw-bold text-gray-900 m-0">@lang('essentials::lang.transcript_result')</h3>
+                <span class="badge badge-light-primary ms-3" id="result-language-pair">-</span>
+            </div>
+            <div class="card-toolbar d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-light-primary" id="btn-copy-transcript">
+                    <i class="fa fa-copy me-1"></i>@lang('essentials::lang.copy') @lang('essentials::lang.live_transcript')
+                </button>
+                <button type="button" class="btn btn-sm btn-light-primary" id="btn-copy-translation">
+                    <i class="fa fa-copy me-1"></i>@lang('essentials::lang.copy') @lang('essentials::lang.live_translation')
+                </button>
+            </div>
         </div>
-        <div class="box-body">
+        <div class="card-body">
+            <div class="row g-5">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">@lang('essentials::lang.transcript_result')</label>
+                    <textarea id="transcript-result-text" class="form-control form-control-solid" rows="8" readonly></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">@lang('essentials::lang.translated_text')</label>
+                    <textarea id="translation-result-text" class="form-control form-control-solid" rows="8" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-flush">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="fw-bold text-gray-900 m-0">@lang('essentials::lang.all_transcripts')</h3>
+            </div>
+        </div>
+        <div class="card-body pt-0">
             <div class="table-responsive">
-                <table class="table table-bordered table-striped" id="transcripts-table">
+                <table class="table align-middle table-row-dashed fs-6 gy-5" id="transcripts-table">
                     <thead>
-                        <tr>
+                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>@lang('essentials::lang.transcript_title')</th>
                             <th>@lang('essentials::lang.source')</th>
+                            <th>@lang('essentials::lang.language_pair')</th>
                             <th>@lang('essentials::lang.created_by')</th>
                             <th>@lang('essentials::lang.date')</th>
                             <th>@lang('essentials::lang.transcript_preview')</th>
+                            <th>@lang('essentials::lang.translated_preview')</th>
                             <th>@lang('essentials::lang.action')</th>
                         </tr>
                     </thead>
@@ -141,57 +190,620 @@
             </div>
         </div>
     </div>
-
 </section>
 
-{{-- View full transcript modal --}}
-<div class="modal fade" id="transcript-view-modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade" id="transcript-view-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-900px">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title" id="transcript-modal-title">@lang('essentials::lang.voice_transcripts')</h4>
+                <h2 class="fw-bold" id="transcript-modal-title">@lang('essentials::lang.voice_transcripts')</h2>
+                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+                    <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                </div>
             </div>
             <div class="modal-body">
-                <p id="transcript-modal-text" style="white-space:pre-wrap; word-break:break-word;"></p>
+                <div class="mb-5">
+                    <span class="badge badge-light-primary" id="transcript-modal-language-pair">-</span>
+                </div>
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">@lang('essentials::lang.transcript_result')</label>
+                        <textarea id="transcript-modal-text" class="form-control form-control-solid" rows="10" readonly></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">@lang('essentials::lang.translated_text')</label>
+                        <textarea id="transcript-modal-translated-text" class="form-control form-control-solid" rows="10" readonly></textarea>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">@lang('messages.close')</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@lang('messages.close')</button>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="save-transcript-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered mw-900px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">@lang('essentials::lang.save_confirm_title')</h2>
+                <div class="btn btn-sm btn-icon btn-active-color-primary" id="btn-close-save-modal">
+                    <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-5">
+                    <i class="fa fa-info-circle me-2"></i>@lang('essentials::lang.save_confirm_description')
+                </div>
+                <div class="mb-4 d-flex flex-wrap gap-3">
+                    <span class="badge badge-light-primary" id="save-modal-language-pair">-</span>
+                    <span class="badge badge-light-info" id="save-modal-source">-</span>
+                </div>
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">@lang('essentials::lang.transcript_result')</label>
+                        <textarea id="save-modal-transcript-text" class="form-control form-control-solid" rows="10" readonly></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">@lang('essentials::lang.translated_text')</label>
+                        <textarea id="save-modal-translation-text" class="form-control form-control-solid" rows="10" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" id="btn-discard-transcript">@lang('essentials::lang.discard_transcript')</button>
+                <button type="button" class="btn btn-primary" id="btn-save-transcript">
+                    <span class="indicator-label">@lang('essentials::lang.save_transcript')</span>
+                    <span class="indicator-progress d-none">@lang('messages.please_wait') <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('javascript')
 <script type="text/javascript">
 $(document).ready(function () {
-
     var storeUrl = '{{ route("essentials.transcripts.store") }}';
+    var previewUrl = '{{ route("essentials.transcripts.preview") }}';
+    var translateUrl = '{{ route("essentials.transcripts.translate") }}';
     var csrfToken = '{{ csrf_token() }}';
 
-    // ─── DataTable ───────────────────────────────────────────────
+    var languageLabels = @json($languageOptions);
+    var speechLocales = @json($speech_locales);
+
+    var saveModal = null;
+    var viewModal = null;
+    if (window.bootstrap) {
+        saveModal = new bootstrap.Modal(document.getElementById('save-transcript-modal'));
+        viewModal = new bootstrap.Modal(document.getElementById('transcript-view-modal'));
+    }
+
+    var state = {
+        mediaRecorder: null,
+        mediaStream: null,
+        audioChunks: [],
+        recognition: null,
+        recognitionShouldRestart: false,
+        isRecording: false,
+        timerInterval: null,
+        elapsedSeconds: 0,
+        liveTranscriptFinal: '',
+        liveTranslationFinal: '',
+        translationQueue: [],
+        translationDebounceTimer: null,
+        pending: null,
+        saveInProgress: false
+    };
+
     var table = $('#transcripts-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: '{{ route("essentials.transcripts.index") }}',
         columns: [
-            { data: 'title',      name: 'essentials_transcripts.title' },
-            { data: 'source',     name: 'essentials_transcripts.source',     orderable: false },
-            { data: 'user_name',  name: 'user_name',                          orderable: false },
+            { data: 'title', name: 'essentials_transcripts.title' },
+            { data: 'source', name: 'essentials_transcripts.source', orderable: false, searchable: false },
+            { data: 'language_pair', name: 'language_pair', orderable: false, searchable: false },
+            { data: 'user_name', name: 'user_name', orderable: false },
             { data: 'created_at', name: 'essentials_transcripts.created_at' },
-            { data: 'transcript', name: 'essentials_transcripts.transcript',  orderable: false },
-            { data: 'action',     name: 'action',                             orderable: false },
-        ],
+            { data: 'transcript', name: 'essentials_transcripts.transcript', orderable: false },
+            { data: 'translated_preview', name: 'essentials_transcripts.translated_text', orderable: false },
+            { data: 'action', name: 'action', orderable: false, searchable: false }
+        ]
     });
 
-    // ─── Upload form ──────────────────────────────────────────────
+    function getLanguagePairLabel(sourceLanguage, targetLanguage) {
+        var source = languageLabels[sourceLanguage] || (sourceLanguage || '').toUpperCase();
+        var target = languageLabels[targetLanguage] || (targetLanguage || '').toUpperCase();
+        return source + ' -> ' + target;
+    }
+
+    function getSpeechLocale(language) {
+        return speechLocales[language] || 'en-US';
+    }
+
+    function setButtonLoading($button, isLoading) {
+        var $label = $button.find('.indicator-label');
+        var $progress = $button.find('.indicator-progress');
+        if (isLoading) {
+            $button.prop('disabled', true);
+            $label.addClass('d-none');
+            $progress.removeClass('d-none');
+        } else {
+            $button.prop('disabled', false);
+            $label.removeClass('d-none');
+            $progress.addClass('d-none');
+        }
+    }
+
+    function showResult(payload) {
+        $('#result-language-pair').text(getLanguagePairLabel(payload.source_language, payload.target_language));
+        $('#transcript-result-text').val(payload.transcript_text || '');
+        $('#translation-result-text').val(payload.translated_text || '');
+        $('#transcript-result-card').removeClass('d-none');
+        $('html, body').animate({ scrollTop: $('#transcript-result-card').offset().top - 70 }, 300);
+    }
+
+    function hideResult() {
+        $('#result-language-pair').text('-');
+        $('#transcript-result-text').val('');
+        $('#translation-result-text').val('');
+        $('#transcript-result-card').addClass('d-none');
+    }
+
+    function copyToClipboard(text) {
+        if (!text) {
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                toastr.success('{{ __("essentials::lang.copied") }}');
+            });
+            return;
+        }
+
+        var el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        toastr.success('{{ __("essentials::lang.copied") }}');
+    }
+
+    function openSaveModal() {
+        if (!state.pending) {
+            return;
+        }
+
+        $('#save-modal-language-pair').text(getLanguagePairLabel(state.pending.source_language, state.pending.target_language));
+        $('#save-modal-source').text(state.pending.source === 'live' ? '{{ __("essentials::lang.record_live") }}' : '{{ __("essentials::lang.upload_audio") }}');
+        $('#save-modal-transcript-text').val(state.pending.transcript_text || '');
+        $('#save-modal-translation-text').val(state.pending.translated_text || '');
+
+        if (saveModal) {
+            saveModal.show();
+        } else {
+            $('#save-transcript-modal').modal('show');
+        }
+    }
+
+    function closeSaveModal() {
+        if (saveModal) {
+            saveModal.hide();
+        } else {
+            $('#save-transcript-modal').modal('hide');
+        }
+    }
+
+    function resetLivePanel() {
+        state.liveTranscriptFinal = '';
+        state.liveTranslationFinal = '';
+        state.translationQueue = [];
+        $('#live-transcript-text').val('');
+        $('#live-translation-text').val('');
+    }
+
+    function stopMediaTracks() {
+        if (state.mediaStream) {
+            state.mediaStream.getTracks().forEach(function (track) { track.stop(); });
+            state.mediaStream = null;
+        }
+    }
+
+    function stopRecognition() {
+        state.recognitionShouldRestart = false;
+        if (state.recognition) {
+            try {
+                state.recognition.stop();
+            } catch (e) {
+                // no-op
+            }
+            state.recognition = null;
+        }
+    }
+
+    function stopRecordingTimer() {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        state.elapsedSeconds = 0;
+        $('#recording-timer').text('0s');
+    }
+
+    function updateLiveTranscript(interimText) {
+        var text = state.liveTranscriptFinal;
+        if (interimText) {
+            text = (text ? text + "\\n" : '') + interimText;
+        }
+        $('#live-transcript-text').val(text);
+    }
+
+    function updateLiveTranslation() {
+        $('#live-translation-text').val(state.liveTranslationFinal);
+    }
+
+    function flushLiveTranslationQueue() {
+        if (!state.translationQueue.length) {
+            return;
+        }
+
+        var sourceLanguage = $('#live-source-language').val();
+        var targetLanguage = $('#live-target-language').val();
+        var segment = state.translationQueue.join("\\n");
+        state.translationQueue = [];
+
+        if (sourceLanguage === targetLanguage) {
+            state.liveTranslationFinal = state.liveTranslationFinal
+                ? state.liveTranslationFinal + "\\n" + segment
+                : segment;
+            updateLiveTranslation();
+            return;
+        }
+
+        $.ajax({
+            url: translateUrl,
+            method: 'POST',
+            data: {
+                _token: csrfToken,
+                text: segment,
+                source_language: sourceLanguage,
+                target_language: targetLanguage
+            },
+            success: function (res) {
+                if (!res.success || !res.data) {
+                    if (res.msg) {
+                        toastr.error(res.msg);
+                    }
+                    return;
+                }
+
+                var translated = (res.data.translated_text || '').trim();
+                if (!translated) {
+                    return;
+                }
+
+                state.liveTranslationFinal = state.liveTranslationFinal
+                    ? state.liveTranslationFinal + "\\n" + translated
+                    : translated;
+
+                updateLiveTranslation();
+            },
+            error: function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.msg
+                    ? xhr.responseJSON.msg
+                    : '{{ __("messages.something_went_wrong") }}';
+                toastr.error(msg);
+            }
+        });
+    }
+
+    function queueLiveTranslation(text) {
+        var cleanText = (text || '').trim();
+        if (!cleanText) {
+            return;
+        }
+
+        state.translationQueue.push(cleanText);
+        clearTimeout(state.translationDebounceTimer);
+        state.translationDebounceTimer = setTimeout(function () {
+            flushLiveTranslationQueue();
+        }, 700);
+    }
+
+    function createSpeechRecognition(sourceLanguage) {
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            return null;
+        }
+
+        var recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = getSpeechLocale(sourceLanguage);
+
+        recognition.onresult = function (event) {
+            var interim = '';
+            for (var i = event.resultIndex; i < event.results.length; i++) {
+                var currentText = event.results[i][0].transcript ? event.results[i][0].transcript.trim() : '';
+                if (!currentText) {
+                    continue;
+                }
+
+                if (event.results[i].isFinal) {
+                    state.liveTranscriptFinal = state.liveTranscriptFinal
+                        ? state.liveTranscriptFinal + "\\n" + currentText
+                        : currentText;
+                    queueLiveTranslation(currentText);
+                } else {
+                    interim += (interim ? ' ' : '') + currentText;
+                }
+            }
+
+            updateLiveTranscript(interim);
+        };
+
+        recognition.onerror = function () {
+            // Keep recording even if browser live speech fails.
+        };
+
+        recognition.onend = function () {
+            if (state.isRecording && state.recognitionShouldRestart) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // no-op
+                }
+            }
+        };
+
+        return recognition;
+    }
+
+    function requestPreview(formData, onSuccess, onComplete) {
+        $.ajax({
+            url: previewUrl,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            success: function (res) {
+                if (!res.success || !res.data) {
+                    toastr.error(res.msg || '{{ __("messages.something_went_wrong") }}');
+                    return;
+                }
+                onSuccess(res.data);
+            },
+            error: function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.msg
+                    ? xhr.responseJSON.msg
+                    : '{{ __("messages.something_went_wrong") }}';
+                toastr.error(msg);
+            },
+            complete: function () {
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
+            }
+        });
+    }
+
+    function discardPending(showToast) {
+        var pendingSource = state.pending ? state.pending.source : null;
+        state.pending = null;
+        state.saveInProgress = false;
+        hideResult();
+
+        if (pendingSource === 'upload') {
+            $('#upload-transcript-form')[0].reset();
+        } else if (pendingSource === 'live') {
+            $('#live-title-input').val('');
+            resetLivePanel();
+        }
+
+        if (showToast) {
+            toastr.info('{{ __("essentials::lang.recording_discarded") }}');
+        }
+    }
+
+    function finishStopState() {
+        state.isRecording = false;
+        stopRecordingTimer();
+        stopRecognition();
+        stopMediaTracks();
+        $('#recording-indicator').addClass('d-none');
+        $('#btn-start-record').prop('disabled', false);
+        $('#btn-stop-record').prop('disabled', true);
+    }
+
     $('#upload-transcript-form').on('submit', function (e) {
         e.preventDefault();
-        var formData = new FormData(this);
-        var $btn = $('#btn-upload-transcribe');
-        $btn.prop('disabled', true).find('.spinner-upload').show();
+
+        var fileInput = document.getElementById('audio-file-input');
+        if (!fileInput || !fileInput.files || !fileInput.files.length) {
+            toastr.error('{{ __("essentials::lang.audio_required") }}');
+            return;
+        }
+
+        var sourceLanguage = $('#upload-source-language').val();
+        var targetLanguage = $('#upload-target-language').val();
+        var formData = new FormData();
+        formData.append('_token', csrfToken);
+        formData.append('audio', fileInput.files[0]);
+        formData.append('source_language', sourceLanguage);
+        formData.append('target_language', targetLanguage);
+
+        setButtonLoading($('#btn-upload-preview'), true);
+        requestPreview(formData, function (data) {
+            state.pending = {
+                source: 'upload',
+                title: ($('#upload-title-input').val() || '').trim(),
+                source_language: sourceLanguage,
+                target_language: targetLanguage,
+                transcript_text: data.transcript_text || '',
+                translated_text: data.translated_text || ''
+            };
+
+            showResult(state.pending);
+            openSaveModal();
+        }, function () {
+            setButtonLoading($('#btn-upload-preview'), false);
+        });
+    });
+
+    $('#btn-start-record').on('click', function () {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            toastr.error('{{ __("essentials::lang.mic_not_supported") }}');
+            return;
+        }
+
+        if (state.isRecording) {
+            return;
+        }
+
+        var sourceLanguage = $('#live-source-language').val();
+        resetLivePanel();
+        $('#live-spinner-row').addClass('d-none');
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            state.mediaStream = stream;
+            state.audioChunks = [];
+            state.isRecording = true;
+            state.elapsedSeconds = 0;
+
+            state.mediaRecorder = new MediaRecorder(stream);
+            state.mediaRecorder.addEventListener('dataavailable', function (event) {
+                if (event.data && event.data.size > 0) {
+                    state.audioChunks.push(event.data);
+                }
+            });
+
+            state.mediaRecorder.addEventListener('stop', function () {
+                var mimeType = state.mediaRecorder && state.mediaRecorder.mimeType ? state.mediaRecorder.mimeType : 'audio/webm';
+                var extension = mimeType.indexOf('ogg') !== -1 ? 'ogg' : 'webm';
+                var blob = new Blob(state.audioChunks, { type: mimeType });
+                var sourceLang = $('#live-source-language').val();
+                var targetLang = $('#live-target-language').val();
+
+                if (!blob.size) {
+                    finishStopState();
+                    toastr.error('{{ __("essentials::lang.audio_required") }}');
+                    return;
+                }
+
+                $('#live-spinner-row').removeClass('d-none');
+
+                var formData = new FormData();
+                formData.append('_token', csrfToken);
+                formData.append('recorded_audio', blob, 'recording.' + extension);
+                formData.append('source_language', sourceLang);
+                formData.append('target_language', targetLang);
+
+                requestPreview(formData, function (data) {
+                    state.pending = {
+                        source: 'live',
+                        title: ($('#live-title-input').val() || '').trim(),
+                        source_language: sourceLang,
+                        target_language: targetLang,
+                        transcript_text: data.transcript_text || '',
+                        translated_text: data.translated_text || '',
+                        blob: blob,
+                        blobMimeType: mimeType
+                    };
+
+                    showResult(state.pending);
+                    openSaveModal();
+                }, function () {
+                    $('#live-spinner-row').addClass('d-none');
+                    finishStopState();
+                });
+            });
+
+            state.mediaRecorder.start();
+            $('#btn-start-record').prop('disabled', true);
+            $('#btn-stop-record').prop('disabled', false);
+            $('#recording-indicator').removeClass('d-none');
+
+            state.timerInterval = setInterval(function () {
+                state.elapsedSeconds++;
+                $('#recording-timer').text(state.elapsedSeconds + 's');
+            }, 1000);
+
+            state.recognition = createSpeechRecognition(sourceLanguage);
+            if (state.recognition) {
+                $('#live-unsupported-alert').addClass('d-none');
+                state.recognitionShouldRestart = true;
+                try {
+                    state.recognition.start();
+                } catch (e) {
+                    // keep stop-only mode
+                }
+            } else {
+                $('#live-unsupported-alert').removeClass('d-none');
+            }
+        }).catch(function () {
+            toastr.error('{{ __("essentials::lang.mic_permission_denied") }}');
+        });
+    });
+
+    $('#btn-stop-record').on('click', function () {
+        if (!state.mediaRecorder || !state.isRecording) {
+            return;
+        }
+
+        clearTimeout(state.translationDebounceTimer);
+        flushLiveTranslationQueue();
+
+        state.isRecording = false;
+        stopRecognition();
+        $('#btn-stop-record').prop('disabled', true);
+
+        try {
+            if (state.mediaRecorder.state !== 'inactive') {
+                state.mediaRecorder.stop();
+            }
+        } catch (e) {
+            finishStopState();
+            toastr.error('{{ __("messages.something_went_wrong") }}');
+        }
+    });
+
+    $('#btn-save-transcript').on('click', function () {
+        if (!state.pending || state.saveInProgress) {
+            return;
+        }
+
+        var pending = state.pending;
+        var formData = new FormData();
+        formData.append('_token', csrfToken);
+        formData.append('source', pending.source);
+        formData.append('title', pending.title || '');
+        formData.append('source_language', pending.source_language);
+        formData.append('target_language', pending.target_language);
+        formData.append('transcript_text', pending.transcript_text || '');
+        formData.append('translated_text', pending.translated_text || '');
+
+        if (pending.source === 'live') {
+            if (!pending.blob) {
+                toastr.error('{{ __("essentials::lang.audio_required") }}');
+                return;
+            }
+            var extension = pending.blobMimeType && pending.blobMimeType.indexOf('ogg') !== -1 ? 'ogg' : 'webm';
+            formData.append('recorded_audio', pending.blob, 'recording.' + extension);
+        } else {
+            var fileInput = document.getElementById('audio-file-input');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                toastr.error('{{ __("essentials::lang.audio_required") }}');
+                return;
+            }
+            formData.append('audio', fileInput.files[0]);
+        }
+
+        state.saveInProgress = true;
+        setButtonLoading($('#btn-save-transcript'), true);
 
         $.ajax({
             url: storeUrl,
@@ -201,179 +813,100 @@ $(document).ready(function () {
             contentType: false,
             headers: { 'X-CSRF-TOKEN': csrfToken },
             success: function (res) {
-                $btn.prop('disabled', false).find('.spinner-upload').hide();
-                if (res.success) {
-                    toastr.success(res.msg);
-                    showResult(res.data.transcript_text);
-                    table.ajax.reload();
+                if (!res.success || !res.data) {
+                    toastr.error(res.msg || '{{ __("messages.something_went_wrong") }}');
+                    return;
+                }
+
+                toastr.success(res.msg || '{{ __("essentials::lang.recording_saved") }}');
+                showResult(res.data);
+                table.ajax.reload();
+
+                if (pending.source === 'upload') {
                     $('#upload-transcript-form')[0].reset();
                 } else {
-                    toastr.error(res.msg);
+                    $('#live-title-input').val('');
+                    resetLivePanel();
                 }
+
+                state.pending = null;
+                closeSaveModal();
             },
             error: function (xhr) {
-                $btn.prop('disabled', false).find('.spinner-upload').hide();
                 var msg = xhr.responseJSON && xhr.responseJSON.msg
                     ? xhr.responseJSON.msg
                     : '{{ __("messages.something_went_wrong") }}';
                 toastr.error(msg);
             },
+            complete: function () {
+                state.saveInProgress = false;
+                setButtonLoading($('#btn-save-transcript'), false);
+            }
         });
     });
 
-    // ─── Live recording ───────────────────────────────────────────
-    var mediaRecorder = null;
-    var audioChunks  = [];
-    var timerInterval = null;
-    var elapsedSeconds = 0;
-
-    $('#btn-start-record').on('click', function () {
-        if (! navigator.mediaDevices || ! navigator.mediaDevices.getUserMedia) {
-            toastr.error('{{ __("essentials::lang.mic_not_supported") }}');
-            return;
-        }
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-            audioChunks = [];
-            elapsedSeconds = 0;
-            $('#recording-timer').text('0s');
-            timerInterval = setInterval(function () {
-                elapsedSeconds++;
-                $('#recording-timer').text(elapsedSeconds + 's');
-            }, 1000);
-
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.addEventListener('dataavailable', function (e) {
-                audioChunks.push(e.data);
-            });
-            mediaRecorder.start();
-
-            $('#btn-start-record').prop('disabled', true);
-            $('#btn-stop-record').prop('disabled', false);
-            $('#recording-indicator').show();
-        }).catch(function () {
-            toastr.error('{{ __("essentials::lang.mic_permission_denied") }}');
-        });
+    $('#btn-discard-transcript, #btn-close-save-modal').on('click', function () {
+        discardPending(true);
+        closeSaveModal();
     });
 
-    $('#btn-stop-record').on('click', function () {
-        if (! mediaRecorder) return;
-
-        mediaRecorder.addEventListener('stop', function () {
-            clearInterval(timerInterval);
-            $('#recording-indicator').hide();
-            $('#btn-start-record').prop('disabled', false);
-            $('#btn-stop-record').prop('disabled', true);
-
-            var mimeType = mediaRecorder.mimeType || 'audio/webm';
-            var audioBlob = new Blob(audioChunks, { type: mimeType });
-            var ext = mimeType.indexOf('ogg') !== -1 ? 'ogg' : 'webm';
-
-            var formData = new FormData();
-            formData.append('_token', csrfToken);
-            formData.append('recorded_audio', audioBlob, 'recording.' + ext);
-            var liveTitle = $('#live-title-input').val();
-            if (liveTitle) formData.append('title', liveTitle);
-
-            $('#live-spinner-row').show();
-
-            $.ajax({
-                url: storeUrl,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: { 'X-CSRF-TOKEN': csrfToken },
-                success: function (res) {
-                    $('#live-spinner-row').hide();
-                    if (res.success) {
-                        toastr.success(res.msg);
-                        showResult(res.data.transcript_text);
-                        table.ajax.reload();
-                        $('#live-title-input').val('');
-                    } else {
-                        toastr.error(res.msg);
-                    }
-                },
-                error: function (xhr) {
-                    $('#live-spinner-row').hide();
-                    var msg = xhr.responseJSON && xhr.responseJSON.msg
-                        ? xhr.responseJSON.msg
-                        : '{{ __("messages.something_went_wrong") }}';
-                    toastr.error(msg);
-                },
-            });
-
-            mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); });
-        });
-
-        mediaRecorder.stop();
-    });
-
-    // ─── Show transcript result preview ──────────────────────────
-    function showResult(text) {
-        $('#transcript-result-text').text(text);
-        $('#transcript-result-box').slideDown();
-        $('html, body').animate({ scrollTop: $('#transcript-result-box').offset().top - 60 }, 400);
-    }
-
-    // ─── Copy transcript text ─────────────────────────────────────
     $('#btn-copy-transcript').on('click', function () {
-        var text = $('#transcript-result-text').text();
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(function () {
-                toastr.success('{{ __("essentials::lang.copied") }}');
-            });
+        copyToClipboard($('#transcript-result-text').val());
+    });
+
+    $('#btn-copy-translation').on('click', function () {
+        copyToClipboard($('#translation-result-text').val());
+    });
+
+    $(document).on('click', '.btn-view-transcript', function () {
+        var transcript = $(this).data('transcript') || '';
+        var translated = $(this).data('translated') || '';
+        var title = $(this).data('title') || '{{ __("essentials::lang.voice_transcripts") }}';
+        var languagePair = $(this).data('language-pair') || '-';
+
+        $('#transcript-modal-title').text(title);
+        $('#transcript-modal-language-pair').text(languagePair);
+        $('#transcript-modal-text').val(transcript);
+        $('#transcript-modal-translated-text').val(translated);
+
+        if (viewModal) {
+            viewModal.show();
         } else {
-            var el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            toastr.success('{{ __("essentials::lang.copied") }}');
+            $('#transcript-view-modal').modal('show');
         }
     });
 
-    // ─── View full transcript in modal ────────────────────────────
-    $(document).on('click', '.btn-view-transcript', function () {
-        var transcript = $(this).data('transcript');
-        var title      = $(this).data('title');
-        $('#transcript-modal-title').text(title);
-        $('#transcript-modal-text').text(transcript);
-        $('#transcript-view-modal').modal('show');
-    });
-
-    // ─── Delete transcript ─────────────────────────────────────────
     $(document).on('click', '.btn-delete-transcript', function () {
         var url = $(this).data('href');
         swal({
             title: LANG.sure,
             icon: 'warning',
             buttons: true,
-            dangerMode: true,
+            dangerMode: true
         }).then(function (confirmed) {
-            if (confirmed) {
-                $.ajax({
-                    method: 'DELETE',
-                    url: url,
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
-                    dataType: 'json',
-                    success: function (res) {
-                        if (res.success) {
-                            toastr.success(res.msg);
-                            table.ajax.reload();
-                        } else {
-                            toastr.error(res.msg);
-                        }
-                    },
-                    error: function () {
-                        toastr.error('{{ __("messages.something_went_wrong") }}');
-                    },
-                });
+            if (!confirmed) {
+                return;
             }
+
+            $.ajax({
+                method: 'DELETE',
+                url: url,
+                headers: { 'X-CSRF-TOKEN': csrfToken },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.success) {
+                        toastr.success(res.msg);
+                        table.ajax.reload();
+                    } else {
+                        toastr.error(res.msg);
+                    }
+                },
+                error: function () {
+                    toastr.error('{{ __("messages.something_went_wrong") }}');
+                }
+            });
         });
     });
-
 });
 </script>
 @endsection
