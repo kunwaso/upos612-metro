@@ -37,6 +37,7 @@
         <link rel="stylesheet" href="{{ asset('modules/cms/assets/css/slick.css') }}">
         <link rel="stylesheet" href="{{ asset('modules/cms/assets/css/slick.theme.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ asset('modules/cms/assets/css/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset('modules/cms/assets/style.css') }}">
         
     </head>
     <body class="counter-scroll">
