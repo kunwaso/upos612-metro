@@ -16,67 +16,67 @@ todos:
     status: completed
   - id: phase1-sell-index
     content: Phase 1 — Migrate sell/index.blade.php to Metronic toolbar + filter card + table card
-    status: in_progress
+    status: completed
   - id: phase1-sell-shipments
     content: Phase 1 — Migrate sell/shipments.blade.php to Metronic toolbar + table card
-    status: pending
+    status: completed
   - id: phase1-contact-index
     content: Phase 1 — Migrate contact/index.blade.php to Metronic toolbar + filter card + table card
-    status: pending
+    status: completed
   - id: phase1-contact-import
     content: Phase 1 — Migrate contact/import.blade.php to Metronic toolbar + card layout
-    status: pending
+    status: completed
   - id: phase1-contact-map
     content: Phase 1 — Migrate contact/contact_map.blade.php to Metronic toolbar + card layout
-    status: pending
+    status: completed
   - id: phase2-reports-batch1
     content: "Phase 2 — Migrate report/ batch 1: activity_log, contact, customer_group, expense_report, gst_purchase_report"
-    status: pending
+    status: completed
   - id: phase2-reports-batch2
     content: "Phase 2 — Migrate report/ batch 2: gst_sales_report, items_report, lot_report, product_purchase_report, product_sell_report"
-    status: pending
+    status: completed
   - id: phase2-reports-batch3
     content: "Phase 2 — Migrate report/ batch 3: product_stock_details, profit_loss, purchase_payment_report, purchase_report, purchase_sell"
-    status: pending
+    status: completed
   - id: phase2-reports-batch4
     content: "Phase 2 — Migrate report/ batch 4: register_report, sales_representative, sale_report, sell_payment_report, service_staff_report"
-    status: pending
+    status: completed
   - id: phase2-reports-batch5
     content: "Phase 2 — Migrate report/ batch 5: stock_adjustment_report, stock_expiry_report, stock_report, table_report, tax_report, trending_products"
-    status: pending
+    status: completed
   - id: phase3-expense
     content: Phase 3 — Migrate expense/index, create, edit, import and expense_category/index
-    status: pending
+    status: completed
   - id: phase3-product-special
     content: Phase 3 — Migrate product/add-selling-prices, bulk-edit, stock_history
-    status: pending
+    status: completed
   - id: phase3-simple-lists
     content: Phase 3 — Migrate brand, unit, tax_rate, variation, taxonomy, warranties, customer_group index pages
-    status: pending
+    status: completed
   - id: phase4-purchase-return
     content: Phase 4 — Migrate purchase_return/index, add, create, edit
-    status: pending
+    status: completed
   - id: phase4-sell-return
     content: Phase 4 — Migrate sell_return/index, add, tmp_create
-    status: pending
+    status: completed
   - id: phase4-purchase-order
     content: Phase 4 — Migrate purchase_order/index, create, edit
-    status: pending
+    status: completed
   - id: phase4-sales-order-stock
     content: Phase 4 — Migrate sales_order/index, stock_adjustment/index+create, stock_transfer/index+create+edit
-    status: pending
+    status: completed
   - id: phase5-accounting
     content: Phase 5 — Migrate account/index, show, cash_flow and account_reports/balance_sheet, payment_account_report, trial_balance
-    status: pending
+    status: completed
   - id: phase6-users-roles
     content: Phase 6 — Migrate manage_user/index+create+edit and role/index+create+edit
-    status: pending
+    status: completed
   - id: phase6-business-config
     content: Phase 6 — Migrate business_location, discount, selling_price_group, invoice_layout, invoice_scheme, types_of_service, sales_commission_agent, restaurant
-    status: pending
+    status: completed
   - id: phase6-tools
     content: Phase 6 — Migrate barcode, labels, backup, printer, cash_register, import_products, import_sales, opening_stock, purchase_requisition, tax_group
-    status: pending
+    status: completed
 isProject: false
 ---
 

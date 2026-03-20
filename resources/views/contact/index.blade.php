@@ -9,18 +9,23 @@
     @endsection
 @endif
 @section('content')
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <div class="mb-5">
-            <h1 class="mb-1 text-gray-900 fw-bolder fs-2x">@lang('lang_v1.' . $type . 's')</h1>
-            <div class="text-muted fw-semibold fs-6">
-                @lang('contact.manage_your_contact', ['contacts' => __('lang_v1.' . $type . 's')])
-            </div>
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">@lang('lang_v1.' . $type . 's')</h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600">
+                    <a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a>
+                </li>
+                <li class="breadcrumb-item text-gray-900">@lang('lang_v1.' . $type . 's')</li>
+            </ul>
         </div>
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
+    </div>
+</div>
+{{-- Content --}}
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
         <input type="hidden" value="{{ $type }}" id="contact_type">
         <div class="card card-flush">
             <div class="card-header border-0 pt-6">
@@ -282,9 +287,9 @@
         </div>
         <div class="modal fade pay_contact_due_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
         </div>
-
-    </section>
-    <!-- /.content -->
+    </div>
+</div>
+<!-- /.content -->
 @stop
 @section('javascript')
     @if (!empty($api_key))

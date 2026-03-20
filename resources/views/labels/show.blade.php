@@ -3,18 +3,20 @@
 
 @section('content')
 
-<!-- Content Header (Page header) -->
-<section class="content-header">
-<br>
-    <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">@lang('barcode.print_labels') @show_tooltip(__('tooltip.print_label'))</h1>
-    <!-- <ol class="breadcrumb">
-        <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
-        <li class="active">Here</li>
-    </ol> -->
-</section>
-
-<!-- Main content -->
-<section class="content no-print">
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5 no-print">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">@lang('barcode.print_labels') @show_tooltip(__('tooltip.print_label'))</h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600"><a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a></li>
+                <li class="breadcrumb-item text-gray-900">@lang('barcode.print_labels')</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="d-flex flex-column-fluid align-items-start container-xxl no-print">
+    <div class="content flex-row-fluid" id="kt_content">
 	{!! Form::open(['url' => '#', 'method' => 'post', 'id' => 'preview_setting_form', 'onsubmit' => 'return false']) !!}
 	@component('components.widget', ['class' => 'box-primary', 'title' => __('product.add_product_for_labels')])
 		<div class="row">
@@ -262,7 +264,8 @@
 		<button type="button" class="col-sm-offset-2 btn btn-success btn-block" id="print_label">Print</button>
 	</div>
 	<div class="clearfix"></div>
-</section>
+    </div>
+</div>
 
 <!-- Preview section-->
 <div id="preview_box">

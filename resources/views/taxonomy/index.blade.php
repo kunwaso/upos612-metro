@@ -9,24 +9,26 @@
     @if (!empty($navbar))
         @include($navbar)
     @endif
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black" >{{ $heading }}
-            <small class="tw-text-sm md:tw-text-base tw-text-gray-700 tw-font-semibold" >
-                {{ $module_category_data['sub_heading'] ?? __('category.manage_your_categories') }}
-            </small>
-            @if (isset($module_category_data['heading_tooltip']))
-                @show_tooltip($module_category_data['heading_tooltip'])
-            @endif
-        </h1>
-        <!-- <ol class="breadcrumb">
-            <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
-            <li class="active">Here</li>
-        </ol> -->
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">
+                {{ $heading }}
+                <span class="text-gray-500 fw-normal fs-6 ms-2">{{ $module_category_data['sub_heading'] ?? __('category.manage_your_categories') }}</span>
+                @if (isset($module_category_data['heading_tooltip']))
+                    @show_tooltip($module_category_data['heading_tooltip'])
+                @endif
+            </h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600"><a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a></li>
+                <li class="breadcrumb-item text-gray-900">{{ $heading }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
         @php
             $cat_code_enabled =
                 isset($module_category_data['enable_taxonomy_code']) && !$module_category_data['enable_taxonomy_code']
@@ -87,9 +89,9 @@
 
         <div class="modal fade category_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
         </div>
-
-    </section>
-    <!-- /.content -->
+    </div>
+</div>
+<!-- /.content -->
 @stop
 @section('javascript')
     @includeIf('taxonomy.taxonomies_js')

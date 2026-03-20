@@ -3,15 +3,20 @@
 
 @section('content')
 
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">@lang('sale.discount')
-        </h1>
-
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">@lang('sale.discount')</h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600"><a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a></li>
+                <li class="breadcrumb-item text-gray-900">@lang('sale.discount')</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
         <div
             class=" tw-transition-all lg:tw-col-span-1 tw-duration-200 tw-bg-white tw-shadow-sm tw-rounded-xl tw-ring-1 hover:tw-shadow-md  tw-ring-gray-200">
             <div class="tw-p-4 sm:tw-p-5">
@@ -81,8 +86,9 @@
         <div class="modal fade discount_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
         </div>
 
-    </section>
-    <!-- /.content -->
+    </div>
+</div>
+<!-- /.content -->
 @stop
 @section('javascript')
     <script type="text/javascript">

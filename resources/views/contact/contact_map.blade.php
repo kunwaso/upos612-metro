@@ -5,14 +5,23 @@
     @php
         $api_key = env('GOOGLE_MAP_API_KEY');
     @endphp
-<!-- Content Header (Page header) -->
-<section class="content-header">
-    <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black"> @lang('lang_v1.contact_locations')
-    </h1>
-</section>
-
-<!-- Main content -->
-<section class="content">
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">@lang('lang_v1.contact_locations')</h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600">
+                    <a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a>
+                </li>
+                <li class="breadcrumb-item text-gray-900">@lang('lang_v1.contact_locations')</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{{-- Content --}}
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
     @component('components.widget', ['class' => 'box-solid'])
         {!! Form::open(['url' => action([\App\Http\Controllers\ContactController::class, 'contactMap']), 'method' => 'get']) !!}
             <div class="col-md-6">
@@ -32,8 +41,8 @@
         <script async defer src="https://maps.googleapis.com/maps/api/js?key={{$api_key}}"></script>
         <div id="map" style="height: 450px;"></div>
     @endcomponent
-
-</section>
+    </div>
+</div>
 <!-- /.content -->
 @stop
 @section('javascript')

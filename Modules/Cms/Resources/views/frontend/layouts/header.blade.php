@@ -47,8 +47,8 @@
                     </ul>
                 </div>
                 @if(auth()->check())
-                    <a href="{{ url('c/dashboard') }}" class="tf-btn d-lg-flex d-none">
-                        Start a Project
+                    <a href="{{ url('/home') }}" class="tf-btn d-lg-flex d-none">
+                        Dashboard
                     </a>
                 @else
                     <a href="{{ url('c/login') }}" class="tf-btn d-lg-flex d-none">

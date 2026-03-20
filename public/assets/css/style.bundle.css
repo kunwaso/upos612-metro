@@ -53261,6 +53261,6 @@ body {
     }
 }
 
-.dataTables_scroll {
+.dataTables_scrollBody {
     min-height: 400px;
 }

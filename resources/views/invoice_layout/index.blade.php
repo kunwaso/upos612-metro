@@ -3,19 +3,23 @@
 
 @section('content')
 
-<!-- Content Header (Page header) -->
-<section class="content-header">
-    <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">@lang('barcode.barcodes')
-        <small class="tw-text-sm md:tw-text-base tw-text-gray-700 tw-font-semibold">@lang('barcode.manage_your_barcodes')</small>
-    </h1>
-    <!-- <ol class="breadcrumb">
-        <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
-        <li class="active">Here</li>
-    </ol> -->
-</section>
-
-<!-- Main content -->
-<section class="content">
+{{-- Toolbar + Breadcrumb --}}
+<div id="kt_toolbar" class="toolbar py-3 py-lg-5">
+    <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+        <div class="page-title d-flex flex-column align-items-start me-3 py-2 gap-2">
+            <h1 class="d-flex text-dark fw-bold fs-3 mb-0">
+                @lang('barcode.barcodes')
+                <span class="text-gray-500 fw-normal fs-6 ms-2">@lang('barcode.manage_your_barcodes')</span>
+            </h1>
+            <ul class="breadcrumb breadcrumb-dot fw-semibold text-gray-600 fs-7">
+                <li class="breadcrumb-item text-gray-600"><a href="{{ route('home') }}" class="text-gray-600 text-hover-primary">@lang('home.home')</a></li>
+                <li class="breadcrumb-item text-gray-900">@lang('barcode.barcodes')</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="d-flex flex-column-fluid align-items-start container-xxl">
+    <div class="content flex-row-fluid" id="kt_content">
 
 	<div class="box">
         <div class="box-header">
@@ -38,7 +42,8 @@
         </div>
     </div>
 
-</section>
+    </div>
+</div>
 <!-- /.content -->
 @stop
 @section('javascript')
