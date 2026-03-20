@@ -983,6 +983,7 @@ class ProductUtil extends Util
                     'rack' => ! empty($detail['rack']) ? $detail['rack'] : null,
                     'row' => ! empty($detail['row']) ? $detail['row'] : null,
                     'position' => ! empty($detail['position']) ? $detail['position'] : null,
+                    'slot_id' => ! empty($detail['slot_id']) ? (int) $detail['slot_id'] : null,
                     'created_at' => \Carbon::now()->toDateTimeString(),
                     'updated_at' => \Carbon::now()->toDateTimeString(),
                 ];
@@ -994,10 +995,13 @@ class ProductUtil extends Util
 
     /**
      * Get rack details.
+     * When $get_location is true, also joins storage_slots and categories to expose
+     * slot_code and category_name for the product Stock tab.
      *
      * @param  int  $business_id
      * @param  int  $product_id
-     * @return void
+     * @param  bool $get_location
+     * @return \Illuminate\Support\Collection|array
      */
     public function getRackDetails($business_id, $product_id, $get_location = false)
     {
@@ -1005,17 +1009,47 @@ class ProductUtil extends Util
                     ->where('product_id', $product_id);
 
         if ($get_location) {
-            $racks = $query->join('business_locations AS BL', 'product_racks.location_id', '=', 'BL.id')
-                ->select(['product_racks.rack',
+            $racks = $query
+                ->join('business_locations AS BL', 'product_racks.location_id', '=', 'BL.id')
+                ->leftJoin('storage_slots AS SS', 'product_racks.slot_id', '=', 'SS.id')
+                ->leftJoin('categories AS CAT', 'SS.category_id', '=', 'CAT.id')
+                ->select([
+                    'product_racks.rack',
                     'product_racks.row',
                     'product_racks.position',
-                    'BL.name', ])
+                    'product_racks.location_id',
+                    'product_racks.slot_id',
+                    'BL.name',
+                    'SS.slot_code',
+                    'CAT.name AS category_name',
+                ])
                 ->get();
         } else {
-            $racks = collect($query->select(['rack', 'row', 'position', 'location_id'])->get());
+            $racks = collect(
+                $query
+                    ->leftJoin('storage_slots AS SS', 'product_racks.slot_id', '=', 'SS.id')
+                    ->leftJoin('categories AS CAT', 'SS.category_id', '=', 'CAT.id')
+                    ->select([
+                        'product_racks.rack',
+                        'product_racks.row',
+                        'product_racks.position',
+                        'product_racks.location_id',
+                        'product_racks.slot_id',
+                        'SS.slot_code',
+                        'CAT.name AS category_name',
+                    ])
+                    ->get()
+            );
 
-            $racks = $racks->mapWithKeys(function ($item, $key) {
-                return [$item['location_id'] => $item->toArray()];
+            $racks = $racks->mapWithKeys(function ($item) {
+                $arr = $item->toArray();
+                $slotCode = $arr['slot_code'] ?? null;
+                $catName  = $arr['category_name'] ?? null;
+                $arr['slot_label'] = $slotCode
+                    ? ($catName ? "{$slotCode} — {$catName}" : $slotCode)
+                    : null;
+
+                return [$arr['location_id'] => $arr];
             })->toArray();
         }
 
@@ -1037,9 +1071,11 @@ class ProductUtil extends Util
                 ProductRack::where('business_id', $business_id)
                     ->where('product_id', $product_id)
                     ->where('location_id', $location_id)
-                    ->update(['rack' => ! empty($details['rack']) ? $details['rack'] : null,
-                        'row' => ! empty($details['row']) ? $details['row'] : null,
+                    ->update([
+                        'rack'    => ! empty($details['rack']) ? $details['rack'] : null,
+                        'row'     => ! empty($details['row']) ? $details['row'] : null,
                         'position' => ! empty($details['position']) ? $details['position'] : null,
+                        'slot_id' => ! empty($details['slot_id']) ? (int) $details['slot_id'] : null,
                     ]);
             }
         }

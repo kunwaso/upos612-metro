@@ -138,6 +138,7 @@ Read only the domain doc(s) you touch:
 | Deep research / bounded delegation | `ai/research-and-delegation.md` |
 | In-app agent / product copilot evaluation | `ai/product-copilot-patterns.md` + `Modules/Aichat/README.md` |
 | Browser audit workflow | `ai/browser-audit-workflow.md` |
+| ProjectAuto wizard workflow | `ai/projectauto-workflow-wizard.md` |
 | Workflow tuning | `ai/agent-improvement.md` |
 | ProjectX <-> root integration | `ai/projectx-integration.md` |
 

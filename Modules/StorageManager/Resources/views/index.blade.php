@@ -1,0 +1,249 @@
+@extends('layouts.app')
+
+@section('title', __('lang_v1.warehouse_map'))
+
+@section('content')
+<div class="d-flex flex-column flex-column-fluid">
+    {{-- Toolbar --}}
+    <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                    @lang('lang_v1.warehouse_map')
+                </h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                    <li class="breadcrumb-item text-muted">@lang('lang_v1.storage_manager')</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@lang('lang_v1.warehouse_map')</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                @can('storage_manager.manage')
+                <a href="{{ route('storage-manager.slots.create') }}" class="btn btn-sm btn-primary">
+                    <i class="ki-duotone ki-plus fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+                    @lang('lang_v1.add_storage_slot')
+                </a>
+                @endcan
+                <a href="{{ route('storage-manager.slots.index') }}" class="btn btn-sm btn-light">
+                    <i class="ki-duotone ki-element-11 fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
+                    @lang('lang_v1.storage_slots')
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div id="kt_app_content_container" class="app-container container-xxl">
+
+            {{-- Location selector + legend --}}
+            <div class="card card-flush mb-6">
+                <div class="card-body py-4">
+                    <form method="GET" action="{{ route('storage-manager.index') }}" class="d-flex align-items-center flex-wrap gap-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="fw-semibold text-gray-700 fs-6 text-nowrap">
+                                <i class="ki-duotone ki-geolocation fs-4 me-1 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                                @lang('business.location')
+                            </label>
+                            <select name="location_id" id="location_selector" class="form-select form-select-sm form-select-solid w-250px" onchange="this.form.submit()">
+                                @foreach($locations as $id => $name)
+                                    <option value="{{ $id }}" @selected($location_id == $id)>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        {{-- Legend --}}
+                        <div class="d-flex align-items-center gap-4 ms-auto">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="w-15px h-15px rounded-2 bg-light-primary border border-primary"></span>
+                                <span class="fw-semibold fs-7 text-gray-600">@lang('lang_v1.slot_available')</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="w-15px h-15px rounded-2 bg-light-danger border border-danger"></span>
+                                <span class="fw-semibold fs-7 text-gray-600">@lang('lang_v1.slot_full')</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if($selectedLocation)
+                <div class="fw-semibold fs-5 text-gray-700 mb-5">
+                    <i class="ki-duotone ki-map fs-3 me-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                    {{ $selectedLocation->name }}
+                </div>
+            @endif
+
+            @if(empty($zones))
+                <div class="card card-flush">
+                    <div class="card-body text-center py-10">
+                        <i class="ki-duotone ki-element-11 fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
+                        <p class="text-muted fw-semibold fs-6">@lang('lang_v1.no_slots_defined')</p>
+                        @can('storage_manager.manage')
+                        <a href="{{ route('storage-manager.slots.create') }}" class="btn btn-sm btn-primary mt-2">
+                            @lang('lang_v1.add_storage_slot')
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+            @else
+                {{-- Grid: 3 zone cards per row like the mockup --}}
+                <div class="row g-6 g-xl-9 mb-6">
+                    @foreach($zones as $zone)
+                        @php
+                            $slots        = $zone['slots'];
+                            $maxVisible   = 9;
+                            $visibleSlots = $slots->take($maxVisible);
+                            $overflow     = $slots->count() - $maxVisible;
+                            $hasOverflow  = $overflow > 0;
+                            $totalOccupied  = $zone['occupied'];
+                            $totalCapacity  = $zone['capacity'];
+                        @endphp
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card card-flush h-100">
+                                {{-- Decorative hatched header strip (matches mockup) --}}
+                                <div class="card-header pt-4 pb-0 border-0">
+                                    <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
+                                </div>
+                                <div class="card-body pt-2 pb-4">
+                                    <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ optional($zone['category'])->name ?? '—' }}</h4>
+
+                                    {{-- Slot cells --}}
+                                    <div class="d-flex flex-wrap gap-3 mb-4">
+                                        @foreach($visibleSlots as $slot)
+                                            @php
+                                                $isFull  = $slot->is_full ?? false;
+                                                $label   = $slot->slot_code ?: ($slot->row . $slot->position);
+                                                $btnClass = $isFull ? 'btn-light-danger' : 'btn-light-primary';
+                                            @endphp
+                                            <button type="button"
+                                                class="btn btn-sm {{ $btnClass }} fw-semibold rounded-2 px-4 py-2 slot-cell"
+                                                data-slot-id="{{ $slot->id }}"
+                                                data-slot-label="{{ $label }}"
+                                                data-is-full="{{ $isFull ? '1' : '0' }}"
+                                                data-capacity="{{ $slot->max_capacity }}"
+                                                data-occupancy="{{ $slot->occupancy }}"
+                                                data-zone="{{ optional($zone['category'])->name }}"
+                                                title="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
+                                                {{ $label }}
+                                            </button>
+                                        @endforeach
+                                        @if($hasOverflow)
+                                            <button type="button"
+                                                class="btn btn-sm btn-primary fw-bold rounded-2 px-4 py-2"
+                                                onclick="window.location='{{ route('storage-manager.slots.index', ['location_id' => $location_id]) }}&category_id={{ optional($zone['category'])->id }}'">
+                                                +{{ $overflow }}
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    {{-- Decorative hatched footer strip --}}
+                                    <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
+
+                                    {{-- Capacity footer --}}
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-muted fs-7">
+                                            @lang('lang_v1.occupied'):
+                                            <strong class="text-gray-800">{{ $totalOccupied }}</strong>
+                                            @if($totalCapacity > 0)
+                                                <span class="text-muted"> / {{ $totalCapacity }}</span>
+                                            @endif
+                                        </span>
+                                        @if($totalCapacity > 0)
+                                            @php $pct = min(100, round($totalOccupied / $totalCapacity * 100)); @endphp
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress h-6px w-80px">
+                                                    <div class="progress-bar {{ $pct >= 90 ? 'bg-danger' : ($pct >= 60 ? 'bg-warning' : 'bg-success') }}"
+                                                         style="width:{{ $pct }}%"></div>
+                                                </div>
+                                                <span class="text-muted fs-8">{{ $pct }}%</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+        </div>
+    </div>
+</div>
+
+{{-- Slot detail modal --}}
+<div class="modal fade" id="slotDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered mw-450px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-gray-900" id="slotModalTitle">—</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row gy-3">
+                    <div class="col-6">
+                        <div class="fw-semibold text-muted fs-7">@lang('lang_v1.zone')</div>
+                        <div class="fw-bold text-gray-800 fs-6" id="slotModalZone">—</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-semibold text-muted fs-7">@lang('lang_v1.storage_slot_code')</div>
+                        <div class="fw-bold text-gray-800 fs-6" id="slotModalCode">—</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-semibold text-muted fs-7">@lang('lang_v1.occupied')</div>
+                        <div class="fw-bold text-gray-800 fs-6" id="slotModalOccupied">—</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-semibold text-muted fs-7">@lang('lang_v1.max_capacity')</div>
+                        <div class="fw-bold text-gray-800 fs-6" id="slotModalCapacity">—</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="fw-semibold text-muted fs-7 mb-1">@lang('lang_v1.available')</div>
+                        <span id="slotModalStatus"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                @can('storage_manager.manage')
+                <a href="#" id="slotModalEditBtn" class="btn btn-sm btn-primary">
+                    <i class="ki-duotone ki-pencil fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                    @lang('messages.edit')
+                </a>
+                @endcan
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@lang('messages.close')</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('javascript')
+<script>
+$(function () {
+    $(document).on('click', '.slot-cell', function () {
+        var $btn      = $(this);
+        var slotId    = $btn.data('slot-id');
+        var label     = $btn.data('slot-label');
+        var isFull    = $btn.data('is-full') == '1';
+        var capacity  = $btn.data('capacity');
+        var occupancy = $btn.data('occupancy');
+        var zone      = $btn.data('zone');
+
+        var available = capacity > 0 ? Math.max(0, capacity - occupancy) : '∞';
+
+        $('#slotModalTitle').text(label);
+        $('#slotModalZone').text(zone || '—');
+        $('#slotModalCode').text(label);
+        $('#slotModalOccupied').text(occupancy);
+        $('#slotModalCapacity').text(capacity > 0 ? capacity : '∞');
+        $('#slotModalStatus').html(
+            isFull
+                ? '<span class="badge badge-light-danger">{{ __("lang_v1.slot_full") }}</span>'
+                : '<span class="badge badge-light-success">' + available + ' {{ __("lang_v1.slot_available") }}</span>'
+        );
+        $('#slotModalEditBtn').attr('href', '{{ route("storage-manager.slots.index") }}/' + slotId + '/edit');
+
+        var modal = new bootstrap.Modal(document.getElementById('slotDetailModal'));
+        modal.show();
+    });
+});
+</script>
+@endsection

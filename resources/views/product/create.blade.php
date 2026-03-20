@@ -380,27 +380,7 @@
                             @show_tooltip(__('lang_v1.tooltip_not_for_selling'))
                         </div>
 
-                        @if($show_racks || $show_row || $show_position)
-                            <div class="mb-7">
-                                <div class="fw-bold text-gray-800 mb-4">@lang('lang_v1.rack_details') @show_tooltip(__('lang_v1.tooltip_rack_details'))</div>
-                                <div class="row g-5">
-                                    @foreach($business_locations as $id => $location)
-                                        <div class="col-md-6 col-lg-4">
-                                            <label class="form-label" for="rack_{{ $id }}">{{ $location }}</label>
-                                            @if($show_racks)
-                                                <input type="text" class="form-control form-control-solid mb-3" name="product_racks[{{ $id }}][rack]" id="rack_{{ $id }}" value="{{ !empty($rack_details[$id]['rack']) ? $rack_details[$id]['rack'] : '' }}" placeholder="@lang('lang_v1.rack')">
-                                            @endif
-                                            @if($show_row)
-                                                <input type="text" class="form-control form-control-solid mb-3" name="product_racks[{{ $id }}][row]" value="{{ !empty($rack_details[$id]['row']) ? $rack_details[$id]['row'] : '' }}" placeholder="@lang('lang_v1.row')">
-                                            @endif
-                                            @if($show_position)
-                                                <input type="text" class="form-control form-control-solid" name="product_racks[{{ $id }}][position]" value="{{ !empty($rack_details[$id]['position']) ? $rack_details[$id]['position'] : '' }}" placeholder="@lang('lang_v1.position')">
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
+                        @include('product.partials._rack_slot_section', ['is_edit' => false])
 
                         <div class="mb-7">
                             <label class="form-label" for="weight">@lang('lang_v1.weight')</label>

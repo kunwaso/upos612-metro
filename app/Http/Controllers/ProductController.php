@@ -28,6 +28,7 @@ use App\VariationGroupPrice;
 use App\VariationLocationDetails;
 use App\VariationTemplate;
 use App\Warranty;
+use Illuminate\Support\Facades\Route;
 use Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -560,6 +561,10 @@ class ProductController extends Controller
             'can_unit_create' => auth()->user()->can('unit.create'),
             'can_brand_create' => auth()->user()->can('brand.create'),
             'breadcrumb' => $breadcrumb,
+            'storage_manager_enabled' => Route::has('storage-manager.available-slots'),
+            'available_slots_url' => Route::has('storage-manager.available-slots')
+                ? route('storage-manager.available-slots')
+                : null,
         ];
     }
 

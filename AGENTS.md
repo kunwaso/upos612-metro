@@ -62,6 +62,7 @@ Use the first matching lane before doing broader workflow:
 | `tenant-audit` | User asks to audit/fix tenant security, missing business_id, or route auth | grep checklist → fix or report each finding | See 0.4h. Use implement mode. |
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area → apply mitigations/fixes | See 0.4i. Use implement mode. |
 | `full-autofix` | User says "run all autofixes", "check project", "health check", or "autofix everything" | log-scan → lint-fix → optional tenant-audit / known-issues-fix | See 0.4j. Use implement mode. |
+| `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome → interactive `audit_web` → read persisted report → optional Chrome DevTools escalation → fix → Playwright + `audit_web` verify | See `ai/browser-audit-workflow.md`. |
 | `product-copilot-eval` | Evaluate adding an in-app assistant, guided UI helper, or ERP copilot | read ai/product-copilot-patterns.md → read security/ui/Aichat docs → define approval boundaries, safe first use case, and rollout scope | Treat page-agent-like ideas as product patterns, not default coding-agent dependencies. |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade → checklist (focus, contrast, structure, assets) → report (and fix within Metronic if implement mode) | Scope: Metronic only; no theme change. |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components → improve hierarchy, spacing, copy within Metronic only; no new classes | Scope: Metronic only. |
@@ -675,8 +676,10 @@ Always read the relevant document before writing code in that domain:
 | External repo / GitHub / trending evaluation | `ai/external-adoption.md` |
 | Deep research, bounded delegation, or long investigations | `ai/research-and-delegation.md` |
 | In-app agent / product copilot evaluation | `ai/product-copilot-patterns.md` + `Modules/Aichat/README.md` |
+| Browser audit workflow | `ai/browser-audit-workflow.md` |
 | Formatting (currency, quantity, numbers) in root or modules | `ai/laravel-conventions.md` §5.3 and §6.4; modules follow the same session-driven rules via `ModuleUtil` |
 | ProjectX or any module extending core (root) via hooks/views | [Section 10.6](#106-projectx-integration-with-root-core) and `ai/projectx-integration.md` |
+| ProjectAuto wizard workflow | `ai/projectauto-workflow-wizard.md` |
 
 Current repo-local helpers:
 

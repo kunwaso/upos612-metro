@@ -1,0 +1,14 @@
+{
+    "name": "StorageManager",
+    "alias": "storagemanager",
+    "description": "Warehouse storage slot management — maps business locations to category zones with rack/row/position cells and capacity tracking.",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\StorageManager\\Providers\\StorageManagerServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

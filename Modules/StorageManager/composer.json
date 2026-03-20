@@ -1,0 +1,17 @@
+{
+    "name": "upos/storagemanager",
+    "description": "Warehouse Storage Manager module for UPOS",
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\StorageManager\\Providers\\StorageManagerServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\StorageManager\\": ""
+        }
+    }
+}

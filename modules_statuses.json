@@ -21,5 +21,6 @@
     "Gym": true,
     "ZatcaIntegrationKsa": true,
     "Aichat": true,
-    "Projectauto": true
+    "Projectauto": true,
+    "StorageManager": true
 }

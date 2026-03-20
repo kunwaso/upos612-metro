@@ -52,4 +52,72 @@ $(function() {
     }
 });
 </script>
+
+@if($activeTab === 'stock')
+@can('storage_manager.manage')
+<script>
+$(function () {
+    var currentProductId  = null;
+    var currentLocationId = null;
+
+    $(document).on('click', '.btn-change-slot', function () {
+        currentProductId  = $(this).data('product-id');
+        currentLocationId = $(this).data('location-id');
+
+        $('#changeSlotLoading').removeClass('d-none');
+        $('#changeSlotContent').addClass('d-none');
+        $('#changeSlotEmpty').addClass('d-none');
+        $('#changeSlotSave').prop('disabled', true);
+
+        var modal = new bootstrap.Modal(document.getElementById('changeSlotModal'));
+        modal.show();
+
+        $.getJSON('{{ route("storage-manager.available-slots") }}', { location_id: currentLocationId }, function (res) {
+            $('#changeSlotLoading').addClass('d-none');
+            var slots = res.slots || {};
+            var keys  = Object.keys(slots);
+
+            if (keys.length === 0) {
+                $('#changeSlotEmpty').removeClass('d-none');
+                return;
+            }
+
+            var $sel = $('#changeSlotSelect').empty().append('<option value="">— @lang("messages.select") —</option>');
+            $.each(slots, function (id, label) {
+                $sel.append($('<option>').val(id).text(label));
+            });
+
+            $('#changeSlotContent').removeClass('d-none');
+        });
+    });
+
+    $('#changeSlotSelect').on('change', function () {
+        $('#changeSlotSave').prop('disabled', !$(this).val());
+    });
+
+    $('#changeSlotSave').on('click', function () {
+        var slotId = $('#changeSlotSelect').val();
+        if (!slotId || !currentProductId) return;
+
+        $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+        $.ajax({
+            url: '{{ route("storage-manager.assign-slot") }}',
+            type: 'POST',
+            data: { _token: '{{ csrf_token() }}', product_id: currentProductId, slot_id: slotId },
+            success: function (res) {
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('changeSlotModal')).hide();
+                    location.reload();
+                }
+            },
+            error: function () {
+                $('#changeSlotSave').prop('disabled', false).text('@lang("lang_v1.assign_slot")');
+            }
+        });
+    });
+});
+</script>
+@endcan
+@endif
 @endsection
