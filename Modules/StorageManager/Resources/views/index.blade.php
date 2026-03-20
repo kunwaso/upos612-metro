@@ -94,6 +94,16 @@
                                     $slots        = $zone['slots'];
                                     $maxVisible   = 9;
                                     $visibleSlots = $slots->take($maxVisible);
+                                    $slotsByRow   = $visibleSlots
+                                        ->sortBy(function ($slot) {
+                                            $row = is_numeric($slot->row ?? null) ? (int) $slot->row : 0;
+                                            $position = is_numeric($slot->position ?? null) ? (int) $slot->position : 0;
+
+                                            return sprintf('%05d-%05d', $row, $position);
+                                        })
+                                        ->groupBy(function ($slot) {
+                                            return is_numeric($slot->row ?? null) ? (int) $slot->row : 0;
+                                        });
                                     $overflow     = $slots->count() - $maxVisible;
                                     $hasOverflow  = $overflow > 0;
                                     $totalOccupied  = $zone['occupied'];
@@ -109,24 +119,28 @@
                                             <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ optional($zone['category'])->name ?? '—' }}</h4>
 
                                             {{-- Slot cells --}}
-                                            <div class="d-flex flex-wrap gap-3 mb-4">
-                                                @foreach($visibleSlots as $slot)
-                                                    @php
-                                                        $isFull  = $slot->is_full ?? false;
-                                                        $label   = $slot->slot_code ?: ($slot->row . $slot->position);
-                                                        $btnClass = $isFull ? 'btn-light-danger' : 'btn-light-primary';
-                                                    @endphp
-                                                    <button type="button"
-                                                        class="btn btn-sm {{ $btnClass }} fw-semibold rounded-2 px-4 py-2 slot-cell"
-                                                        data-slot-id="{{ $slot->id }}"
-                                                        data-slot-label="{{ $label }}"
-                                                        data-is-full="{{ $isFull ? '1' : '0' }}"
-                                                        data-capacity="{{ $slot->max_capacity }}"
-                                                        data-occupancy="{{ $slot->occupancy }}"
-                                                        data-zone="{{ optional($zone['category'])->name }}"
-                                                        data-slot-context="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
-                                                        {{ $label }}
-                                                    </button>
+                                            <div class="d-flex flex-column gap-3 mb-4">
+                                                @foreach($slotsByRow as $rowSlots)
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        @foreach($rowSlots as $slot)
+                                                            @php
+                                                                $isFull  = $slot->is_full ?? false;
+                                                                $label   = $slot->slot_code ?: ($slot->row . $slot->position);
+                                                                $btnClass = $isFull ? 'btn-light-danger' : 'btn-light-primary';
+                                                            @endphp
+                                                            <button type="button"
+                                                                class="btn btn-sm {{ $btnClass }} fw-semibold rounded-2 px-4 py-2 slot-cell"
+                                                                data-slot-id="{{ $slot->id }}"
+                                                                data-slot-label="{{ $label }}"
+                                                                data-is-full="{{ $isFull ? '1' : '0' }}"
+                                                                data-capacity="{{ $slot->max_capacity }}"
+                                                                data-occupancy="{{ $slot->occupancy }}"
+                                                                data-zone="{{ optional($zone['category'])->name }}"
+                                                                data-slot-context="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
+                                                                {{ $label }}
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
                                                 @endforeach
                                                 @if($hasOverflow)
                                                     <button type="button"

@@ -65,7 +65,7 @@ class EssentialsSettingsController extends Controller
         }
 
         try {
-            $input = $request->only(['leave_ref_no_prefix', 'leave_instructions', 'payroll_ref_no_prefix', 'essentials_todos_prefix', 'grace_before_checkin', 'grace_after_checkin', 'grace_before_checkout', 'grace_after_checkout']);
+            $input = $request->only(['leave_ref_no_prefix', 'leave_instructions', 'payroll_ref_no_prefix', 'essentials_todos_prefix', 'grace_before_checkin', 'grace_after_checkin', 'grace_before_checkout', 'grace_after_checkout', 'groq_api_key']);
             $input['is_location_required'] = ! empty($request->input('is_location_required')) ? 1 : 0;
             $input['calculate_sales_target_commission_without_tax'] = ! empty($request->input('calculate_sales_target_commission_without_tax')) ? 1 : 0;
 

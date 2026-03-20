@@ -27,6 +27,7 @@
                             <a href="#" class="list-group-item text-center tw-font-bold tw-text-sm md:tw-text-base">@lang('essentials::lang.attendance')</a>
                             <a href="#" class="list-group-item text-center tw-font-bold tw-text-sm md:tw-text-base">@lang('essentials::lang.sales_target')</a>
                             <a href="#" class="list-group-item text-center tw-font-bold tw-text-sm md:tw-text-base">@lang('essentials::lang.essentials')</a>
+                            <a href="#" class="list-group-item text-center tw-font-bold tw-text-sm md:tw-text-base">@lang('essentials::lang.voice_transcripts')</a>
                         </div>
                     </div>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 pos-tab">
@@ -43,6 +44,9 @@
                     </div>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 pos-tab">
                         @include('essentials::settings.partials.essentials_settings')
+                    </div>
+                    <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 pos-tab">
+                        @include('essentials::settings.partials.transcript_settings')
                     </div>
                 @endcomponent
             </div>

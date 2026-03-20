@@ -800,3 +800,330 @@ ul.dt-button-collection {
 .input-group-addon .hover-q {
     margin-left: 0;
 }
+
+/* -------------------------------------------------------------------------
+   nav-tabs-custom (AdminLTE legacy) → Metronic 8.3.3 aligned
+   Tabbed panel wrapper used across many legacy core views.
+   Maps AdminLTE card-tabs pattern to Metronic card + nav-line-tabs look.
+   ------------------------------------------------------------------------- */
+.nav-tabs-custom {
+  margin-bottom: 1.25rem;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
+  border-radius: var(--bs-border-radius, 0.95rem);
+  border: 1px solid var(--bs-border-color, #f1f1f4);
+}
+
+.nav-tabs-custom > .nav-tabs {
+  margin: 0;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
+  border-top-right-radius: var(--bs-border-radius, 0.95rem);
+  border-top-left-radius: var(--bs-border-radius, 0.95rem);
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+}
+
+.nav-tabs-custom > .nav-tabs > li {
+  border-top: 3px solid transparent;
+  margin-bottom: -1px;
+  margin-right: 0.25rem;
+}
+
+.nav-tabs-custom > .nav-tabs > li.disabled > a {
+  color: var(--bs-gray-500, #99a1b7);
+  pointer-events: none;
+}
+
+.nav-tabs-custom > .nav-tabs > li > a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--bs-gray-700, #4b5675);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.nav-tabs-custom > .nav-tabs > li > a.text-muted {
+  color: var(--bs-gray-500, #99a1b7);
+}
+
+.nav-tabs-custom > .nav-tabs > li > a:hover {
+  color: var(--bs-primary, #1b84ff);
+  background: transparent;
+}
+
+.nav-tabs-custom > .nav-tabs > li:not(.active) > a:hover,
+.nav-tabs-custom > .nav-tabs > li:not(.active) > a:focus,
+.nav-tabs-custom > .nav-tabs > li:not(.active) > a:active {
+  border-color: transparent;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active {
+  border-top-color: var(--bs-primary, #1b84ff);
+}
+
+.nav-tabs-custom > .nav-tabs > li.active > a,
+.nav-tabs-custom > .nav-tabs > li.active:hover > a {
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-gray-900, #071437);
+  font-weight: 600;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active > a {
+  border-top-color: transparent;
+  border-left-color: var(--bs-border-color, #f1f1f4);
+  border-right-color: var(--bs-border-color, #f1f1f4);
+}
+
+.nav-tabs-custom > .nav-tabs > li:first-of-type {
+  margin-left: 0;
+}
+
+.nav-tabs-custom > .nav-tabs > li:first-of-type.active > a {
+  border-left-color: transparent;
+}
+
+/* pull-right variant */
+.nav-tabs-custom > .nav-tabs.pull-right {
+  float: none !important;
+}
+
+.nav-tabs-custom > .nav-tabs.pull-right > li {
+  float: right;
+}
+
+.nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type {
+  margin-right: 0;
+}
+
+.nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type > a {
+  border-left-width: 1px;
+}
+
+.nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type.active > a {
+  border-left-color: var(--bs-border-color, #f1f1f4);
+  border-right-color: transparent;
+}
+
+/* header li (icon + title inside tab bar) */
+.nav-tabs-custom > .nav-tabs > li.header {
+  line-height: 2.5rem;
+  padding: 0 0.625rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--bs-gray-800, #252f4a);
+}
+
+.nav-tabs-custom > .nav-tabs > li.header > .fa,
+.nav-tabs-custom > .nav-tabs > li.header > .fas,
+.nav-tabs-custom > .nav-tabs > li.header > .glyphicon,
+.nav-tabs-custom > .nav-tabs > li.header > .ion {
+  margin-right: 0.3125rem;
+}
+
+/* tab content panel */
+.nav-tabs-custom > .tab-content {
+  background: var(--bs-body-bg, #fff);
+  padding: 1rem 1.25rem;
+  border-bottom-right-radius: var(--bs-border-radius, 0.95rem);
+  border-bottom-left-radius: var(--bs-border-radius, 0.95rem);
+}
+
+/* dropdown inside tab bar */
+.nav-tabs-custom .dropdown.open > a:active,
+.nav-tabs-custom .dropdown.open > a:focus {
+  background: transparent;
+  color: var(--bs-gray-500, #99a1b7);
+}
+
+/* -------------------------------------------------------------------------
+   Bootstrap 3 navbar (AdminLTE/legacy) → Metronic 8.3.3 aligned
+   Used in: layouts/partials/home_header, Modules/Cms/nav, Modules/Essentials/nav_*
+   Provides structural compat for Bootstrap 3 navbar patterns.
+   Only adds classes that Metronic does NOT define (navbar-header, navbar-toggle,
+   icon-bar, navbar-default, navbar-static-top, navbar-right, sr-only).
+   Classes already in style.bundle.css (navbar-brand, navbar-nav, navbar-collapse)
+   are only overridden in a .navbar-default scope to avoid conflicting with
+   Metronic's own header/layout navbar.
+   ------------------------------------------------------------------------- */
+
+/* Screen-reader only — BS3/4 alias for BS5 visually-hidden (already in Metronic) */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Outer nav wrapper — minimal base; visual styling comes from Tailwind tw-* classes */
+.navbar-default {
+  position: relative;
+  min-height: 50px;
+}
+
+.navbar-static-top {
+  position: static;
+  top: 0;
+  z-index: 1000;
+}
+
+/* navbar-header: flex row; contains brand + toggle on mobile */
+.navbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+}
+
+/* Bootstrap 3 hamburger toggle button (NOT navbar-toggler which Metronic owns) */
+.navbar-toggle {
+  display: none;
+  padding: 0.5rem 0.625rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  background-color: transparent;
+  background-image: none;
+  border: 1px solid var(--bs-border-color, #dbdfe9);
+  border-radius: var(--bs-border-radius-sm, 0.475rem);
+  cursor: pointer;
+  color: var(--bs-gray-600, #78829d);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.navbar-toggle:hover,
+.navbar-toggle:focus {
+  background-color: var(--bs-secondary-bg, #f1f1f4);
+  border-color: var(--bs-border-color, #dbdfe9);
+  outline: none;
+}
+
+/* Hamburger icon bars (Bootstrap 3 .icon-bar) */
+.icon-bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 1px;
+  background-color: var(--bs-gray-600, #78829d);
+}
+
+.icon-bar + .icon-bar {
+  margin-top: 4px;
+}
+
+/* Scoped overrides for .navbar-default — make BS3 nav-nav horizontal on desktop.
+   Only applies inside .navbar-default so Metronic's own navbar-nav (flex-column)
+   is not affected globally. */
+.navbar-default .navbar-nav {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-left: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+
+.navbar-default .navbar-nav > li > a {
+  display: block;
+  padding: 0.5rem 0.875rem;
+  color: var(--bs-gray-700, #4b5675);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+  color: var(--bs-primary, #1b84ff);
+}
+
+.navbar-default .navbar-nav > li.active > a,
+.navbar-default .navbar-nav > li.active > a:hover,
+.navbar-default .navbar-nav > li.active > a:focus {
+  color: var(--bs-primary, #1b84ff);
+  font-weight: 600;
+}
+
+/* Right-aligned nav — BS3 .navbar-right → BS5 ms-auto equivalent */
+.navbar-default .navbar-nav.navbar-right {
+  margin-left: auto;
+}
+
+/* Collapse area: on desktop always visible and flex */
+.navbar-default .navbar-collapse {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-basis: auto;
+}
+
+/* Mobile: show toggle, stack nav items */
+@media (max-width: 767.98px) {
+  .navbar-toggle {
+    display: inline-block;
+  }
+
+  .navbar-header {
+    width: 100%;
+  }
+
+  .navbar-default .navbar-collapse {
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-default .navbar-nav {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .navbar-default .navbar-nav > li > a {
+    padding: 0.5rem 0;
+  }
+
+  .navbar-default .navbar-nav.navbar-right {
+    margin-left: 0;
+  }
+
+  /* Bootstrap 3 collapse toggle — .collapse hides, .collapse.in or .show reveals */
+  .navbar-default .navbar-collapse.collapse:not(.in):not(.show) {
+    display: none !important;
+  }
+}
+
+/* color accent variants — top border matches semantic color */
+.nav-tabs-custom.tab-primary > .nav-tabs > li.active {
+  border-top-color: var(--bs-primary, #1b84ff);
+}
+
+.nav-tabs-custom.tab-info > .nav-tabs > li.active {
+  border-top-color: var(--bs-info, #00c0ef);
+}
+
+.nav-tabs-custom.tab-danger > .nav-tabs > li.active {
+  border-top-color: var(--bs-danger, #f8285a);
+}
+
+.nav-tabs-custom.tab-warning > .nav-tabs > li.active {
+  border-top-color: var(--bs-warning, #f6c000);
+}
+
+.nav-tabs-custom.tab-success > .nav-tabs > li.active {
+  border-top-color: var(--bs-success, #17c653);
+}
+
+.nav-tabs-custom.tab-default > .nav-tabs > li.active {
+  border-top-color: var(--bs-gray-400, #c4cada);
+}

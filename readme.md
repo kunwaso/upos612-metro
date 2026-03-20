@@ -54,13 +54,17 @@ The Ultimate POS software is licensed under the [Codecanyon license](https://cod
 ## build me a detail plan  implement phase to phase , task by task with todolist make sure agents coding correctly  refference ui style @public/html  [https://preview.keenthemes.com/html/metronic/docs/base/utilities](https://preview.keenthemes.com/html/metronic/docs/base/utilities) ( ask me question to make sure plan correctly )
 
 
+
+
+
+grod api: [redacted rotate key at console.groq.com]
+
 git init
 git add README.md
 git commit -m "first commit"
 git branch -M main
-git remote add origin https://github.com/kunwaso/upos612-metro.git
+git remote add origin [https://github.com/kunwaso/upos612-metro.git](https://github.com/kunwaso/upos612-metro.git)
 git push -u origin main
-
 
 php artisan vendor:publish --tag=cms-assets --force
 

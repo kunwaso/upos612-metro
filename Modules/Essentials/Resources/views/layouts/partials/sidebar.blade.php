@@ -47,6 +47,12 @@
             </a>
         </li>
         @endif
+        <li class="{{ $request->segment(2) == 'transcripts' ? 'active active-sub' : '' }}">
+            <a href="{{route('essentials.transcripts.index')}}">
+                <i class="fa fa-microphone"></i>
+                <span class="title">@lang('essentials::lang.voice_transcripts')</span>
+            </a>
+        </li>
         @can('edit_essentials_settings')
             <li class="{{ $request->segment(2) == 'settings' ? 'active active-sub' : '' }}">
                 <a href="{{action([\Modules\Essentials\Http\Controllers\EssentialsSettingsController::class, 'edit'])}}">

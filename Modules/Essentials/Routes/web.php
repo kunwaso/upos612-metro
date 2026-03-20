@@ -42,6 +42,11 @@ Route::middleware('web', 'authh', 'auth', 'SetSessionData', 'language', 'timezon
         Route::resource('knowledge-base', 'Modules\Essentials\Http\Controllers\KnowledgeBaseController');
 
         Route::get('user-sales-targets', [Modules\Essentials\Http\Controllers\DashboardController::class, 'getUserSalesTargets']);
+
+        // Voice transcript
+        Route::get('transcripts', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'index'])->name('essentials.transcripts.index');
+        Route::post('transcripts', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'store'])->name('essentials.transcripts.store');
+        Route::delete('transcripts/{id}', [Modules\Essentials\Http\Controllers\TranscriptController::class, 'destroy'])->name('essentials.transcripts.destroy');
     });
 
     Route::prefix('hrm')->group(function () {
