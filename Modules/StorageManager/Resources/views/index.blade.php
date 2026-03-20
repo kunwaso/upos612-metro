@@ -72,98 +72,206 @@
                 </div>
             @endif
 
-            @if(empty($zones))
-                <div class="card card-flush">
-                    <div class="card-body text-center py-10">
-                        <i class="ki-duotone ki-element-11 fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
-                        <p class="text-muted fw-semibold fs-6">@lang('lang_v1.no_slots_defined')</p>
-                        @can('storage_manager.manage')
-                        <a href="{{ route('storage-manager.slots.create') }}" class="btn btn-sm btn-primary mt-2">
-                            @lang('lang_v1.add_storage_slot')
-                        </a>
-                        @endcan
-                    </div>
-                </div>
-            @else
-                {{-- Grid: 3 zone cards per row like the mockup --}}
-                <div class="row g-6 g-xl-9 mb-6">
-                    @foreach($zones as $zone)
-                        @php
-                            $slots        = $zone['slots'];
-                            $maxVisible   = 9;
-                            $visibleSlots = $slots->take($maxVisible);
-                            $overflow     = $slots->count() - $maxVisible;
-                            $hasOverflow  = $overflow > 0;
-                            $totalOccupied  = $zone['occupied'];
-                            $totalCapacity  = $zone['capacity'];
-                        @endphp
-                        <div class="col-md-6 col-xl-4">
-                            <div class="card card-flush h-100">
-                                {{-- Decorative hatched header strip (matches mockup) --}}
-                                <div class="card-header pt-4 pb-0 border-0">
-                                    <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
-                                </div>
-                                <div class="card-body pt-2 pb-4">
-                                    <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ optional($zone['category'])->name ?? '—' }}</h4>
-
-                                    {{-- Slot cells --}}
-                                    <div class="d-flex flex-wrap gap-3 mb-4">
-                                        @foreach($visibleSlots as $slot)
-                                            @php
-                                                $isFull  = $slot->is_full ?? false;
-                                                $label   = $slot->slot_code ?: ($slot->row . $slot->position);
-                                                $btnClass = $isFull ? 'btn-light-danger' : 'btn-light-primary';
-                                            @endphp
-                                            <button type="button"
-                                                class="btn btn-sm {{ $btnClass }} fw-semibold rounded-2 px-4 py-2 slot-cell"
-                                                data-slot-id="{{ $slot->id }}"
-                                                data-slot-label="{{ $label }}"
-                                                data-is-full="{{ $isFull ? '1' : '0' }}"
-                                                data-capacity="{{ $slot->max_capacity }}"
-                                                data-occupancy="{{ $slot->occupancy }}"
-                                                data-zone="{{ optional($zone['category'])->name }}"
-                                                title="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
-                                                {{ $label }}
-                                            </button>
-                                        @endforeach
-                                        @if($hasOverflow)
-                                            <button type="button"
-                                                class="btn btn-sm btn-primary fw-bold rounded-2 px-4 py-2"
-                                                onclick="window.location='{{ route('storage-manager.slots.index', ['location_id' => $location_id]) }}&category_id={{ optional($zone['category'])->id }}'">
-                                                +{{ $overflow }}
-                                            </button>
-                                        @endif
-                                    </div>
-
-                                    {{-- Decorative hatched footer strip --}}
-                                    <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
-
-                                    {{-- Capacity footer --}}
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted fs-7">
-                                            @lang('lang_v1.occupied'):
-                                            <strong class="text-gray-800">{{ $totalOccupied }}</strong>
-                                            @if($totalCapacity > 0)
-                                                <span class="text-muted"> / {{ $totalCapacity }}</span>
-                                            @endif
-                                        </span>
-                                        @if($totalCapacity > 0)
-                                            @php $pct = min(100, round($totalOccupied / $totalCapacity * 100)); @endphp
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="progress h-6px w-80px">
-                                                    <div class="progress-bar {{ $pct >= 90 ? 'bg-danger' : ($pct >= 60 ? 'bg-warning' : 'bg-success') }}"
-                                                         style="width:{{ $pct }}%"></div>
-                                                </div>
-                                                <span class="text-muted fs-8">{{ $pct }}%</span>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
+            <div class="row g-6">
+                <div class="col-12 col-xxl-8">
+                    @if(empty($zones))
+                        <div class="card card-flush">
+                            <div class="card-body text-center py-10">
+                                <i class="ki-duotone ki-element-11 fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
+                                <p class="text-muted fw-semibold fs-6">@lang('lang_v1.no_slots_defined')</p>
+                                @can('storage_manager.manage')
+                                <a href="{{ route('storage-manager.slots.create') }}" class="btn btn-sm btn-primary mt-2">
+                                    @lang('lang_v1.add_storage_slot')
+                                </a>
+                                @endcan
                             </div>
                         </div>
-                    @endforeach
+                    @else
+                        {{-- Grid: 3 zone cards per row like the mockup --}}
+                        <div class="row g-6 g-xl-9 mb-0">
+                            @foreach($zones as $zone)
+                                @php
+                                    $slots        = $zone['slots'];
+                                    $maxVisible   = 9;
+                                    $visibleSlots = $slots->take($maxVisible);
+                                    $overflow     = $slots->count() - $maxVisible;
+                                    $hasOverflow  = $overflow > 0;
+                                    $totalOccupied  = $zone['occupied'];
+                                    $totalCapacity  = $zone['capacity'];
+                                @endphp
+                                <div class="col-md-6 col-xl-4">
+                                    <div class="card card-flush h-100">
+                                        {{-- Decorative hatched header strip (matches mockup) --}}
+                                        <div class="card-header pt-4 pb-0 border-0">
+                                            <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
+                                        </div>
+                                        <div class="card-body pt-2 pb-4">
+                                            <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ optional($zone['category'])->name ?? '—' }}</h4>
+
+                                            {{-- Slot cells --}}
+                                            <div class="d-flex flex-wrap gap-3 mb-4">
+                                                @foreach($visibleSlots as $slot)
+                                                    @php
+                                                        $isFull  = $slot->is_full ?? false;
+                                                        $label   = $slot->slot_code ?: ($slot->row . $slot->position);
+                                                        $btnClass = $isFull ? 'btn-light-danger' : 'btn-light-primary';
+                                                    @endphp
+                                                    <button type="button"
+                                                        class="btn btn-sm {{ $btnClass }} fw-semibold rounded-2 px-4 py-2 slot-cell"
+                                                        data-slot-id="{{ $slot->id }}"
+                                                        data-slot-label="{{ $label }}"
+                                                        data-is-full="{{ $isFull ? '1' : '0' }}"
+                                                        data-capacity="{{ $slot->max_capacity }}"
+                                                        data-occupancy="{{ $slot->occupancy }}"
+                                                        data-zone="{{ optional($zone['category'])->name }}"
+                                                        data-slot-context="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
+                                                        {{ $label }}
+                                                    </button>
+                                                @endforeach
+                                                @if($hasOverflow)
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-primary fw-bold rounded-2 px-4 py-2"
+                                                        onclick="window.location='{{ route('storage-manager.slots.index', ['location_id' => $location_id]) }}&category_id={{ optional($zone['category'])->id }}'">
+                                                        +{{ $overflow }}
+                                                    </button>
+                                                @endif
+                                            </div>
+
+                                            {{-- Decorative hatched footer strip --}}
+                                            <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
+
+                                            {{-- Capacity footer --}}
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <span class="text-muted fs-7">
+                                                    @lang('lang_v1.occupied'):
+                                                    <strong class="text-gray-800">{{ $totalOccupied }}</strong>
+                                                    @if($totalCapacity > 0)
+                                                        <span class="text-muted"> / {{ $totalCapacity }}</span>
+                                                    @endif
+                                                </span>
+                                                @if($totalCapacity > 0)
+                                                    @php $pct = min(100, round($totalOccupied / $totalCapacity * 100)); @endphp
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="progress h-6px w-80px">
+                                                            <div class="progress-bar {{ $pct >= 90 ? 'bg-danger' : ($pct >= 60 ? 'bg-warning' : 'bg-success') }}"
+                                                                 style="width:{{ $pct }}%"></div>
+                                                        </div>
+                                                        <span class="text-muted fs-8">{{ $pct }}%</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
-            @endif
+
+                <div class="col-12 col-xxl-4">
+                    {{-- Running out of stock widget --}}
+                    <div class="card card-flush mb-6">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@lang('lang_v1.running_out_of_stock')</span>
+                            </h3>
+                            <div class="card-toolbar">
+                                <a href="{{ $widget_meta['running_out_url'] }}" class="btn btn-sm btn-icon btn-light" title="@lang('messages.view')">
+                                    <i class="ki-duotone ki-arrow-up-right fs-4"><span class="path1"></span><span class="path2"></span></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex flex-stack pb-2 mb-3 border-bottom border-gray-200">
+                                <span class="text-gray-500 fw-semibold fs-7">@lang('product.product')</span>
+                                <span class="text-gray-500 fw-semibold fs-7">@lang('lang_v1.storage_slot')</span>
+                            </div>
+
+                            @forelse($running_out_items as $item)
+                                <div class="d-flex flex-stack py-3">
+                                    <a href="{{ $item['link_url'] ?? $widget_meta['running_out_url'] }}" class="d-flex align-items-center text-decoration-none text-gray-900 text-hover-primary flex-grow-1 me-4">
+                                        <div class="symbol symbol-35px me-4">
+                                            <span class="symbol-label bg-light-danger">
+                                                <i class="ki-duotone ki-package fs-5 text-danger"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column min-w-0">
+                                            <span class="fw-bold fs-6 text-truncate">{{ $item['product_label'] }}</span>
+                                            <span class="text-gray-500 fw-semibold fs-7">{{ $item['meta_line'] }}</span>
+                                        </div>
+                                    </a>
+                                    <a href="{{ $item['link_url'] ?? $widget_meta['running_out_url'] }}" class="text-gray-800 fw-bold fs-7 text-hover-primary text-nowrap">
+                                        {{ $item['storage_label'] }}
+                                    </a>
+                                </div>
+                                @if(! $loop->last)
+                                    <div class="separator separator-dashed"></div>
+                                @endif
+                            @empty
+                                <div class="text-center py-10">
+                                    <span class="text-gray-500 fw-semibold fs-7">@lang('lang_v1.no_running_out_items')</span>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    {{-- Expiring products widget --}}
+                    <div class="card card-flush">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@lang('lang_v1.expiring_products')</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">
+                                    @lang('lang_v1.expiry_window_days', ['days' => $widget_meta['expiry_window_days']])
+                                </span>
+                            </h3>
+                            <div class="card-toolbar">
+                                <a href="{{ $widget_meta['expiring_url'] }}" class="btn btn-sm btn-icon btn-light" title="@lang('messages.view')">
+                                    <i class="ki-duotone ki-arrow-up-right fs-4"><span class="path1"></span><span class="path2"></span></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex flex-stack pb-2 mb-3 border-bottom border-gray-200">
+                                <span class="text-gray-500 fw-semibold fs-7">@lang('product.product')</span>
+                                <span class="text-gray-500 fw-semibold fs-7">@lang('lang_v1.storage_slot')</span>
+                            </div>
+
+                            @forelse($expiring_items as $item)
+                                @php
+                                    $statusClass = $item['status'] === 'expired' ? 'badge-light-danger' : 'badge-light-warning';
+                                    $statusLabel = $item['status'] === 'expired' ? __('report.expired') : __('lang_v1.expiring');
+                                @endphp
+                                <div class="d-flex flex-stack py-3">
+                                    <a href="{{ $item['link_url'] ?? $widget_meta['expiring_url'] }}" class="d-flex align-items-center text-decoration-none text-gray-900 text-hover-primary flex-grow-1 me-4">
+                                        <div class="symbol symbol-35px me-4">
+                                            <span class="symbol-label bg-light-warning">
+                                                <i class="ki-duotone ki-information-5 fs-5 text-warning"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column min-w-0">
+                                            <span class="fw-bold fs-6 text-truncate">{{ $item['product_label'] }}</span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="text-gray-500 fw-semibold fs-7">{{ $item['meta_line'] }}</span>
+                                                <span class="badge {{ $statusClass }} fs-8">{{ $statusLabel }}</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <a href="{{ $item['link_url'] ?? $widget_meta['expiring_url'] }}" class="text-gray-800 fw-bold fs-7 text-hover-primary text-nowrap">
+                                        {{ $item['storage_label'] }}
+                                    </a>
+                                </div>
+                                @if(! $loop->last)
+                                    <div class="separator separator-dashed"></div>
+                                @endif
+                            @empty
+                                <div class="text-center py-10">
+                                    <span class="text-gray-500 fw-semibold fs-7">@lang('lang_v1.no_expiring_items')</span>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -218,7 +326,118 @@
 @section('javascript')
 <script>
 $(function () {
+    var slotProductsEndpoint = '{{ route("storage-manager.available-slots") }}';
+    var slotProductsCache = {};
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function disposeSlotPopover(buttonEl) {
+        var instance = bootstrap.Popover.getInstance(buttonEl);
+        if (instance) {
+            instance.dispose();
+        }
+    }
+
+    function hideAllSlotPopovers() {
+        $('.slot-cell').each(function () {
+            disposeSlotPopover(this);
+        });
+    }
+
+    function showSlotPopover($button, contentHtml) {
+        hideAllSlotPopovers();
+
+        var popover = new bootstrap.Popover($button[0], {
+            trigger: 'manual',
+            html: true,
+            sanitize: false,
+            container: 'body',
+            placement: 'top',
+            content: contentHtml
+        });
+
+        popover.show();
+    }
+
+    function buildSlotProductsContent(payload, slotLabel, slotContext) {
+        var items = (payload && payload.slot_products) ? payload.slot_products : [];
+        var total = payload && payload.slot_products_total ? payload.slot_products_total : 0;
+        var html = '';
+
+        html += '<div class="fw-bold text-gray-900 fs-7 mb-1">' + escapeHtml(slotLabel) + '</div>';
+        if (slotContext) {
+            html += '<div class="text-muted fs-8 mb-2">' + escapeHtml(slotContext) + '</div>';
+        }
+
+        if (!items.length) {
+            html += '<div class="text-muted fw-semibold fs-7">No products assigned</div>';
+            return html;
+        }
+
+        html += '<div class="d-flex flex-column gap-2">';
+        $.each(items, function (_, item) {
+            html += '<div class="d-flex justify-content-between align-items-start gap-2">';
+            html += '<span class="fw-semibold text-gray-800 fs-7">' + escapeHtml(item.product_label) + '</span>';
+            html += '<span class="badge badge-light-primary fs-8">x' + escapeHtml(item.assignments) + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+
+        if (total > items.length) {
+            html += '<div class="text-muted fs-8 mt-2">+' + escapeHtml(total - items.length) + ' more</div>';
+        }
+
+        return html;
+    }
+
+    $(document).on('mouseenter', '.slot-cell', function () {
+        var $button = $(this);
+        var slotId = parseInt($button.data('slot-id'), 10) || 0;
+        var slotLabel = $button.data('slot-label') || '';
+        var slotContext = $button.data('slot-context') || '';
+
+        if (!slotId) {
+            return;
+        }
+
+        if (slotProductsCache[slotId]) {
+            showSlotPopover($button, buildSlotProductsContent(slotProductsCache[slotId], slotLabel, slotContext));
+            return;
+        }
+
+        showSlotPopover($button, '<div class="text-muted fw-semibold fs-7">Loading products...</div>');
+
+        $.ajax({
+            url: slotProductsEndpoint,
+            type: 'GET',
+            dataType: 'json',
+            data: {slot_id: slotId}
+        }).done(function (response) {
+            slotProductsCache[slotId] = response || {};
+            if ($button.is(':hover')) {
+                showSlotPopover($button, buildSlotProductsContent(slotProductsCache[slotId], slotLabel, slotContext));
+            }
+        }).fail(function () {
+            if ($button.is(':hover')) {
+                showSlotPopover($button, '<div class="text-danger fw-semibold fs-7">Unable to load products.</div>');
+            }
+        });
+    });
+
+    $(document).on('mouseleave', '.slot-cell', function () {
+        disposeSlotPopover(this);
+    });
+
     $(document).on('click', '.slot-cell', function () {
+        hideAllSlotPopovers();
+
         var $btn      = $(this);
         var slotId    = $btn.data('slot-id');
         var label     = $btn.data('slot-label');

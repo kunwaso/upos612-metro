@@ -17,6 +17,9 @@ Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezo
         // Warehouse grid view
         Route::get('/', [StorageManagerController::class, 'index'])->name('index');
 
+        // Detailed low-stock list (used by Running Out of Stock widget links)
+        Route::get('/running-out-of-stock', [StorageManagerController::class, 'runningOutOfStock'])->name('running-out');
+
         // AJAX: available slots for a location
         Route::get('/available-slots', [StorageManagerController::class, 'availableSlots'])->name('available-slots');
 
