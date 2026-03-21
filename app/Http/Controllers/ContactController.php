@@ -91,8 +91,16 @@ class ContactController extends Controller
             $customer_groups = CustomerGroup::forDropdown($business_id);
         }
 
+        $api_key_enabled = ! empty(env('GOOGLE_MAP_API_KEY'));
+        $api_key = env('GOOGLE_MAP_API_KEY');
+
+        $custom_labels_raw = session('business.custom_labels', '{}');
+        $custom_labels = json_decode($custom_labels_raw, true);
+        $custom_labels = is_array($custom_labels) ? $custom_labels : [];
+        $contact_custom_labels = $custom_labels['contact'] ?? [];
+
         return view('contact.index')
-            ->with(compact('type', 'reward_enabled', 'customer_groups', 'users'));
+            ->with(compact('type', 'reward_enabled', 'customer_groups', 'users', 'api_key_enabled', 'api_key', 'contact_custom_labels'));
     }
 
     /**
@@ -711,6 +719,35 @@ class ContactController extends Controller
             'custom_field_4' => ! empty($purchase_custom_labels['custom_field_4']),
         ];
 
+        $is_supplier = in_array($contact->type, ['supplier', 'both']);
+        $is_customer = in_array($contact->type, ['customer', 'both']);
+
+        if ($is_supplier) {
+            $total_amount = $this->commonUtil->num_f($contact->total_purchase ?? 0);
+            $due_amount   = $this->commonUtil->num_f(
+                ($contact->total_purchase ?? 0) - ($contact->purchase_paid ?? 0)
+            );
+            $stat_label_1 = __('lang_v1.total_purchase');
+            $stat_label_2 = __('lang_v1.purchase_due');
+        } else {
+            $total_amount = $this->commonUtil->num_f($contact->total_invoice ?? 0);
+            $due_amount   = $this->commonUtil->num_f(
+                ($contact->total_invoice ?? 0) - ($contact->invoice_received ?? 0)
+            );
+            $stat_label_1 = __('lang_v1.total_sales');
+            $stat_label_2 = __('contact.total_sale_due');
+        }
+        $advance_balance = $this->commonUtil->num_f($contact->balance ?? 0);
+
+        $contact_stats = [
+            'stat_1_label' => $stat_label_1,
+            'stat_1_value' => $total_amount,
+            'stat_2_label' => $stat_label_2,
+            'stat_2_value' => $due_amount,
+            'stat_3_label' => __('lang_v1.advance_balance'),
+            'stat_3_value' => $advance_balance,
+        ];
+
         return view('contact.show')
              ->with(compact(
                  'contact',
@@ -721,7 +758,10 @@ class ContactController extends Controller
                  'contact_view_tabs',
                  'activities',
                  'purchase_custom_labels',
-                 'purchase_custom_field_visibility'
+                 'purchase_custom_field_visibility',
+                 'contact_stats',
+                 'is_supplier',
+                 'is_customer'
              ));
     }
 

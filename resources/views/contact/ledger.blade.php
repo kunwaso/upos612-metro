@@ -1,172 +1,214 @@
-<!-- app css -->
 @if(!empty($for_pdf))
-	<link rel="stylesheet" href="{{ asset('assets/app/css/app.css?v='.$asset_v) }}">
+    <link rel="stylesheet" href="{{ asset('assets/app/css/app.css?v=' . $asset_v) }}">
 @endif
-<div class="col-md-12 col-sm-12 @if(!empty($for_pdf)) width-100 align-right @endif">
-        <p class="text-right align-right"><strong>{{$contact->business->name}}</strong>
-        	<br>
-        	@if(!empty($location))
-        		{!! $location->location_address !!}
-        	@else
-        		{!! $contact->business->business_address !!}
-        	@endif
-        </p>
-</div>
-<div class="col-md-6 col-sm-6 col-xs-6 @if(!empty($for_pdf)) width-50 f-left @endif">
-	<p class="blue-heading p-4 width-50">@lang('lang_v1.to'):</p>
-	<p><strong>{{$contact->name}}</strong><br> {!! $contact->contact_address !!} @if(!empty($contact->email)) <br>@lang('business.email'): {{$contact->email}} @endif
-	<br>@lang('contact.mobile'): {{$contact->mobile}}
-	@if(!empty($contact->tax_number)) <br>@lang('contact.tax_no'): {{$contact->tax_number}} @endif
-</p>
-</div>
 
-<div class="col-md-6 col-sm-6 col-xs-6 text-right align-right @if(!empty($for_pdf)) width-50 f-left @endif">
-		<h3 class="mb-0 blue-heading p-4">@lang('lang_v1.account_summary')</h3>
-	<div style="border: 1px solid #000; padding: 10px;">
-		<i id="show_info_btn" class="fa fa-info-circle text-info" style="margin-right: 10px; margin-top:4px;"></i>
-		<b>{{$ledger_details['start_date']}} @lang('lang_v1.to') {{$ledger_details['end_date']}}</b>
-		<table class="table table-condensed text-left align-left no-border @if(!empty($for_pdf)) table-pdf @endif">
-        
-        {{-- All summary_hidden class is commented --}}
-        {{-- <tr class="summary_hidden">
-				<td>@lang('lang_v1.opening_balance')</td>
-				<td class="align-right">@format_currency($ledger_details['beginning_balance'])</td>
-			</tr> --}}
-		@if( $contact->type == 'supplier' || $contact->type == 'both')
-			<tr>
-				<td>@lang('report.total_purchase')</td>
-				<td class="align-right">@format_currency($ledger_details['total_purchase'])</td>
-			</tr>
-		@endif
-		@if( $contact->type == 'customer' || $contact->type == 'both')
-			<tr>
-				<td>@lang('lang_v1.total_invoice')</td>
-				<td class="align-right">@format_currency($ledger_details['total_invoice'])</td>
-			</tr>
-		@endif
-		<tr>
-			<td>@lang('sale.total_paid')</td>
-			<td class="align-right">@format_currency($ledger_details['total_paid'])</td>
-		</tr>
-		{{-- <tr class="summary_hidden">
-			<td>@lang('lang_v1.advance_balance')</td>
-			<td class="align-right">@format_currency($contact->balance - $ledger_details['total_reverse_payment'])</td>
-		</tr> --}}
-		@if($ledger_details['ledger_discount'] > 0)
-			<tr>
-				<td>@lang('lang_v1.ledger_discount')</td>
-				<td class="align-right">@format_currency($ledger_details['ledger_discount'])</td>
-			</tr>
-		@endif
-		{{-- <tr class="summary_hidden">
-			<td><strong>@lang('lang_v1.balance_due')</strong></td>
-			<td class="align-right">@format_currency($ledger_details['balance_due'] - $ledger_details['ledger_discount'])</td>
-		</tr> --}}
-		</table>
-	</div>
+<div class="card @if(!empty($for_pdf)) border-0 shadow-none @endif">
+    <div class="card-body p-lg-20 @if(!empty($for_pdf)) p-4 @endif">
 
-	<div style="border: 1px solid #000; padding: 10px;">
-		<b> @lang('lang_v1.overall_summary') </b>
-		<table class="table table-condensed text-left align-left no-border @if(!empty($for_pdf)) table-pdf @endif">
-		
-			@if( $contact->type == 'supplier' || $contact->type == 'both')
-				<tr>
-					<td>@lang('report.total_purchase')</td>
-					<td class="align-right">@format_currency($ledger_details['all_total_purchase'])</td>
-				</tr>
-			@endif
+        {{-- Header: Business name + address --}}
+        <div class="d-flex flex-stack pb-8 mb-8 border-bottom border-gray-300">
+            <div>
+                <div class="fw-bold fs-3 text-gray-800">@lang('lang_v1.account_statement')</div>
+                <div class="fw-semibold fs-6 text-gray-500">
+                    {{ $ledger_details['start_date'] }} &mdash; {{ $ledger_details['end_date'] }}
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="fw-bold fs-5 text-gray-900">{{ $contact->business->name }}</div>
+                <div class="fw-semibold fs-7 text-gray-600 mt-1">
+                    @if(!empty($location))
+                        {!! $location->location_address !!}
+                    @else
+                        {!! $contact->business->business_address !!}
+                    @endif
+                </div>
+            </div>
+        </div>
 
-			@if( $contact->type == 'customer' || $contact->type == 'both')
-				<tr>
-					<td>@lang('lang_v1.total_invoice')</td>
-					<td class="align-right">@format_currency($ledger_details['all_total_invoice'])</td>
-				</tr>
-			@endif
+        {{-- Contact info + Account Summary --}}
+        <div class="row g-5 mb-10">
+            {{-- To: (contact) --}}
+            <div class="col-md-6">
+                <div class="fw-semibold fs-7 text-gray-500 text-uppercase mb-2">@lang('lang_v1.to')</div>
+                <div class="fw-bold fs-5 text-gray-800 mb-1">{{ $contact->name }}</div>
+                <div class="fw-semibold fs-6 text-gray-600">
+                    {!! $contact->contact_address !!}
+                    @if(!empty($contact->email))
+                        <br>@lang('business.email'): {{ $contact->email }}
+                    @endif
+                    <br>@lang('contact.mobile'): {{ $contact->mobile }}
+                    @if(!empty($contact->tax_number))
+                        <br>@lang('contact.tax_no'): {{ $contact->tax_number }}
+                    @endif
+                </div>
+            </div>
 
-            @if( $contact->type == 'customer' || $contact->type == 'both')
-                <tr>
-                    <td>@lang('sale.total_paid')</td>
-                    <td class="align-right">@format_currency($ledger_details['all_invoice_paid'])</td>
-                </tr>
-            @endif
+            {{-- Account Summary --}}
+            <div class="col-md-6">
+                <div class="d-flex flex-column gap-5">
 
-            @if( $contact->type == 'supplier' || $contact->type == 'both')
-                <tr>
-                    <td>@lang('sale.total_paid')</td>
-                    <td class="align-right">@format_currency($ledger_details['all_purchase_paid'])</td>
-                </tr>
-            @endif
+                    {{-- Period summary --}}
+                    <div class="border border-gray-300 border-dashed rounded p-5">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="fw-bold fs-6 text-gray-700">@lang('lang_v1.account_summary')</span>
+                            <button type="button" id="show_info_btn"
+                                class="btn btn-sm btn-icon btn-light-info"
+                                title="@lang('lang_v1.overall_summary')">
+                                <i class="ki-duotone ki-information fs-4">
+                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                </i>
+                            </button>
+                        </div>
+                        <div class="separator mb-4"></div>
+                        <table class="table table-sm table-borderless mb-0">
+                            @if(in_array($contact->type, ['supplier', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('report.total_purchase')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['total_purchase'])</td>
+                                </tr>
+                            @endif
+                            @if(in_array($contact->type, ['customer', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('lang_v1.total_invoice')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['total_invoice'])</td>
+                                </tr>
+                            @endif
+                            <tr>
+                                <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('sale.total_paid')</td>
+                                <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['total_paid'])</td>
+                            </tr>
+                            @if($ledger_details['ledger_discount'] > 0)
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('lang_v1.ledger_discount')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['ledger_discount'])</td>
+                                </tr>
+                            @endif
+                        </table>
+                    </div>
 
-			<tr >
-				<td><strong>@lang('lang_v1.balance_due')</strong></td>
-				<td class="align-right">@format_currency($ledger_details['all_balance_due'])</td>
-			</tr>
-		</table>
-	</div>
-</div>
+                    {{-- Overall summary (toggled) --}}
+                    <div class="border border-dashed border-gray-400 rounded p-5 summary_hidden">
+                        <div class="fw-bold fs-6 text-gray-700 mb-3">@lang('lang_v1.overall_summary')</div>
+                        <div class="separator mb-4"></div>
+                        <table class="table table-sm table-borderless mb-0">
+                            @if(in_array($contact->type, ['supplier', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('report.total_purchase')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['all_total_purchase'])</td>
+                                </tr>
+                            @endif
+                            @if(in_array($contact->type, ['customer', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('lang_v1.total_invoice')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['all_total_invoice'])</td>
+                                </tr>
+                            @endif
+                            @if(in_array($contact->type, ['customer', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('sale.total_paid')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['all_invoice_paid'])</td>
+                                </tr>
+                            @endif
+                            @if(in_array($contact->type, ['supplier', 'both']))
+                                <tr>
+                                    <td class="fw-semibold text-gray-600 ps-0 py-1">@lang('sale.total_paid')</td>
+                                    <td class="fw-bold text-end text-gray-800 pe-0 py-1">@format_currency($ledger_details['all_purchase_paid'])</td>
+                                </tr>
+                            @endif
+                            <tr class="border-top border-gray-200">
+                                <td class="fw-bold text-gray-900 ps-0 pt-3 pb-0">@lang('lang_v1.balance_due')</td>
+                                <td class="fw-bold text-end text-danger pt-3 pb-0 pe-0">@format_currency($ledger_details['all_balance_due'])</td>
+                            </tr>
+                        </table>
+                    </div>
 
+                </div>
+            </div>
+        </div>
 
-<div class="col-md-12 col-sm-12 @if(!empty($for_pdf)) width-100 @endif">
-	<p class="text-center" style="text-align: center;"><strong>@lang('lang_v1.ledger_table_heading', ['start_date' => $ledger_details['start_date'], 'end_date' => $ledger_details['end_date']])</strong></p>
-	<div class="table-responsive">
-	<table class="table table-striped @if(!empty($for_pdf)) table-pdf td-border @endif" id="ledger_table">
-		<thead>
-			<tr class="row-border blue-heading">
-				<th width="18%" class="text-center">@lang('lang_v1.date')</th>
-				<th width="9%" class="text-center">@lang('purchase.ref_no')</th>
-				<th width="8%" class="text-center">@lang('lang_v1.type')</th>
-				<th width="10%" class="text-center">@lang('sale.location')</th>
-				<th width="5%" class="text-center">@lang('sale.payment_status')</th>
-				{{--<th width="10%" class="text-center">@lang('sale.total')</th>--}}
-				<th width="10%" class="text-center">@lang('account.debit')</th>
-				<th width="10%" class="text-center">@lang('account.credit')</th>
-				{{-- <th width="10%" class="text-center summary_hidden">@lang('lang_v1.balance')</th> --}}
-				<th width="5%" class="text-center">@lang('lang_v1.payment_method')</th>
-				<th width="15%" class="text-center">@lang('report.others')</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach($ledger_details['ledger'] as $data)
+        {{-- Table heading --}}
+        <div class="fw-bold fs-6 text-gray-800 mb-5 text-center">
+            @lang('lang_v1.ledger_table_heading', [
+                'start_date' => $ledger_details['start_date'],
+                'end_date'   => $ledger_details['end_date'],
+            ])
+        </div>
 
-                @if($data['type'] == 'Opening Balance') 
-                    @continue
-                @endif 
+        {{-- Transactions table --}}
+        <div class="table-responsive">
+            <table class="table align-middle table-row-dashed fs-6 gy-4 @if(!empty($for_pdf)) table-pdf td-border @endif"
+                id="ledger_table">
+                <thead>
+                    <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0 border-bottom border-gray-200">
+                        <th class="min-w-125px">@lang('lang_v1.date')</th>
+                        <th class="min-w-90px">@lang('purchase.ref_no')</th>
+                        <th class="min-w-80px">@lang('lang_v1.type')</th>
+                        <th class="min-w-100px">@lang('sale.location')</th>
+                        <th class="min-w-90px">@lang('sale.payment_status')</th>
+                        <th class="min-w-100px text-end">@lang('account.debit')</th>
+                        <th class="min-w-100px text-end">@lang('account.credit')</th>
+                        <th class="min-w-90px">@lang('lang_v1.payment_method')</th>
+                        <th class="min-w-125px">@lang('report.others')</th>
+                    </tr>
+                </thead>
+                <tbody class="fw-semibold text-gray-600">
+                    @foreach($ledger_details['ledger'] as $data)
+                        @if($data['type'] == 'Opening Balance')
+                            @continue
+                        @endif
+                        <tr @if(!empty($for_pdf) && $loop->iteration % 2 == 0) class="bg-light" @endif>
+                            <td class="text-nowrap">{{ format_datetime_value($data['date']) }}</td>
+                            <td>{{ $data['ref_no'] }}</td>
+                            <td>{{ $data['type'] }}</td>
+                            <td>{{ $data['location'] }}</td>
+                            <td>
+                                @if(!empty($data['payment_status']))
+                                    @php
+                                        $ps = $data['payment_status'];
+                                        $badgeClass = $ps === 'paid' ? 'success' : ($ps === 'partial' ? 'warning' : 'danger');
+                                    @endphp
+                                    <span class="badge badge-light-{{ $badgeClass }}">{{ $ps }}</span>
+                                @endif
+                            </td>
+                            <td class="text-end text-nowrap">
+                                @if($data['debit'] != '') @format_currency($data['debit']) @endif
+                            </td>
+                            <td class="text-end text-nowrap">
+                                @if($data['credit'] != '') @format_currency($data['credit']) @endif
+                            </td>
+                            <td>{{ $data['payment_method'] }}</td>
+                            <td>
+                                {!! $data['others'] !!}
+                                @if(!empty($is_admin) && !empty($data['transaction_id']) && $data['transaction_type'] == 'ledger_discount')
+                                    <div class="d-flex gap-1 mt-1">
+                                        <button type="button"
+                                            class="btn btn-icon btn-sm btn-light-danger delete_ledger_discount"
+                                            data-href="{{ action([\App\Http\Controllers\LedgerDiscountController::class, 'destroy'], ['ledger_discount' => $data['transaction_id']]) }}">
+                                            <i class="ki-duotone ki-trash fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                                        </button>
+                                        <button type="button"
+                                            class="btn btn-icon btn-sm btn-light-primary btn-modal"
+                                            data-href="{{ action([\App\Http\Controllers\LedgerDiscountController::class, 'edit'], ['ledger_discount' => $data['transaction_id']]) }}"
+                                            data-container="#edit_ledger_discount_modal">
+                                            <i class="ki-duotone ki-pencil fs-4"><span class="path1"></span><span class="path2"></span></i>
+                                        </button>
+                                    </div>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
-				<tr @if(!empty($for_pdf) && $loop->iteration % 2 == 0) class="odd" @endif>
-					<td class="row-border">{{ format_datetime_value($data['date']) }}</td>
-					<td>{{$data['ref_no']}}</td>
-					<td>{{$data['type']}}</td>
-					<td>{{$data['location']}}</td>
-					<td>{{$data['payment_status']}}</td>
-					{{--<td class="ws-nowrap align-right">@if($data['total'] !== '') @format_currency($data['total']) @endif</td>--}}
-					<td class="ws-nowrap align-right">@if($data['debit'] != '') @format_currency($data['debit']) @endif</td>
-					<td class="ws-nowrap align-right">@if($data['credit'] != '') @format_currency($data['credit']) @endif</td>
-					{{--<td class="ws-nowrap align-right summary_hidden">{{$data['balance']}}</td>--}}
-					<td>{{$data['payment_method']}}</td>
-					<td>
-						{!! $data['others'] !!}
-
-						@if(!empty($is_admin) && !empty($data['transaction_id']) && $data['transaction_type'] == 'ledger_discount')
-							<br>
-							<button type="button" class="tw-dw-btn tw-dw-btn-outline tw-dw-btn-xs tw-dw-btn-error delete_ledger_discount" data-href="{{action([\App\Http\Controllers\LedgerDiscountController::class, 'destroy'], ['ledger_discount' => $data['transaction_id']])}}"><i class="fas fa-trash"></i></button>
-							<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary btn-modal" data-href="{{action([\App\Http\Controllers\LedgerDiscountController::class, 'edit'], ['ledger_discount' => $data['transaction_id']])}}" data-container="#edit_ledger_discount_modal"><i class="fas fa-edit"></i></button>
-						@endif
-					</td>
-				</tr>
-			@endforeach
-		</tbody>
-	</table>
-	</div>
+    </div>
 </div>
 
 <script>
-	$(document).ready(function() {
-
-		// Toggle visibility on button click
-		$('.summary_hidden').hide();
-
-		$('#show_info_btn').click(function() {
-			$('.summary_hidden').toggle('slow');
-		});
-	});
-	</script>
+$(document).ready(function () {
+    $('.summary_hidden').hide();
+    $('#show_info_btn').on('click', function () {
+        $('.summary_hidden').slideToggle();
+    });
+});
+</script>

@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "laravel_mysql": {
+      "command": "php",
+      "args": ["D:/wamp64/www/upos612/mcp/laravel-mysql-mcp/bin/server"]
+    },
+    "grep": {
+      "command": "php",
+      "args": ["D:/wamp64/www/upos612/mcp/grep-mcp/bin/server"],
+      "env": {
+        "MCP_GREP_WORKSPACE_ROOT": "D:/wamp64/www/upos612"
+      }
+    },
+    "read_file_cache": {
+      "command": "php",
+      "args": ["D:/wamp64/www/upos612/mcp/read-file-cache-mcp/bin/server"],
+      "env": {
+        "MCP_READ_FILE_WORKSPACE_ROOT": "D:/wamp64/www/upos612",
+        "MCP_READ_FILE_CACHE_ROOT": "D:/wamp64/www/upos612/.cache/read-file-cache-mcp"
+      }
+    }
+  }
+}
