@@ -15,7 +15,7 @@ Apply the first matching rule:
 4. Domain docs in `ai/*.md`
 5. Existing local code patterns
 
-If there is still conflict, stop and ask the user.
+If there is still conflict, apply the safest interpretation and note the assumption — only stop and ask if the conflict would cause data loss, a destructive action, or a security violation.
 
 ---
 

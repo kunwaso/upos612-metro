@@ -27,16 +27,14 @@ If a conflict still cannot be resolved safely, stop and ask the user before writ
 
 <!-- start ask mode -->
 
-### 0.1a Ask mode vs Implement mode (when environment has no mode selector)
+### 0.1a Ask mode vs Implement mode
 
-When the environment does **not** provide a clear "Ask" vs "Agent/Implement" mode (e.g. no Ask/Agent toggle):
+**In Cursor:** The Ask/Agent toggle in the UI already sets the mode. **Do NOT ask the user to clarify mode.** Respect whatever mode is active and proceed immediately.
 
-1. **Before doing any write/edit/delete or run command**, ask the user once at the start:
-   - *"Is this **ask mode** (explain/answer only, no file changes) or **implement mode** (I may edit files and run commands)?"*
-2. **Ask mode** — Answer, explain, search, and read only. Do **not** use: write, search_replace, delete, or run terminal. Proceed with explanation or investigation only.
-3. **Implement mode** — Proceed with the full workflow (design → plan → execute), including file edits and commands when needed.
+- **Ask mode active** → Read, search, explain. No file writes, no commands.
+- **Agent mode active** → Full workflow (design → plan → implement → verify).
 
-If the user has already stated "ask" or "implement" (or "just explain", "make the change", etc.), treat that as the mode and do not ask again. When in doubt, ask once before making any changes.
+**In Codex or environments without a UI mode selector only:** If the user has not already stated intent (e.g. "just explain" or "make the change"), infer from the request — a fix/feature request means implement, a question means explain. Only ask if the intent is genuinely ambiguous after reading the message.
 
 <!-- end ask mode -->
 
@@ -332,7 +330,7 @@ Apply these so tool use and conclusions match evidence and avoid guesswork:
 - **Parallel tool use** — When steps do not depend on each other (e.g. reading three files, grepping two areas), run multiple tools in the same turn. For analyze/scan tasks (audit, clone, understand codebase): grep first to narrow to files and line numbers, then read only the needed files or line ranges in parallel (e.g. 3–5 reads per turn); full-file read only when editing. Use sequence only when one step’s result informs the next.
 - **When to delegate to a subagent** — Use `explore` for broad or parallel discovery, `shell` for command-heavy work, and `generalPurpose` for multi-step search or reasoning. Give the subagent a discrete task, what evidence to collect, and what it must return. Run verification after it completes.
 - **Mandatory post-edit verification** — After every code edit, run **Read lints** on the changed file(s) before considering the task done. If lints report any diagnostics, treat them as a **lint-fix subtask**: fix (or list unfixable items) before concluding. For logic or route changes, run the relevant tests when they exist.
-- **When to ask the user vs keep searching** — If one critical fact is missing (e.g. which page, which role, which branch) and search has not found it, ask one focused question before implementing. Do not guess critical scope or identity.
+- **When to ask the user vs keep searching** — Always try grep/semantic search first. Only ask the user if a critical fact (e.g. which page, which role, which branch) is **genuinely unknowable from the codebase** after searching. If the codebase gives enough signal to make a reasonable choice, make it and state the assumption — do not stop to ask.
 - **Tie fix to evidence** — When proposing a fix, reference the evidence that led to the diagnosis (file and place, e.g. “in `projectx-ai-chat.js` the handler is on a node that gets replaced”) and state how the fix follows (e.g. “→ use event delegation on a stable parent”).
 - **When to use a todo list** — For 3+ distinct steps or multiple files, create a todo list and update status (pending / in progress / completed) as each step is done. Use it to avoid dropping steps and to show progress.
 - **Empty or wrong search results** — If the first grep or semantic search returns nothing or the wrong area, try alternate symbols, names, or a different query (e.g. semantic if grep failed, or a different identifier) before concluding the code does not exist.
