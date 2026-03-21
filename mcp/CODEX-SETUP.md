@@ -71,7 +71,26 @@ The grep MCP server runs `rg` (ripgrep). Ensure it is on your PATH:
 
 If `rg` is missing, grep MCP will return `RIPGREP_NOT_AVAILABLE`.
 
-## 6. Optional: semantic search (Ollama required)
+## 6. GitNexus: code intelligence graph (requires Node/npx)
+
+GitNexus provides impact analysis, symbol context, safe renames, and execution-flow queries via an MCP server backed by an on-disk knowledge graph.
+
+**Prerequisites:** Node.js (v18+) and `npx` on PATH.
+
+**Build the graph** (one-time, then after large changes or new commits):
+
+```powershell
+cd D:\wamp64\www\upos612
+npx gitnexus analyze
+```
+
+This writes the graph to `.gitnexus/` (git-ignored). The GitNexus MCP server in `codex-config.toml.example` reads from it automatically.
+
+**Verify:** Check `.gitnexus/meta.json` exists and `stats.nodes > 0`. Compare `lastCommit` to `git rev-parse HEAD`; if they differ, re-run `npx gitnexus analyze`.
+
+**Optional embeddings:** Add `--embeddings` to preserve or build semantic embeddings (requires more time and disk).
+
+## 7. Optional: semantic search (Ollama required)
 
 If you use the semantic_code_search server and have Ollama installed:
 
@@ -86,7 +105,7 @@ Run `index-codebase` again after large codebase changes. Use `--force` to re-ind
 
 **When to re-index:** Re-run `index-codebase` after large refactors, new modules, or when semantic results seem stale. Use `--force` for a full re-index when the workspace or embed model has changed.
 
-## 7. POS smoke auth bootstrap (recommended)
+## 8. POS smoke auth bootstrap (recommended)
 
 Use this when smoke automation is blocked by `/login` redirect:
 
@@ -103,7 +122,7 @@ Use this when smoke automation is blocked by `/login` redirect:
 
 Default auth state path is `output/playwright/audit-web-mcp/reports/.auth/pos-admin.json` (kept local by `.gitignore` via `/output`).
 
-## 8. Plan files: do not rewrite
+## 9. Plan files: do not rewrite
 
 Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan file to execute or "plan from," it must not rewrite or replace it. In-repo rules: **AGENTS.md** (intent `execute-plan`) and **.cursor/plans/README.md** §7. If your Codex setup supports project or global instructions, add that `.cursor/plans/*.plan.md` are canonical and must not be rewritten (see .cursor/plans/README.md §7).
 
@@ -118,6 +137,7 @@ Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan
 | One-time (browser audits) | `cd mcp/audit-web-mcp && composer install && npm install && npx playwright install` |
 | Before Codex | `php mcp/read-file-cache-mcp/bin/warm-cache` then `php scripts/check-mcp-health.php` (from repo root) |
 | Grep: ripgrep | Install `rg` (e.g. `winget install BurntSushi.ripgrep.MSVC` on Windows) so grep MCP works |
+| GitNexus graph | `npx gitnexus analyze` (from repo root; requires Node/npx) |
 | Optional semantic | `php mcp/semantic-code-search-mcp/bin/index-codebase` (from repo root; needs Ollama) |
 | POS smoke auth | `.\scripts\audit-pos-smoke.ps1 -Mode bootstrap` then `-Mode single` / `-Mode matrix` |
 | Plan files | Do not rewrite `.cursor/plans/*.plan.md`; see AGENTS.md and .cursor/plans/README.md §7 |

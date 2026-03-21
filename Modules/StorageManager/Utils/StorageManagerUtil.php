@@ -434,17 +434,18 @@ class StorageManagerUtil
     }
 
     /**
-     * Return products currently assigned to a specific storage slot.
+     * Return products assigned to a storage slot with variation-level stock
+     * at the slot's location.
      *
      * @return array{
-     *   items: array<int, array{product_id:int, product_label:string, assignments:int}>,
+     *   items: array<int, array{product_id:int, product_label:string, type:string, variations:array}>,
      *   total:int,
      *   truncated:bool
      * }
      */
     public function getSlotAssignedProducts(int $business_id, int $slot_id, int $limit = 10): array
     {
-        $slot = StorageSlot::forBusiness($business_id)->select('id')->find($slot_id);
+        $slot = StorageSlot::forBusiness($business_id)->select('id', 'location_id')->find($slot_id);
         if (! $slot) {
             return [
                 'items' => [],
@@ -455,47 +456,92 @@ class StorageManagerUtil
 
         $limit = max(1, $limit);
 
-        $total = ProductRack::query()
+        $productIds = ProductRack::query()
             ->where('business_id', $business_id)
             ->where('slot_id', $slot_id)
-            ->distinct('product_id')
-            ->count('product_id');
+            ->pluck('product_id')
+            ->unique()
+            ->map(fn ($v) => (int) $v)
+            ->values()
+            ->all();
 
-        $rows = ProductRack::query()
-            ->join('products as p', 'product_racks.product_id', '=', 'p.id')
-            ->where('product_racks.business_id', $business_id)
-            ->where('product_racks.slot_id', $slot_id)
+        if (empty($productIds)) {
+            return ['items' => [], 'total' => 0, 'truncated' => false];
+        }
+
+        $total = count($productIds);
+        $limitedIds = array_slice($productIds, 0, $limit);
+
+        $rows = DB::table('products as p')
+            ->join('variations as v', 'v.product_id', '=', 'p.id')
+            ->leftJoin('product_variations as pv', 'v.product_variation_id', '=', 'pv.id')
+            ->leftJoin('variation_location_details as vld', function ($join) use ($slot) {
+                $join->on('vld.variation_id', '=', 'v.id')
+                    ->where('vld.location_id', '=', $slot->location_id);
+            })
+            ->leftJoin('units as u', 'p.unit_id', '=', 'u.id')
             ->where('p.business_id', $business_id)
+            ->whereIn('p.id', $limitedIds)
+            ->whereNull('v.deleted_at')
             ->select(
                 'p.id as product_id',
                 'p.name as product',
                 'p.type',
                 'p.sku',
-                DB::raw('COUNT(product_racks.id) as assignments')
+                'u.short_name as unit',
+                'pv.name as product_variation',
+                'v.name as variation',
+                'v.sub_sku',
+                DB::raw('COALESCE(vld.qty_available, 0) as qty_available')
             )
-            ->groupBy('p.id', 'p.name', 'p.type', 'p.sku')
             ->orderBy('p.name')
-            ->limit($limit)
+            ->orderBy('pv.name')
+            ->orderBy('v.name')
             ->get();
 
-        $items = $rows->map(function ($row) {
-            return [
-                'product_id'    => (int) $row->product_id,
+        $items = [];
+        foreach ($rows->groupBy('product_id') as $productId => $variationRows) {
+            $first = $variationRows->first();
+            $type = (string) ($first->type ?? 'single');
+
+            $variations = $variationRows->map(function ($row) use ($type) {
+                $label = null;
+                if ($type !== 'single') {
+                    $segments = array_values(array_filter(
+                        [$row->product_variation, $row->variation],
+                        fn ($v) => ! empty($v)
+                    ));
+                    $label = implode(' - ', $segments);
+                    if (! empty($row->sub_sku)) {
+                        $label .= " ({$row->sub_sku})";
+                    }
+                }
+
+                return [
+                    'label' => $label,
+                    'qty'   => $this->formatQuantity((float) $row->qty_available),
+                    'unit'  => trim((string) ($row->unit ?? '')),
+                ];
+            })->values()->all();
+
+            $items[] = [
+                'product_id'    => (int) $productId,
                 'product_label' => $this->buildProductLabel(
-                    (string) ($row->type ?? 'single'),
-                    (string) $row->product,
-                    $row->sku,
+                    $type,
+                    (string) $first->product,
+                    $first->sku,
                     null,
                     null,
                     null
                 ),
-                'assignments'   => (int) $row->assignments,
+                'type'       => $type,
+                'variations' => $variations,
             ];
-        })->values()->all();
+        }
 
         return [
-            'items' => $items,
-            'total' => (int) $total,
+            'items'     => $items,
+            'total'     => $total,
             'truncated' => $total > count($items),
         ];
     }

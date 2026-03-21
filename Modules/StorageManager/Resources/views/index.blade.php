@@ -380,6 +380,12 @@ $(function () {
         popover.show();
     }
 
+    function buildStockBadge(v) {
+        var text = escapeHtml(v.qty || '0');
+        if (v.unit) text += ' ' + escapeHtml(v.unit);
+        return '<span class="badge badge-light-info fs-9 text-nowrap">' + text + '</span>';
+    }
+
     function buildSlotProductsContent(payload, slotLabel, slotContext) {
         var items = (payload && payload.slot_products) ? payload.slot_products : [];
         var total = payload && payload.slot_products_total ? payload.slot_products_total : 0;
@@ -397,10 +403,25 @@ $(function () {
 
         html += '<div class="d-flex flex-column gap-2">';
         $.each(items, function (_, item) {
-            html += '<div class="d-flex justify-content-between align-items-start gap-2">';
-            html += '<span class="fw-semibold text-gray-800 fs-7">' + escapeHtml(item.product_label) + '</span>';
-            html += '<span class="badge badge-light-primary fs-8">x' + escapeHtml(item.assignments) + '</span>';
-            html += '</div>';
+            var variations = item.variations || [];
+
+            if (item.type === 'variable') {
+                html += '<div>';
+                html += '<div class="fw-semibold text-gray-800 fs-7 mb-1">' + escapeHtml(item.product_label) + '</div>';
+                $.each(variations, function (_, v) {
+                    html += '<div class="d-flex justify-content-between align-items-center gap-2 ps-3">';
+                    html += '<span class="text-gray-600 fs-8">' + escapeHtml(v.label || '') + '</span>';
+                    html += buildStockBadge(v);
+                    html += '</div>';
+                });
+                html += '</div>';
+            } else {
+                var v = variations[0] || {};
+                html += '<div class="d-flex justify-content-between align-items-start gap-2">';
+                html += '<span class="fw-semibold text-gray-800 fs-7">' + escapeHtml(item.product_label) + '</span>';
+                html += buildStockBadge(v);
+                html += '</div>';
+            }
         });
         html += '</div>';
 

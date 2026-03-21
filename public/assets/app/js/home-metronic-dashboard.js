@@ -189,6 +189,11 @@
                 $container.find('[data-sales-chart-start-date]').val(startDate);
                 $container.find('[data-sales-chart-end-date]').val(endDate);
                 self.setCustomRangeInputValue($input, startDate, endDate);
+                self.salesChartFilter.range = 'custom';
+                self.salesChartFilter.startDate = startDate;
+                self.salesChartFilter.endDate = endDate;
+                self.updateSalesChartFilterUi();
+                self.fetchAndHydrate();
             });
 
             $input.off('cancel.daterangepicker.homeMetronicDashboard').on('cancel.daterangepicker.homeMetronicDashboard', function () {

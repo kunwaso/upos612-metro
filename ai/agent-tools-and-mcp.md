@@ -388,6 +388,10 @@ command = "php"
 args = ["<repo-root>/mcp/audit-web-mcp/bin/server"]
 env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 
+[mcp_servers.gitnexus]
+command = "npx"
+args = ["-y", "gitnexus@latest", "mcp"]
+
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
