@@ -38,7 +38,19 @@ Or in one line (PowerShell):
 Set-Location D:\wamp64\www\upos612\mcp\read-file-cache-mcp; composer install; Set-Location D:\wamp64\www\upos612
 ```
 
-## 3. Before or during Codex: warm the read-file cache
+## 3. One-time (browser audits): install audit-web MCP deps
+
+From repo root:
+
+```powershell
+Set-Location D:\wamp64\www\upos612\mcp\audit-web-mcp
+composer install
+npm install
+npx playwright install
+Set-Location D:\wamp64\www\upos612
+```
+
+## 4. Before or during Codex: warm the read-file cache
 
 From repo root, run once per session (or after a big pull) so file reads are faster:
 
@@ -50,7 +62,7 @@ php scripts/check-mcp-health.php
 
 Optional: `--max-files=10000` or `--path=app` to limit scope.
 
-## 4. Grep MCP: ripgrep (rg) on PATH
+## 5. Grep MCP: ripgrep (rg) on PATH
 
 The grep MCP server runs `rg` (ripgrep). Ensure it is on your PATH:
 
@@ -59,7 +71,7 @@ The grep MCP server runs `rg` (ripgrep). Ensure it is on your PATH:
 
 If `rg` is missing, grep MCP will return `RIPGREP_NOT_AVAILABLE`.
 
-## 5. Optional: semantic search (Ollama required)
+## 6. Optional: semantic search (Ollama required)
 
 If you use the semantic_code_search server and have Ollama installed:
 
@@ -74,7 +86,24 @@ Run `index-codebase` again after large codebase changes. Use `--force` to re-ind
 
 **When to re-index:** Re-run `index-codebase` after large refactors, new modules, or when semantic results seem stale. Use `--force` for a full re-index when the workspace or embed model has changed.
 
-## 6. Plan files: do not rewrite
+## 7. POS smoke auth bootstrap (recommended)
+
+Use this when smoke automation is blocked by `/login` redirect:
+
+```powershell
+# 1) Login once in interactive browser and save auth state
+.\scripts\audit-pos-smoke.ps1 -Mode bootstrap -BaseUrl https://upos612
+
+# 2) Run one authenticated POS smoke
+.\scripts\audit-pos-smoke.ps1 -Mode single -BaseUrl https://upos612 -PosPath pos
+
+# 3) Run authenticated matrix by route prefix
+.\scripts\audit-pos-smoke.ps1 -Mode matrix -BaseUrl https://upos612 -PathPrefix pos
+```
+
+Default auth state path is `output/playwright/audit-web-mcp/reports/.auth/pos-admin.json` (kept local by `.gitignore` via `/output`).
+
+## 8. Plan files: do not rewrite
 
 Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan file to execute or "plan from," it must not rewrite or replace it. In-repo rules: **AGENTS.md** (intent `execute-plan`) and **.cursor/plans/README.md** §7. If your Codex setup supports project or global instructions, add that `.cursor/plans/*.plan.md` are canonical and must not be rewritten (see .cursor/plans/README.md §7).
 
@@ -86,9 +115,11 @@ Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan
 |------|-------------------|
 | Config | Copy `mcp/codex-config.toml.example` to `~/.codex/config.toml` (or merge), then restart Codex |
 | One-time | `cd mcp/read-file-cache-mcp && composer install` |
+| One-time (browser audits) | `cd mcp/audit-web-mcp && composer install && npm install && npx playwright install` |
 | Before Codex | `php mcp/read-file-cache-mcp/bin/warm-cache` then `php scripts/check-mcp-health.php` (from repo root) |
 | Grep: ripgrep | Install `rg` (e.g. `winget install BurntSushi.ripgrep.MSVC` on Windows) so grep MCP works |
 | Optional semantic | `php mcp/semantic-code-search-mcp/bin/index-codebase` (from repo root; needs Ollama) |
+| POS smoke auth | `.\scripts\audit-pos-smoke.ps1 -Mode bootstrap` then `-Mode single` / `-Mode matrix` |
 | Plan files | Do not rewrite `.cursor/plans/*.plan.md`; see AGENTS.md and .cursor/plans/README.md §7 |
 
 **Session start checklist**

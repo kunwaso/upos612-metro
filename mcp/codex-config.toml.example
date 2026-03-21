@@ -19,6 +19,11 @@ command = "php"
 args = ["<repo-root>/mcp/read-file-cache-mcp/bin/server"]
 env = { MCP_READ_FILE_WORKSPACE_ROOT = "<repo-root>", MCP_READ_FILE_CACHE_ROOT = "<repo-root>/.cache/read-file-cache-mcp" }
 
+[mcp_servers.audit_web]
+command = "php"
+args = ["<repo-root>/mcp/audit-web-mcp/bin/server"]
+env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
+
 # Optional: requires Ollama + nomic-embed-text (ollama pull nomic-embed-text)
 [mcp_servers.semantic_code_search]
 command = "php"

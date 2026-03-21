@@ -254,6 +254,62 @@ if ($readFileMissing !== []) {
     }
 }
 
+$auditWebServerRoot = $repoRoot . '/mcp/audit-web-mcp';
+$auditWebMissing = [];
+if (!is_file($auditWebServerRoot . '/vendor/autoload.php')) {
+    $auditWebMissing[] = 'Missing mcp/audit-web-mcp/vendor/autoload.php.';
+}
+if (!is_file($auditWebServerRoot . '/node_modules/@playwright/test/package.json')) {
+    $auditWebMissing[] = 'Missing mcp/audit-web-mcp/node_modules/@playwright/test/package.json.';
+}
+
+$nodeVersion = runCommand(['node', '--version'], $repoRoot);
+if ($nodeVersion['exit_code'] !== 0) {
+    $auditWebMissing[] = $nodeVersion['stderr'] !== '' ? $nodeVersion['stderr'] : 'node is not available on PATH.';
+}
+
+if ($auditWebMissing !== []) {
+    $results[] = makeResult(
+        'WARN',
+        'audit_web',
+        'Optional audit-web MCP prerequisites are incomplete.',
+        array_merge(
+            $auditWebMissing,
+            ['Run: cd mcp/audit-web-mcp && composer install && npm install && npx playwright install']
+        ),
+        'MISSING_DEPENDENCIES'
+    );
+} else {
+    $playwrightProbe = runCommand(
+        ['node', '-e', 'require("@playwright/test"); process.stdout.write("playwright-ready");'],
+        $auditWebServerRoot
+    );
+
+    if ($playwrightProbe['exit_code'] !== 0) {
+        $results[] = makeResult(
+            'WARN',
+            'audit_web',
+            'Optional audit-web MCP probe could not load Playwright runtime.',
+            [
+                $playwrightProbe['stderr'] !== '' ? $playwrightProbe['stderr'] : 'Unknown Playwright probe error.',
+                'Run from mcp/audit-web-mcp: npm install && npx playwright install',
+            ],
+            'PLAYWRIGHT_UNAVAILABLE'
+        );
+    } else {
+        $results[] = makeResult(
+            'PASS',
+            'audit_web',
+            'Optional audit-web MCP prerequisites are ready.',
+            [
+                'Node: ' . ($nodeVersion['stdout'] !== '' ? explode("\n", $nodeVersion['stdout'])[0] : 'available'),
+                'Probe: Playwright runtime loaded successfully.',
+            ],
+            'READY'
+        );
+    }
+}
+
 $semanticServerRoot = $repoRoot . '/mcp/semantic-code-search-mcp';
 if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
     $results[] = makeResult(

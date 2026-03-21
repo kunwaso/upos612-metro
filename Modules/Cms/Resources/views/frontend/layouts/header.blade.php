@@ -51,7 +51,7 @@
                         Dashboard
                     </a>
                 @else
-                    <a href="{{ url('c/login') }}" class="tf-btn d-lg-flex d-none">
+                    <a href="{{ url('/login') }}" class="tf-btn d-lg-flex d-none">
                         Login
                     </a>
                 @endif
