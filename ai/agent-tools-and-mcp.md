@@ -17,7 +17,7 @@ Tool names vary by platform. Treat the names below as tool families with common 
 
 | Server | Status | Use for |
 |---|---|---|
-| `laravel_mysql` | Recommended | Repo-aware routes, schema, migrations, tests, project map, and guarded repo introspection |
+| `laravel_mysql` | On-demand | Repo-aware routes, schema, migrations, tests, project map, and guarded repo introspection. Use only for repo-specific tasks (implement, analyze, audit, log-scan, route/schema/migration work). Skip for conceptual questions, tool comparisons, or general advice. |
 | `audit_web` | Recommended for browser audits | Interactive or headless Playwright URL audits with persisted JSON/Markdown findings, screenshots, traces, and triage metadata |
 | `grep` | Recommended | Exact string, selector, route, ID, translation key, and regex search |
 | `read_file_cache` | Recommended | Fast cached line-based reads for workspace text files |
@@ -28,20 +28,26 @@ No single MCP server is strictly required for every task. If one is unavailable 
 
 ### 0.3 Startup capability check
 
-At the start of a Codex or Cursor session, prefer this capability order:
+At the start of a Codex or Cursor session, **first classify the task** using the intent router (§0.1b in AGENTS.md), then follow the appropriate capability tier:
 
-1. Check `laravel_mysql` for repo-aware resources/tools such as `project_map`, routes, schema, and tests.
-2. If the task is a browser audit, check `audit_web` and then `playwright`; keep `chrome-devtools` available for escalation.
-3. Check `grep` for exact or regex search.
-4. Check `read_file_cache` for workspace file reads.
-5. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
-6. If any of the above are unavailable, fall back to the host platform's built-in grep, codebase search, file read, and diagnostics tools.
+**Always check (every task):**
+
+1. Check `grep` for exact or regex search.
+2. Check `read_file_cache` for workspace file reads.
+3. If unavailable, fall back to the host platform's built-in grep, codebase search, and file read tools.
+
+**On-demand (repo-specific tasks only — implement, analyze, investigate, execute-plan, tenant-audit, log-scan, lint-fix):**
+
+4. Check `laravel_mysql` for repo-aware resources/tools such as `project_map`, routes, schema, and tests. **Skip this step entirely** for conceptual, comparison, explain, dependency-eval (generic), or external tool evaluation questions.
+5. If the task is a browser audit, check `audit_web` and then `playwright`; keep `chrome-devtools` available for escalation.
+6. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
 
 This keeps Codex and Cursor behavior aligned even when their active MCP surfaces differ.
 
 Default startup policy in this repo:
 
-- **Required:** `laravel_mysql`, `grep`, `read_file_cache`
+- **Always available (every task):** `grep`, `read_file_cache`
+- **On-demand (repo-specific tasks only):** `laravel_mysql` — invoke `project_map`, schema, routes, or migrations only when the task requires live repo structure (implement, analyze, audit, log-scan, route/schema/migration work, symbol-impact analysis). Do **not** run `project_map` or `warm_cache` for conceptual questions, tool comparisons, external tool evaluations, or general advice.
 - **Optional:** `semantic_code_search`
 
 Repo-local startup check:
@@ -64,7 +70,12 @@ Treat a tool as degraded if it repeatedly times out, returns empty/partial paylo
 
 ### 0.3a Deep/external task startup macro
 
-For **deep research**, **GitHub/trending intake**, or **external adaptation** tasks, use this startup order once the required MCPs are available:
+For **deep research**, **GitHub/trending intake**, or **external adaptation** tasks, use this startup order once the required MCPs are available.
+
+**First, decide whether the task is repo-specific or generic:**
+
+- **Generic** (e.g. "evaluate a tool", "compare two libraries", "explain a concept", "should I use X?"): skip steps 1–3; answer from reasoning + web sources + ≤2 targeted reads if needed. State in the reply if you skipped repo grounding and offer to add it on request.
+- **Repo-specific** (e.g. "can we adopt X in UPOS?", "map landing files for this pattern", "does this conflict with our dependencies?"): proceed with all steps below.
 
 1. Call `warm_cache` if `read_file_cache` is available and the session is cold.
 2. Read `resource://project/map` (or use `project_map`) to confirm the live checkout shape before naming landing files or modules.
@@ -145,6 +156,7 @@ This keeps external evaluation grounded in local repo truth instead of drifting 
 - For **large files** (e.g. >200 lines), use grep to find relevant sections and line numbers first, then read only those ranges with `offset` + `limit` instead of the whole file.
 - If `read_file_cache` is unavailable or degraded, use the next safest repo-aware read tool in the environment.
 - Do **not** use shell reads such as `Get-Content`, `cat`, or `rg` output as a substitute for file reading when a healthy read-file tool is available.
+- **Stale-write risk:** The disk cache reflects the filesystem at warm time. If you (or the agent) just edited a file in the current session, re-read it via `read_file` with a forced disk read or use the host platform's native read tool to avoid seeing the pre-edit cached content. Do not re-read your own writes through a stale cache entry.
 
 ### 2.3 Exact search
 
@@ -306,9 +318,10 @@ Use when:
 
 Remember:
 
-- semantic search needs an index
-- grep does **not**
-- if `search_code` returns `INDEX_NOT_READY` or `INDEX_STALE`, run `index_codebase` and retry
+- semantic search needs an index; grep does **not**
+- **Pre-flight check (required):** Before calling `search_code`, always call `index_status` first. If the response is `INDEX_NOT_READY`, run `index_codebase` before searching. If `INDEX_STALE`, run `index_codebase --force` before searching. Do **not** call `search_code` on a stale index — results will reflect an outdated codebase and can silently mislead.
+- The index is automatically kept fresh by the post-commit git hook (`scripts/warm-cache.ps1` or `.git/hooks/post-commit`). If the hook is not installed, re-run `php mcp/semantic-code-search-mcp/bin/index-codebase` manually after significant code changes.
+- For embedding model upgrade options (better quality, still local) see `mcp/semantic-code-search-mcp/README.md`.
 
 ### 3.5 Audit Web MCP Server
 

@@ -47,9 +47,9 @@ Use the first matching lane before doing broader workflow:
 | Intent | Use when | Default tool order | Notes |
 |---|---|---|---|
 | `tiny` | Single-file or tightly scoped request | restate goal → inspect target → edit → verify | Prefer this lane for low-risk, bounded changes. |
-| `explain` | User wants understanding, not changes | grep/semantic search → read → answer | No code edits. |
+| `explain` | User wants understanding, not changes | grep/semantic search → read → answer | No code edits. No `project_map`, no `laravel_mysql`, no `warm_cache`; use grep and read_file_cache only. |
 | `analyze` | Audit module, clone, or understand codebase | project_map/filesystem → grep first → targeted/parallel reads → full read only when editing | See ai/agent-tools-and-mcp.md §2.8. |
-| `dependency-eval` | Evaluate a GitHub repo, package, or dependency before adoption | project_map/filesystem → `resource://composer`/manifests → fetch upstream docs → compare to repo conventions → recommend adopt/adapt/reject | Use for external code that could change repo dependencies or architecture. |
+| `dependency-eval` | Evaluate a GitHub repo, package, or dependency before adoption | project_map/filesystem → `resource://composer`/manifests → fetch upstream docs → compare to repo conventions → recommend adopt/adapt/reject | Use for external code that could change repo dependencies or architecture. Run `project_map`/`composer` only when the question explicitly asks about adoption for **this** repo; skip for generic tool comparisons or "does this tool help?" questions. |
 | `external-adapt` | Adapt a pattern or example from an external repo into this codebase | project_map/filesystem → grep for closest local example → fetch upstream docs/examples → map to route/Form Request/Util/controller/view/module → plan or implement | Prefer adapting the minimum useful pattern; do not copy upstream structure wholesale. |
 | `investigate` | Something is broken or unclear | grep → read → compare render/update flow → answer or fix | Use 0.4a/0.4b for “stops working” bugs. |
 | `review` | User asks for a review or audit | grep/read changed area → identify findings → verify evidence | Findings first, summary second. |
@@ -63,7 +63,7 @@ Use the first matching lane before doing broader workflow:
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area → apply mitigations/fixes | See 0.4i. Use implement mode. |
 | `full-autofix` | User says "run all autofixes", "check project", "health check", or "autofix everything" | log-scan → lint-fix → optional tenant-audit / known-issues-fix | See 0.4j. Use implement mode. |
 | `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome → interactive `audit_web` → read persisted report → optional Chrome DevTools escalation → fix → Playwright + `audit_web` verify | See `ai/browser-audit-workflow.md`. |
-| `product-copilot-eval` | Evaluate adding an in-app assistant, guided UI helper, or ERP copilot | read ai/product-copilot-patterns.md → read security/ui/Aichat docs → define approval boundaries, safe first use case, and rollout scope | Treat page-agent-like ideas as product patterns, not default coding-agent dependencies. |
+| `product-copilot-eval` | Evaluate adding an in-app assistant, guided UI helper, or ERP copilot | read ai/product-copilot-patterns.md → read security/ui/Aichat docs → define approval boundaries, safe first use case, and rollout scope | Treat page-agent-like ideas as product patterns, not default coding-agent dependencies. No `project_map` or `warm_cache` unless explicitly scoping the integration for this repo. |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade → checklist (focus, contrast, structure, assets) → report (and fix within Metronic if implement mode) | Scope: Metronic only; no theme change. |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components → improve hierarchy, spacing, copy within Metronic only; no new classes | Scope: Metronic only. |
 | `design-critique` | User asks for UX review of a screen or flow | read view → assess clarity, hierarchy, empty/error states → short critique + Metronic-safe suggestions | Findings first; no theme change. |
@@ -81,6 +81,62 @@ For non-trivial work, prefer this skill-first sequence before you start writing 
 5. **Review before finish** — check caller impact, confirm evidence, and close with the five checks in 0.3.
 
 When a matching helper exists under `.cursor/skills/` or `.cursor/prompts/`, use it instead of improvising a brand-new workflow.
+
+### 0.1d Tool depth policy
+
+Three rules that together keep answers fast when the task is simple and thorough when it is not.
+
+---
+
+#### Rule 1 — Decision order (classify before you open any tool)
+
+Before opening a single file or running any search, ask in this fixed order:
+
+1. **What kind of question is this?**
+   - *Conceptual / general advice / product comparison* → answer from reasoning first; offer to add repo grounding on request.
+   - *"In this repo" or "in UPOS"* → grep or a single targeted read on a known path.
+   - *Schema / routes / DB shape* → `laravel_mysql` / DB tools only now.
+
+2. **Can I answer without touching the codebase?** If yes, answer. Append one line: *"I skipped repo grounding; say if you want me to verify this in the codebase."*
+
+3. **If I need evidence, what is the smallest tool?**
+   - Known path → `read_file` with `offset`/`limit`.
+   - Known symbol/string → `grep`.
+   - Unknown location / behavioral query → `search_code` (after `index_status`).
+   - Live repo structure → `laravel_mysql` / `project_map` last, only when the above are not enough.
+
+4. **Escalate with a reason.** If you move to a heavier tool, state why (one sentence) before using it.
+
+---
+
+#### Rule 2 — Tool budget (hard per-question ceiling)
+
+| Question type | Max tool rounds | Heavy tools allowed? |
+|---------------|----------------|----------------------|
+| Conceptual / comparison / general advice | ≤ 2 | No (`project_map`, `warm_cache`, DB map: skip) |
+| Explain (repo-aware) | ≤ 3 | grep + read_file only |
+| Investigate / debug | ≤ 5 | grep → read → laravel_mysql if needed |
+| Implement / execute-plan | No hard limit | All tools, classify first |
+| Full autofix / health check | No hard limit | All tools |
+
+"Tool rounds" counts each distinct MCP or platform tool call (one grep = 1, one read = 1, one project_map = 1).
+
+If you are about to exceed the budget for a conceptual question, **stop, answer from what you have, and offer a deeper pass** instead of running more tools automatically.
+
+---
+
+#### Rule 3 — Thoroughness ≠ breadth
+
+These are different things. Confusing them causes slow answers to simple questions.
+
+- **Thoroughness** = clear assumptions, stated caveats, explicit evidence for each claim, and a note on what you did not verify. **Always required.**
+- **Breadth** = loading broad context: project map, full-repo index, many-file reads, warm cache. **Earned by the task type** (see Rule 2 table above).
+
+A conceptual answer is *thorough* when it says *"I'm answering from general knowledge; here's my reasoning and caveat."* It becomes *unnecessarily broad* when it first runs `project_map` + `warm_cache` + 5 web searches for a question that needs none of them.
+
+**Practical test before using a heavy tool:** Ask — *"Does the answer change if I skip this tool?"* If no, skip it. If yes, use it and state why.
+
+---
 
 ### 0.2 How to think and solve coding (six steps)
 

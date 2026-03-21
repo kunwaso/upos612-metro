@@ -38,6 +38,38 @@ Default semantic index location:
 <repo-root>/.cache/semantic-code-search-mcp/semantic-code-search.sqlite
 ```
 
+## Embedding model upgrade (recommended)
+
+The default `nomic-embed-text` model is a good starting point but produces weaker results on nuanced "where is X done?" queries compared to larger models. For noticeably better semantic search quality while keeping all data local, upgrade to `mxbai-embed-large`:
+
+```bash
+ollama pull mxbai-embed-large
+```
+
+Then update your MCP config and re-index:
+
+```toml
+# ~/.codex/config.toml or .cursor/mcp.json
+MCP_SEMANTIC_EMBED_MODEL = "mxbai-embed-large"
+```
+
+```bash
+php mcp/semantic-code-search-mcp/bin/index-codebase --force
+```
+
+Trade-off: `mxbai-embed-large` uses ~560 MB VRAM/RAM vs ~270 MB for `nomic-embed-text` and indexing takes longer. Both are fully local; no data leaves your machine.
+
+Model comparison for this use case:
+
+| Model | Quality | RAM | Index speed |
+|-------|---------|-----|-------------|
+| `nomic-embed-text` | Good | ~270 MB | Faster |
+| `mxbai-embed-large` | Better | ~560 MB | Slower |
+
+Switch back at any time by reverting the env var and re-running `--force`.
+
+---
+
 ## Building the index (CLI or MCP)
 
 **Index required.** Unlike grep MCP, this server needs a semantic index for meaning-based search.
