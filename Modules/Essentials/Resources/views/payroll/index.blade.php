@@ -145,15 +145,9 @@
                             <div class="row">
                                 @can('essentials.add_allowance_and_deduction')
                                     <div class="col-md-12">
-                                        <button type="button" class="inline-block py-[10px] px-[30px] bg-primary-500 text-white transition-all hover:bg-primary-400 rounded-md border border-primary-500 hover:border-primary-400 pull-right btn-modal"
+                                        <button type="button" class="btn btn-sm btn-primary btn-modal pull-right float-end d-inline-flex align-items-center"
                                             data-href="{{action([\Modules\Essentials\Http\Controllers\EssentialsAllowanceAndDeductionController::class, 'create'])}}" data-container="#add_allowance_deduction_modal">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                class="icon icon-tabler icons-tabler-outline icon-tabler-plus">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M12 5l0 14" />
-                                                <path d="M5 12l14 0" />
-                                            </svg> @lang( 'messages.add' )
+                                            <i class="ki-outline ki-plus fs-3 me-2"></i>@lang('messages.add')
                                         </button>
                                     </div><br><br><br>
                                 @endcan

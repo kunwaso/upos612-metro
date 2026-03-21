@@ -8,470 +8,552 @@
  */
 
 /* -------------------------------------------------------------------------
+   Bootstrap 3 utility aliases removed in Bootstrap 5
+   ------------------------------------------------------------------------- */
+.hide,
+.hidden {
+    display: none !important;
+}
+
+.center-block {
+    display: block;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+/* Bootstrap 3 collapse plugin uses `.in`; BS5 uses `.show`. */
+.collapse.in {
+    display: block;
+}
+
+/* -------------------------------------------------------------------------
    Bootstrap 3 input-group-addon → Metronic / BS5 input-group-text look
    ------------------------------------------------------------------------- */
 .input-group-addon {
-  display: flex;
-  align-items: center;
-  padding: 0.65rem 1rem;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--bs-body-color, #071437);
-  text-align: center;
-  white-space: nowrap;
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
+    display: flex;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color, #071437);
+    text-align: center;
+    white-space: nowrap;
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
 .input-group .input-group-addon {
-  border-radius: 0;
+    border-radius: 0;
 }
 
 .input-group .input-group-addon:first-child {
-  border-right: 0;
-  border-top-left-radius: var(--bs-border-radius-sm, 0.475rem);
-  border-bottom-left-radius: var(--bs-border-radius-sm, 0.475rem);
+    border-right: 0;
+    border-top-left-radius: var(--bs-border-radius-sm, 0.475rem);
+    border-bottom-left-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
 .input-group .input-group-addon:last-child {
-  border-left: 0;
-  border-top-right-radius: var(--bs-border-radius-sm, 0.475rem);
-  border-bottom-right-radius: var(--bs-border-radius-sm, 0.475rem);
+    border-left: 0;
+    border-top-right-radius: var(--bs-border-radius-sm, 0.475rem);
+    border-bottom-right-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
 .input-group .form-control + .input-group-addon,
 .input-group .form-select + .input-group-addon,
 .input-group .input-group-addon + .form-control,
 .input-group .input-group-addon + .form-select {
-  border-left: 1px solid var(--bs-border-color, #f1f1f4);
+    border-left: 1px solid var(--bs-border-color, #f1f1f4);
 }
 
 .input-group .input-group-addon + .form-control,
 .input-group .input-group-addon + .form-select {
-  border-right: 0;
+    border-right: 0;
 }
 
 .input-group .input-group-addon .fa,
 .input-group .input-group-addon .fas,
 .input-group .input-group-addon .far {
-  display: inline-block;
-  font-size: 1rem;
-  line-height: 1;
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
 }
 
 /* -------------------------------------------------------------------------
    Select2 — Metronic styled
    ------------------------------------------------------------------------- */
 .select2-container {
-  box-sizing: border-box;
-  display: inline-block;
-  margin: 0;
-  position: relative;
-  vertical-align: middle;
+    box-sizing: border-box;
+    display: inline-block;
+    margin: 0;
+    position: relative;
+    vertical-align: middle;
 }
 
 .select2-container .select2-selection--single {
-  box-sizing: border-box;
-  cursor: pointer;
-  display: block;
-  height: calc(1.5em + 1.5rem + 2px);
-  padding: 0.65rem 1rem;
-  user-select: none;
-  -webkit-user-select: none;
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  background-color: var(--bs-body-bg, #fff);
-  color: var(--bs-body-color, #071437);
+    box-sizing: border-box;
+    cursor: pointer;
+    display: block;
+    height: calc(1.5em + 1.5rem + 2px);
+    padding: 0.65rem 1rem;
+    user-select: none;
+    -webkit-user-select: none;
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    background-color: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #071437);
 }
 
 .select2-container--focus .select2-selection--single,
 .select2-container--open .select2-selection--single {
-  border-color: var(--bs-primary, #1b84ff);
-  outline: 0;
-  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 27, 132, 255), 0.25);
+    border-color: var(--bs-primary, #1b84ff);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 27, 132, 255), 0.25);
 }
 
 .select2-container .select2-selection--single .select2-selection__rendered {
-  display: block;
-  padding-left: 0;
-  padding-right: 2rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    display: block;
+    padding-left: 0;
+    padding-right: 2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .select2-container .select2-selection--single .select2-selection__arrow {
-  height: 100%;
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 2rem;
-  color: var(--bs-gray-600, #78829d);
+    height: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2rem;
+    color: var(--bs-gray-600, #78829d);
 }
 
 .select2-container--default .select2-selection__arrow b {
-  border-color: currentColor transparent transparent transparent;
-  border-style: solid;
-  border-width: 5px 4px 0 4px;
-  height: 0;
-  left: 50%;
-  margin-left: -4px;
-  margin-top: -2px;
-  position: absolute;
-  top: 50%;
-  width: 0;
+    border-color: currentColor transparent transparent transparent;
+    border-style: solid;
+    border-width: 5px 4px 0 4px;
+    height: 0;
+    left: 50%;
+    margin-left: -4px;
+    margin-top: -2px;
+    position: absolute;
+    top: 50%;
+    width: 0;
 }
 
 .select2-dropdown {
-  background-color: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
-  box-sizing: border-box;
-  display: block;
-  position: absolute;
-  z-index: 1051;
+    background-color: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    z-index: 1051;
 }
 
 .select2-results__option {
-  padding: 0.5rem 1rem;
-  color: var(--bs-body-color, #071437);
+    padding: 0.5rem 1rem;
+    color: var(--bs-body-color, #071437);
 }
 
 .select2-results__option--highlighted {
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
-  color: var(--bs-primary-text-emphasis, #0b3566);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    color: var(--bs-primary-text-emphasis, #0b3566);
 }
 
 .select2-search--dropdown .select2-search__field {
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  padding: 0.4rem 0.75rem;
-  width: 100%;
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    padding: 0.4rem 0.75rem;
+    width: 100%;
+}
+.select2-search--dropdown .select2-search__field {
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    padding: 0.4rem 0.75rem;
+    width: 100%;
+}
+
+/* -------------------------------------------------------------------------
+   Legacy input-group-addon + Select2 alignment
+   Keeps icon addon and Select2 control on a single row.
+   ------------------------------------------------------------------------- */
+.input-group .input-group-addon + select.select2-hidden-accessible + .select2-container,
+.input-group .input-group-addon + .form-select.select2-hidden-accessible + .select2-container,
+.input-group .input-group-addon + .form-control.select2-hidden-accessible + .select2-container {
+    flex: 1 1 0%;
+    min-width: 0;
+    width: auto !important;
+}
+
+.input-group
+    .input-group-addon
+    + select.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--single,
+.input-group
+    .input-group-addon
+    + .form-select.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--single,
+.input-group
+    .input-group-addon
+    + .form-control.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--single {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+}
+
+.input-group
+    .input-group-addon
+    + select.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--multiple,
+.input-group
+    .input-group-addon
+    + .form-select.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--multiple,
+.input-group
+    .input-group-addon
+    + .form-control.select2-hidden-accessible
+    + .select2-container
+    .select2-selection--multiple {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+    min-height: calc(1.5em + 1.5rem + 2px);
 }
 
 /* -------------------------------------------------------------------------
    Dropzone — Metronic styled
    ------------------------------------------------------------------------- */
 .dropzone {
-  border: 2px dashed var(--bs-border-color, #dbdfe9);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  background: var(--bs-tertiary-bg, #f9f9f9);
-  padding: 1.5rem;
-  min-height: 120px;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+    border: 2px dashed var(--bs-border-color, #dbdfe9);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    background: var(--bs-tertiary-bg, #f9f9f9);
+    padding: 1.5rem;
+    min-height: 120px;
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .dropzone.dz-drag-hover,
 .dropzone:hover {
-  border-color: var(--bs-primary, #1b84ff);
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
 }
 
 .dropzone .dz-message {
-  margin: 2em 0;
-  color: var(--bs-secondary-color, rgba(7, 20, 55, 0.75));
-  font-size: var(--bs-body-font-size, 1rem);
+    margin: 2em 0;
+    color: var(--bs-secondary-color, rgba(7, 20, 55, 0.75));
+    font-size: var(--bs-body-font-size, 1rem);
 }
 
 .dropzone .dz-preview .dz-remove {
-  color: var(--bs-danger, #f8285a);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+    color: var(--bs-danger, #f8285a);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
 }
 
 /* -------------------------------------------------------------------------
    Bootstrap Datepicker — Metronic styled
    ------------------------------------------------------------------------- */
 .datepicker {
-  padding: 0.5rem;
-  border-radius: var(--bs-border-radius, 0.95rem);
-  direction: ltr;
-  background: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+    padding: 0.5rem;
+    border-radius: var(--bs-border-radius, 0.95rem);
+    direction: ltr;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
 }
 
 .datepicker-dropdown {
-  top: 0;
-  left: 0;
+    top: 0;
+    left: 0;
 }
 
 .datepicker table tr td,
 .datepicker table tr th {
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  padding: 0.35rem;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    padding: 0.35rem;
 }
 
 .datepicker table tr td.active,
 .datepicker table tr td.active:hover {
-  background-color: var(--bs-primary, #1b84ff);
-  color: #fff;
+    background-color: var(--bs-primary, #1b84ff);
+    color: #fff;
 }
 
 .datepicker table tr td.today {
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
-  color: var(--bs-primary-text-emphasis, #0b3566);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    color: var(--bs-primary-text-emphasis, #0b3566);
 }
 
 .datepicker table tr td:hover:not(.active):not(.disabled) {
-  background-color: var(--bs-secondary-bg, #f1f1f4);
+    background-color: var(--bs-secondary-bg, #f1f1f4);
 }
 
 .datepicker .datepicker-switch,
 .datepicker .prev,
 .datepicker .next {
-  color: var(--bs-body-color, #071437);
-  font-weight: 600;
+    color: var(--bs-body-color, #071437);
+    font-weight: 600;
 }
 
 .datepicker .datepicker-switch:hover,
 .datepicker .prev:hover,
 .datepicker .next:hover {
-  color: var(--bs-primary, #1b84ff);
+    color: var(--bs-primary, #1b84ff);
 }
 
 /* -------------------------------------------------------------------------
    Bootstrap Datetimepicker — Metronic styled
    ------------------------------------------------------------------------- */
 .bootstrap-datetimepicker-widget {
-  list-style: none;
-  background: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
-  padding: 0.75rem;
+    list-style: none;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+    padding: 0.75rem;
 }
 
 .bootstrap-datetimepicker-widget.dropdown-menu {
-  display: block;
-  margin: 0.25rem 0;
-  padding: 0.75rem;
-  min-width: 19em;
+    display: block;
+    margin: 0.25rem 0;
+    padding: 0.75rem;
+    min-width: 19em;
 }
 
 .bootstrap-datetimepicker-widget .btn {
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  font-weight: 500;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    font-weight: 500;
 }
 
 .bootstrap-datetimepicker-widget .btn-primary {
-  background-color: var(--bs-primary, #1b84ff);
-  border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary, #1b84ff);
+    border-color: var(--bs-primary, #1b84ff);
 }
 
 .bootstrap-datetimepicker-widget table td.active {
-  background-color: var(--bs-primary, #1b84ff);
-  color: #fff;
+    background-color: var(--bs-primary, #1b84ff);
+    color: #fff;
 }
 
 .bootstrap-datetimepicker-widget table td.today:before {
-  border-bottom-color: var(--bs-primary, #1b84ff);
+    border-bottom-color: var(--bs-primary, #1b84ff);
 }
 
 /* -------------------------------------------------------------------------
    Daterangepicker — Metronic styled
    ------------------------------------------------------------------------- */
 .daterangepicker {
-  background: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
-  padding: 0.5rem;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+    padding: 0.5rem;
 }
 
 .daterangepicker td.active,
 .daterangepicker td.active:hover {
-  background-color: var(--bs-primary, #1b84ff);
-  color: #fff;
+    background-color: var(--bs-primary, #1b84ff);
+    color: #fff;
 }
 
 .daterangepicker td.in-range {
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
-  color: var(--bs-body-color, #071437);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    color: var(--bs-body-color, #071437);
 }
 
 .daterangepicker .calendar-table th {
-  color: var(--bs-body-color, #071437);
-  font-weight: 600;
+    color: var(--bs-body-color, #071437);
+    font-weight: 600;
 }
 
 .daterangepicker .ranges li.active {
-  background-color: var(--bs-primary, #1b84ff);
-  color: #fff;
+    background-color: var(--bs-primary, #1b84ff);
+    color: #fff;
 }
 
 .daterangepicker .ranges li:hover {
-  background-color: var(--bs-secondary-bg, #f1f1f4);
+    background-color: var(--bs-secondary-bg, #f1f1f4);
 }
 
 .daterangepicker .btn-primary {
-  background-color: var(--bs-primary, #1b84ff);
-  border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary, #1b84ff);
+    border-color: var(--bs-primary, #1b84ff);
 }
 
 /* -------------------------------------------------------------------------
    File input (btn-file, Krajee-style) — Metronic styled
    ------------------------------------------------------------------------- */
 .btn-file {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
-.btn-file input[type="file"] {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 100%;
-  min-height: 100%;
-  text-align: right;
-  opacity: 0;
-  background: none;
-  cursor: pointer;
-  display: block;
+.btn-file input[type='file'] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    text-align: right;
+    opacity: 0;
+    background: none;
+    cursor: pointer;
+    display: block;
 }
 
 .file-caption-name {
-  display: inline-block;
-  overflow: hidden;
-  max-height: 1.5em;
-  word-break: break-all;
-  color: var(--bs-body-color, #071437);
+    display: inline-block;
+    overflow: hidden;
+    max-height: 1.5em;
+    word-break: break-all;
+    color: var(--bs-body-color, #071437);
 }
 
 .file-error-message {
-  color: var(--bs-danger, #f8285a);
-  background-color: var(--bs-danger-bg-subtle, #fed4de);
-  border: 1px solid var(--bs-danger-border-subtle, #fca9bd);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  padding: 0.75rem 1rem;
-  margin: 0.5rem 0;
-  font-size: 0.875rem;
+    color: var(--bs-danger, #f8285a);
+    background-color: var(--bs-danger-bg-subtle, #fed4de);
+    border: 1px solid var(--bs-danger-border-subtle, #fca9bd);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
 }
 
 .file-drop-zone {
-  vertical-align: middle;
-  border: 2px dashed var(--bs-border-color, #dbdfe9);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  padding: 1rem;
-  background: var(--bs-tertiary-bg, #f9f9f9);
+    vertical-align: middle;
+    border: 2px dashed var(--bs-border-color, #dbdfe9);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    padding: 1rem;
+    background: var(--bs-tertiary-bg, #f9f9f9);
 }
 
 .file-loading {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 0;
-  text-align: right;
-  color: transparent;
-  border: none;
-  background-color: transparent;
-  opacity: 0.8;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0;
+    text-align: right;
+    color: transparent;
+    border: none;
+    background-color: transparent;
+    opacity: 0.8;
 }
 
 .file-loading::after {
-  content: "";
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid var(--bs-primary, #1b84ff);
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: vendor-compat-spin 0.6s linear infinite;
+    content: '';
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--bs-primary, #1b84ff);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: vendor-compat-spin 0.6s linear infinite;
 }
 
 @keyframes vendor-compat-spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* -------------------------------------------------------------------------
    Ladda button — Metronic styled (used in modals: sales_order, purchase_order, product)
    ------------------------------------------------------------------------- */
 .ladda-button {
-  position: relative;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
+    position: relative;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
 .ladda-button .ladda-label {
-  position: relative;
-  z-index: 3;
+    position: relative;
+    z-index: 3;
 }
 
 .ladda-button .ladda-spinner {
-  display: inline-block;
-  margin-top: 0;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2rem;
-  height: 2rem;
-  margin-left: -1rem;
-  margin-top: -1rem;
-  z-index: 2;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: vendor-compat-spin 0.6s linear infinite;
+    display: inline-block;
+    margin-top: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2rem;
+    height: 2rem;
+    margin-left: -1rem;
+    margin-top: -1rem;
+    z-index: 2;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: vendor-compat-spin 0.6s linear infinite;
 }
 
 .ladda-button[data-loading] .ladda-spinner {
-  opacity: 1;
+    opacity: 1;
 }
 
 .ladda-button .ladda-progress {
-  background: rgba(0, 0, 0, 0.2);
-  display: none;
-  height: 100%;
-  left: 0;
-  position: absolute;
-  top: 0;
-  transition: width 0.1s linear;
-  width: 0;
-  border-radius: inherit;
+    background: rgba(0, 0, 0, 0.2);
+    display: none;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    transition: width 0.1s linear;
+    width: 0;
+    border-radius: inherit;
 }
 
 .ladda-button[data-loading] .ladda-progress {
-  display: block;
+    display: block;
 }
 
-.ladda-button[data-style="expand-right"] .ladda-spinner {
-  left: auto;
-  right: 1rem;
-  margin-left: 0;
-  margin-right: -1rem;
+.ladda-button[data-style='expand-right'] .ladda-spinner {
+    left: auto;
+    right: 1rem;
+    margin-left: 0;
+    margin-right: -1rem;
 }
 
-.ladda-button[data-style="expand-right"][data-loading] {
-  padding-right: 3rem;
+.ladda-button[data-style='expand-right'][data-loading] {
+    padding-right: 3rem;
 }
 
-.ladda-button[data-style="expand-right"][data-loading] .ladda-spinner {
-  opacity: 1;
+.ladda-button[data-style='expand-right'][data-loading] .ladda-spinner {
+    opacity: 1;
 }
 
-.ladda-button[data-style="zoom-in"] .ladda-label,
-.ladda-button[data-style="zoom-in"] .ladda-spinner {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+.ladda-button[data-style='zoom-in'] .ladda-label,
+.ladda-button[data-style='zoom-in'] .ladda-spinner {
+    transition:
+        opacity 0.3s ease,
+        transform 0.3s ease;
 }
 
-.ladda-button[data-style="zoom-in"][data-loading] .ladda-label {
-  opacity: 0;
-  transform: scale(1.5);
+.ladda-button[data-style='zoom-in'][data-loading] .ladda-label {
+    opacity: 0;
+    transform: scale(1.5);
 }
 
-.ladda-button[data-style="zoom-in"][data-loading] .ladda-spinner {
-  opacity: 1;
-  transform: none;
+.ladda-button[data-style='zoom-in'][data-loading] .ladda-spinner {
+    opacity: 1;
+    transform: none;
 }
 
 /* -------------------------------------------------------------------------
@@ -480,299 +562,293 @@
    ------------------------------------------------------------------------- */
 .icheckbox_square-blue,
 .iradio_square-blue {
-  border: 2px solid var(--bs-border-color, #dbdfe9);
-  cursor: pointer;
-  display: inline-block;
-  height: 1.25rem;
-  width: 1.25rem;
-  margin: 0;
-  padding: 0;
-  vertical-align: middle;
-  background-color: var(--bs-body-bg, #fff);
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    border: 2px solid var(--bs-border-color, #dbdfe9);
+    cursor: pointer;
+    display: inline-block;
+    height: 1.25rem;
+    width: 1.25rem;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
+    background-color: var(--bs-body-bg, #fff);
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .icheckbox_square-blue {
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
 }
 
 .iradio_square-blue {
-  border-radius: 50%;
+    border-radius: 50%;
 }
 
 .icheckbox_square-blue:hover,
 .iradio_square-blue:hover,
 .icheckbox_square-blue.hover,
 .iradio_square-blue.hover {
-  border-color: var(--bs-primary, #1b84ff);
+    border-color: var(--bs-primary, #1b84ff);
 }
 
 .icheckbox_square-blue.checked,
 .iradio_square-blue.checked {
-  background-color: var(--bs-primary, #1b84ff);
-  border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary, #1b84ff);
+    border-color: var(--bs-primary, #1b84ff);
 }
 
 /* Checkmark for checkbox when checked */
 .icheckbox_square-blue.checked::after {
-  content: "";
-  position: absolute;
-  left: 0.35rem;
-  top: 0.1rem;
-  width: 0.35rem;
-  height: 0.6rem;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    top: 0.1rem;
+    width: 0.35rem;
+    height: 0.6rem;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
 .icheckbox_square-blue {
-  position: relative;
+    position: relative;
 }
 
 /* Radio dot when checked */
 .iradio_square-blue.checked::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin: -0.25rem 0 0 -0.25rem;
-  background: #fff;
-  border-radius: 50%;
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin: -0.25rem 0 0 -0.25rem;
+    background: #fff;
+    border-radius: 50%;
 }
 
 .iradio_square-blue {
-  position: relative;
+    position: relative;
 }
 
 .icheckbox_square-blue.disabled,
 .iradio_square-blue.disabled {
-  opacity: 0.6;
-  cursor: default;
-  border-color: var(--bs-border-color, #dbdfe9);
-  background-color: var(--bs-secondary-bg, #f1f1f4);
+    opacity: 0.6;
+    cursor: default;
+    border-color: var(--bs-border-color, #dbdfe9);
+    background-color: var(--bs-secondary-bg, #f1f1f4);
 }
 
 .icheckbox_square-blue.checked.disabled,
 .iradio_square-blue.checked.disabled {
-  background-color: var(--bs-gray-400, #c4cada);
-  border-color: var(--bs-gray-400, #c4cada);
+    background-color: var(--bs-gray-400, #c4cada);
+    border-color: var(--bs-gray-400, #c4cada);
 }
 
 /* -------------------------------------------------------------------------
    jQuery UI (minimal — for datepicker/autocomplete)
    ------------------------------------------------------------------------- */
 .ui-helper-hidden {
-  display: none;
+    display: none;
 }
 
 .ui-helper-hidden-accessible {
-  border: 0;
-  clip: rect(0 0 0 0);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  width: 1px;
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
 }
 
 .ui-front {
-  z-index: 1050;
+    z-index: 1050;
 }
 
 .ui-widget-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.2);
-  z-index: 1049;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 1049;
 }
 
 /* -------------------------------------------------------------------------
    App button classes (from app.css) — Metronic 8.3.3 aligned
    ------------------------------------------------------------------------- */
 .btn-big {
-  padding: 0.65rem 1.875rem;
-  font-size: 1.125rem;
-  line-height: 1.3333333;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  font-weight: 500;
+    padding: 0.65rem 1.875rem;
+    font-size: 1.125rem;
+    line-height: 1.3333333;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    font-weight: 500;
 }
 
 .btn-app > .fas,
 .btn-app > .fab {
-  font-size: 1.25rem;
-  display: block;
+    font-size: 1.25rem;
+    display: block;
 }
 
 .btn-login {
-  padding: 0.375rem 3.25rem !important;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  font-weight: 500;
+    padding: 0.375rem 3.25rem !important;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    font-weight: 500;
 }
 
 .input-number .btn-default {
-  background-color: var(--bs-body-bg, #fff);
-  padding: 0.375rem 0.5625rem;
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  color: var(--bs-body-color, #071437);
+    background-color: var(--bs-body-bg, #fff);
+    padding: 0.375rem 0.5625rem;
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    color: var(--bs-body-color, #071437);
 }
 
 ul.dt-button-collection {
-  background-color: var(--bs-info, #00c0ef);
-  border-radius: var(--bs-border-radius, 0.95rem);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
+    background-color: var(--bs-info, #00c0ef);
+    border-radius: var(--bs-border-radius, 0.95rem);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    box-shadow: var(--bs-box-shadow, 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075));
 }
 
 /* -------------------------------------------------------------------------
    App component/utility classes (from app.css) — Metronic 8.3.3 aligned
    ------------------------------------------------------------------------- */
-.bg-danger {
-  background-color: var(--bs-danger-bg-subtle, #fed4de) !important;
-  color: var(--bs-danger-text-emphasis, #b02a37);
-}
-
-.bg-info {
-  background-color: var(--bs-info, #00c0ef) !important;
-  color: var(--bs-body-bg, #fff);
-}
-
 .bg-light-gray,
 .bg-lightgray {
-  background-color: var(--bs-secondary-bg, #f1f1f4) !important;
+    background-color: var(--bs-secondary-bg, #f1f1f4) !important;
 }
 
-.bg-transparent {
-  background-color: transparent !important;
+/* Keep Bootstrap utility backgrounds/colors sourced from style.bundle.css. */
+.label.bg-info,
+.label.bg-danger,
+.badge.bg-info,
+.badge.bg-danger {
+    color: var(--bs-body-bg, #fff);
 }
 
 .discount-badge {
-  position: absolute;
-  top: 0.375rem;
-  right: 0.625rem;
-  font-size: 1.125rem;
-  padding: 0.4375rem;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  font-weight: 500;
+    position: absolute;
+    top: 0.375rem;
+    right: 0.625rem;
+    font-size: 1.125rem;
+    padding: 0.4375rem;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    font-weight: 500;
 }
 
 .discount-badge-small {
-  position: absolute;
-  top: -0.125rem;
-  left: 0.625rem;
-  font-size: 0.75rem;
-  padding: 0.375rem;
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  font-weight: 500;
+    position: absolute;
+    top: -0.125rem;
+    left: 0.625rem;
+    font-size: 0.75rem;
+    padding: 0.375rem;
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    font-weight: 500;
 }
 
-.img-thumbnail {
-  position: relative;
-  width: 70px;
-  height: 70px;
-  background-color: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #dbdfe9);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  transition: border-color 0.2s ease-in-out;
-  padding: 0.25rem;
-  margin: 0.1875rem;
-  text-align: center;
+/* Legacy fixed media tile used by product edit screens with delete badges. */
+.img-thumbnail:has(> .delete-media),
+.img-thumbnail:has(> .badge.delete-media) {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    background-color: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #dbdfe9);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    transition: border-color 0.2s ease-in-out;
+    padding: 0.25rem;
+    margin: 0.1875rem;
+    text-align: center;
 }
 
-.img-thumbnail > .badge {
-  position: absolute;
-  top: -0.3125rem;
-  right: -0.4375rem;
-  font-size: 0.5625rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: var(--bs-border-radius-pill, 50rem);
+.img-thumbnail:has(> .delete-media) > .badge,
+.img-thumbnail:has(> .badge.delete-media) > .badge {
+    position: absolute;
+    top: -0.3125rem;
+    right: -0.4375rem;
+    font-size: 0.5625rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--bs-border-radius-pill, 50rem);
 }
 
 .div-overlay {
-  cursor: not-allowed;
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  display: none;
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    opacity: 0.5;
 }
 
 .table-transparent,
 .table-transparent th {
-  background-color: transparent !important;
-  color: var(--bs-body-color, #071437) !important;
+    background-color: transparent !important;
+    color: var(--bs-body-color, #071437) !important;
 }
 
 .error {
-  color: var(--bs-danger, #f8285a) !important;
-}
-
-.cursor-pointer {
-  cursor: pointer !important;
-}
-
-.text-white {
-  color: var(--bs-body-bg, #fff) !important;
+    color: var(--bs-danger, #f8285a) !important;
 }
 
 .product-info-table td,
 .product-info-table th {
-  font-size: 0.75rem;
+    font-size: 0.75rem;
 }
 
 .active-cell {
-  border: 2px dotted var(--bs-primary, #1b84ff) !important;
+    border: 2px dotted var(--bs-primary, #1b84ff) !important;
 }
 
 .option-div {
-  padding: 0.9375rem;
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  color: var(--bs-body-color, #071437);
-  border: 1px solid var(--bs-border-color, #dbdfe9);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+    padding: 0.9375rem;
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    color: var(--bs-body-color, #071437);
+    border: 1px solid var(--bs-border-color, #dbdfe9);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .option-div:hover {
-  border-color: var(--bs-primary, #1b84ff);
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
 }
 
 .option-div-group .option-div:hover {
-  border-color: var(--bs-border-color-translucent, rgba(0, 0, 0, 0.175));
-  background-color: var(--bs-tertiary-bg, #f9f9f9);
+    border-color: var(--bs-border-color-translucent, rgba(0, 0, 0, 0.175));
+    background-color: var(--bs-tertiary-bg, #f9f9f9);
 }
 
 .option-div-group .active .option-div,
 .option-div-group .option-div:focus {
-  border-color: var(--bs-primary, #1b84ff);
-  background-color: var(--bs-primary-bg-subtle, #d1e6ff);
-  color: var(--bs-primary-text-emphasis, #0b3566);
+    border-color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-primary-bg-subtle, #d1e6ff);
+    color: var(--bs-primary-text-emphasis, #0b3566);
 }
 
 .option-div-group .icon {
-  color: var(--bs-danger, #f8285a);
-  display: none;
+    color: var(--bs-danger, #f8285a);
+    display: none;
 }
 
 .option-div-group .active .icon {
-  display: block;
+    display: block;
 }
 
-.option-div input[type="radio"] {
-  display: none;
+.option-div input[type='radio'] {
+    display: none;
 }
 
 /* Ensure jQuery Bootstrap 4 popovers are visible and on top */
@@ -807,139 +883,139 @@ ul.dt-button-collection {
    Maps AdminLTE card-tabs pattern to Metronic card + nav-line-tabs look.
    ------------------------------------------------------------------------- */
 .nav-tabs-custom {
-  margin-bottom: 1.25rem;
-  background: var(--bs-body-bg, #fff);
-  box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
-  border-radius: var(--bs-border-radius, 0.95rem);
-  border: 1px solid var(--bs-border-color, #f1f1f4);
+    margin-bottom: 1.25rem;
+    background: var(--bs-body-bg, #fff);
+    box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
+    border-radius: var(--bs-border-radius, 0.95rem);
+    border: 1px solid var(--bs-border-color, #f1f1f4);
 }
 
 .nav-tabs-custom > .nav-tabs {
-  margin: 0;
-  padding: 0 0.75rem;
-  border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
-  border-top-right-radius: var(--bs-border-radius, 0.95rem);
-  border-top-left-radius: var(--bs-border-radius, 0.95rem);
-  display: flex;
-  flex-wrap: wrap;
-  list-style: none;
+    margin: 0;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
+    border-top-right-radius: var(--bs-border-radius, 0.95rem);
+    border-top-left-radius: var(--bs-border-radius, 0.95rem);
+    display: flex;
+    flex-wrap: wrap;
+    list-style: none;
 }
 
 .nav-tabs-custom > .nav-tabs > li {
-  border-top: 3px solid transparent;
-  margin-bottom: -1px;
-  margin-right: 0.25rem;
+    border-top: 3px solid transparent;
+    margin-bottom: -1px;
+    margin-right: 0.25rem;
 }
 
 .nav-tabs-custom > .nav-tabs > li.disabled > a {
-  color: var(--bs-gray-500, #99a1b7);
-  pointer-events: none;
+    color: var(--bs-gray-500, #99a1b7);
+    pointer-events: none;
 }
 
 .nav-tabs-custom > .nav-tabs > li > a {
-  display: block;
-  padding: 0.75rem 1rem;
-  color: var(--bs-gray-700, #4b5675);
-  font-weight: 500;
-  font-size: 0.9375rem;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  text-decoration: none;
-  transition: color 0.15s ease;
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--bs-gray-700, #4b5675);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    text-decoration: none;
+    transition: color 0.15s ease;
 }
 
 .nav-tabs-custom > .nav-tabs > li > a.text-muted {
-  color: var(--bs-gray-500, #99a1b7);
+    color: var(--bs-gray-500, #99a1b7);
 }
 
 .nav-tabs-custom > .nav-tabs > li > a:hover {
-  color: var(--bs-primary, #1b84ff);
-  background: transparent;
+    color: var(--bs-primary, #1b84ff);
+    background: transparent;
 }
 
 .nav-tabs-custom > .nav-tabs > li:not(.active) > a:hover,
 .nav-tabs-custom > .nav-tabs > li:not(.active) > a:focus,
 .nav-tabs-custom > .nav-tabs > li:not(.active) > a:active {
-  border-color: transparent;
+    border-color: transparent;
 }
 
 .nav-tabs-custom > .nav-tabs > li.active {
-  border-top-color: var(--bs-primary, #1b84ff);
+    border-top-color: var(--bs-primary, #1b84ff);
 }
 
 .nav-tabs-custom > .nav-tabs > li.active > a,
 .nav-tabs-custom > .nav-tabs > li.active:hover > a {
-  background-color: var(--bs-body-bg, #fff);
-  color: var(--bs-gray-900, #071437);
-  font-weight: 600;
+    background-color: var(--bs-body-bg, #fff);
+    color: var(--bs-gray-900, #071437);
+    font-weight: 600;
 }
 
 .nav-tabs-custom > .nav-tabs > li.active > a {
-  border-top-color: transparent;
-  border-left-color: var(--bs-border-color, #f1f1f4);
-  border-right-color: var(--bs-border-color, #f1f1f4);
+    border-top-color: transparent;
+    border-left-color: var(--bs-border-color, #f1f1f4);
+    border-right-color: var(--bs-border-color, #f1f1f4);
 }
 
 .nav-tabs-custom > .nav-tabs > li:first-of-type {
-  margin-left: 0;
+    margin-left: 0;
 }
 
 .nav-tabs-custom > .nav-tabs > li:first-of-type.active > a {
-  border-left-color: transparent;
+    border-left-color: transparent;
 }
 
 /* pull-right variant */
 .nav-tabs-custom > .nav-tabs.pull-right {
-  float: none !important;
+    float: none !important;
 }
 
 .nav-tabs-custom > .nav-tabs.pull-right > li {
-  float: right;
+    float: right;
 }
 
 .nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type {
-  margin-right: 0;
+    margin-right: 0;
 }
 
 .nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type > a {
-  border-left-width: 1px;
+    border-left-width: 1px;
 }
 
 .nav-tabs-custom > .nav-tabs.pull-right > li:first-of-type.active > a {
-  border-left-color: var(--bs-border-color, #f1f1f4);
-  border-right-color: transparent;
+    border-left-color: var(--bs-border-color, #f1f1f4);
+    border-right-color: transparent;
 }
 
 /* header li (icon + title inside tab bar) */
 .nav-tabs-custom > .nav-tabs > li.header {
-  line-height: 2.5rem;
-  padding: 0 0.625rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--bs-gray-800, #252f4a);
+    line-height: 2.5rem;
+    padding: 0 0.625rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--bs-gray-800, #252f4a);
 }
 
 .nav-tabs-custom > .nav-tabs > li.header > .fa,
 .nav-tabs-custom > .nav-tabs > li.header > .fas,
 .nav-tabs-custom > .nav-tabs > li.header > .glyphicon,
 .nav-tabs-custom > .nav-tabs > li.header > .ion {
-  margin-right: 0.3125rem;
+    margin-right: 0.3125rem;
 }
 
 /* tab content panel */
 .nav-tabs-custom > .tab-content {
-  background: var(--bs-body-bg, #fff);
-  padding: 1rem 1.25rem;
-  border-bottom-right-radius: var(--bs-border-radius, 0.95rem);
-  border-bottom-left-radius: var(--bs-border-radius, 0.95rem);
+    background: var(--bs-body-bg, #fff);
+    padding: 1rem 1.25rem;
+    border-bottom-right-radius: var(--bs-border-radius, 0.95rem);
+    border-bottom-left-radius: var(--bs-border-radius, 0.95rem);
 }
 
 /* dropdown inside tab bar */
 .nav-tabs-custom .dropdown.open > a:active,
 .nav-tabs-custom .dropdown.open > a:focus {
-  background: transparent;
-  color: var(--bs-gray-500, #99a1b7);
+    background: transparent;
+    color: var(--bs-gray-500, #99a1b7);
 }
 
 /* -------------------------------------------------------------------------
@@ -955,177 +1031,179 @@ ul.dt-button-collection {
 
 /* Screen-reader only — BS3/4 alias for BS5 visually-hidden (already in Metronic) */
 .sr-only {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
 /* Outer nav wrapper — minimal base; visual styling comes from Tailwind tw-* classes */
 .navbar-default {
-  position: relative;
-  min-height: 50px;
+    position: relative;
+    min-height: 50px;
 }
 
 .navbar-static-top {
-  position: static;
-  top: 0;
-  z-index: 1000;
+    position: static;
+    top: 0;
+    z-index: 1000;
 }
 
 /* navbar-header: flex row; contains brand + toggle on mobile */
 .navbar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.375rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0;
 }
 
 /* Bootstrap 3 hamburger toggle button (NOT navbar-toggler which Metronic owns) */
 .navbar-toggle {
-  display: none;
-  padding: 0.5rem 0.625rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  background-color: transparent;
-  background-image: none;
-  border: 1px solid var(--bs-border-color, #dbdfe9);
-  border-radius: var(--bs-border-radius-sm, 0.475rem);
-  cursor: pointer;
-  color: var(--bs-gray-600, #78829d);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+    display: none;
+    padding: 0.5rem 0.625rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid var(--bs-border-color, #dbdfe9);
+    border-radius: var(--bs-border-radius-sm, 0.475rem);
+    cursor: pointer;
+    color: var(--bs-gray-600, #78829d);
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
 }
 
 .navbar-toggle:hover,
 .navbar-toggle:focus {
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  border-color: var(--bs-border-color, #dbdfe9);
-  outline: none;
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    border-color: var(--bs-border-color, #dbdfe9);
+    outline: none;
 }
 
 /* Hamburger icon bars (Bootstrap 3 .icon-bar) */
 .icon-bar {
-  display: block;
-  width: 22px;
-  height: 2px;
-  border-radius: 1px;
-  background-color: var(--bs-gray-600, #78829d);
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--bs-gray-600, #78829d);
 }
 
 .icon-bar + .icon-bar {
-  margin-top: 4px;
+    margin-top: 4px;
 }
 
 /* Scoped overrides for .navbar-default — make BS3 nav-nav horizontal on desktop.
    Only applies inside .navbar-default so Metronic's own navbar-nav (flex-column)
    is not affected globally. */
 .navbar-default .navbar-nav {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  padding-left: 0;
-  margin-bottom: 0;
-  list-style: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
 }
 
 .navbar-default .navbar-nav > li > a {
-  display: block;
-  padding: 0.5rem 0.875rem;
-  color: var(--bs-gray-700, #4b5675);
-  font-weight: 500;
-  font-size: 0.9375rem;
-  text-decoration: none;
-  transition: color 0.15s ease;
+    display: block;
+    padding: 0.5rem 0.875rem;
+    color: var(--bs-gray-700, #4b5675);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color 0.15s ease;
 }
 
 .navbar-default .navbar-nav > li > a:hover,
 .navbar-default .navbar-nav > li > a:focus {
-  color: var(--bs-primary, #1b84ff);
+    color: var(--bs-primary, #1b84ff);
 }
 
 .navbar-default .navbar-nav > li.active > a,
 .navbar-default .navbar-nav > li.active > a:hover,
 .navbar-default .navbar-nav > li.active > a:focus {
-  color: var(--bs-primary, #1b84ff);
-  font-weight: 600;
+    color: var(--bs-primary, #1b84ff);
+    font-weight: 600;
 }
 
 /* Right-aligned nav — BS3 .navbar-right → BS5 ms-auto equivalent */
 .navbar-default .navbar-nav.navbar-right {
-  margin-left: auto;
+    margin-left: auto;
 }
 
 /* Collapse area: on desktop always visible and flex */
 .navbar-default .navbar-collapse {
-  display: flex !important;
-  flex-wrap: wrap;
-  align-items: center;
-  flex-basis: auto;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-basis: auto;
 }
 
 /* Mobile: show toggle, stack nav items */
 @media (max-width: 767.98px) {
-  .navbar-toggle {
-    display: inline-block;
-  }
+    .navbar-toggle {
+        display: inline-block;
+    }
 
-  .navbar-header {
-    width: 100%;
-  }
+    .navbar-header {
+        width: 100%;
+    }
 
-  .navbar-default .navbar-collapse {
-    flex-basis: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-  }
+    .navbar-default .navbar-collapse {
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-  .navbar-default .navbar-nav {
-    flex-direction: column;
-    width: 100%;
-  }
+    .navbar-default .navbar-nav {
+        flex-direction: column;
+        width: 100%;
+    }
 
-  .navbar-default .navbar-nav > li > a {
-    padding: 0.5rem 0;
-  }
+    .navbar-default .navbar-nav > li > a {
+        padding: 0.5rem 0;
+    }
 
-  .navbar-default .navbar-nav.navbar-right {
-    margin-left: 0;
-  }
+    .navbar-default .navbar-nav.navbar-right {
+        margin-left: 0;
+    }
 
-  /* Bootstrap 3 collapse toggle — .collapse hides, .collapse.in or .show reveals */
-  .navbar-default .navbar-collapse.collapse:not(.in):not(.show) {
-    display: none !important;
-  }
+    /* Bootstrap 3 collapse toggle — .collapse hides, .collapse.in or .show reveals */
+    .navbar-default .navbar-collapse.collapse:not(.in):not(.show) {
+        display: none !important;
+    }
 }
 
 /* color accent variants — top border matches semantic color */
 .nav-tabs-custom.tab-primary > .nav-tabs > li.active {
-  border-top-color: var(--bs-primary, #1b84ff);
+    border-top-color: var(--bs-primary, #1b84ff);
 }
 
 .nav-tabs-custom.tab-info > .nav-tabs > li.active {
-  border-top-color: var(--bs-info, #00c0ef);
+    border-top-color: var(--bs-info, #00c0ef);
 }
 
 .nav-tabs-custom.tab-danger > .nav-tabs > li.active {
-  border-top-color: var(--bs-danger, #f8285a);
+    border-top-color: var(--bs-danger, #f8285a);
 }
 
 .nav-tabs-custom.tab-warning > .nav-tabs > li.active {
-  border-top-color: var(--bs-warning, #f6c000);
+    border-top-color: var(--bs-warning, #f6c000);
 }
 
 .nav-tabs-custom.tab-success > .nav-tabs > li.active {
-  border-top-color: var(--bs-success, #17c653);
+    border-top-color: var(--bs-success, #17c653);
 }
 
 .nav-tabs-custom.tab-default > .nav-tabs > li.active {
-  border-top-color: var(--bs-gray-400, #c4cada);
+    border-top-color: var(--bs-gray-400, #c4cada);
 }
 
 /* -------------------------------------------------------------------------
@@ -1133,26 +1211,26 @@ ul.dt-button-collection {
    Pages still wrap yield content in these sections; align spacing + type.
    ------------------------------------------------------------------------- */
 #kt_content > section.content-header {
-  margin-bottom: 1.25rem;
-  width: 100%;
+    margin-bottom: 1.25rem;
+    width: 100%;
 }
 
 #kt_content > section.content-header h1,
 #kt_content > section.content-header .h1 {
-  color: var(--bs-gray-900, #071437);
-  font-weight: 700;
-  margin-bottom: 0.25rem;
+    color: var(--bs-gray-900, #071437);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
 }
 
 #kt_content > section.content-header small {
-  color: var(--bs-gray-600, #78829d);
-  font-weight: 500;
-  font-size: 0.9375rem;
+    color: var(--bs-gray-600, #78829d);
+    font-weight: 500;
+    font-size: 0.9375rem;
 }
 
 #kt_content > section.content {
-  width: 100%;
-  padding: 0;
+    width: 100%;
+    padding: 0;
 }
 
 /* -------------------------------------------------------------------------
@@ -1160,99 +1238,101 @@ ul.dt-button-collection {
    Metronic-aligned flex header without loading full AdminLTE vendor.css
    ------------------------------------------------------------------------- */
 .box-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
-  padding-bottom: 0.75rem;
-  margin-bottom: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .box-header.with-border {
-  border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
+    border-bottom: 1px solid var(--bs-border-color, #f1f1f4);
 }
 
 .box-title {
-  margin: 0;
-  font-size: 1.075rem;
-  font-weight: 600;
-  color: var(--bs-gray-900, #071437);
-  flex: 1 1 auto;
-  min-width: 0;
+    margin: 0;
+    font-size: 1.075rem;
+    font-weight: 600;
+    color: var(--bs-gray-900, #071437);
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .box-title a {
-  color: inherit;
-  text-decoration: none;
-  transition: color 0.15s ease;
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
 }
 
 .box-title a:hover {
-  color: var(--bs-primary, #1b84ff);
+    color: var(--bs-primary, #1b84ff);
 }
 
 .box-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 .box-body {
-  padding-top: 0.25rem;
+    padding-top: 0.25rem;
 }
 
 /* Accent hint when widget passes box-primary (outer wrapper may include it) */
 .box-primary .box-header {
-  border-bottom-color: var(--bs-border-color, #f1f1f4);
+    border-bottom-color: var(--bs-border-color, #f1f1f4);
 }
 
 /* -------------------------------------------------------------------------
    AdminLTE small-box (POS / kitchen partials) — minimal Metronic-like card
    ------------------------------------------------------------------------- */
 .small-box {
-  position: relative;
-  display: block;
-  border-radius: var(--bs-border-radius, 0.95rem);
-  box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
-  margin-bottom: 1rem;
-  overflow: hidden;
-  border: 1px solid var(--bs-border-color, #f1f1f4);
-  background: var(--bs-body-bg, #fff);
+    position: relative;
+    display: block;
+    border-radius: var(--bs-border-radius, 0.95rem);
+    box-shadow: var(--bs-box-shadow-sm, 0 0.1rem 1rem 0.25rem rgba(0, 0, 0, 0.05));
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--bs-border-color, #f1f1f4);
+    background: var(--bs-body-bg, #fff);
 }
 
 .small-box .inner {
-  padding: 0.75rem 1rem;
-  color: var(--bs-body-color, #071437);
+    padding: 0.75rem 1rem;
+    color: var(--bs-body-color, #071437);
 }
 
 .small-box .inner h3,
 .small-box .inner p {
-  margin: 0;
+    margin: 0;
 }
 
 .small-box .icon {
-  color: var(--bs-gray-400, #c4cada);
-  opacity: 0.35;
+    color: var(--bs-gray-400, #c4cada);
+    opacity: 0.35;
 }
 
 .small-box-footer {
-  display: block;
-  padding: 0.5rem 0.75rem;
-  text-align: center;
-  font-weight: 500;
-  font-size: 0.875rem;
-  text-decoration: none;
-  border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
-  color: var(--bs-body-color, #071437);
-  transition: background-color 0.15s ease, color 0.15s ease;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-decoration: none;
+    border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    color: var(--bs-body-color, #071437);
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
 }
 
 .small-box-footer:hover {
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  color: var(--bs-primary, #1b84ff);
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    color: var(--bs-primary, #1b84ff);
 }
 
 .small-box.bg-green,
@@ -1263,34 +1343,34 @@ ul.dt-button-collection {
 .small-box.bg-aqua,
 .small-box.bg-light-blue,
 .small-box.bg-info {
-  border: none;
+    border: none;
 }
 
 .small-box.bg-green {
-  background-color: var(--bs-success, #17c653);
-  color: #fff;
+    background-color: var(--bs-success, #17c653);
+    color: #fff;
 }
 .small-box.bg-yellow {
-  background-color: var(--bs-warning, #f6c000);
-  color: var(--bs-gray-900, #071437);
+    background-color: var(--bs-warning, #f6c000);
+    color: var(--bs-gray-900, #071437);
 }
 .small-box.bg-red {
-  background-color: var(--bs-danger, #f8285a);
-  color: #fff;
+    background-color: var(--bs-danger, #f8285a);
+    color: #fff;
 }
 .small-box.bg-gray {
-  background-color: var(--bs-secondary-bg, #f1f1f4);
-  color: var(--bs-body-color, #071437);
+    background-color: var(--bs-secondary-bg, #f1f1f4);
+    color: var(--bs-body-color, #071437);
 }
 .small-box.bg-orange {
-  background-color: #f6a100;
-  color: #fff;
+    background-color: #f6a100;
+    color: #fff;
 }
 .small-box.bg-aqua,
 .small-box.bg-light-blue,
 .small-box.bg-info {
-  background-color: var(--bs-info, #00c0ef);
-  color: #fff;
+    background-color: var(--bs-info, #00c0ef);
+    color: #fff;
 }
 
 .small-box.bg-green .small-box-footer,
@@ -1300,9 +1380,9 @@ ul.dt-button-collection {
 .small-box.bg-aqua .small-box-footer,
 .small-box.bg-light-blue .small-box-footer,
 .small-box.bg-info .small-box-footer {
-  background: rgba(0, 0, 0, 0.12);
-  border-top-color: rgba(255, 255, 255, 0.2);
-  color: inherit;
+    background: rgba(0, 0, 0, 0.12);
+    border-top-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
 }
 
 .small-box.bg-green .small-box-footer:hover,
@@ -1311,11 +1391,11 @@ ul.dt-button-collection {
 .small-box.bg-aqua .small-box-footer:hover,
 .small-box.bg-light-blue .small-box-footer:hover,
 .small-box.bg-info .small-box-footer:hover {
-  background: rgba(0, 0, 0, 0.2);
-  color: #fff;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
 }
 
 .small-box.bg-yellow .small-box-footer:hover,
 .small-box.bg-gray .small-box-footer:hover {
-  color: var(--bs-primary, #1b84ff);
+    color: var(--bs-primary, #1b84ff);
 }

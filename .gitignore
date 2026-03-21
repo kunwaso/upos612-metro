@@ -6,3 +6,5 @@
 /storage
 /storage/**
 .env
+/public/storage
+/public/uploads
