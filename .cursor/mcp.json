@@ -18,6 +18,10 @@
         "MCP_READ_FILE_WORKSPACE_ROOT": "D:/wamp64/www/upos612",
         "MCP_READ_FILE_CACHE_ROOT": "D:/wamp64/www/upos612/.cache/read-file-cache-mcp"
       }
+    },
+    "gitnexus": {
+      "command": "npx",
+      "args": ["-y", "gitnexus@latest", "mcp"]
     }
   }
 }

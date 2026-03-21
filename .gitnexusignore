@@ -1,0 +1,15 @@
+# GitNexus ignore - focus on app code only
+vendor/
+node_modules/
+public/assets/
+public/modules/
+public/html/
+public/uploads/
+storage/
+.cache/
+.git/
+bootstrap/cache/
+database/factories/
+*.min.js
+*.min.css
+*.map
