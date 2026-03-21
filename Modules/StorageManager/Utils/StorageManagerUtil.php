@@ -7,6 +7,7 @@ use App\BusinessLocation;
 use App\Category;
 use App\ProductRack;
 use App\PurchaseLine;
+use App\Variation;
 use App\VariationLocationDetails;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -212,7 +213,12 @@ class StorageManagerUtil
     }
 
     /**
-     * Widget data provider: products that are running out of stock.
+     * Widget data provider: products running out of stock.
+     *
+     * A product/variation is included when enable_stock=1, alert_quantity > 0,
+     * and qty_available at the location is strictly less than alert_quantity.
+     * Products with no variation_location_details row (never stocked) are treated
+     * as qty = 0 and are included when alert_quantity > 0.
      *
      * Contract per row:
      * - product_id, product_label, meta_line, storage_label, status, days_left, link_url
@@ -224,79 +230,75 @@ class StorageManagerUtil
         ?int $limit = self::DEFAULT_WIDGET_LIMIT,
         ?int $product_id = null
     ): Collection {
-        $query = VariationLocationDetails::join(
-            'product_variations as pv',
-            'variation_location_details.product_variation_id',
-            '=',
-            'pv.id'
-        )
-            ->join(
-                'variations as v',
-                'variation_location_details.variation_id',
-                '=',
-                'v.id'
-            )
-            ->join(
-                'products as p',
-                'variation_location_details.product_id',
-                '=',
-                'p.id'
-            )
-            ->leftJoin(
-                'business_locations as l',
-                'variation_location_details.location_id',
-                '=',
-                'l.id'
-            )
+        $query = Variation::join('products as p', 'p.id', '=', 'variations.product_id')
+            ->join('product_variations as pv', 'variations.product_variation_id', '=', 'pv.id')
             ->leftJoin('units as u', 'p.unit_id', '=', 'u.id')
             ->where('p.business_id', $business_id)
             ->where('p.enable_stock', 1)
             ->where('p.is_inactive', 0)
-            ->whereNull('v.deleted_at')
+            ->whereNull('variations.deleted_at')
             ->whereNotNull('p.alert_quantity')
-            ->whereRaw('variation_location_details.qty_available <= p.alert_quantity');
+            ->where('p.alert_quantity', '>', 0);
 
         if ($location_id > 0) {
-            $query->where('variation_location_details.location_id', $location_id);
+            $query->leftJoin(
+                'variation_location_details as vld',
+                function ($join) use ($location_id) {
+                    $join->on('vld.variation_id', '=', 'variations.id')
+                        ->where('vld.location_id', '=', $location_id);
+                }
+            );
+        } else {
+            $query->leftJoin('variation_location_details as vld', 'vld.variation_id', '=', 'variations.id');
+
+            $allowedLocations = $this->normalizePermittedLocations($permitted_locations);
+            if (! empty($allowedLocations)) {
+                $query->whereIn('vld.location_id', $allowedLocations);
+            }
         }
 
-        $allowedLocations = $this->normalizePermittedLocations($permitted_locations);
-        if (! empty($allowedLocations)) {
-            $query->whereIn('variation_location_details.location_id', $allowedLocations);
-        }
+        $query->whereRaw('COALESCE(vld.qty_available, 0) < p.alert_quantity');
 
         if (! empty($product_id)) {
             $query->where('p.id', $product_id);
         }
 
+        $locationSelect = $location_id > 0
+            ? DB::raw($location_id . ' as location_id')
+            : 'vld.location_id as location_id';
+
         $query->select(
             'p.id as product_id',
-            'variation_location_details.location_id as location_id',
+            $locationSelect,
             'p.name as product',
             'p.type',
             'p.sku',
             'pv.name as product_variation',
-            'v.name as variation',
-            'v.sub_sku',
-            'variation_location_details.qty_available as stock',
-            'u.short_name as unit'
+            'variations.name as variation',
+            'variations.sub_sku',
+            'u.short_name as unit',
+            DB::raw('COALESCE(vld.qty_available, 0) as stock')
         )
-            ->groupBy('variation_location_details.id')
-            ->orderBy('stock', 'asc');
+            ->orderBy('stock', 'asc')
+            ->groupBy('variations.id', 'vld.location_id');
 
         if (! is_null($limit)) {
             $query->limit($limit);
         }
 
         $rows = $query->get();
+        $locationIds = $location_id > 0
+            ? [$location_id]
+            : $rows->pluck('location_id')->map(fn ($v) => (int) $v)->unique()->values()->all();
+
         $slotLabels = $this->getProductSlotLabels(
             $business_id,
-            $rows->pluck('product_id')->map(fn ($value) => (int) $value)->unique()->values()->all(),
-            $rows->pluck('location_id')->map(fn ($value) => (int) $value)->unique()->values()->all()
+            $rows->pluck('product_id')->map(fn ($v) => (int) $v)->unique()->values()->all(),
+            $locationIds
         );
 
-        return $rows->map(function ($row) use ($slotLabels) {
-            $locationId = (int) $row->location_id;
+        return $rows->map(function ($row) use ($slotLabels, $location_id) {
+            $locationId = $location_id > 0 ? $location_id : (int) $row->location_id;
             $productId = (int) $row->product_id;
             $slotMapKey = $this->slotMapKey($locationId, $productId);
             $stockValue = $this->formatQuantity((float) $row->stock);
