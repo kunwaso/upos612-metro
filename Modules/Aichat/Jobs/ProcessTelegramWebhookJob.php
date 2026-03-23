@@ -165,7 +165,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
 
         $userId = (int) $telegramChat->user_id;
-        $user = $this->resolveTelegramUser($userId);
+        $user = $this->resolveTelegramUser((int) $bot->business_id, $userId);
         if (! $user) {
             $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_user_not_allowed'));
 
@@ -525,7 +525,14 @@ class ProcessTelegramWebhookJob implements ShouldQueue
                     return true;
                 }
 
-                $result = $chatActionUtil->confirmAction($businessId, $userId, $conversationId, (int) $action->id, 'telegram', null);
+                $result = $chatActionUtil->confirmAction(
+                    $businessId,
+                    $userId,
+                    $conversationId,
+                    (int) $action->id,
+                    'telegram',
+                    null
+                );
                 $responseText = __('aichat::lang.telegram_action_confirm_success')
                     . "\n"
                     . '#'
@@ -554,7 +561,13 @@ class ProcessTelegramWebhookJob implements ShouldQueue
                     return true;
                 }
 
-                $result = $chatActionUtil->cancelAction($businessId, $userId, $conversationId, (int) $action->id, null);
+                $result = $chatActionUtil->cancelAction(
+                    $businessId,
+                    $userId,
+                    $conversationId,
+                    (int) $action->id,
+                    null
+                );
                 $responseText = __('aichat::lang.telegram_action_cancel_success')
                     . "\n"
                     . '#'
@@ -591,6 +604,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
             'prompt' => $text,
             'provider' => (string) ($modelOptions['default_provider'] ?? config('aichat.chat.default_provider', 'openai')),
             'model' => (string) ($modelOptions['default_model'] ?? config('aichat.chat.default_model', 'gpt-4o-mini')),
+            'channel' => 'telegram',
         ];
 
         $workflowContext = $chatWorkflowUtil->prepareSendOrStreamContext((int) $bot->business_id, $userId, $conversation, $payload);
@@ -735,9 +749,11 @@ class ProcessTelegramWebhookJob implements ShouldQueue
             . __('aichat::lang.telegram_quote_wizard_pick_help');
     }
 
-    protected function resolveTelegramUser(int $userId): ?User
+    protected function resolveTelegramUser(int $businessId, int $userId): ?User
     {
-        return User::find($userId);
+        return User::where('business_id', $businessId)
+            ->where('id', $userId)
+            ->first();
     }
 
     protected function userCan(?User $user, string $permission): bool

@@ -75,6 +75,7 @@ class ChatActionLifecycleFeatureTest extends TestCase
 
         $chatUtil = \Mockery::mock(ChatUtil::class);
         $chatUtil->shouldNotReceive('resolveChatCapabilities');
+        $chatUtil->shouldNotReceive('resolveCapabilityEnvelope');
         $chatUtil->shouldReceive('audit')->once();
 
         $chatActionUtil = new ChatActionUtil($chatUtil);
@@ -100,12 +101,17 @@ class ChatActionLifecycleFeatureTest extends TestCase
         $pendingAction = $this->createPendingAction($conversation->id, 44, 12, ChatPendingAction::STATUS_PENDING, now()->addMinute());
 
         $chatUtil = \Mockery::mock(ChatUtil::class);
-        $chatUtil->shouldReceive('resolveChatCapabilities')
-            ->once()
-            ->with(44, 12)
+        $chatUtil->shouldNotReceive('resolveChatCapabilities');
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')
+            ->twice()
             ->andReturn([
-                'products' => [
-                    'create' => true,
+                'domains' => [
+                    'chat' => [
+                        'edit' => true,
+                    ],
+                    'products' => [
+                        'create' => true,
+                    ],
                 ],
             ]);
         $chatUtil->shouldReceive('audit')->times(2);
@@ -142,6 +148,7 @@ class ChatActionLifecycleFeatureTest extends TestCase
 
         $chatUtil = \Mockery::mock(ChatUtil::class);
         $chatUtil->shouldNotReceive('resolveChatCapabilities');
+        $chatUtil->shouldNotReceive('resolveCapabilityEnvelope');
         $chatUtil->shouldNotReceive('audit');
 
         $chatActionUtil = new ChatActionUtil($chatUtil);

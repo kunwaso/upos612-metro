@@ -179,18 +179,21 @@ class ChatUtilPromptAssemblyTest extends TestCase
         $chatUtil->shouldReceive('buildOrganizationMemoryContext')->andReturn($organizationMemoryContext);
         $chatUtil->shouldReceive('buildUserMemoryContext')->andReturn($userMemoryContext);
         $chatUtil->shouldReceive('buildMemoryContext')->andReturn($legacyMemoryContext);
-        $chatUtil->shouldReceive('resolveChatCapabilities')->andReturn([
-            'products' => ['view' => true, 'create' => true, 'update' => false, 'delete' => false],
-            'contacts' => [
-                'customer' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
-                'supplier' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')->andReturn([
+            'actor' => ['business_id' => 99, 'user_id' => 7, 'channel' => 'web'],
+            'domains' => [
+                'products' => ['view' => true, 'create' => true, 'update' => false, 'delete' => false],
+                'contacts' => [
+                    'customer' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+                    'supplier' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+                ],
+                'sales' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+                'purchases' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+                'quotes' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'send' => false],
+                'reports' => ['view' => true, 'export' => false],
+                'settings' => ['access' => false, 'chat_settings' => false, 'manage_all_memories' => false],
+                'chat' => ['edit' => true],
             ],
-            'sales' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
-            'purchases' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
-            'quotes' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'send' => false],
-            'reports' => ['view' => true, 'export' => false],
-            'settings' => ['access' => false, 'chat_settings' => false, 'manage_all_memories' => false],
-            'chat' => ['edit' => true],
         ]);
 
         return $chatUtil;

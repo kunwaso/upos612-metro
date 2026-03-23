@@ -1304,7 +1304,7 @@ class TestableProcessTelegramWebhookJob extends ProcessTelegramWebhookJob
         $this->resolvedUser = $user;
     }
 
-    protected function resolveTelegramUser(int $userId): ?User
+    protected function resolveTelegramUser(int $businessId, int $userId): ?User
     {
         return $this->resolvedUser;
     }

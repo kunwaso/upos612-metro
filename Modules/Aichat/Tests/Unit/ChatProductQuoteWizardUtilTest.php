@@ -349,6 +349,14 @@ class ChatProductQuoteWizardUtilTest extends TestCase
     {
         $capturedAssistantText = '';
         $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')->andReturn([
+            'actor' => ['business_id' => 99, 'user_id' => 1, 'channel' => 'web'],
+            'domains' => [
+                'chat' => ['quote_wizard' => true],
+                'contacts' => ['customer' => ['view' => true, 'view_own' => true]],
+                'products' => ['view' => true],
+            ],
+        ]);
         $chatUtil->shouldReceive('appendMessage')
             ->once()
             ->withArgs(function ($conversation, $role, $content, $provider, $model, $userId) use (&$capturedAssistantText) {
@@ -422,6 +430,14 @@ class ChatProductQuoteWizardUtilTest extends TestCase
     public function test_process_step_remove_line_command_removes_target_line_without_llm_call(): void
     {
         $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')->andReturn([
+            'actor' => ['business_id' => 99, 'user_id' => 1, 'channel' => 'web'],
+            'domains' => [
+                'chat' => ['quote_wizard' => true],
+                'contacts' => ['customer' => ['view' => true, 'view_own' => true]],
+                'products' => ['view' => true],
+            ],
+        ]);
         $messageId = 1;
         $chatUtil->shouldReceive('appendMessage')
             ->twice()
@@ -481,8 +497,18 @@ class ChatProductQuoteWizardUtilTest extends TestCase
 
     protected function makeWizardUtil(): ChatProductQuoteWizardUtil
     {
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')->andReturn([
+            'actor' => ['business_id' => 99, 'user_id' => 1, 'channel' => 'web'],
+            'domains' => [
+                'chat' => ['quote_wizard' => true],
+                'contacts' => ['customer' => ['view' => true, 'view_own' => true]],
+                'products' => ['view' => true],
+            ],
+        ]);
+
         return new ChatProductQuoteWizardUtil(
-            \Mockery::mock(ChatUtil::class),
+            $chatUtil,
             \Mockery::mock(AIChatUtil::class),
             $this->app->make(ProductCostingUtil::class),
             \Mockery::mock(QuoteUtil::class)

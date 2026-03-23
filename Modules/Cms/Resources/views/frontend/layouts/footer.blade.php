@@ -40,13 +40,13 @@
                 <div class="footer-bottom">
                     <ul class="footer-links d-flex gap-24 align-items-center">
                         <li>
-                            <a href="{{ url('c/page/about') }}" class="fw-semibold link-underline link1">About</a>
+                            <a href="{{ url('shop/page/about') }}" class="fw-semibold link-underline link1">About</a>
                         </li>
                         <li>
-                            <a href="{{ url('c/page/services') }}" class="fw-semibold link-underline link1">Services</a>
+                            <a href="{{ url('shop/page/services') }}" class="fw-semibold link-underline link1">Services</a>
                         </li>
                         <li>
-                            <a href="{{ url('c/page/works') }}" class="fw-semibold link-underline link1">Works</a>
+                            <a href="{{ url('shop/page/works') }}" class="fw-semibold link-underline link1">Works</a>
                         </li>
                         <li>
                             <a href="{{ route('cms.contact.us') }}" class="fw-semibold link-underline link1">Contact</a>

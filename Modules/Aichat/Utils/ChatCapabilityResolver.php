@@ -6,7 +6,7 @@ use App\User;
 
 class ChatCapabilityResolver
 {
-    public function resolveForUser(?User $user, int $business_id): array
+    public function resolveForActor(?User $user, int $business_id, string $channel = 'web'): array
     {
         $can = function (string $permission) use ($user): bool {
             return $user ? (bool) $user->can($permission) : false;
@@ -35,7 +35,7 @@ class ChatCapabilityResolver
             'report.stock_details',
         ];
 
-        return [
+        $domains = [
             'products' => [
                 'view' => $can('product.view'),
                 'view_cost' => $can('view_purchase_price'),
@@ -96,9 +96,60 @@ class ChatCapabilityResolver
                 'settings' => $can('aichat.chat.settings'),
                 'quote_wizard' => $can('aichat.quote_wizard.use'),
             ],
-            '_meta' => [
+        ];
+
+        foreach ((array) config('aichat.chat.capability_domain_map', []) as $domain => $operations) {
+            $domainKey = trim((string) $domain);
+            if ($domainKey === '' || isset($domains[$domainKey])) {
+                continue;
+            }
+
+            $domains[$domainKey] = [];
+            foreach ((array) $operations as $operation => $operationPermissions) {
+                $operationKey = trim((string) $operation);
+                if ($operationKey === '') {
+                    continue;
+                }
+
+                $permissionList = array_values(array_filter((array) $operationPermissions, function ($permission) {
+                    return is_string($permission) && trim($permission) !== '';
+                }));
+
+                $domains[$domainKey][$operationKey] = $hasAny($permissionList);
+            }
+        }
+
+        return [
+            'actor' => [
+                'user_id' => $user ? (int) $user->id : null,
                 'business_id' => $business_id,
+                'channel' => trim($channel) !== '' ? strtolower($channel) : 'web',
+            ],
+            'domains' => $domains,
+            'actions' => [
+                'enabled' => (bool) config('aichat.actions.enabled', false),
+                'modules' => (array) config('aichat.actions.modules', []),
+                'chat_edit_required' => true,
+            ],
+            'policy' => [
+                'strict_allowlist' => (bool) config('aichat.security.serializer.strict_allowlist', true),
+                'deny_unmapped_domains' => true,
+                'pii_policy_mode' => (string) config('aichat.chat.pii_policy', 'block'),
             ],
         ];
+    }
+
+    public function resolveForUser(?User $user, int $business_id): array
+    {
+        $envelope = $this->resolveForActor($user, $business_id, 'web');
+        $domains = (array) ($envelope['domains'] ?? []);
+        $domains['_meta'] = [
+            'business_id' => $business_id,
+            'user_id' => data_get($envelope, 'actor.user_id'),
+            'channel' => (string) data_get($envelope, 'actor.channel', 'web'),
+        ];
+        $domains['_envelope'] = $envelope;
+
+        return $domains;
     }
 }

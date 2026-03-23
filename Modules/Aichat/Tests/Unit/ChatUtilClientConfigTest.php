@@ -126,10 +126,13 @@ class ChatUtilClientConfigTest extends TestCase
                 'default_model' => 'gpt-4o-mini',
             ]);
 
-        $chatUtil->shouldReceive('resolveChatCapabilities')
+        $chatUtil->shouldReceive('resolveCapabilityEnvelope')
             ->once()
-            ->with($businessId, $userId)
-            ->andReturn($capabilities);
+            ->with($businessId, $userId, 'web')
+            ->andReturn([
+                'actor' => ['business_id' => $businessId, 'user_id' => $userId, 'channel' => 'web'],
+                'domains' => $capabilities,
+            ]);
 
         return $chatUtil;
     }

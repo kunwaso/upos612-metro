@@ -109,6 +109,8 @@ For pending action confirmation flow:
 
 - Customer names and quote details may appear in the chat audit trail because the assistant stores the user and assistant messages for reviewability
 - Keep provider credentials server-side; the browser only receives route/config metadata
+- AI chat must never receive or echo credentials or auth artifacts. This includes passwords, password hashes, API keys, OAuth tokens, 2FA secrets, recovery codes, session tokens, remember tokens, Passport secrets, Telegram bot tokens, LLM provider keys, and encryption keys.
+- Chat serialization uses strict allowlists plus redaction; unmapped sensitive fields are blocked by default.
 
 ## Publish assets
 

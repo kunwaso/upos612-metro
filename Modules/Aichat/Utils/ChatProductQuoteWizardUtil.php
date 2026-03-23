@@ -20,18 +20,31 @@ class ChatProductQuoteWizardUtil
 {
     protected ChatUtil $chatUtil;
 
+    protected ChatAuthorizationPolicy $chatAuthorizationPolicy;
+
+    protected ChatModelSerializer $chatModelSerializer;
+
     protected AIChatUtil $aiChatUtil;
 
     protected ProductCostingUtil $productCostingUtil;
 
     protected QuoteUtil $quoteUtil;
 
-    public function __construct(ChatUtil $chatUtil, AIChatUtil $aiChatUtil, ProductCostingUtil $productCostingUtil, QuoteUtil $quoteUtil)
+    public function __construct(
+        ChatUtil $chatUtil,
+        AIChatUtil $aiChatUtil,
+        ProductCostingUtil $productCostingUtil,
+        QuoteUtil $quoteUtil,
+        ?ChatAuthorizationPolicy $chatAuthorizationPolicy = null,
+        ?ChatModelSerializer $chatModelSerializer = null
+    )
     {
         $this->chatUtil = $chatUtil;
         $this->aiChatUtil = $aiChatUtil;
         $this->productCostingUtil = $productCostingUtil;
         $this->quoteUtil = $quoteUtil;
+        $this->chatAuthorizationPolicy = $chatAuthorizationPolicy ?: app(ChatAuthorizationPolicy::class);
+        $this->chatModelSerializer = $chatModelSerializer ?: app(ChatModelSerializer::class);
     }
 
     public function getOrCreateDraft(?string $conversationId, int $userId, int $businessId, ?string $draftId = null, ?int $telegramChatId = null): ProductQuoteDraft
@@ -90,10 +103,26 @@ class ChatProductQuoteWizardUtil
         ]);
     }
 
-    public function searchContacts(int $businessId, ?string $query = null, ?int $limit = null): array
+    public function searchContacts(
+        int $businessId,
+        ?string $query = null,
+        ?int $limit = null,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
+        $userId = $userId ?: (auth()->check() ? (int) auth()->id() : null);
         $normalizedQuery = trim((string) $query);
         $limit = $this->normalizeLimit($limit, (int) config('aichat.quote_wizard.max_contact_results', 8));
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($businessId, $userId, 'web');
+        $domains = (array) data_get($capabilityEnvelope, 'domains', []);
+
+        $canUseWizard = (bool) data_get($domains, 'chat.quote_wizard', false);
+        $canViewCustomers = (bool) data_get($domains, 'contacts.customer.view', false);
+        $canViewOwnCustomers = (bool) data_get($domains, 'contacts.customer.view_own', false);
+        if (! $canUseWizard || (! $canViewCustomers && ! $canViewOwnCustomers)) {
+            return [];
+        }
 
         $contacts = Contact::where('contacts.business_id', $businessId)
             ->whereIn('contacts.type', ['customer', 'both'])
@@ -107,9 +136,7 @@ class ChatProductQuoteWizardUtil
             });
         }
 
-        if (auth()->check() && ! auth()->user()->can('customer.view') && auth()->user()->can('customer.view_own')) {
-            $contacts->onlyOwnContact();
-        }
+        $this->chatAuthorizationPolicy->applyContactVisibilityScope($contacts, $userId, $canViewCustomers, $canViewOwnCustomers);
 
         return $contacts
             ->select(['contacts.id', 'contacts.name', 'contacts.supplier_business_name', 'contacts.contact_id'])
@@ -118,28 +145,30 @@ class ChatProductQuoteWizardUtil
             ->limit($limit)
             ->get()
             ->map(function (Contact $contact) {
-                return [
+                return $this->chatModelSerializer->serialize('quote_wizard_contact', [
                     'id' => (int) $contact->id,
                     'name' => (string) $contact->name,
                     'supplier_business_name' => (string) ($contact->supplier_business_name ?? ''),
                     'contact_id' => (string) ($contact->contact_id ?? ''),
                     'label' => $this->contactDisplayName($contact),
-                ];
+                ]);
             })
             ->values()
             ->all();
     }
 
-    public function listLocations(int $businessId): array
+    public function listLocations(int $businessId, ?int $userId = null, ?array $capabilityEnvelope = null): array
     {
-        $query = BusinessLocation::where('business_id', $businessId)->active();
-
-        if (auth()->check()) {
-            $permittedLocations = auth()->user()->permitted_locations();
-            if ($permittedLocations !== 'all') {
-                $query->whereIn('id', (array) $permittedLocations);
-            }
+        $userId = $userId ?: (auth()->check() ? (int) auth()->id() : null);
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($businessId, $userId, 'web');
+        $domains = (array) data_get($capabilityEnvelope, 'domains', []);
+        if (! (bool) data_get($domains, 'chat.quote_wizard', false)) {
+            return [];
         }
+
+        $query = BusinessLocation::where('business_id', $businessId)->active();
+        $actor = $this->chatAuthorizationPolicy->resolveActorForBusiness($businessId, $userId);
+        $this->chatAuthorizationPolicy->applyPermittedLocationScope($query, $actor);
 
         return $query
             ->select(['id', 'name', 'location_id'])
@@ -151,21 +180,36 @@ class ChatProductQuoteWizardUtil
                     $label .= ' (' . $location->location_id . ')';
                 }
 
-                return [
+                return $this->chatModelSerializer->serialize('quote_wizard_location', [
                     'id' => (int) $location->id,
                     'name' => (string) $location->name,
                     'location_id' => (string) ($location->location_id ?? ''),
                     'label' => $label,
-                ];
+                ]);
             })
             ->values()
             ->all();
     }
 
-    public function searchProducts(int $businessId, ?string $query = null, ?int $limit = null): array
+    public function searchProducts(
+        int $businessId,
+        ?string $query = null,
+        ?int $limit = null,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
+        $userId = $userId ?: (auth()->check() ? (int) auth()->id() : null);
         $normalizedQuery = trim((string) $query);
         $limit = $this->normalizeLimit($limit, (int) config('aichat.quote_wizard.max_product_results', 8));
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($businessId, $userId, 'web');
+        $domains = (array) data_get($capabilityEnvelope, 'domains', []);
+
+        $canUseWizard = (bool) data_get($domains, 'chat.quote_wizard', false);
+        $canViewProducts = (bool) data_get($domains, 'products.view', false);
+        if (! $canUseWizard || ! $canViewProducts) {
+            return [];
+        }
 
         $products = Product::where('products.business_id', $businessId)
             ->where('products.is_inactive', 0)
@@ -191,14 +235,14 @@ class ChatProductQuoteWizardUtil
                     $label .= ' [' . $product->sku . ']';
                 }
 
-                return [
+                return $this->chatModelSerializer->serialize('quote_wizard_product', [
                     'id' => (int) $product->id,
                     'name' => (string) $product->name,
                     'sku' => (string) ($product->sku ?? ''),
                     'unit' => (string) (optional($product->unit)->short_name ?? ''),
                     'category' => (string) (optional($product->category)->name ?? ''),
                     'label' => $label,
-                ];
+                ]);
             })
             ->values()
             ->all();
@@ -219,7 +263,14 @@ class ChatProductQuoteWizardUtil
         ];
     }
 
-    public function processStep(ProductQuoteDraft $draft, ChatConversation $conversation, int $userId, int $businessId, array $input): array
+    public function processStep(
+        ProductQuoteDraft $draft,
+        ChatConversation $conversation,
+        int $userId,
+        int $businessId,
+        array $input,
+        ?array $capabilityEnvelope = null
+    ): array
     {
         $message = trim((string) ($input['message'] ?? ''));
         $provider = trim((string) ($input['provider'] ?? ''));
@@ -227,6 +278,11 @@ class ChatProductQuoteWizardUtil
         $channel = strtolower(trim((string) ($input['channel'] ?? 'web')));
         if (! in_array($channel, ['web', 'telegram'], true)) {
             $channel = 'web';
+        }
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($businessId, $userId, $channel);
+        $domains = (array) data_get($capabilityEnvelope, 'domains', []);
+        if (! (bool) data_get($domains, 'chat.quote_wizard', false)) {
+            throw new \RuntimeException(__('messages.unauthorized_action'));
         }
 
         $payload = $this->normalizePayload((array) ($draft->payload ?? []), $businessId);
@@ -251,11 +307,11 @@ class ChatProductQuoteWizardUtil
             }
         }
 
-        $payload = $this->applySelectionsToPayload($payload, $businessId, $input);
-        $payload = $this->applyImplicitDefaults($payload, $businessId);
-        $payload = $this->resolvePayloadEntities($payload, $businessId);
+        $payload = $this->applySelectionsToPayload($payload, $businessId, $input, $userId, $capabilityEnvelope);
+        $payload = $this->applyImplicitDefaults($payload, $businessId, $userId, $capabilityEnvelope);
+        $payload = $this->resolvePayloadEntities($payload, $businessId, $userId, $capabilityEnvelope);
 
-        $derived = $this->deriveDraftState($payload, $businessId);
+        $derived = $this->deriveDraftState($payload, $businessId, $userId, $capabilityEnvelope);
         $assistantText = $this->buildAssistantMessage($derived, $channel);
 
         $draft->fill([
@@ -287,7 +343,12 @@ class ChatProductQuoteWizardUtil
     public function serializeDraft(ProductQuoteDraft $draft): array
     {
         $payload = $this->normalizePayload((array) ($draft->payload ?? []), (int) $draft->business_id);
-        $derived = $this->deriveDraftState($payload, (int) $draft->business_id);
+        $capabilityEnvelope = $this->chatUtil->resolveCapabilityEnvelope(
+            (int) $draft->business_id,
+            (int) $draft->user_id,
+            $draft->telegram_chat_id ? 'telegram' : 'web'
+        );
+        $derived = $this->deriveDraftState($payload, (int) $draft->business_id, (int) $draft->user_id, $capabilityEnvelope);
 
         return [
             'id' => (string) $draft->id,
@@ -416,7 +477,12 @@ class ChatProductQuoteWizardUtil
     public function buildCreateContext(ProductQuoteDraft $draft, int $businessId): array
     {
         $payload = $this->normalizePayload((array) ($draft->payload ?? []), $businessId);
-        $derived = $this->deriveDraftState($payload, $businessId);
+        $capabilityEnvelope = $this->chatUtil->resolveCapabilityEnvelope(
+            $businessId,
+            (int) $draft->user_id,
+            $draft->telegram_chat_id ? 'telegram' : 'web'
+        );
+        $derived = $this->deriveDraftState($payload, $businessId, (int) $draft->user_id, $capabilityEnvelope);
 
         if ($derived['status'] !== ProductQuoteDraft::STATUS_READY) {
             throw new \RuntimeException(__('aichat::lang.quote_assistant_draft_not_ready'));
@@ -795,8 +861,17 @@ class ChatProductQuoteWizardUtil
         return (bool) preg_match('/\\b(new\\s*line|add\\s*line|another\\s*line|next\\s*line)\\b/i', $message);
     }
 
-    protected function applySelectionsToPayload(array $payload, int $businessId, array $input): array
+    protected function applySelectionsToPayload(
+        array $payload,
+        int $businessId,
+        array $input,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($businessId, $userId, 'web');
+        $domains = (array) data_get($capabilityEnvelope, 'domains', []);
+
         $selectedRemoveLineUid = (string) ($input['selected_remove_line_uid'] ?? '');
         if ($selectedRemoveLineUid !== '') {
             $payload['lines'] = array_values(array_filter((array) ($payload['lines'] ?? []), function ($line) use ($selectedRemoveLineUid) {
@@ -806,9 +881,16 @@ class ChatProductQuoteWizardUtil
 
         $selectedContactId = (int) ($input['selected_contact_id'] ?? 0);
         if ($selectedContactId > 0) {
-            $contact = Contact::where('business_id', $businessId)
+            $contactsQuery = Contact::where('business_id', $businessId)
                 ->whereIn('type', ['customer', 'both'])
-                ->findOrFail($selectedContactId);
+                ->active();
+            $this->chatAuthorizationPolicy->applyContactVisibilityScope(
+                $contactsQuery,
+                $userId,
+                (bool) data_get($domains, 'contacts.customer.view', false),
+                (bool) data_get($domains, 'contacts.customer.view_own', false)
+            );
+            $contact = $contactsQuery->where('id', $selectedContactId)->firstOrFail();
 
             $payload['contact']['contact_id'] = (int) $contact->id;
             $payload['contact']['hint'] = $this->contactDisplayName($contact);
@@ -816,8 +898,12 @@ class ChatProductQuoteWizardUtil
 
         $selectedProductId = (int) ($input['selected_product_id'] ?? 0);
         if ($selectedProductId > 0) {
+            if (! (bool) data_get($domains, 'products.view', false)) {
+                throw new \RuntimeException(__('messages.unauthorized_action'));
+            }
+
             $selectedLineUid = (string) ($input['selected_line_uid'] ?? '');
-            $product = Product::where('business_id', $businessId)->findOrFail($selectedProductId);
+            $product = Product::where('business_id', $businessId)->where('id', $selectedProductId)->firstOrFail();
 
             foreach ($payload['lines'] as $index => $line) {
                 if ($selectedLineUid !== '' && (string) ($line['uid'] ?? '') !== $selectedLineUid) {
@@ -833,13 +919,18 @@ class ChatProductQuoteWizardUtil
         return $payload;
     }
 
-    protected function applyImplicitDefaults(array $payload, int $businessId): array
+    protected function applyImplicitDefaults(
+        array $payload,
+        int $businessId,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
         $defaults = $this->getCostingDefaults($businessId);
         $defaultCurrency = (string) ($defaults['default_currency'] ?? 'USD');
 
         if (! data_get($payload, 'location.location_id')) {
-            $locations = $this->listLocations($businessId);
+            $locations = $this->listLocations($businessId, $userId, $capabilityEnvelope);
             if (count($locations) === 1) {
                 $payload['location']['location_id'] = (int) ($locations[0]['id'] ?? 0);
                 $payload['location']['hint'] = (string) ($locations[0]['label'] ?? '');
@@ -879,10 +970,15 @@ class ChatProductQuoteWizardUtil
         return $payload;
     }
 
-    protected function resolvePayloadEntities(array $payload, int $businessId): array
+    protected function resolvePayloadEntities(
+        array $payload,
+        int $businessId,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
         if (! data_get($payload, 'contact.contact_id') && ! empty(data_get($payload, 'contact.hint'))) {
-            $contactCandidates = $this->searchContacts($businessId, (string) data_get($payload, 'contact.hint'));
+            $contactCandidates = $this->searchContacts($businessId, (string) data_get($payload, 'contact.hint'), null, $userId, $capabilityEnvelope);
             if (count($contactCandidates) === 1) {
                 $payload['contact']['contact_id'] = (int) $contactCandidates[0]['id'];
             }
@@ -890,7 +986,7 @@ class ChatProductQuoteWizardUtil
 
         if (! data_get($payload, 'location.location_id') && ! empty(data_get($payload, 'location.hint'))) {
             $hint = strtolower(trim((string) data_get($payload, 'location.hint')));
-            foreach ($this->listLocations($businessId) as $location) {
+            foreach ($this->listLocations($businessId, $userId, $capabilityEnvelope) as $location) {
                 $haystack = strtolower(trim((string) (($location['label'] ?? '') . ' ' . ($location['location_id'] ?? '') . ' ' . ($location['name'] ?? ''))));
                 if ($hint !== '' && $haystack !== '' && str_contains($haystack, $hint)) {
                     $payload['location']['location_id'] = (int) ($location['id'] ?? 0);
@@ -905,7 +1001,7 @@ class ChatProductQuoteWizardUtil
                 continue;
             }
 
-            $productCandidates = $this->searchProducts($businessId, (string) $line['product_hint']);
+            $productCandidates = $this->searchProducts($businessId, (string) $line['product_hint'], null, $userId, $capabilityEnvelope);
             if (count($productCandidates) === 1) {
                 $payload['lines'][$index]['product_id'] = (int) $productCandidates[0]['id'];
                 $payload['lines'][$index]['product_hint'] = (string) ($productCandidates[0]['label'] ?? $line['product_hint']);
@@ -915,7 +1011,12 @@ class ChatProductQuoteWizardUtil
         return $payload;
     }
 
-    protected function deriveDraftState(array $payload, int $businessId): array
+    protected function deriveDraftState(
+        array $payload,
+        int $businessId,
+        ?int $userId = null,
+        ?array $capabilityEnvelope = null
+    ): array
     {
         $missingFields = [];
         $pickLists = ['contacts' => [], 'products' => []];
@@ -923,7 +1024,7 @@ class ChatProductQuoteWizardUtil
         if (! data_get($payload, 'contact.contact_id')) {
             $missingFields[] = ['key' => 'contact_id', 'label' => __('aichat::lang.quote_assistant_customer_required')];
             if (! empty(data_get($payload, 'contact.hint'))) {
-                $pickLists['contacts'] = $this->searchContacts($businessId, (string) data_get($payload, 'contact.hint'));
+                $pickLists['contacts'] = $this->searchContacts($businessId, (string) data_get($payload, 'contact.hint'), null, $userId, $capabilityEnvelope);
             }
         }
 
@@ -945,7 +1046,7 @@ class ChatProductQuoteWizardUtil
                     $pickLists['products'][] = [
                         'line_uid' => (string) ($line['uid'] ?? ''),
                         'label' => $lineLabel,
-                        'options' => $this->searchProducts($businessId, (string) $line['product_hint']),
+                        'options' => $this->searchProducts($businessId, (string) $line['product_hint'], null, $userId, $capabilityEnvelope),
                     ];
                 }
             }

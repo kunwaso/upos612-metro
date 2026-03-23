@@ -8,36 +8,34 @@
                     <ul class="nav-menu-main">
                         <li class="menu-item has-child">
                             <a href="{{ url('/') }}" class="item-link link1 active">Home</a>
-                            <ul class="sub-menu">
-                                <li class="sub-menu-item">
-                                    <a href="{{ url('/') }}" class="item-link link1">Home</a>
-                                </li>
-                            </ul>
                         </li>
                         <li class="menu-item">
-                            <a href="{{ url('c/page/about') }}" class="item-link link1">About</a>
+                            <a href="{{ url('shop/page/about') }}" class="item-link link1">About</a>
                         </li>
                         <li class="menu-item has-child">
-                            <a href="{{ url('c/page/services') }}" class="item-link link1">Services</a>
+                            <a href="{{ url('shop/page/services') }}" class="item-link link1"> @lang('cms::lang.products')</a>
                             <ul class="sub-menu">
                                 <li class="sub-menu-item">
-                                    <a href="{{ url('c/page/services') }}" class="item-link link1">Services</a>
+                                    <a href="{{ url('shop/products/bao-bi-cuon') }}" class="item-link link1">Bao bi cuon</a>
+                                </li>
+                                <li class="sub-menu-item">
+                                    <a href="{{ url('shop/products/hop-thung-carton') }}" class="item-link link1">Hop thung carton</a>
                                 </li>
                             </ul>
                         </li>
                         <li class="menu-item has-child">
-                            <a href="{{ url('c/page/works') }}" class="item-link link1">Works</a>
+                            <a href="{{ url('shop/page/works') }}" class="item-link link1">Works</a>
                             <ul class="sub-menu">
                                 <li class="sub-menu-item">
-                                    <a href="{{ url('c/page/works') }}" class="item-link link1">Works</a>
+                                    <a href="{{ url('shop/page/works') }}" class="item-link link1">Works</a>
                                 </li>
                             </ul>
                         </li>
                         <li class="menu-item has-child">
-                            <a href="{{ url('c/blogs') }}" class="item-link link1">Blog</a>
+                            <a href="{{ url('shop/blogs') }}" class="item-link link1">Blog</a>
                             <ul class="sub-menu">
                                 <li class="sub-menu-item">
-                                    <a href="{{ url('c/blogs') }}" class="item-link link1">Blog</a>
+                                    <a href="{{ url('shop/blogs') }}" class="item-link link1">Blog</a>
                                 </li>
                             </ul>
                         </li>

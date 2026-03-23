@@ -45,6 +45,13 @@ class CmsController extends Controller
             ->with(compact('testimonials', 'faqs', 'statistics', 'page'));
     }
 
+    public function baobicuon()
+    {
+        $page = $this->cmsUtil->getPageByLayout('products.baobicuon');
+        return view('cms::frontend.products.baobicuon')
+            ->with(compact('page'));
+    }
+    
     /**
      * Show the form for creating a new resource.
      *

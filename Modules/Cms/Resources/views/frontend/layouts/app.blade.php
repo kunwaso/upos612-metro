@@ -98,7 +98,7 @@
                                 </li>
                                 <li>
                                     <div class="item">
-                                        <a href="{{ url('c/page/about') }}" class="mb-menu-link text-display-1">
+                                        <a href="{{ url('shop/page/about') }}" class="mb-menu-link text-display-1">
                                             <span class="text">About</span>
                                         </a>
                                     </div>
@@ -112,7 +112,7 @@
                                             </a>
                                             <div id="dropdown-menu-1" class="collapse" data-bs-parent="#mobile-menu">
                                                 <ul class="sub-nav-menu">
-                                                    <li><a href="{{ url('c/page/works') }}" class="sub-nav-link text-white">Works</a></li>
+                                                    <li><a href="{{ url('shop/page/works') }}" class="sub-nav-link text-white">Works</a></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -127,7 +127,7 @@
                                             </a>
                                             <div id="dropdown-menu-2" class="collapse" data-bs-parent="#mobile-menu">
                                                 <ul class="sub-nav-menu">
-                                                    <li><a href="{{ url('c/page/services') }}" class="sub-nav-link text-white">Services</a></li>
+                                                    <li><a href="{{ url('shop/page/services') }}" class="sub-nav-link text-white">Services</a></li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -142,7 +142,7 @@
                                             </a>
                                             <div id="dropdown-menu-3" class="collapse" data-bs-parent="#mobile-menu">
                                                 <ul class="sub-nav-menu">
-                                                    <li><a href="{{ url('c/blogs') }}" class="sub-nav-link text-white">Blog</a></li>
+                                                    <li><a href="{{ url('shop/blogs') }}" class="sub-nav-link text-white">Blog</a></li>
                                                 </ul>
                                             </div>
                                         </div>

@@ -96,6 +96,15 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
+        ],
+        "test:clean": [
+            "@php -d error_reporting=8191 vendor/bin/phpunit"
+        ],
+        "test:clean:artisan": [
+            "@php -d error_reporting=8191 artisan test"
+        ],
+        "test:clean:aichat": [
+            "@php -d error_reporting=8191 vendor/bin/phpunit Modules/Aichat/Tests"
         ]
     },
     "config": {

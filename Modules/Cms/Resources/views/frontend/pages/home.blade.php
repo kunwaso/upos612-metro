@@ -24,7 +24,7 @@
                 Giải pháp về đóng gói, in ấn, và cung cấp các sản phẩm đóng gói cho các doanh nghiệp trong và ngoài nước.
             </p>
             <div class="bot-btns effectFade fadeRotateX">
-                <a href="{{ url('c/page/services') }}" class="tf-btn">
+                <a href="{{ url('shop/page/services') }}" class="tf-btn">
                     Xem chi tiết
                 </a>
                 <a href="#pricing" class="tf-btn-2">
@@ -50,7 +50,7 @@
                 <div class="benefits-box benefits-secure effectFade fadeup has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-scroll"></i>
                     <div class="benefits-secure-inner text-center">
-                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt=""></a>
+                        <a href="{{ url('shop/products/bao-bi-cuon') }}"><img src="{{ asset('modules/cms/assets/images/products/rolls/roll-packaging.png') }}" alt=""></a>
                     </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Bao bì dạng cuộn</h6>
@@ -62,7 +62,7 @@
                 <div class="benefits-box benefits-secure effectFade fadeup has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-box-open"></i>
                     <div class="benefits-secure-inner text-center">
-                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt=""></a>
+                        <a href="{{ url('shop/products/hop-thung-carton') }}"><img src="{{ asset('modules/cms/assets/images/products/boxes/box-packaging.png') }}" alt=""></a>
                     </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Hộp - Thùng carton</h6>
@@ -74,7 +74,7 @@
                 <div class="benefits-box benefits-secure effectFade fadeup has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-link"></i>
                     <div class="benefits-secure-inner text-center">
-                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
+                        <a href="{{ url('shop/products/day-dai') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
                     </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Dây đai</h6>
@@ -88,10 +88,10 @@
                 <div class="benefits-box benefits-progress  effectFade fadeup has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-soap"></i>
                     {{-- <div class="benefits-secure-inner text-center">
-                    <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/air/air-packaging.png') }}" alt=""></a>
+                    <a href="{{ url('shop/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/air/air-packaging.png') }}" alt=""></a>
                     </div> --}}
                     <div class="benefits-secure-inner text-center">
-                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
+                        <a href="{{ url('shop/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/strings/string-packaging.png') }}" alt=""></a>
                     </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Túi chống sốc - silica-gel</h6>
@@ -103,7 +103,7 @@
                 <div class="benefits-box benefits-step effectFade fadeup has-transition hov-shadow-out">
                     <i class="catalogicon fa-solid fa-boxes-packing"></i>
                     <div class="benefits-secure-inner text-center">
-                        <a href="{{ url('c/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/other/other-packaging.png') }}" alt=""></a>
+                        <a href="{{ url('shop/page/products') }}"><img src="{{ asset('modules/cms/assets/images/products/other/other-packaging.png') }}" alt=""></a>
                     </div>
                     <div class="content">
                         <h6 class="fw-semibold title">Sản phẩm khác</h6>
@@ -221,7 +221,7 @@
                     <div class="featured-works-item  effectFade fadeUp no-div">
                         <div class="image main-mouse-hover">
                             <img src="{{ asset('modules/cms/assets/images/section/featured-works-1.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                            <a href="{{ url('shop/page/works') }}" class="tf-mouse view-project h6">
                                 View Project
                                 <i class="icon icon-arrow-top-right"></i>
                             </a>
@@ -257,7 +257,7 @@
                     <div class="featured-works-item ">
                         <div class="image main-mouse-hover">
                             <img src="{{ asset('modules/cms/assets/images/section/featured-works-2.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                            <a href="{{ url('shop/page/works') }}" class="tf-mouse view-project h6">
                                 View Project
                                 <i class="icon icon-arrow-top-right"></i>
                             </a>
@@ -293,7 +293,7 @@
                     <div class="featured-works-item ">
                         <div class="image main-mouse-hover">
                             <img src="{{ asset('modules/cms/assets/images/section/featured-works-3.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                            <a href="{{ url('shop/page/works') }}" class="tf-mouse view-project h6">
                                 View Project
                                 <i class="icon icon-arrow-top-right"></i>
                             </a>
@@ -329,7 +329,7 @@
                     <div class="featured-works-item ">
                         <div class="image main-mouse-hover">
                             <img src="{{ asset('modules/cms/assets/images/section/featured-works-4.jpg') }}" alt="">
-                            <a href="{{ url('c/page/works') }}" class="tf-mouse view-project h6">
+                            <a href="{{ url('shop/page/works') }}" class="tf-mouse view-project h6">
                                 View Project
                                 <i class="icon icon-arrow-top-right"></i>
                             </a>

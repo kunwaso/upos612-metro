@@ -110,6 +110,7 @@ class ChatActionUtilPermissionTest extends TestCase
                     'create',
                     ['type' => 'customer', 'name' => 'No Perm', 'mobile' => '123'],
                     [
+                        'chat' => ['edit' => true],
                         'contacts' => [
                             'customer' => ['view_own' => true],
                             'supplier' => ['view_own' => true],
@@ -138,6 +139,7 @@ class ChatActionUtilPermissionTest extends TestCase
                     'create',
                     ['type' => 'both', 'name' => 'Mixed', 'mobile' => '123'],
                     [
+                        'chat' => ['edit' => true],
                         'contacts' => [
                             'customer' => ['create' => true],
                             'supplier' => ['create' => false],
@@ -160,6 +162,7 @@ class ChatActionUtilPermissionTest extends TestCase
                 'create',
                 ['type' => 'both', 'name' => 'Mixed', 'mobile' => '123'],
                 [
+                    'chat' => ['edit' => true],
                     'contacts' => [
                         'customer' => ['create' => true],
                         'supplier' => ['create' => true],
@@ -227,8 +230,7 @@ class ChatActionUtilPermissionTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $chatUtil = \Mockery::mock(ChatUtil::class);
-        $chatUtil->shouldReceive('resolveChatCapabilities')->once()->with(44, 5)->andReturn([
+        $capabilities = [
             'reports' => ['view' => true],
             'products' => ['view' => false],
             'contacts' => [
@@ -238,10 +240,12 @@ class ChatActionUtilPermissionTest extends TestCase
             'sales' => ['view' => true, 'view_own' => false],
             'purchases' => ['view' => false, 'view_own' => true],
             'quotes' => ['view' => false],
-        ]);
+        ];
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
 
         $chatActionUtil = new ChatActionUtil($chatUtil);
-        $result = (array) $this->invokeProtected($chatActionUtil, 'executeReportAction', [44, 5, 'run', []]);
+        $result = (array) $this->invokeProtected($chatActionUtil, 'executeReportAction', [44, 5, 'run', [], $capabilities]);
         $data = (array) ($result['data'] ?? []);
 
         $this->assertSame('report', (string) ($result['entity'] ?? ''));
@@ -252,6 +256,35 @@ class ChatActionUtilPermissionTest extends TestCase
         $this->assertSame(1, (int) ($data['purchases_count'] ?? 0));
     }
 
+    public function test_serialize_pending_action_redacts_sensitive_payload_values(): void
+    {
+        $chatActionUtil = new ChatActionUtil(\Mockery::mock(ChatUtil::class));
+        $pendingAction = new \Modules\Aichat\Entities\ChatPendingAction([
+            'id' => 7,
+            'module' => 'settings',
+            'action' => 'update',
+            'status' => 'pending',
+            'channel' => 'web',
+            'payload' => [
+                'password' => 'super-secret',
+                'access_token' => 'Bearer abc123',
+                'safe_key' => 'safe-value',
+            ],
+            'result_payload' => [
+                'api_key' => 'sk-123456789',
+                'message' => 'done',
+            ],
+            'preview_text' => 'Update settings',
+        ]);
+
+        $serialized = $chatActionUtil->serializePendingAction($pendingAction);
+
+        $this->assertSame('[redacted]', data_get($serialized, 'payload.password'));
+        $this->assertSame('[redacted]', data_get($serialized, 'payload.access_token'));
+        $this->assertSame('safe-value', data_get($serialized, 'payload.safe_key'));
+        $this->assertSame('[redacted]', data_get($serialized, 'result_payload.api_key'));
+    }
+
     protected function invokeProtected(object $target, string $method, array $arguments = [])
     {
         $reflection = new \ReflectionMethod($target, $method);
@@ -260,4 +293,3 @@ class ChatActionUtilPermissionTest extends TestCase
         return $reflection->invokeArgs($target, $arguments);
     }
 }
-

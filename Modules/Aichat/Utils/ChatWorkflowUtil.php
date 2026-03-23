@@ -21,6 +21,12 @@ class ChatWorkflowUtil
         $provider = (string) ($payload['provider'] ?? '');
         $model = (string) ($payload['model'] ?? '');
         $prompt = (string) ($payload['prompt'] ?? '');
+        $channel = strtolower(trim((string) ($payload['channel'] ?? 'web')));
+        if (! in_array($channel, ['web', 'telegram'], true)) {
+            $channel = 'web';
+        }
+
+        $capabilityEnvelope = $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, $channel);
 
         if (! $this->chatUtil->isModelAllowedForBusiness($business_id, $provider, $model)) {
             return [
@@ -90,8 +96,17 @@ class ChatWorkflowUtil
                 $sanitizedPrompt,
                 null,
                 null,
-                $user_id
+                $user_id,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                $capabilityEnvelope,
+                $channel
             ),
+            'capability_envelope' => $capabilityEnvelope,
             'user_message' => $userMessage,
             'credential' => $credential,
         ];
@@ -102,6 +117,11 @@ class ChatWorkflowUtil
         $settings = $this->chatUtil->getOrCreateBusinessSettings($business_id);
         $provider = strtolower(trim((string) ($assistantMessage->provider ?: $settings->default_provider ?: config('aichat.chat.default_provider', 'openai'))));
         $model = trim((string) ($assistantMessage->model ?: $settings->default_model ?: config('aichat.chat.default_model', 'gpt-4o-mini')));
+        $channel = strtolower(trim((string) ($payload['channel'] ?? 'web')));
+        if (! in_array($channel, ['web', 'telegram'], true)) {
+            $channel = 'web';
+        }
+        $capabilityEnvelope = $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, $channel);
 
         if (! $this->chatUtil->isModelAllowedForBusiness($business_id, $provider, $model)) {
             return [
@@ -149,8 +169,17 @@ class ChatWorkflowUtil
                 (string) $sourceUserMessage->content,
                 null,
                 null,
-                $user_id
+                $user_id,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                $capabilityEnvelope,
+                $channel
             ),
+            'capability_envelope' => $capabilityEnvelope,
             'credential' => $credential,
             'source_user_message' => $sourceUserMessage,
         ];

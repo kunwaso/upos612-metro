@@ -74,7 +74,8 @@ class ChatCapabilityResolverTest extends TestCase
             'aichat.quote_wizard.use' => false,
         ];
 
-        $user = \Mockery::mock(User::class);
+        $user = \Mockery::mock(User::class)->makePartial();
+        $user->id = 7;
         $user->shouldReceive('can')->andReturnUsing(function (string $permission) use ($permissionMap): bool {
             return (bool) ($permissionMap[$permission] ?? false);
         });
@@ -102,5 +103,48 @@ class ChatCapabilityResolverTest extends TestCase
         $this->assertTrue((bool) data_get($caps, 'settings.chat_settings'));
         $this->assertTrue((bool) data_get($caps, 'chat.edit'));
         $this->assertFalse((bool) data_get($caps, 'chat.quote_wizard'));
+    }
+
+    public function test_resolver_returns_actor_envelope_with_channel_context(): void
+    {
+        $user = \Mockery::mock(User::class)->makePartial();
+        $user->id = 15;
+        $user->shouldReceive('can')->andReturn(false);
+
+        $resolver = new ChatCapabilityResolver();
+        $envelope = $resolver->resolveForActor($user, 88, 'telegram');
+
+        $this->assertSame(15, data_get($envelope, 'actor.user_id'));
+        $this->assertSame(88, data_get($envelope, 'actor.business_id'));
+        $this->assertSame('telegram', data_get($envelope, 'actor.channel'));
+        $this->assertIsArray(data_get($envelope, 'domains'));
+        $this->assertIsArray(data_get($envelope, 'actions.modules'));
+    }
+
+    public function test_resolver_maps_configured_extended_domain_capabilities(): void
+    {
+        config()->set('aichat.chat.capability_domain_map', [
+            'storage' => [
+                'view' => ['storage.view'],
+                'transfer' => ['storage.transfer'],
+            ],
+        ]);
+
+        $permissionMap = [
+            'storage.view' => true,
+            'storage.transfer' => false,
+        ];
+
+        $user = \Mockery::mock(User::class)->makePartial();
+        $user->id = 9;
+        $user->shouldReceive('can')->andReturnUsing(function (string $permission) use ($permissionMap): bool {
+            return (bool) ($permissionMap[$permission] ?? false);
+        });
+
+        $resolver = new ChatCapabilityResolver();
+        $envelope = $resolver->resolveForActor($user, 55);
+
+        $this->assertTrue((bool) data_get($envelope, 'domains.storage.view'));
+        $this->assertFalse((bool) data_get($envelope, 'domains.storage.transfer'));
     }
 }

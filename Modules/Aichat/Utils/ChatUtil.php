@@ -34,10 +34,27 @@ class ChatUtil
 
     protected ChatMessageRendererUtil $chatMessageRendererUtil;
 
-    public function __construct(ChatAuditUtil $chatAuditUtil, ChatMessageRendererUtil $chatMessageRendererUtil)
+    protected ChatAuthorizationPolicy $chatAuthorizationPolicy;
+
+    protected ChatModelSerializer $chatModelSerializer;
+
+    protected ChatIntentDomainResolver $chatIntentDomainResolver;
+
+    protected array $capabilityEnvelopeCache = [];
+
+    public function __construct(
+        ChatAuditUtil $chatAuditUtil,
+        ChatMessageRendererUtil $chatMessageRendererUtil,
+        ?ChatAuthorizationPolicy $chatAuthorizationPolicy = null,
+        ?ChatModelSerializer $chatModelSerializer = null,
+        ?ChatIntentDomainResolver $chatIntentDomainResolver = null
+    )
     {
         $this->chatAuditUtil = $chatAuditUtil;
         $this->chatMessageRendererUtil = $chatMessageRendererUtil;
+        $this->chatAuthorizationPolicy = $chatAuthorizationPolicy ?: app(ChatAuthorizationPolicy::class);
+        $this->chatModelSerializer = $chatModelSerializer ?: app(ChatModelSerializer::class);
+        $this->chatIntentDomainResolver = $chatIntentDomainResolver ?: app(ChatIntentDomainResolver::class);
     }
 
     public function getProviderCatalog(): array
@@ -941,11 +958,18 @@ class ChatUtil
     {
         $settings = $this->getOrCreateBusinessSettings($business_id);
         $modelOptions = $this->buildModelOptions($business_id, $user_id);
-        $capabilities = $this->resolveChatCapabilities($business_id, $user_id);
+        $capabilityEnvelope = $this->resolveCapabilityEnvelope($business_id, $user_id, 'web');
+        $capabilities = (array) data_get($capabilityEnvelope, 'domains', []);
+        $capabilities['_meta'] = [
+            'business_id' => $business_id,
+            'user_id' => data_get($capabilityEnvelope, 'actor.user_id'),
+            'channel' => (string) data_get($capabilityEnvelope, 'actor.channel', 'web'),
+        ];
 
         return [
             'enabled' => $this->isChatEnabled($business_id),
             'capabilities' => $capabilities,
+            'capability_envelope' => $capabilityEnvelope,
             'permissions' => [
                 'can_edit' => auth()->check() && auth()->user()->can('aichat.chat.edit'),
                 'can_manage_settings' => auth()->check() && auth()->user()->can('aichat.chat.settings'),
@@ -1061,16 +1085,39 @@ class ChatUtil
         ];
     }
 
-    public function resolveChatCapabilities(int $business_id, ?int $user_id = null): array
-    {
-        $user = null;
-        if ($user_id !== null) {
-            $user = User::find($user_id);
-        } elseif (auth()->check()) {
-            $user = auth()->user();
+    public function resolveCapabilityEnvelope(
+        int $business_id,
+        ?int $user_id = null,
+        string $channel = 'web',
+        ?User $actor = null,
+        bool $refresh = false
+    ): array {
+        $normalizedChannel = trim($channel) !== '' ? strtolower(trim($channel)) : 'web';
+        $cacheKey = $business_id . '|' . (string) ($user_id ?? 'guest') . '|' . $normalizedChannel;
+        if (! $refresh && isset($this->capabilityEnvelopeCache[$cacheKey])) {
+            return $this->capabilityEnvelopeCache[$cacheKey];
         }
 
-        return app(ChatCapabilityResolver::class)->resolveForUser($user, $business_id);
+        $resolvedActor = $this->chatAuthorizationPolicy->resolveActorForBusiness($business_id, $user_id, $actor);
+        $envelope = app(ChatCapabilityResolver::class)->resolveForActor($resolvedActor, $business_id, $normalizedChannel);
+
+        $this->capabilityEnvelopeCache[$cacheKey] = $envelope;
+
+        return $envelope;
+    }
+
+    public function resolveChatCapabilities(int $business_id, ?int $user_id = null): array
+    {
+        $envelope = $this->resolveCapabilityEnvelope($business_id, $user_id, 'web');
+        $domains = (array) data_get($envelope, 'domains', []);
+        $domains['_meta'] = [
+            'business_id' => $business_id,
+            'user_id' => data_get($envelope, 'actor.user_id'),
+            'channel' => (string) data_get($envelope, 'actor.channel', 'web'),
+        ];
+        $domains['_envelope'] = $envelope;
+
+        return $domains;
     }
 
     public function isModelAllowedForBusiness(int $business_id, string $provider, string $model): bool
@@ -1195,16 +1242,23 @@ class ChatUtil
         ?string $trimContext = null,
         ?int $trimId = null,
         ?string $salesOrderContext = null,
-        ?int $transactionId = null
+        ?int $transactionId = null,
+        ?array $capabilityEnvelope = null,
+        ?string $channel = null
     ): array {
         $business_id = (int) $conversation->business_id;
-        $capabilities = $this->resolveChatCapabilities($business_id, $user_id);
+        $channel = trim((string) $channel) !== '' ? strtolower(trim((string) $channel)) : 'web';
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->resolveCapabilityEnvelope($business_id, $user_id, $channel);
+        $capabilities = (array) data_get($capabilityEnvelope, 'domains', []);
         $sections = [
             'You are Aichat, an AI assistant for a single business account inside UPOS.',
             'Use only the organization data, persistent memory, and conversation history provided in this prompt.',
             'Do not invent data for other businesses. If information is unavailable in the provided business context, say so clearly.',
             'Do not claim any record was created, finalized, updated, or deleted unless this conversation includes an explicit app confirmation for that action.',
             'Never request, reveal, or restate passwords, auth tokens, session identifiers, email addresses, or phone numbers.',
+            'For each request, decompose by domain and only answer using domains where capability is granted.',
+            'If a domain capability is denied, explicitly refuse that part and continue with any allowed domains.',
+            'Only claim facts grounded in authorized retrieved context or confirmed tool results.',
         ];
 
         $settings = $this->getOrCreateBusinessSettings($business_id);
@@ -1225,6 +1279,11 @@ class ChatUtil
         $mutationWorkflow = $this->buildMutationWorkflowSection($capabilities);
         if ($mutationWorkflow !== '') {
             $sections[] = 'Action execution workflow:' . "\n" . $mutationWorkflow;
+        }
+
+        $domainBoundarySection = $this->buildDomainBoundarySection((string) ($currentPrompt ?? ''), $capabilities);
+        if ($domainBoundarySection !== '') {
+            $sections[] = 'Current request authorization boundary:' . "\n" . $domainBoundarySection;
         }
 
         $organizationContext = $this->buildOrganizationContext($business_id, $user_id, $capabilities);
@@ -1631,6 +1690,70 @@ class ChatUtil
         ]);
     }
 
+    protected function buildDomainBoundarySection(string $prompt, array $capabilities): string
+    {
+        $requestedDomains = $this->chatIntentDomainResolver->resolveRequestedDomains($prompt);
+        if (empty($requestedDomains)) {
+            return '';
+        }
+
+        $allowed = [];
+        $denied = [];
+
+        foreach ($requestedDomains as $domain) {
+            $allowedOperations = $this->resolveAllowedDomainOperations($domain, $capabilities);
+            if (empty($allowedOperations)) {
+                $denied[] = $domain;
+                continue;
+            }
+
+            $allowed[] = $domain . ' (' . implode(', ', $allowedOperations) . ')';
+        }
+
+        $lines = [];
+        if (! empty($allowed)) {
+            $lines[] = '- Requested domains with access: ' . implode('; ', $allowed) . '.';
+        }
+        if (! empty($denied)) {
+            $lines[] = '- Requested domains without access: ' . implode(', ', $denied) . '. Refuse these parts clearly.';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function resolveAllowedDomainOperations(string $domain, array $capabilities): array
+    {
+        $domainCapabilities = (array) data_get($capabilities, $domain, []);
+        if (empty($domainCapabilities)) {
+            return [];
+        }
+
+        if (array_key_exists('view', $domainCapabilities)) {
+            $allowed = array_keys(array_filter($domainCapabilities, function ($value) {
+                return $value === true;
+            }));
+
+            return array_values($allowed);
+        }
+
+        if ($domain === 'contacts') {
+            $allowed = [];
+            foreach (['customer', 'supplier'] as $contactType) {
+                $typeCapabilities = (array) data_get($domainCapabilities, $contactType, []);
+                $ops = array_keys(array_filter($typeCapabilities, function ($value) {
+                    return $value === true;
+                }));
+                if (! empty($ops)) {
+                    $allowed[] = $contactType . ':' . implode('/', $ops);
+                }
+            }
+
+            return $allowed;
+        }
+
+        return [];
+    }
+
     protected function buildProductsContext(int $business_id, bool $canView, bool $canViewCost = false): string
     {
         if (! $canView) {
@@ -1654,24 +1777,31 @@ class ChatUtil
         $lines = ['Products count: ' . $productCount];
         foreach ($products as $product) {
             $variation = $product->variations->first();
-            $unitPrice = $variation && is_numeric($variation->default_sell_price)
-                ? number_format((float) $variation->default_sell_price, 2, '.', '')
-                : '-';
-            $sellingPrice = $variation && is_numeric($variation->sell_price_inc_tax)
-                ? number_format((float) $variation->sell_price_inc_tax, 2, '.', '')
-                : '-';
-            $cost = $variation && is_numeric($variation->default_purchase_price)
-                ? number_format((float) $variation->default_purchase_price, 2, '.', '')
-                : '-';
+            $serialized = $this->chatModelSerializer->serialize('product', [
+                'id' => (int) $product->id,
+                'name' => trim((string) $product->name),
+                'sku' => (string) ($product->sku ?: '-'),
+                'type' => (string) ($product->type ?: '-'),
+                'unit_price' => $variation && is_numeric($variation->default_sell_price)
+                    ? number_format((float) $variation->default_sell_price, 2, '.', '')
+                    : '-',
+                'selling_price' => $variation && is_numeric($variation->sell_price_inc_tax)
+                    ? number_format((float) $variation->sell_price_inc_tax, 2, '.', '')
+                    : '-',
+                'cost' => $variation && is_numeric($variation->default_purchase_price)
+                    ? number_format((float) $variation->default_purchase_price, 2, '.', '')
+                    : '-',
+            ]);
 
-            $line = '- Product #' . $product->id . ': ' . trim((string) $product->name)
-                . ' | sku=' . ((string) $product->sku ?: '-')
-                . ' | type=' . ((string) $product->type ?: '-')
-                . ' | unit_price=' . $unitPrice
-                . ' | selling_price=' . $sellingPrice;
+            $line = '- Product #' . ($serialized['id'] ?? (int) $product->id)
+                . ': ' . ($serialized['name'] ?? trim((string) $product->name))
+                . ' | sku=' . ($serialized['sku'] ?? '-')
+                . ' | type=' . ($serialized['type'] ?? '-')
+                . ' | unit_price=' . ($serialized['unit_price'] ?? '-')
+                . ' | selling_price=' . ($serialized['selling_price'] ?? '-');
 
-            if ($canViewCost) {
-                $line .= ' | cost=' . $cost;
+            if ($canViewCost && array_key_exists('cost', $serialized)) {
+                $line .= ' | cost=' . (string) $serialized['cost'];
             }
 
             $lines[] = $line;
@@ -1694,14 +1824,7 @@ class ChatUtil
             ->whereIn('type', [$type, 'both'])
             ->where('type', '!=', 'lead');
 
-        if (! $canView && $canViewOwn && $user_id !== null) {
-            $query->leftJoin('user_contact_access as ucas', 'contacts.id', '=', 'ucas.contact_id')
-                ->where(function ($subQuery) use ($user_id) {
-                    $subQuery->where('contacts.created_by', $user_id)
-                        ->orWhere('ucas.user_id', $user_id);
-                })
-                ->distinct();
-        }
+        $this->chatAuthorizationPolicy->applyContactVisibilityScope($query, $user_id, $canView, $canViewOwn);
 
         $countQuery = clone $query;
         $contactCount = $countQuery->count('contacts.id');
@@ -1714,11 +1837,24 @@ class ChatUtil
 
         $lines = [$type === 'customer' ? 'Customer contacts count: ' . $contactCount : 'Supplier contacts count: ' . $contactCount];
         foreach ($contacts as $contact) {
-            $displayName = trim((string) $contact->name);
-            if (! empty($contact->supplier_business_name)) {
-                $displayName .= ' (' . trim((string) $contact->supplier_business_name) . ')';
+            $serialized = $this->chatModelSerializer->serialize('contact', [
+                'id' => (int) $contact->id,
+                'name' => (string) $contact->name,
+                'supplier_business_name' => (string) ($contact->supplier_business_name ?? ''),
+                'type' => (string) ($contact->type ?: '-'),
+                'contact_id' => (string) ($contact->contact_id ?: '-'),
+            ]);
+
+            $displayName = trim((string) ($serialized['name'] ?? ''));
+            $supplierBusinessName = trim((string) ($serialized['supplier_business_name'] ?? ''));
+            if ($supplierBusinessName !== '') {
+                $displayName .= ' (' . $supplierBusinessName . ')';
             }
-            $lines[] = '- Contact #' . $contact->id . ': ' . $displayName . ' | type=' . ((string) $contact->type ?: '-') . ' | reference=' . ((string) $contact->contact_id ?: '-');
+
+            $lines[] = '- Contact #' . ((int) ($serialized['id'] ?? $contact->id))
+                . ': ' . $displayName
+                . ' | type=' . ((string) ($serialized['type'] ?? '-'))
+                . ' | reference=' . ((string) ($serialized['contact_id'] ?? '-'));
         }
 
         return implode("\n", $lines);
@@ -1737,9 +1873,7 @@ class ChatUtil
         $query = Transaction::where('business_id', $business_id)
             ->where('type', 'sell');
 
-        if (! $canView && $canViewOwn && $user_id !== null) {
-            $query->where('created_by', $user_id);
-        }
+        $this->chatAuthorizationPolicy->applyTransactionVisibilityScope($query, $user_id, $canView, $canViewOwn);
 
         $countQuery = clone $query;
         $transactionCount = $countQuery->count();
@@ -1756,7 +1890,21 @@ class ChatUtil
         $lines = ['Sales transactions count: ' . $transactionCount];
         foreach ($transactions as $transaction) {
             $contactName = $transaction->contact ? trim((string) ($transaction->contact->supplier_business_name ?: $transaction->contact->name)) : '-';
-            $lines[] = '- Sale #' . $transaction->id . ': status=' . ((string) $transaction->status ?: '-') . ' | invoice=' . ((string) $transaction->invoice_no ?: '-') . ' | date=' . ($transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-') . ' | contact=' . $contactName;
+            $serialized = $this->chatModelSerializer->serialize('sale_transaction', [
+                'id' => (int) $transaction->id,
+                'status' => (string) ($transaction->status ?: '-'),
+                'invoice_no' => (string) ($transaction->invoice_no ?: '-'),
+                'transaction_date' => $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-',
+                'final_total' => is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-',
+                'contact_name' => $contactName,
+            ]);
+
+            $lines[] = '- Sale #' . ((int) ($serialized['id'] ?? $transaction->id))
+                . ': status=' . ((string) ($serialized['status'] ?? '-'))
+                . ' | invoice=' . ((string) ($serialized['invoice_no'] ?? '-'))
+                . ' | date=' . ((string) ($serialized['transaction_date'] ?? '-'))
+                . ' | total=' . ((string) ($serialized['final_total'] ?? '-'))
+                . ' | contact=' . ((string) ($serialized['contact_name'] ?? '-'));
         }
 
         return implode("\n", $lines);
@@ -1775,9 +1923,7 @@ class ChatUtil
         $query = Transaction::where('business_id', $business_id)
             ->where('type', 'purchase');
 
-        if (! $canView && $canViewOwn && $user_id !== null) {
-            $query->where('created_by', $user_id);
-        }
+        $this->chatAuthorizationPolicy->applyTransactionVisibilityScope($query, $user_id, $canView, $canViewOwn);
 
         $countQuery = clone $query;
         $transactionCount = $countQuery->count();
@@ -1794,7 +1940,21 @@ class ChatUtil
         $lines = ['Purchase transactions count: ' . $transactionCount];
         foreach ($transactions as $transaction) {
             $contactName = $transaction->contact ? trim((string) ($transaction->contact->supplier_business_name ?: $transaction->contact->name)) : '-';
-            $lines[] = '- Purchase #' . $transaction->id . ': status=' . ((string) $transaction->status ?: '-') . ' | invoice=' . ((string) $transaction->invoice_no ?: '-') . ' | date=' . ($transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-') . ' | contact=' . $contactName;
+            $serialized = $this->chatModelSerializer->serialize('purchase_transaction', [
+                'id' => (int) $transaction->id,
+                'status' => (string) ($transaction->status ?: '-'),
+                'invoice_no' => (string) ($transaction->invoice_no ?: '-'),
+                'transaction_date' => $transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-',
+                'final_total' => is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-',
+                'contact_name' => $contactName,
+            ]);
+
+            $lines[] = '- Purchase #' . ((int) ($serialized['id'] ?? $transaction->id))
+                . ': status=' . ((string) ($serialized['status'] ?? '-'))
+                . ' | invoice=' . ((string) ($serialized['invoice_no'] ?? '-'))
+                . ' | date=' . ((string) ($serialized['transaction_date'] ?? '-'))
+                . ' | total=' . ((string) ($serialized['final_total'] ?? '-'))
+                . ' | contact=' . ((string) ($serialized['contact_name'] ?? '-'));
         }
 
         return implode("\n", $lines);
@@ -1822,7 +1982,21 @@ class ChatUtil
         foreach ($quotes as $quote) {
             $contactName = $quote->contact ? trim((string) ($quote->contact->supplier_business_name ?: $quote->contact->name)) : '-';
             $locationName = $quote->location ? trim((string) $quote->location->name) : '-';
-            $lines[] = '- Quote #' . $quote->id . ': contact=' . $contactName . ' | location=' . $locationName . ' | expires=' . ($quote->expires_at ? Carbon::parse($quote->expires_at)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($quote->grand_total) ? number_format((float) $quote->grand_total, 2, '.', '') : '-') . ' | lines=' . (int) $quote->line_count;
+            $serialized = $this->chatModelSerializer->serialize('quote', [
+                'id' => (int) $quote->id,
+                'contact_name' => $contactName,
+                'location_name' => $locationName,
+                'expires_at' => $quote->expires_at ? Carbon::parse($quote->expires_at)->format('Y-m-d') : '-',
+                'grand_total' => is_numeric($quote->grand_total) ? number_format((float) $quote->grand_total, 2, '.', '') : '-',
+                'line_count' => (int) $quote->line_count,
+            ]);
+
+            $lines[] = '- Quote #' . ((int) ($serialized['id'] ?? $quote->id))
+                . ': contact=' . ((string) ($serialized['contact_name'] ?? '-'))
+                . ' | location=' . ((string) ($serialized['location_name'] ?? '-'))
+                . ' | expires=' . ((string) ($serialized['expires_at'] ?? '-'))
+                . ' | total=' . ((string) ($serialized['grand_total'] ?? '-'))
+                . ' | lines=' . ((int) ($serialized['line_count'] ?? 0));
         }
 
         return implode("\n", $lines);
@@ -1844,32 +2018,34 @@ class ChatUtil
             || (bool) data_get($capabilities, 'contacts.supplier.view', false)
             || (bool) data_get($capabilities, 'contacts.supplier.view_own', false)) {
             $contactsQuery = Contact::where('business_id', $business_id)->where('type', '!=', 'lead');
-            if (! (bool) data_get($capabilities, 'contacts.customer.view', false)
-                && ! (bool) data_get($capabilities, 'contacts.supplier.view', false)
-                && $user_id !== null) {
-                $contactsQuery->leftJoin('user_contact_access as ucas', 'contacts.id', '=', 'ucas.contact_id')
-                    ->where(function ($subQuery) use ($user_id) {
-                        $subQuery->where('contacts.created_by', $user_id)
-                            ->orWhere('ucas.user_id', $user_id);
-                    })
-                    ->distinct();
-            }
+            $canViewContacts = (bool) data_get($capabilities, 'contacts.customer.view', false)
+                || (bool) data_get($capabilities, 'contacts.supplier.view', false);
+            $canViewOwnContacts = (bool) data_get($capabilities, 'contacts.customer.view_own', false)
+                || (bool) data_get($capabilities, 'contacts.supplier.view_own', false);
+
+            $this->chatAuthorizationPolicy->applyContactVisibilityScope($contactsQuery, $user_id, $canViewContacts, $canViewOwnContacts);
             $lines[] = '- Contacts available: ' . $contactsQuery->count('contacts.id');
         }
 
         if ((bool) data_get($capabilities, 'sales.view', false) || (bool) data_get($capabilities, 'sales.view_own', false)) {
             $salesQuery = Transaction::where('business_id', $business_id)->where('type', 'sell');
-            if (! (bool) data_get($capabilities, 'sales.view', false) && $user_id !== null) {
-                $salesQuery->where('created_by', $user_id);
-            }
+            $this->chatAuthorizationPolicy->applyTransactionVisibilityScope(
+                $salesQuery,
+                $user_id,
+                (bool) data_get($capabilities, 'sales.view', false),
+                (bool) data_get($capabilities, 'sales.view_own', false)
+            );
             $lines[] = '- Sales transactions available: ' . $salesQuery->count();
         }
 
         if ((bool) data_get($capabilities, 'purchases.view', false) || (bool) data_get($capabilities, 'purchases.view_own', false)) {
             $purchaseQuery = Transaction::where('business_id', $business_id)->where('type', 'purchase');
-            if (! (bool) data_get($capabilities, 'purchases.view', false) && $user_id !== null) {
-                $purchaseQuery->where('created_by', $user_id);
-            }
+            $this->chatAuthorizationPolicy->applyTransactionVisibilityScope(
+                $purchaseQuery,
+                $user_id,
+                (bool) data_get($capabilities, 'purchases.view', false),
+                (bool) data_get($capabilities, 'purchases.view_own', false)
+            );
             $lines[] = '- Purchase transactions available: ' . $purchaseQuery->count();
         }
 

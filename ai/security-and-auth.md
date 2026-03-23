@@ -360,6 +360,27 @@ The `Superadmin` middleware checks if the authenticated user has the system-leve
 
 ---
 
+## 10.1 AI Chat Credential Hard Deny (Aichat)
+
+For every Aichat prompt context, tool payload, and audit metadata:
+
+- Never include credential/auth fields in model-visible context.
+- Use strict serializer allowlists for chat payloads; deny unmapped fields by default.
+- Redact blocked keys and token patterns before logging/auditing.
+
+At minimum, hard-deny these classes of data:
+
+- Passwords and password hashes
+- Remember/session tokens and raw auth artifacts
+- API keys, OAuth access/refresh tokens, Passport secrets
+- 2FA secrets and recovery codes
+- Telegram bot tokens and LLM provider keys
+- Encryption/private keys and equivalent secrets
+
+This requirement applies to both web and Telegram chat paths.
+
+---
+
 ## 11. Security Checklist Before Shipping
 
 Before marking any feature complete, verify:

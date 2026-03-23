@@ -7,6 +7,7 @@ use App\Http\Middleware\AdminSidebarMenu;
 use App\Http\Middleware\Language;
 use App\Http\Middleware\SetSessionData;
 use App\Http\Middleware\Timezone;
+use App\Http\Middleware\VerifyCsrfToken;
 use Modules\Aichat\Entities\ChatConversation;
 use Modules\Aichat\Entities\ChatMessage;
 use Modules\Aichat\Entities\ProductQuoteDraft;
@@ -18,7 +19,7 @@ class ChatQuoteWizardProcessControllerTest extends TestCase
 {
     public function test_process_returns_ready_summary_with_confirm_cta_in_assistant_message()
     {
-        $this->withoutMiddleware([SetSessionData::class, Language::class, Timezone::class, AdminSidebarMenu::class]);
+        $this->withoutMiddleware([SetSessionData::class, Language::class, Timezone::class, AdminSidebarMenu::class, VerifyCsrfToken::class]);
         $this->actingAs($this->makeUser(true, true));
 
         $conversationId = '00000000-0000-0000-0000-000000000111';

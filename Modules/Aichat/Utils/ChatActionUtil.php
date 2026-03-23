@@ -16,9 +16,19 @@ class ChatActionUtil
 {
     protected ChatUtil $chatUtil;
 
-    public function __construct(ChatUtil $chatUtil)
+    protected ChatAuthorizationPolicy $chatAuthorizationPolicy;
+
+    protected ChatModelSerializer $chatModelSerializer;
+
+    public function __construct(
+        ChatUtil $chatUtil,
+        ?ChatAuthorizationPolicy $chatAuthorizationPolicy = null,
+        ?ChatModelSerializer $chatModelSerializer = null
+    )
     {
         $this->chatUtil = $chatUtil;
+        $this->chatAuthorizationPolicy = $chatAuthorizationPolicy ?: app(ChatAuthorizationPolicy::class);
+        $this->chatModelSerializer = $chatModelSerializer ?: app(ChatModelSerializer::class);
     }
 
     public function getActionCatalog(array $capabilities = []): array
@@ -48,6 +58,10 @@ class ChatActionUtil
                         || (bool) data_get($capabilities, 'settings.chat_settings', false);
                 }
 
+                if ((bool) ($meta['mutation'] ?? false) && ! (bool) data_get($capabilities, 'chat.edit', false)) {
+                    $enabled = false;
+                }
+
                 $actionItems[] = [
                     'action' => $action,
                     'enabled' => $enabled,
@@ -70,7 +84,8 @@ class ChatActionUtil
         int $user_id,
         string $conversation_id,
         array $data,
-        string $channel = 'web'
+        string $channel = 'web',
+        ?array $capabilityEnvelope = null
     ): ChatPendingAction {
         if (! $this->isActionsEnabled()) {
             throw new \RuntimeException(__('aichat::lang.chat_action_disabled'));
@@ -86,7 +101,9 @@ class ChatActionUtil
         $this->assertSupportedAction($module, $action);
         $this->assertModuleEnabled($module);
 
-        $capabilities = $this->chatUtil->resolveChatCapabilities($business_id, $user_id);
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, $channel);
+        $capabilities = (array) data_get($capabilityEnvelope, 'domains', []);
+        $this->chatAuthorizationPolicy->assertChatEditCapability($capabilities);
         $normalizedPayload = $this->normalizePayloadForModule($module, $action, $payload);
 
         $this->assertActionAllowed($business_id, $user_id, $module, $action, $normalizedPayload, $capabilities);
@@ -123,7 +140,8 @@ class ChatActionUtil
         string $conversation_id,
         int $action_id,
         string $channel = 'web',
-        ?string $confirmNote = null
+        ?string $confirmNote = null,
+        ?array $capabilityEnvelope = null
     ): ChatPendingAction {
         if (! $this->isActionsEnabled()) {
             throw new \RuntimeException(__('aichat::lang.chat_action_disabled'));
@@ -131,14 +149,15 @@ class ChatActionUtil
 
         $this->requireConversationForUser($business_id, $user_id, $conversation_id);
 
-        return DB::transaction(function () use ($business_id, $user_id, $conversation_id, $action_id, $channel, $confirmNote) {
+        return DB::transaction(function () use ($business_id, $user_id, $conversation_id, $action_id, $channel, $confirmNote, $capabilityEnvelope) {
             return $this->confirmActionInTransaction(
                 $business_id,
                 $user_id,
                 $conversation_id,
                 $action_id,
                 $channel,
-                $confirmNote
+                $confirmNote,
+                $capabilityEnvelope
             );
         });
     }
@@ -148,13 +167,17 @@ class ChatActionUtil
         int $user_id,
         string $conversation_id,
         int $action_id,
-        ?string $reason = null
+        ?string $reason = null,
+        ?array $capabilityEnvelope = null
     ): ChatPendingAction {
         if (! $this->isActionsEnabled()) {
             throw new \RuntimeException(__('aichat::lang.chat_action_disabled'));
         }
 
         $this->requireConversationForUser($business_id, $user_id, $conversation_id);
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, 'web');
+        $capabilities = (array) data_get($capabilityEnvelope, 'domains', []);
+        $this->chatAuthorizationPolicy->assertChatEditCapability($capabilities);
 
         return DB::transaction(function () use ($business_id, $user_id, $conversation_id, $action_id, $reason) {
             return $this->cancelActionInTransaction($business_id, $user_id, $conversation_id, $action_id, $reason);
@@ -205,7 +228,7 @@ class ChatActionUtil
 
     public function serializePendingAction(ChatPendingAction $action): array
     {
-        return [
+        $serialized = $this->chatModelSerializer->serialize('pending_action', [
             'id' => (int) $action->id,
             'module' => (string) $action->module,
             'action' => (string) $action->action,
@@ -213,16 +236,19 @@ class ChatActionUtil
             'channel' => (string) $action->channel,
             'target_type' => $action->target_type,
             'target_id' => $action->target_id,
-            'payload' => (array) ($action->payload ?? []),
             'preview_text' => (string) ($action->preview_text ?? ''),
-            'result_payload' => (array) ($action->result_payload ?? []),
-            'error_message' => $action->error_message,
             'confirmed_at' => optional($action->confirmed_at)->toDateTimeString(),
             'executed_at' => optional($action->executed_at)->toDateTimeString(),
             'expires_at' => optional($action->expires_at)->toDateTimeString(),
             'created_at' => optional($action->created_at)->toDateTimeString(),
             'updated_at' => optional($action->updated_at)->toDateTimeString(),
-        ];
+        ]);
+
+        $serialized['payload'] = $this->chatModelSerializer->redactArray((array) ($action->payload ?? []));
+        $serialized['result_payload'] = $this->chatModelSerializer->redactArray((array) ($action->result_payload ?? []));
+        $serialized['error_message'] = $action->error_message;
+
+        return $serialized;
     }
 
     protected function moduleActionMap(): array
@@ -270,7 +296,8 @@ class ChatActionUtil
         string $conversation_id,
         int $action_id,
         string $channel,
-        ?string $confirmNote
+        ?string $confirmNote,
+        ?array $capabilityEnvelope = null
     ): ChatPendingAction {
         $pendingAction = $this->lockOwnedAction($business_id, $user_id, $conversation_id, $action_id);
 
@@ -309,7 +336,10 @@ class ChatActionUtil
         $this->assertSupportedAction($module, $action);
         $this->assertModuleEnabled($module);
 
-        $capabilities = $this->chatUtil->resolveChatCapabilities($business_id, $user_id);
+        $normalizedChannel = strtolower(trim($channel)) ?: 'web';
+        $capabilityEnvelope = $capabilityEnvelope ?: $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, $normalizedChannel);
+        $capabilities = (array) data_get($capabilityEnvelope, 'domains', []);
+        $this->chatAuthorizationPolicy->assertChatEditCapability($capabilities);
         $this->assertActionAllowed($business_id, $user_id, $module, $action, $payload, $capabilities);
 
         if ($pendingAction->status === ChatPendingAction::STATUS_PENDING) {
@@ -327,7 +357,15 @@ class ChatActionUtil
         }
 
         try {
-            $resultPayload = $this->executeAction($business_id, $user_id, $module, $action, $payload);
+            $executionCapabilities = $capabilities;
+            if (in_array($action, ['create', 'update', 'delete'], true)) {
+                $freshEnvelope = $this->chatUtil->resolveCapabilityEnvelope($business_id, $user_id, $normalizedChannel, null, true);
+                $executionCapabilities = (array) data_get($freshEnvelope, 'domains', []);
+                $this->chatAuthorizationPolicy->assertChatEditCapability($executionCapabilities);
+                $this->assertActionAllowed($business_id, $user_id, $module, $action, $payload, $executionCapabilities);
+            }
+
+            $resultPayload = $this->executeAction($business_id, $user_id, $module, $action, $payload, $executionCapabilities);
         } catch (\Throwable $exception) {
             $pendingAction->status = ChatPendingAction::STATUS_FAILED;
             $pendingAction->error_message = (string) ($exception->getMessage() ?: __('aichat::lang.chat_action_failed'));
@@ -494,6 +532,10 @@ class ChatActionUtil
         array $payload,
         array $capabilities
     ): void {
+        if (in_array($action, ['create', 'update', 'delete'], true) && ! (bool) data_get($capabilities, 'chat.edit', false)) {
+            throw new \RuntimeException(__('aichat::lang.chat_action_forbidden'));
+        }
+
         if ($module === 'contacts') {
             $this->assertContactActionAllowed($business_id, $action, $payload, $capabilities);
 
@@ -594,7 +636,14 @@ class ChatActionUtil
         }
     }
 
-    protected function executeAction(int $business_id, int $user_id, string $module, string $action, array $payload): array
+    protected function executeAction(
+        int $business_id,
+        int $user_id,
+        string $module,
+        string $action,
+        array $payload,
+        array $capabilities
+    ): array
     {
         if ($module === 'products') {
             return $this->executeProductAction($business_id, $user_id, $action, $payload);
@@ -621,7 +670,7 @@ class ChatActionUtil
         }
 
         if ($module === 'reports') {
-            return $this->executeReportAction($business_id, $user_id, $action, $payload);
+            return $this->executeReportAction($business_id, $user_id, $action, $payload, $capabilities);
         }
 
         throw new \InvalidArgumentException(__('aichat::lang.chat_action_unsupported'));
@@ -981,13 +1030,11 @@ class ChatActionUtil
         throw new \InvalidArgumentException(__('aichat::lang.chat_action_unsupported'));
     }
 
-    protected function executeReportAction(int $business_id, int $user_id, string $action, array $payload): array
+    protected function executeReportAction(int $business_id, int $user_id, string $action, array $payload, array $capabilities): array
     {
         if (! in_array($action, ['view', 'run', 'export'], true)) {
             throw new \InvalidArgumentException(__('aichat::lang.chat_action_unsupported'));
         }
-
-        $capabilities = $this->chatUtil->resolveChatCapabilities($business_id, $user_id);
 
         $result = [
             'report_type' => (string) ($payload['report_type'] ?? 'summary'),
@@ -1006,31 +1053,35 @@ class ChatActionUtil
             $contactsQuery = Contact::where('business_id', $business_id)
                 ->where('type', '!=', 'lead');
 
-            if (! $canViewCustomerContacts && ! $canViewSupplierContacts) {
-                $contactsQuery->leftJoin('user_contact_access as ucas', 'contacts.id', '=', 'ucas.contact_id')
-                    ->where(function ($subQuery) use ($user_id) {
-                        $subQuery->where('contacts.created_by', $user_id)
-                            ->orWhere('ucas.user_id', $user_id);
-                    })
-                    ->distinct();
-            }
+            $this->chatAuthorizationPolicy->applyContactVisibilityScope(
+                $contactsQuery,
+                $user_id,
+                $canViewCustomerContacts || $canViewSupplierContacts,
+                $canViewOwnCustomerContacts || $canViewOwnSupplierContacts
+            );
 
             $result['contacts_count'] = $contactsQuery->count('contacts.id');
         }
 
         if ((bool) data_get($capabilities, 'sales.view', false) || (bool) data_get($capabilities, 'sales.view_own', false)) {
             $salesQuery = Transaction::where('business_id', $business_id)->where('type', 'sell');
-            if (! (bool) data_get($capabilities, 'sales.view', false) && (bool) data_get($capabilities, 'sales.view_own', false)) {
-                $salesQuery->where('created_by', $user_id);
-            }
+            $this->chatAuthorizationPolicy->applyTransactionVisibilityScope(
+                $salesQuery,
+                $user_id,
+                (bool) data_get($capabilities, 'sales.view', false),
+                (bool) data_get($capabilities, 'sales.view_own', false)
+            );
             $result['sales_count'] = $salesQuery->count();
         }
 
         if ((bool) data_get($capabilities, 'purchases.view', false) || (bool) data_get($capabilities, 'purchases.view_own', false)) {
             $purchaseQuery = Transaction::where('business_id', $business_id)->where('type', 'purchase');
-            if (! (bool) data_get($capabilities, 'purchases.view', false) && (bool) data_get($capabilities, 'purchases.view_own', false)) {
-                $purchaseQuery->where('created_by', $user_id);
-            }
+            $this->chatAuthorizationPolicy->applyTransactionVisibilityScope(
+                $purchaseQuery,
+                $user_id,
+                (bool) data_get($capabilities, 'purchases.view', false),
+                (bool) data_get($capabilities, 'purchases.view_own', false)
+            );
             $result['purchases_count'] = $purchaseQuery->count();
         }
 
@@ -1042,6 +1093,8 @@ class ChatActionUtil
             $result['export_format'] = (string) ($payload['format'] ?? 'json');
             $result['exported_at'] = now()->toDateTimeString();
         }
+
+        $result = $this->chatModelSerializer->serialize('report_summary', $result);
 
         return [
             'entity' => 'report',
