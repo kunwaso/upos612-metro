@@ -159,6 +159,24 @@ $(document).ready(function () {
         return str.trim();
     }
 
+    var datatable_export_button_class = 'btn btn-sm btn-outline btn-outline-dashed btn-outline-secondary';
+
+    if (
+        $.fn.dataTable &&
+        $.fn.dataTable.Buttons &&
+        $.fn.dataTable.Buttons.defaults &&
+        $.fn.dataTable.Buttons.defaults.dom
+    ) {
+        $.extend(true, $.fn.dataTable.Buttons.defaults.dom, {
+            container: {
+                className: 'dt-buttons btn-group flex-wrap gap-2',
+            },
+            button: {
+                className: datatable_export_button_class,
+            },
+        });
+    }
+
     var buttons = [
         // {
         //     extend: 'copy',
@@ -172,7 +190,7 @@ $(document).ready(function () {
         {
             extend: 'csv',
             text: '<i class="fa fa-file-csv" aria-hidden="true"></i> ' + LANG.export_to_csv,
-            className: 'tw-dw-btn-xs  tw-dw-btn tw-dw-btn-outline tw-my-2',
+            className: datatable_export_button_class,
             exportOptions: {
                 columns: ':visible',
                 format: {
@@ -198,7 +216,7 @@ $(document).ready(function () {
         {
             extend: 'excel',
             text: '<i class="fa fa-file-excel" aria-hidden="true"></i> ' + LANG.export_to_excel,
-            className: 'tw-dw-btn-xs  tw-dw-btn tw-dw-btn-outline tw-my-2',
+            className: datatable_export_button_class,
             exportOptions: {
                 columns: ':visible',
                 format: {
@@ -223,7 +241,7 @@ $(document).ready(function () {
         {
             extend: 'print',
             text: '<i class="fa fa-print" aria-hidden="true"></i> ' + LANG.print,
-            className: 'tw-dw-btn-xs  tw-dw-btn tw-dw-btn-outline tw-my-2',
+            className: datatable_export_button_class,
             exportOptions: {
                 columns: ':visible',
                 stripHtml: true,
@@ -244,14 +262,14 @@ $(document).ready(function () {
         {
             extend: 'colvis',
             text: '<i class="fa fa-columns" aria-hidden="true"></i> ' + LANG.col_vis,
-            className: 'tw-dw-btn-xs  tw-dw-btn tw-dw-btn-outline tw-my-2',
+            className: datatable_export_button_class,
         },
     ];
 
     var pdf_btn = {
         extend: 'pdf',
         text: '<i class="fa fa-file-pdf" aria-hidden="true"></i> ' + LANG.export_to_pdf,
-        className: 'tw-dw-btn-xs  tw-dw-btn tw-dw-btn-outline tw-my-2',
+        className: datatable_export_button_class,
         exportOptions: {
             columns: ':visible',
         },
@@ -262,9 +280,6 @@ $(document).ready(function () {
         buttons.push(pdf_btn);
     }
 
-    if ($('#view_export_buttons').length < 1) {
-        buttons = [];
-    }
     //Datables
     jQuery.extend($.fn.dataTable.defaults, {
         //Uncomment below line to enable save state of datatable.

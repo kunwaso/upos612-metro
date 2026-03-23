@@ -125,14 +125,22 @@
     window.__datatable_show_export_buttons = @json($is_org_admin ?? false);
 
     if (
-        window.__datatable_show_export_buttons &&
         typeof $ !== 'undefined' &&
         $.fn.dataTable &&
         $.fn.dataTable.defaults
     ) {
-        $.fn.dataTable.defaults.buttons = ['copy', 'excel', 'csv', 'pdf', 'print', 'colvis'];
+        if (!window.__datatable_show_export_buttons) {
+            $.fn.dataTable.defaults.buttons = [];
+
+            if ($.fn.dataTable.defaults.dom) {
+                $.fn.dataTable.defaults.dom = $.fn.dataTable.defaults.dom.replace(/B/g, '');
+            }
+        } else if (!$.fn.dataTable.defaults.buttons || !$.fn.dataTable.defaults.buttons.length) {
+            $.fn.dataTable.defaults.buttons = ['copy', 'excel', 'csv', 'pdf', 'print', 'colvis'];
+        }
 
         if (
+            window.__datatable_show_export_buttons &&
             $.fn.dataTable.defaults.dom &&
             $.fn.dataTable.defaults.dom.indexOf('B') === -1
         ) {
@@ -345,8 +353,43 @@
             $('.side-bar').toggle('slow');
         });
 
-        $('.dt-buttons.btn-group').find('a.btn').removeClass('btn-default');
-        $('.dt-buttons.btn-group').find('a.btn').removeClass('btn');
+        window.__normalize_datatable_buttons = function(scope) {
+            var $scope = scope ? $(scope) : $(document);
+            var $containers = $scope.find('.dt-buttons.btn-group');
+
+            if ($scope.hasClass('dt-buttons') && $scope.hasClass('btn-group')) {
+                $containers = $containers.add($scope);
+            }
+
+            $containers.addClass('flex-wrap gap-2');
+
+            var $buttons = $scope.find('.dt-buttons .dt-button, .dt-buttons .btn');
+
+            if ($scope.hasClass('dt-button') || $scope.hasClass('btn')) {
+                $buttons = $buttons.add($scope);
+            }
+
+            $buttons.each(function() {
+                $(this)
+                    .removeClass(
+                        'btn-default btn-secondary btn-primary btn-info btn-success btn-warning btn-danger tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-my-2'
+                    )
+                    .addClass('btn btn-sm btn-outline btn-outline-dashed btn-outline-primary');
+            });
+        };
+
+        window.__normalize_datatable_buttons(document);
+
+        $(document)
+            .off('init.dt.metronicButtons draw.dt.metronicButtons')
+            .on('init.dt.metronicButtons draw.dt.metronicButtons', function(e, settings) {
+                if (settings && settings.nTableWrapper) {
+                    window.__normalize_datatable_buttons(settings.nTableWrapper);
+                    return;
+                }
+
+                window.__normalize_datatable_buttons(document);
+            });
         
         // $('.date_range').on('show.daterangepicker', function (ev, picker) {
         //     $(picker.container).insertAfter($(this));
