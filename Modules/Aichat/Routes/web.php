@@ -1,6 +1,7 @@
 <?php
 
 use Modules\Aichat\Http\Controllers\ChatController;
+use Modules\Aichat\Http\Controllers\ChatActionController;
 use Modules\Aichat\Http\Controllers\ChatMemoryAdminController;
 use Modules\Aichat\Http\Controllers\ChatQuoteWizardController;
 use Modules\Aichat\Http\Controllers\ChatSettingsController;
@@ -22,6 +23,10 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
             Route::get('/conversations/{id}', [ChatController::class, 'showConversation'])->whereUuid('id')->name('conversations.show');
             Route::post('/conversations/{id}/send', [ChatController::class, 'send'])->whereUuid('id')->middleware('throttle:' . ((int) config('aichat.chat.throttle_per_minute', 30)) . ',1')->name('conversations.send');
             Route::post('/conversations/{id}/stream', [ChatController::class, 'stream'])->whereUuid('id')->middleware('throttle:' . ((int) config('aichat.chat.throttle_per_minute', 30)) . ',1')->name('conversations.stream');
+            Route::post('/conversations/{id}/actions/prepare', [ChatActionController::class, 'prepare'])->whereUuid('id')->name('conversations.actions.prepare');
+            Route::post('/conversations/{id}/actions/{actionId}/confirm', [ChatActionController::class, 'confirm'])->whereUuid('id')->whereNumber('actionId')->name('conversations.actions.confirm');
+            Route::post('/conversations/{id}/actions/{actionId}/cancel', [ChatActionController::class, 'cancel'])->whereUuid('id')->whereNumber('actionId')->name('conversations.actions.cancel');
+            Route::get('/conversations/{id}/actions/pending', [ChatActionController::class, 'pending'])->whereUuid('id')->name('conversations.actions.pending');
             Route::prefix('/conversations/{id}/quote-wizard')->whereUuid('id')->middleware('can:aichat.quote_wizard.use')->name('conversations.quote_wizard.')->group(function () {
                 Route::get('/contacts', [ChatQuoteWizardController::class, 'contacts'])->name('contacts');
                 Route::get('/locations', [ChatQuoteWizardController::class, 'locations'])->name('locations');

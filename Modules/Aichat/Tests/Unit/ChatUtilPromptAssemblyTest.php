@@ -20,6 +20,7 @@ class ChatUtilPromptAssemblyTest extends TestCase
 
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite.database', ':memory:');
+        config()->set('aichat.actions.enabled', false);
         DB::purge('sqlite');
         DB::reconnect('sqlite');
 
@@ -118,6 +119,43 @@ class ChatUtilPromptAssemblyTest extends TestCase
         $this->assertStringNotContainsString('User memory:', $systemPrompt);
     }
 
+    public function test_build_provider_messages_includes_action_workflow_guidance_when_actions_enabled()
+    {
+        config()->set('aichat.actions.enabled', true);
+
+        $chatUtil = $this->makePromptAwareChatUtil(
+            'Follow policy strictly.',
+            'Org context line',
+            '- Display name: Ray',
+            '- Org memory',
+            '- User memory',
+            ''
+        );
+
+        $conversation = new ChatConversation([
+            'id' => '00000000-0000-0000-0000-000000000003',
+            'business_id' => 101,
+        ]);
+
+        $messages = $chatUtil->buildProviderMessages(
+            $conversation,
+            'Business instruction',
+            null,
+            30,
+            null,
+            'Create product PK-004',
+            null,
+            null,
+            7
+        );
+
+        $systemPrompt = (string) $messages[0]['content'];
+
+        $this->assertStringContainsString('Action execution workflow:', $systemPrompt);
+        $this->assertStringContainsString('/action prepare <module> <action> <json payload>', $systemPrompt);
+        $this->assertStringContainsString('/action confirm <id>', $systemPrompt);
+    }
+
     protected function makePromptAwareChatUtil(
         string $reasoningRules,
         string $organizationContext,
@@ -141,6 +179,19 @@ class ChatUtilPromptAssemblyTest extends TestCase
         $chatUtil->shouldReceive('buildOrganizationMemoryContext')->andReturn($organizationMemoryContext);
         $chatUtil->shouldReceive('buildUserMemoryContext')->andReturn($userMemoryContext);
         $chatUtil->shouldReceive('buildMemoryContext')->andReturn($legacyMemoryContext);
+        $chatUtil->shouldReceive('resolveChatCapabilities')->andReturn([
+            'products' => ['view' => true, 'create' => true, 'update' => false, 'delete' => false],
+            'contacts' => [
+                'customer' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+                'supplier' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+            ],
+            'sales' => ['view' => true, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+            'purchases' => ['view' => false, 'view_own' => false, 'create' => false, 'update' => false, 'delete' => false],
+            'quotes' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'send' => false],
+            'reports' => ['view' => true, 'export' => false],
+            'settings' => ['access' => false, 'chat_settings' => false, 'manage_all_memories' => false],
+            'chat' => ['edit' => true],
+        ]);
 
         return $chatUtil;
     }

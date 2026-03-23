@@ -299,10 +299,7 @@ class AccountReportsController extends Controller
                         return $details;
                     })
                     ->addColumn('action', function ($row) {
-                        $action = '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info
-                        tw-dw-btn-xs btn-modal"
-                        data-container=".view_modal" 
-                        data-href="'.action([\App\Http\Controllers\AccountReportsController::class, 'getLinkAccount'], [$row->payment_id]).'">'.__('account.link_account').'</button>';
+                        $action = '<button type="button" class="btn btn-sm btn-light-primary btn-modal text-nowrap" data-container=".view_modal" data-href="'.action([\App\Http\Controllers\AccountReportsController::class, 'getLinkAccount'], [$row->payment_id]).'">'.__('account.link_account').'</button>';
 
                         return $action;
                     })
@@ -317,10 +314,10 @@ class AccountReportsController extends Controller
                     ->addColumn('transaction_number', function ($row) {
                         $html = $row->ref_no;
                         if ($row->type == 'sell') {
-                            $html = '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info btn-modal"
+                            $html = '<button type="button" class="btn btn-sm btn-light-primary btn-modal"
                                     data-href="'.action([\App\Http\Controllers\SellController::class, 'show'], [$row->transaction_id]).'" data-container=".view_modal">'.$row->invoice_no.'</button>';
                         } elseif ($row->type == 'purchase') {
-                            $html = '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info btn-modal"
+                            $html = '<button type="button" class="btn btn-sm btn-light-primary btn-modal"
                                     data-href="'.action([\App\Http\Controllers\PurchaseController::class, 'show'], [$row->transaction_id]).'" data-container=".view_modal">'.$row->ref_no.'</button>';
                         }
 

@@ -46,9 +46,9 @@ class ModifierSetsController extends Controller
                     'action',
                     '
                     @can("product.update")
-                        <button type="button" data-href="{{action(\'App\Http\Controllers\Restaurant\ModifierSetsController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary edit_modifier_button" data-container=".modifier_modal"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
+                        <button type="button" data-href="{{action(\'App\Http\Controllers\Restaurant\ModifierSetsController@edit\', [$id])}}" class="btn btn-sm btn-light-info edit_modifier_button" data-container=".modifier_modal"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
                         &nbsp;
-                        <button type="button" data-href="{{action(\'App\Http\Controllers\Restaurant\ProductModifierSetController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info edit_modifier_button" data-container=".modifier_modal"><i class="fa fa-cubes"></i> @lang("restaurant.manage_products")</button>
+                        <button type="button" data-href="{{action(\'App\Http\Controllers\Restaurant\ProductModifierSetController@edit\', [$id])}}" class="btn btn-sm btn-light-primary edit_modifier_button" data-container=".modifier_modal"><i class="fa fa-cubes"></i> @lang("restaurant.manage_products")</button>
                     &nbsp;
                     @endcan
 

@@ -53,7 +53,7 @@ Use the first matching lane before doing broader workflow:
 | `review` | User asks for a review or audit | grep/read changed area → identify findings → verify evidence | Findings first, summary second. |
 | `plan` | User wants design or implementation plan | inspect repo truth → write numbered plan → list verification | Do not invent missing repo facts. |
 | `execute-plan` | User attaches or references `.cursor/plans/*.plan.md` to execute or "plan from" | read plan → execute phases/tasks in order; derive steps that match the plan as written | Do **not** rewrite, restructure, or replace the plan. See .cursor/plans/README.md §7. |
-| `implement` | User wants a fix or feature | inspect → numbered plan → edit → verify | Default when the user asks to make the change. |
+| `implement` | User wants a fix or feature | inspect → numbered plan → edit → verify | Default when the user asks to make the change. For large multi-file phases, see 0.1e for worker delegation. |
 | `log-scan` | User asks to scan/fix Laravel log, check logs, or fix issues from `storage/logs` | glob latest log → read log → parse errors → investigate → fix → verify | See 0.4e. Use implement mode. |
 | `lint-fix` | User asks to fix linter errors, IDE diagnostics, or "fix lint" | Read lints (scope: path or repo) → fix each finding → re-run lints | See 0.4f. Use implement mode. |
 | `test-fix` | User asks to fix failing tests or pastes test output | parse test output → locate failure → fix test or code → re-run tests | See 0.4g. Use implement mode. |
@@ -133,6 +133,29 @@ These are different things. Confusing them causes slow answers to simple questio
 A conceptual answer is *thorough* when it says *"I'm answering from general knowledge; here's my reasoning and caveat."* It becomes *unnecessarily broad* when it first runs `project_map` + `warm_cache` + 5 web searches for a question that needs none of them.
 
 **Practical test before using a heavy tool:** Ask — *"Does the answer change if I skip this tool?"* If no, skip it. If yes, use it and state why.
+
+---
+
+### 0.1e Worker delegation policy (parallel implement phases)
+
+Use this policy to speed up larger implementation phases while keeping edits safe and conflict-free.
+
+1. **Ask mode is single-agent only** — Do not spawn workers/subagents in ask mode.
+2. **Implement mode (Agent mode) may use workers** — Spawn workers only when tasks are truly independent. Independent = workers' files share no function-call boundaries or data-structure contracts in the same phase. If worker A's output is worker B's input (e.g. a Util method the controller calls), they are sequential, not parallel.
+3. **Default phase split** — For large phase work, prefer separate worker scopes:
+   - Backend logic: `*Util.php`, `*Request.php` (FormRequest), controller method signatures
+   - View layer: `*.blade.php`
+   - Frontend behavior: `*.js`
+   - Styles: `*.css`, `*.scss` in module `Resources/assets/` — only when custom styles are required; do not touch published `public/assets/` or `public/modules/projectx/` files directly
+   - **Migrations: excluded from worker split — always main agent only (see rule 4)**
+4. **Migrations always belong to the main agent** — Migrations are a hard dependency for every other layer (Util queries, controller validation rules, view field lists). The main agent must complete and run migrations before backend-logic workers start. Never assign a migration file to a worker.
+5. **Disjoint write ownership required** — Assign each worker explicit file ownership and avoid overlapping write scopes.
+6. **No-revert rule** — Workers must not revert, overwrite, or undo changes made by other workers.
+7. **Conflict handling** — Detect potential ownership overlap at plan time; if uncertain, do not spawn. If a conflict appears during execution, stop parallel edits for that area and continue with single-agent integration for the conflicted files.
+8. **Worker cap** — Maximum `3` workers per implementation phase unless the user explicitly requests more.
+9. **Main-agent accountability** — The main agent must do final integration, run required lint/tests, and complete verification before marking done. Each worker must report back: (a) exact files changed, (b) lints run and their result, (c) any unresolved dependencies discovered.
+
+Use single-agent execution for tiny changes, tightly coupled logic, or tasks that mostly touch the same files.
 
 ---
 

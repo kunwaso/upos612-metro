@@ -5,6 +5,7 @@ namespace Modules\Aichat\Utils;
 use App\Business;
 use App\Contact;
 use App\Product;
+use App\ProductQuote;
 use App\Transaction;
 use App\User;
 use Illuminate\Support\Carbon;
@@ -940,9 +941,11 @@ class ChatUtil
     {
         $settings = $this->getOrCreateBusinessSettings($business_id);
         $modelOptions = $this->buildModelOptions($business_id, $user_id);
+        $capabilities = $this->resolveChatCapabilities($business_id, $user_id);
 
         return [
             'enabled' => $this->isChatEnabled($business_id),
+            'capabilities' => $capabilities,
             'permissions' => [
                 'can_edit' => auth()->check() && auth()->user()->can('aichat.chat.edit'),
                 'can_manage_settings' => auth()->check() && auth()->user()->can('aichat.chat.settings'),
@@ -953,6 +956,7 @@ class ChatUtil
                 'general_first_mode' => (bool) config('aichat.chat.general_first_mode', true),
                 'memory_enabled' => (bool) config('aichat.chat.memory_enabled', true),
                 'quote_wizard_enabled' => (bool) config('aichat.quote_wizard.enabled', true),
+                'actions_enabled' => (bool) config('aichat.actions.enabled', false),
             ],
             'enabled_providers' => $modelOptions['enabled_providers'],
             'model_options' => $modelOptions['model_options'],
@@ -978,6 +982,10 @@ class ChatUtil
                 'quote_wizard_costing_defaults_url_template' => route('aichat.chat.conversations.quote_wizard.costing_defaults', ['id' => '__CONVERSATION_ID__']),
                 'quote_wizard_process_url_template' => route('aichat.chat.conversations.quote_wizard.process', ['id' => '__CONVERSATION_ID__']),
                 'quote_wizard_confirm_url_template' => route('aichat.chat.conversations.quote_wizard.confirm', ['id' => '__CONVERSATION_ID__']),
+                'actions_prepare_url_template' => route('aichat.chat.conversations.actions.prepare', ['id' => '__CONVERSATION_ID__']),
+                'actions_confirm_url_template' => route('aichat.chat.conversations.actions.confirm', ['id' => '__CONVERSATION_ID__', 'actionId' => '__ACTION_ID__']),
+                'actions_cancel_url_template' => route('aichat.chat.conversations.actions.cancel', ['id' => '__CONVERSATION_ID__', 'actionId' => '__ACTION_ID__']),
+                'actions_pending_url_template' => route('aichat.chat.conversations.actions.pending', ['id' => '__CONVERSATION_ID__']),
             ],
             'i18n' => [
                 'new_chat' => __('aichat::lang.new_chat'),
@@ -1022,8 +1030,47 @@ class ChatUtil
                 'quote_assistant_summary_empty' => __('aichat::lang.quote_assistant_summary_empty'),
                 'quote_assistant_mode_on' => __('aichat::lang.quote_assistant_mode_on'),
                 'quote_assistant_mode_off' => __('aichat::lang.quote_assistant_mode_off'),
+                'chat_action_prepared' => __('aichat::lang.chat_action_prepared'),
+                'chat_action_executed' => __('aichat::lang.chat_action_executed'),
+                'chat_action_cancelled' => __('aichat::lang.chat_action_cancelled'),
+                'chat_action_not_found' => __('aichat::lang.chat_action_not_found'),
+                'chat_action_forbidden' => __('aichat::lang.chat_action_forbidden'),
+                'chat_action_invalid_payload' => __('aichat::lang.chat_action_invalid_payload'),
+                'chat_action_pending_empty' => __('aichat::lang.chat_action_pending_empty'),
+                'chat_action_pending_title' => __('aichat::lang.chat_action_pending_title'),
+                'chat_action_pending_hint' => __('aichat::lang.chat_action_pending_hint'),
+                'chat_action_pending_prepare_hint' => __('aichat::lang.chat_action_pending_prepare_hint'),
+                'chat_action_pending_more' => __('aichat::lang.chat_action_pending_more'),
+                'chat_action_toolbar_pending' => __('aichat::lang.chat_action_toolbar_pending'),
+                'chat_action_toolbar_confirm_latest' => __('aichat::lang.chat_action_toolbar_confirm_latest'),
+                'chat_action_toolbar_cancel_latest' => __('aichat::lang.chat_action_toolbar_cancel_latest'),
+                'chat_action_queue_title' => __('aichat::lang.chat_action_queue_title'),
+                'chat_action_queue_empty' => __('aichat::lang.chat_action_queue_empty'),
+                'chat_action_queue_loading' => __('aichat::lang.chat_action_queue_loading'),
+                'chat_action_confirm_button' => __('aichat::lang.chat_action_confirm_button'),
+                'chat_action_cancel_button' => __('aichat::lang.chat_action_cancel_button'),
+                'chat_action_executed_hint' => __('aichat::lang.chat_action_executed_hint'),
+                'chat_action_complete_hint' => __('aichat::lang.chat_action_complete_hint'),
+                'chat_action_label' => __('aichat::lang.chat_action_label'),
+                'chat_action_command_help' => __('aichat::lang.chat_action_command_help'),
+                'chat_action_prepare_usage' => __('aichat::lang.chat_action_prepare_usage'),
+                'chat_action_confirm_usage' => __('aichat::lang.chat_action_confirm_usage'),
+                'chat_action_cancel_usage' => __('aichat::lang.chat_action_cancel_usage'),
+                'chat_action_natural_language_hint' => __('aichat::lang.chat_action_natural_language_hint'),
             ],
         ];
+    }
+
+    public function resolveChatCapabilities(int $business_id, ?int $user_id = null): array
+    {
+        $user = null;
+        if ($user_id !== null) {
+            $user = User::find($user_id);
+        } elseif (auth()->check()) {
+            $user = auth()->user();
+        }
+
+        return app(ChatCapabilityResolver::class)->resolveForUser($user, $business_id);
     }
 
     public function isModelAllowedForBusiness(int $business_id, string $provider, string $model): bool
@@ -1151,6 +1198,7 @@ class ChatUtil
         ?int $transactionId = null
     ): array {
         $business_id = (int) $conversation->business_id;
+        $capabilities = $this->resolveChatCapabilities($business_id, $user_id);
         $sections = [
             'You are Aichat, an AI assistant for a single business account inside UPOS.',
             'Use only the organization data, persistent memory, and conversation history provided in this prompt.',
@@ -1169,7 +1217,17 @@ class ChatUtil
             $sections[] = 'Additional business instruction:' . "\n" . trim($systemPrompt);
         }
 
-        $organizationContext = $this->buildOrganizationContext($business_id);
+        $allowedOperations = $this->buildAllowedOperationsSection($capabilities);
+        if ($allowedOperations !== '') {
+            $sections[] = 'Allowed operations:' . "\n" . $allowedOperations;
+        }
+
+        $mutationWorkflow = $this->buildMutationWorkflowSection($capabilities);
+        if ($mutationWorkflow !== '') {
+            $sections[] = 'Action execution workflow:' . "\n" . $mutationWorkflow;
+        }
+
+        $organizationContext = $this->buildOrganizationContext($business_id, $user_id, $capabilities);
         if ($organizationContext !== '') {
             $sections[] = 'Organization data context:' . "\n" . $organizationContext;
         }
@@ -1397,40 +1455,264 @@ class ChatUtil
         return $this->chatAuditUtil->log($business_id, $user_id, $action, $conversation_id, $provider, $model, $metadata);
     }
 
-    protected function buildOrganizationContext(int $business_id): string
+    protected function buildOrganizationContext(int $business_id, ?int $user_id = null, ?array $capabilities = null): string
     {
+        $capabilities = $capabilities ?? $this->resolveChatCapabilities($business_id, $user_id);
         $business = Business::select('id', 'name')->find($business_id);
-        $productLimit = (int) config('aichat.chat.organization_context.products_limit', 25);
-        $contactLimit = (int) config('aichat.chat.organization_context.contacts_limit', 25);
-        $transactionLimit = (int) config('aichat.chat.organization_context.transactions_limit', 20);
 
+        $sections = [];
+        if ($business) {
+            $sections[] = 'Business: ' . $business->name;
+        }
+
+        $productsContext = $this->buildProductsContext(
+            $business_id,
+            (bool) data_get($capabilities, 'products.view', false),
+            (bool) data_get($capabilities, 'products.view_cost', false)
+        );
+        if ($productsContext !== '') {
+            $sections[] = 'Products context:' . "\n" . $productsContext;
+        }
+
+        $customerContext = $this->buildContactsContext($business_id, $user_id, 'customer', (array) data_get($capabilities, 'contacts.customer', []));
+        if ($customerContext !== '') {
+            $sections[] = 'Customer contacts:' . "\n" . $customerContext;
+        }
+
+        $supplierContext = $this->buildContactsContext($business_id, $user_id, 'supplier', (array) data_get($capabilities, 'contacts.supplier', []));
+        if ($supplierContext !== '') {
+            $sections[] = 'Supplier contacts:' . "\n" . $supplierContext;
+        }
+
+        $salesContext = $this->buildSalesContext($business_id, $user_id, $capabilities);
+        if ($salesContext !== '') {
+            $sections[] = 'Sales context:' . "\n" . $salesContext;
+        }
+
+        $purchaseContext = $this->buildPurchasesContext($business_id, $user_id, $capabilities);
+        if ($purchaseContext !== '') {
+            $sections[] = 'Purchases context:' . "\n" . $purchaseContext;
+        }
+
+        $quoteContext = $this->buildQuotesContext($business_id, $capabilities);
+        if ($quoteContext !== '') {
+            $sections[] = 'Quotes context:' . "\n" . $quoteContext;
+        }
+
+        $reportContext = $this->buildReportsContext($business_id, $user_id, $capabilities);
+        if ($reportContext !== '') {
+            $sections[] = 'Reports context:' . "\n" . $reportContext;
+        }
+
+        $settingsContext = $this->buildSettingsContext($capabilities);
+        if ($settingsContext !== '') {
+            $sections[] = 'Settings context:' . "\n" . $settingsContext;
+        }
+
+        return trim(implode("\n\n", $sections));
+    }
+
+    protected function buildAllowedOperationsSection(array $capabilities): string
+    {
+        $lines = [];
+
+        $productOps = $this->formatAllowedOperationLine('Products', [
+            'view' => (bool) data_get($capabilities, 'products.view', false),
+            'create' => (bool) data_get($capabilities, 'products.create', false),
+            'update' => (bool) data_get($capabilities, 'products.update', false),
+            'delete' => (bool) data_get($capabilities, 'products.delete', false),
+        ]);
+        if ($productOps !== '') {
+            $lines[] = $productOps;
+        }
+
+        $customerOps = $this->formatAllowedOperationLine('Customer contacts', [
+            'view' => (bool) data_get($capabilities, 'contacts.customer.view', false),
+            'view_own' => (bool) data_get($capabilities, 'contacts.customer.view_own', false),
+            'create' => (bool) data_get($capabilities, 'contacts.customer.create', false),
+            'update' => (bool) data_get($capabilities, 'contacts.customer.update', false),
+            'delete' => (bool) data_get($capabilities, 'contacts.customer.delete', false),
+        ]);
+        if ($customerOps !== '') {
+            $lines[] = $customerOps;
+        }
+
+        $supplierOps = $this->formatAllowedOperationLine('Supplier contacts', [
+            'view' => (bool) data_get($capabilities, 'contacts.supplier.view', false),
+            'view_own' => (bool) data_get($capabilities, 'contacts.supplier.view_own', false),
+            'create' => (bool) data_get($capabilities, 'contacts.supplier.create', false),
+            'update' => (bool) data_get($capabilities, 'contacts.supplier.update', false),
+            'delete' => (bool) data_get($capabilities, 'contacts.supplier.delete', false),
+        ]);
+        if ($supplierOps !== '') {
+            $lines[] = $supplierOps;
+        }
+
+        $salesOps = $this->formatAllowedOperationLine('Sales', [
+            'view' => (bool) data_get($capabilities, 'sales.view', false),
+            'view_own' => (bool) data_get($capabilities, 'sales.view_own', false),
+            'create' => (bool) data_get($capabilities, 'sales.create', false),
+            'update' => (bool) data_get($capabilities, 'sales.update', false),
+            'delete' => (bool) data_get($capabilities, 'sales.delete', false),
+        ]);
+        if ($salesOps !== '') {
+            $lines[] = $salesOps;
+        }
+
+        $purchaseOps = $this->formatAllowedOperationLine('Purchases', [
+            'view' => (bool) data_get($capabilities, 'purchases.view', false),
+            'view_own' => (bool) data_get($capabilities, 'purchases.view_own', false),
+            'create' => (bool) data_get($capabilities, 'purchases.create', false),
+            'update' => (bool) data_get($capabilities, 'purchases.update', false),
+            'delete' => (bool) data_get($capabilities, 'purchases.delete', false),
+        ]);
+        if ($purchaseOps !== '') {
+            $lines[] = $purchaseOps;
+        }
+
+        $quoteOps = $this->formatAllowedOperationLine('Quotes', [
+            'view' => (bool) data_get($capabilities, 'quotes.view', false),
+            'create' => (bool) data_get($capabilities, 'quotes.create', false),
+            'update' => (bool) data_get($capabilities, 'quotes.update', false),
+            'delete' => (bool) data_get($capabilities, 'quotes.delete', false),
+            'send' => (bool) data_get($capabilities, 'quotes.send', false),
+        ]);
+        if ($quoteOps !== '') {
+            $lines[] = $quoteOps;
+        }
+
+        $reportOps = $this->formatAllowedOperationLine('Reports', [
+            'view' => (bool) data_get($capabilities, 'reports.view', false),
+            'export' => (bool) data_get($capabilities, 'reports.export', false),
+        ]);
+        if ($reportOps !== '') {
+            $lines[] = $reportOps;
+        }
+
+        $settingsOps = $this->formatAllowedOperationLine('Settings', [
+            'access' => (bool) data_get($capabilities, 'settings.access', false),
+            'chat_settings' => (bool) data_get($capabilities, 'settings.chat_settings', false),
+            'manage_all_memories' => (bool) data_get($capabilities, 'settings.manage_all_memories', false),
+        ]);
+        if ($settingsOps !== '') {
+            $lines[] = $settingsOps;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function formatAllowedOperationLine(string $label, array $operations): string
+    {
+        $allowed = array_keys(array_filter($operations));
+        if (empty($allowed)) {
+            return '';
+        }
+
+        return '- ' . $label . ': ' . implode(', ', $allowed);
+    }
+
+    protected function buildMutationWorkflowSection(array $capabilities): string
+    {
+        if (! (bool) config('aichat.actions.enabled', false)) {
+            return '';
+        }
+
+        if (! (bool) data_get($capabilities, 'chat.edit', false)) {
+            return '';
+        }
+
+        return implode("\n", [
+            '- Mutations (create, update, delete) require action commands plus explicit confirm before database execution.',
+            '- Suggest this draft format when user requests a mutation: /action prepare <module> <action> <json payload>',
+            '- Tell the user to execute with: /action confirm <id> (or /action confirm for the latest pending action).',
+            '- Tell the user they can cancel with: /action cancel <id> (or /action cancel for the latest pending action).',
+            '- If required fields are missing, ask for those fields before suggesting the command.',
+            '- Never claim mutation success until explicit app confirmation is present in conversation state.',
+        ]);
+    }
+
+    protected function buildProductsContext(int $business_id, bool $canView, bool $canViewCost = false): string
+    {
+        if (! $canView) {
+            return '';
+        }
+
+        $limit = (int) config('aichat.chat.organization_context.products_limit', 25);
         $productCount = Product::where('business_id', $business_id)->count();
-        $contactCount = Contact::where('business_id', $business_id)->where('type', '!=', 'lead')->count();
-        $transactionCount = Transaction::where('business_id', $business_id)->whereIn('type', ['sell', 'purchase', 'sales_order'])->count();
-
-        $products = Product::where('business_id', $business_id)->select('id', 'name', 'sku', 'type')->orderByDesc('id')->limit($productLimit)->get();
-        $contacts = Contact::where('business_id', $business_id)->where('type', '!=', 'lead')->select('id', 'name', 'supplier_business_name', 'type', 'contact_id')->orderByDesc('id')->limit($contactLimit)->get();
-        $transactions = Transaction::where('business_id', $business_id)
-            ->whereIn('type', ['sell', 'purchase', 'sales_order'])
-            ->with(['contact' => function ($query) {
-                $query->select('id', 'name', 'supplier_business_name');
-            }])
-            ->select('id', 'business_id', 'contact_id', 'type', 'status', 'invoice_no', 'transaction_date', 'final_total')
-            ->orderByDesc('transaction_date')
-            ->limit($transactionLimit)
+        $products = Product::where('business_id', $business_id)
+            ->with([
+                'variations' => function ($query) {
+                    $query->select('id', 'product_id', 'default_purchase_price', 'default_sell_price', 'sell_price_inc_tax')
+                        ->orderBy('id');
+                },
+            ])
+            ->select('id', 'name', 'sku', 'type')
+            ->orderByDesc('id')
+            ->limit($limit)
             ->get();
 
-        $lines = [];
-        if ($business) {
-            $lines[] = 'Business: ' . $business->name;
-        }
-        $lines[] = 'Products count: ' . $productCount;
+        $lines = ['Products count: ' . $productCount];
         foreach ($products as $product) {
-            $lines[] = '- Product #' . $product->id . ': ' . trim((string) $product->name) . ' | sku=' . ((string) $product->sku ?: '-') . ' | type=' . ((string) $product->type ?: '-');
+            $variation = $product->variations->first();
+            $unitPrice = $variation && is_numeric($variation->default_sell_price)
+                ? number_format((float) $variation->default_sell_price, 2, '.', '')
+                : '-';
+            $sellingPrice = $variation && is_numeric($variation->sell_price_inc_tax)
+                ? number_format((float) $variation->sell_price_inc_tax, 2, '.', '')
+                : '-';
+            $cost = $variation && is_numeric($variation->default_purchase_price)
+                ? number_format((float) $variation->default_purchase_price, 2, '.', '')
+                : '-';
+
+            $line = '- Product #' . $product->id . ': ' . trim((string) $product->name)
+                . ' | sku=' . ((string) $product->sku ?: '-')
+                . ' | type=' . ((string) $product->type ?: '-')
+                . ' | unit_price=' . $unitPrice
+                . ' | selling_price=' . $sellingPrice;
+
+            if ($canViewCost) {
+                $line .= ' | cost=' . $cost;
+            }
+
+            $lines[] = $line;
         }
 
-        $lines[] = '';
-        $lines[] = 'Contacts count: ' . $contactCount;
+        return implode("\n", $lines);
+    }
+
+    protected function buildContactsContext(int $business_id, ?int $user_id, string $type, array $contactCapabilities): string
+    {
+        $canView = (bool) ($contactCapabilities['view'] ?? false);
+        $canViewOwn = (bool) ($contactCapabilities['view_own'] ?? false);
+
+        if (! $canView && ! $canViewOwn) {
+            return '';
+        }
+
+        $limit = (int) config('aichat.chat.organization_context.contacts_limit', 25);
+        $query = Contact::where('business_id', $business_id)
+            ->whereIn('type', [$type, 'both'])
+            ->where('type', '!=', 'lead');
+
+        if (! $canView && $canViewOwn && $user_id !== null) {
+            $query->leftJoin('user_contact_access as ucas', 'contacts.id', '=', 'ucas.contact_id')
+                ->where(function ($subQuery) use ($user_id) {
+                    $subQuery->where('contacts.created_by', $user_id)
+                        ->orWhere('ucas.user_id', $user_id);
+                })
+                ->distinct();
+        }
+
+        $countQuery = clone $query;
+        $contactCount = $countQuery->count('contacts.id');
+
+        $contacts = $query
+            ->select('contacts.id', 'contacts.name', 'contacts.supplier_business_name', 'contacts.type', 'contacts.contact_id')
+            ->orderByDesc('contacts.id')
+            ->limit($limit)
+            ->get();
+
+        $lines = [$type === 'customer' ? 'Customer contacts count: ' . $contactCount : 'Supplier contacts count: ' . $contactCount];
         foreach ($contacts as $contact) {
             $displayName = trim((string) $contact->name);
             if (! empty($contact->supplier_business_name)) {
@@ -1439,14 +1721,180 @@ class ChatUtil
             $lines[] = '- Contact #' . $contact->id . ': ' . $displayName . ' | type=' . ((string) $contact->type ?: '-') . ' | reference=' . ((string) $contact->contact_id ?: '-');
         }
 
-        $lines[] = '';
-        $lines[] = 'Transactions count: ' . $transactionCount;
-        foreach ($transactions as $transaction) {
-            $contactName = $transaction->contact ? trim((string) ($transaction->contact->supplier_business_name ?: $transaction->contact->name)) : '-';
-            $lines[] = '- Transaction #' . $transaction->id . ': type=' . ((string) $transaction->type ?: '-') . ' | status=' . ((string) $transaction->status ?: '-') . ' | invoice=' . ((string) $transaction->invoice_no ?: '-') . ' | date=' . ($transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-') . ' | contact=' . $contactName;
+        return implode("\n", $lines);
+    }
+
+    protected function buildSalesContext(int $business_id, ?int $user_id, array $capabilities): string
+    {
+        $canView = (bool) data_get($capabilities, 'sales.view', false);
+        $canViewOwn = (bool) data_get($capabilities, 'sales.view_own', false);
+
+        if (! $canView && ! $canViewOwn) {
+            return '';
         }
 
-        return trim(implode("\n", $lines));
+        $limit = (int) config('aichat.chat.organization_context.transactions_limit', 20);
+        $query = Transaction::where('business_id', $business_id)
+            ->where('type', 'sell');
+
+        if (! $canView && $canViewOwn && $user_id !== null) {
+            $query->where('created_by', $user_id);
+        }
+
+        $countQuery = clone $query;
+        $transactionCount = $countQuery->count();
+
+        $transactions = $query
+            ->with(['contact' => function ($relation) {
+                $relation->select('id', 'name', 'supplier_business_name');
+            }])
+            ->select('id', 'business_id', 'contact_id', 'type', 'status', 'invoice_no', 'transaction_date', 'final_total')
+            ->orderByDesc('transaction_date')
+            ->limit($limit)
+            ->get();
+
+        $lines = ['Sales transactions count: ' . $transactionCount];
+        foreach ($transactions as $transaction) {
+            $contactName = $transaction->contact ? trim((string) ($transaction->contact->supplier_business_name ?: $transaction->contact->name)) : '-';
+            $lines[] = '- Sale #' . $transaction->id . ': status=' . ((string) $transaction->status ?: '-') . ' | invoice=' . ((string) $transaction->invoice_no ?: '-') . ' | date=' . ($transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-') . ' | contact=' . $contactName;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function buildPurchasesContext(int $business_id, ?int $user_id, array $capabilities): string
+    {
+        $canView = (bool) data_get($capabilities, 'purchases.view', false);
+        $canViewOwn = (bool) data_get($capabilities, 'purchases.view_own', false);
+
+        if (! $canView && ! $canViewOwn) {
+            return '';
+        }
+
+        $limit = (int) config('aichat.chat.organization_context.transactions_limit', 20);
+        $query = Transaction::where('business_id', $business_id)
+            ->where('type', 'purchase');
+
+        if (! $canView && $canViewOwn && $user_id !== null) {
+            $query->where('created_by', $user_id);
+        }
+
+        $countQuery = clone $query;
+        $transactionCount = $countQuery->count();
+
+        $transactions = $query
+            ->with(['contact' => function ($relation) {
+                $relation->select('id', 'name', 'supplier_business_name');
+            }])
+            ->select('id', 'business_id', 'contact_id', 'type', 'status', 'invoice_no', 'transaction_date', 'final_total')
+            ->orderByDesc('transaction_date')
+            ->limit($limit)
+            ->get();
+
+        $lines = ['Purchase transactions count: ' . $transactionCount];
+        foreach ($transactions as $transaction) {
+            $contactName = $transaction->contact ? trim((string) ($transaction->contact->supplier_business_name ?: $transaction->contact->name)) : '-';
+            $lines[] = '- Purchase #' . $transaction->id . ': status=' . ((string) $transaction->status ?: '-') . ' | invoice=' . ((string) $transaction->invoice_no ?: '-') . ' | date=' . ($transaction->transaction_date ? Carbon::parse($transaction->transaction_date)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($transaction->final_total) ? number_format((float) $transaction->final_total, 2, '.', '') : '-') . ' | contact=' . $contactName;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function buildQuotesContext(int $business_id, array $capabilities): string
+    {
+        if (! (bool) data_get($capabilities, 'quotes.view', false)) {
+            return '';
+        }
+
+        $limit = (int) config('aichat.chat.organization_context.transactions_limit', 20);
+        $quoteCount = ProductQuote::forBusiness($business_id)->count();
+        $quotes = ProductQuote::forBusiness($business_id)
+            ->with([
+                'contact:id,name,supplier_business_name',
+                'location:id,name',
+            ])
+            ->select('id', 'business_id', 'contact_id', 'location_id', 'expires_at', 'sent_at', 'transaction_id', 'grand_total', 'line_count', 'created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+
+        $lines = ['Quotes count: ' . $quoteCount];
+        foreach ($quotes as $quote) {
+            $contactName = $quote->contact ? trim((string) ($quote->contact->supplier_business_name ?: $quote->contact->name)) : '-';
+            $locationName = $quote->location ? trim((string) $quote->location->name) : '-';
+            $lines[] = '- Quote #' . $quote->id . ': contact=' . $contactName . ' | location=' . $locationName . ' | expires=' . ($quote->expires_at ? Carbon::parse($quote->expires_at)->format('Y-m-d') : '-') . ' | total=' . (is_numeric($quote->grand_total) ? number_format((float) $quote->grand_total, 2, '.', '') : '-') . ' | lines=' . (int) $quote->line_count;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function buildReportsContext(int $business_id, ?int $user_id, array $capabilities): string
+    {
+        if (! (bool) data_get($capabilities, 'reports.view', false)) {
+            return '';
+        }
+
+        $lines = [];
+        if ((bool) data_get($capabilities, 'products.view', false)) {
+            $lines[] = '- Products available: ' . Product::where('business_id', $business_id)->count();
+        }
+
+        if ((bool) data_get($capabilities, 'contacts.customer.view', false)
+            || (bool) data_get($capabilities, 'contacts.customer.view_own', false)
+            || (bool) data_get($capabilities, 'contacts.supplier.view', false)
+            || (bool) data_get($capabilities, 'contacts.supplier.view_own', false)) {
+            $contactsQuery = Contact::where('business_id', $business_id)->where('type', '!=', 'lead');
+            if (! (bool) data_get($capabilities, 'contacts.customer.view', false)
+                && ! (bool) data_get($capabilities, 'contacts.supplier.view', false)
+                && $user_id !== null) {
+                $contactsQuery->leftJoin('user_contact_access as ucas', 'contacts.id', '=', 'ucas.contact_id')
+                    ->where(function ($subQuery) use ($user_id) {
+                        $subQuery->where('contacts.created_by', $user_id)
+                            ->orWhere('ucas.user_id', $user_id);
+                    })
+                    ->distinct();
+            }
+            $lines[] = '- Contacts available: ' . $contactsQuery->count('contacts.id');
+        }
+
+        if ((bool) data_get($capabilities, 'sales.view', false) || (bool) data_get($capabilities, 'sales.view_own', false)) {
+            $salesQuery = Transaction::where('business_id', $business_id)->where('type', 'sell');
+            if (! (bool) data_get($capabilities, 'sales.view', false) && $user_id !== null) {
+                $salesQuery->where('created_by', $user_id);
+            }
+            $lines[] = '- Sales transactions available: ' . $salesQuery->count();
+        }
+
+        if ((bool) data_get($capabilities, 'purchases.view', false) || (bool) data_get($capabilities, 'purchases.view_own', false)) {
+            $purchaseQuery = Transaction::where('business_id', $business_id)->where('type', 'purchase');
+            if (! (bool) data_get($capabilities, 'purchases.view', false) && $user_id !== null) {
+                $purchaseQuery->where('created_by', $user_id);
+            }
+            $lines[] = '- Purchase transactions available: ' . $purchaseQuery->count();
+        }
+
+        if ((bool) data_get($capabilities, 'quotes.view', false)) {
+            $lines[] = '- Quotes available: ' . ProductQuote::forBusiness($business_id)->count();
+        }
+
+        return implode("\n", $lines);
+    }
+
+    protected function buildSettingsContext(array $capabilities): string
+    {
+        $lines = [];
+
+        if ((bool) data_get($capabilities, 'settings.access', false)) {
+            $lines[] = '- Business settings access: granted';
+        }
+        if ((bool) data_get($capabilities, 'settings.chat_settings', false)) {
+            $lines[] = '- AI chat settings access: granted';
+        }
+        if ((bool) data_get($capabilities, 'settings.manage_all_memories', false)) {
+            $lines[] = '- Memory administration access: granted';
+        }
+
+        return implode("\n", $lines);
     }
 
     protected function buildMemoryContext(int $business_id, ?int $user_id = null): string

@@ -28,7 +28,7 @@ class BarcodeController extends Controller
             return Datatables::of($barcodes)
                 ->addColumn(
                     'action',
-                    '<a href="{{action(\'App\Http\Controllers\BarcodeController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a>
+                    '<a href="{{action(\'App\Http\Controllers\BarcodeController@edit\', [$id])}}" class="btn btn-sm btn-light-info"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a>
                         &nbsp;
                         <button type="button" data-href="{{action(\'App\Http\Controllers\BarcodeController@destroy\', [$id])}}" class="tw-dw-btn tw-dw-btn-outline tw-dw-btn-xs tw-dw-btn-error delete_barcode_button" @if($is_default) disabled @endif><i class="glyphicon glyphicon-trash"></i> @lang("messages.delete")</button>&nbsp;
                         @if($is_default)

@@ -186,7 +186,7 @@ class SellReturnController extends Controller
                                     </li>
                                 </ul></div>';                            
                             } else {
-                                return '<a href="' . action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'sync_sale_return'], [$row->id]) . '" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max return_sale_sycs">' . __('zatcaintegrationksa::lang.sync') . '</a>';
+                                return '<a href="' . action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'sync_sale_return'], [$row->id]) . '" class="btn btn-sm btn-light-primary text-nowrap return_sale_sycs">' . __('zatcaintegrationksa::lang.sync') . '</a>';
                             }
                         }
             $returnString = '<div class="btn-group">

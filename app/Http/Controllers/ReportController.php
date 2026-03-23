@@ -385,7 +385,7 @@ class ReportController extends Controller
                     return $name;
                 })
                 ->addColumn('action', function ($row) {
-                    return '<a class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info tw-w-max " href="'.action([\App\Http\Controllers\ProductController::class, 'productStockHistory'], [$row->product_id]).
+                    return '<a class="btn btn-sm btn-light-primary text-nowrap" href="'.action([\App\Http\Controllers\ProductController::class, 'productStockHistory'], [$row->product_id]).
                     '?location_id='.$row->location_id.'&variation_id='.$row->variation_id.
                     '"><i class="fas fa-history"></i> '.__('lang_v1.product_stock_history').'</a>';
                 })
@@ -429,7 +429,7 @@ class ReportController extends Controller
                     }
 
                     if ($allowed_selling_price_group) {
-                        $html .= ' <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary tw-w-max btn-modal no-print" data-container=".view_modal" data-href="'.action([\App\Http\Controllers\ProductController::class, 'viewGroupPrice'], [$row->product_id]).'">'.__('lang_v1.view_group_prices').'</button>';
+                        $html .= ' <button type="button" class="btn btn-sm btn-light-info text-nowrap btn-modal no-print" data-container=".view_modal" data-href="'.action([\App\Http\Controllers\ProductController::class, 'viewGroupPrice'], [$row->product_id]).'">'.__('lang_v1.view_group_prices').'</button>';
                     }
 
                     return $html;
@@ -532,7 +532,7 @@ class ReportController extends Controller
     //                 return $name;
     //             })
     //             ->addColumn('action', function ($row) {
-    //                 return '<a class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info" href="'.action([\App\Http\Controllers\ProductController::class, 'productStockHistory'], [$row->product_id]).
+    //                 return '<a class="btn btn-sm btn-light-primary" href="'.action([\App\Http\Controllers\ProductController::class, 'productStockHistory'], [$row->product_id]).
     //                 '?location_id='.$row->location_id.'&variation_id='.$row->variation_id.
     //                 '"><i class="fas fa-history"></i> '.__('lang_v1.product_stock_history').'</a>';
     //             })
@@ -576,7 +576,7 @@ class ReportController extends Controller
     //                 }
 
     //                 if ($allowed_selling_price_group) {
-    //                     $html .= ' <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary btn-modal no-print" data-container=".view_modal" data-href="'.action([\App\Http\Controllers\ProductController::class, 'viewGroupPrice'], [$row->product_id]).'">'.__('lang_v1.view_group_prices').'</button>';
+    //                     $html .= ' <button type="button" class="btn btn-sm btn-light-info btn-modal no-print" data-container=".view_modal" data-href="'.action([\App\Http\Controllers\ProductController::class, 'viewGroupPrice'], [$row->product_id]).'">'.__('lang_v1.view_group_prices').'</button>';
     //                 }
 
     //                 return $html;
@@ -1203,7 +1203,7 @@ class ReportController extends Controller
                     return '<span data-orig-value="'.$total.'" >'.$this->transactionUtil->num_f($total, true).'</span>';
                 })
 
-                ->addColumn('action', '@if(auth()->user()->can("view_cash_register"))<button type="button" data-href="{{action(\'App\Http\Controllers\CashRegisterController@show\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info tw-w-max btn-modal" 
+                ->addColumn('action', '@if(auth()->user()->can("view_cash_register"))<button type="button" data-href="{{action(\'App\Http\Controllers\CashRegisterController@show\', [$id])}}" class="btn btn-sm btn-light-primary text-nowrap btn-modal" 
                     data-container=".view_register"><i class="fas fa-eye" aria-hidden="true"></i> @lang("messages.view")</button>@endif @if($status != "close" && auth()->user()->can("close_cash_register"))<button type="button" data-href="{{action(\'App\Http\Controllers\CashRegisterController@getCloseRegister\', [$id])}}" class="tw-dw-btn tw-dw-btn-outline tw-dw-btn-xs tw-dw-btn-error tw-w-max btn-modal" 
                         data-container=".view_register"><i class="fas fa-window-close"></i> @lang("messages.close")</button> @endif')
                 ->filterColumn('user_name', function ($query, $keyword) {
@@ -1510,7 +1510,7 @@ class ReportController extends Controller
                     return '<span data-is_quantity="true" class="display_currency stock_left" data-currency_symbol=false data-orig-value="'.$row->stock_left.'" data-unit="'.$row->unit.'" >'.$row->stock_left.'</span> '.$row->unit;
                 })
                 ->addColumn('edit', function ($row) {
-                    $html = '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary stock_expiry_edit_btn" data-transaction_id="'.$row->transaction_id.'" data-purchase_line_id="'.$row->purchase_line_id.'"> <i class="fa fa-edit"></i> '.__('messages.edit').
+                    $html = '<button type="button" class="btn btn-sm btn-light-info stock_expiry_edit_btn" data-transaction_id="'.$row->transaction_id.'" data-purchase_line_id="'.$row->purchase_line_id.'"> <i class="fa fa-edit"></i> '.__('messages.edit').
                     '</button>';
 
                     if (! empty($row->exp_date)) {
@@ -2425,7 +2425,7 @@ class ReportController extends Controller
                     return '<span class="paid-amount" data-orig-value="'.$row->amount.'">'.
                     $this->transactionUtil->num_f($row->amount, true).'</span>';
                 })
-                ->addColumn('action', '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary view_payment" data-href="{{ action([\App\Http\Controllers\TransactionPaymentController::class, \'viewPayment\'], [$DT_RowId]) }}">@lang("messages.view")
+                ->addColumn('action', '<button type="button" class="btn btn-sm btn-light-info view_payment" data-href="{{ action([\App\Http\Controllers\TransactionPaymentController::class, \'viewPayment\'], [$DT_RowId]) }}">@lang("messages.view")
                     </button> @if(!empty($document))<a href="{{asset("/uploads/documents/" . $document)}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-accent" download=""><i class="fa fa-download"></i> @lang("purchase.download_document")</a>@endif')
                 ->rawColumns(['ref_no', 'amount', 'method', 'action', 'supplier'])
                 ->make(true);
@@ -2591,7 +2591,7 @@ class ReportController extends Controller
                     return '<span class="paid-amount" data-orig-value="'.$amount.'" 
                     >'.$this->transactionUtil->num_f($amount, true).'</span>';
                 })
-                ->addColumn('action', '<button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary view_payment" data-href="{{ action([\App\Http\Controllers\TransactionPaymentController::class, \'viewPayment\'], [$DT_RowId]) }}">@lang("messages.view")
+                ->addColumn('action', '<button type="button" class="btn btn-sm btn-light-info view_payment" data-href="{{ action([\App\Http\Controllers\TransactionPaymentController::class, \'viewPayment\'], [$DT_RowId]) }}">@lang("messages.view")
                     </button> @if(!empty($document))<a href="{{asset("/uploads/documents/" . $document)}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-accent" download=""><i class="fa fa-download"></i> @lang("purchase.download_document")</a>@endif')
                 ->rawColumns(['invoice_no', 'amount', 'method', 'action', 'customer'])
                 ->make(true);

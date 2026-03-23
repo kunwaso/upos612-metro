@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Modules\Aichat\Entities\ChatMessage;
 use Modules\Aichat\Entities\ProductQuoteDraft;
 use Modules\Aichat\Utils\AIChatUtil;
+use Modules\Aichat\Utils\ChatActionUtil;
 use Modules\Aichat\Utils\ChatProductQuoteWizardUtil;
 use Modules\Aichat\Utils\ChatUtil;
 use Modules\Aichat\Utils\ChatWorkflowUtil;
@@ -39,7 +40,8 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         ChatWorkflowUtil $chatWorkflowUtil,
         AIChatUtil $aiChatUtil,
         TelegramApiUtil $telegramApi,
-        ChatProductQuoteWizardUtil $quoteWizardUtil
+        ChatProductQuoteWizardUtil $quoteWizardUtil,
+        ?ChatActionUtil $chatActionUtil = null
     ): void {
         $bot = $chatUtil->findTelegramBotByWebhookKey($this->webhookKey);
         if (! $bot) {
@@ -76,7 +78,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
 
         if ($chatType === 'private') {
-            $this->handlePrivateMessage($chatUtil, $chatWorkflowUtil, $aiChatUtil, $telegramApi, $quoteWizardUtil, $bot, $chatId, $text);
+            $this->handlePrivateMessage($chatUtil, $chatWorkflowUtil, $aiChatUtil, $telegramApi, $quoteWizardUtil, $chatActionUtil, $bot, $chatId, $text);
         }
     }
 
@@ -136,6 +138,7 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         AIChatUtil $aiChatUtil,
         TelegramApiUtil $telegramApi,
         ChatProductQuoteWizardUtil $quoteWizardUtil,
+        ?ChatActionUtil $chatActionUtil,
         $bot,
         int $chatId,
         string $text
@@ -218,6 +221,10 @@ class ProcessTelegramWebhookJob implements ShouldQueue
                 $activeDraft
             );
 
+            return;
+        }
+
+        if ($chatActionUtil && $this->handlePendingActionMessage($chatActionUtil, $chatUtil, $telegramApi, $bot, $chatId, $userId, $text)) {
             return;
         }
 
@@ -449,6 +456,125 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
     }
 
+    protected function handlePendingActionMessage(
+        ChatActionUtil $chatActionUtil,
+        ChatUtil $chatUtil,
+        TelegramApiUtil $telegramApi,
+        $bot,
+        int $chatId,
+        int $userId,
+        string $text
+    ): bool {
+        $normalized = trim($text);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $isListCommand = $this->isPendingActionListCommand($normalized);
+        $confirmActionId = $this->parseTelegramActionConfirmId($normalized);
+        $cancelActionId = $this->parseTelegramActionCancelId($normalized);
+        if (! $isListCommand && $confirmActionId === null && $cancelActionId === null) {
+            return false;
+        }
+        if (! (bool) config('aichat.actions.enabled', false)) {
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.chat_action_disabled'));
+
+            return true;
+        }
+
+        $businessId = (int) $bot->business_id;
+        $conversation = $chatUtil->getOrCreateTelegramConversation($businessId, $chatId, $userId);
+        $conversationId = (string) $conversation->id;
+
+        if ($isListCommand) {
+            try {
+                $items = $chatActionUtil->listPendingActions($businessId, $userId, $conversationId);
+                if (empty($items)) {
+                    $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_action_pending_empty'));
+
+                    return true;
+                }
+
+                $lines = [__('aichat::lang.telegram_action_pending_header')];
+                foreach ($items as $item) {
+                    $lines[] = '#' . (int) ($item['id'] ?? 0)
+                        . ' '
+                        . (string) ($item['module'] ?? '')
+                        . '.'
+                        . (string) ($item['action'] ?? '')
+                        . ' - '
+                        . (string) ($item['preview_text'] ?? '');
+                }
+
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, implode("\n", $lines));
+            } catch (\Throwable $exception) {
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $this->telegramActionFailureMessage());
+            }
+
+            return true;
+        }
+
+        if ($confirmActionId !== null) {
+            try {
+                $action = $confirmActionId > 0
+                    ? $chatActionUtil->getPendingActionByIdForUser($businessId, $userId, $conversationId, $confirmActionId)
+                    : $chatActionUtil->getLatestPendingActionForUser($businessId, $userId, $conversationId);
+                if (! $action) {
+                    $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_action_pending_empty'));
+
+                    return true;
+                }
+
+                $result = $chatActionUtil->confirmAction($businessId, $userId, $conversationId, (int) $action->id, 'telegram', null);
+                $responseText = __('aichat::lang.telegram_action_confirm_success')
+                    . "\n"
+                    . '#'
+                    . (int) $result->id
+                    . ' '
+                    . (string) $result->module
+                    . '.'
+                    . (string) $result->action;
+
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $responseText);
+            } catch (\Throwable $exception) {
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $this->telegramActionFailureMessage());
+            }
+
+            return true;
+        }
+
+        if ($cancelActionId !== null) {
+            try {
+                $action = $cancelActionId > 0
+                    ? $chatActionUtil->getPendingActionByIdForUser($businessId, $userId, $conversationId, $cancelActionId)
+                    : $chatActionUtil->getLatestPendingActionForUser($businessId, $userId, $conversationId);
+                if (! $action) {
+                    $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, __('aichat::lang.telegram_action_pending_empty'));
+
+                    return true;
+                }
+
+                $result = $chatActionUtil->cancelAction($businessId, $userId, $conversationId, (int) $action->id, null);
+                $responseText = __('aichat::lang.telegram_action_cancel_success')
+                    . "\n"
+                    . '#'
+                    . (int) $result->id
+                    . ' '
+                    . (string) $result->module
+                    . '.'
+                    . (string) $result->action;
+
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $responseText);
+            } catch (\Throwable $exception) {
+                $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $this->telegramActionFailureMessage());
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     protected function processAiAndReply(
         ChatUtil $chatUtil,
         ChatWorkflowUtil $chatWorkflowUtil,
@@ -529,6 +655,11 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
     }
 
+    protected function telegramActionFailureMessage(): string
+    {
+        return __('aichat::lang.telegram_action_failed');
+    }
+
     protected function extractStartCode(string $text): ?string
     {
         if (! preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+(.+)$/', trim($text), $matches)) {
@@ -550,6 +681,39 @@ class ProcessTelegramWebhookJob implements ShouldQueue
         }
 
         return max(1, (int) ($matches[1] ?? 0));
+    }
+
+    protected function isPendingActionListCommand(string $text): bool
+    {
+        return (bool) preg_match('/^(?:\/actions(?:@[a-zA-Z0-9_]+)?|ACTIONS)$/i', trim($text));
+    }
+
+    protected function parseTelegramActionConfirmId(string $text): ?int
+    {
+        $normalized = trim($text);
+        if (! preg_match('/^(?:\/confirm_action(?:@[a-zA-Z0-9_]+)?|CONFIRM\s+ACTION)(?:\s+(\d+))?$/i', $normalized, $matches)) {
+            return null;
+        }
+
+        if (! isset($matches[1]) || trim((string) $matches[1]) === '') {
+            return 0;
+        }
+
+        return max(1, (int) $matches[1]);
+    }
+
+    protected function parseTelegramActionCancelId(string $text): ?int
+    {
+        $normalized = trim($text);
+        if (! preg_match('/^(?:\/cancel_action(?:@[a-zA-Z0-9_]+)?|CANCEL\s+ACTION)(?:\s+(\d+))?$/i', $normalized, $matches)) {
+            return null;
+        }
+
+        if (! isset($matches[1]) || trim((string) $matches[1]) === '') {
+            return 0;
+        }
+
+        return max(1, (int) $matches[1]);
     }
 
     protected function parseTelegramProductPick(string $text): ?array

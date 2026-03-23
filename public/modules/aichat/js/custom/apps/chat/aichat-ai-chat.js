@@ -231,6 +231,391 @@
         return routeConversation(((config || {}).routes || {})[templateKey] || '', conversationId);
     }
 
+    function actionRoute(templateKey, conversationId, actionId) {
+        return route(
+            ((config || {}).routes || {})[templateKey] || '',
+            {
+                CONVERSATION_ID: conversationId,
+                ACTION_ID: actionId || ''
+            }
+        );
+    }
+
+    function isActionCommand(prompt) {
+        return /^\/action\b/i.test(String(prompt || '').trim());
+    }
+
+    function isLikelyMutationIntent(prompt) {
+        var text = String(prompt || '').trim().toLowerCase();
+        if (!text) {
+            return false;
+        }
+
+        var mutationKeyword = /\b(create|add|new|insert|update|edit|change|delete|remove|set)\b/;
+        if (!mutationKeyword.test(text)) {
+            return false;
+        }
+
+        var targetKeyword = /\b(product|products|item|items|contact|contacts|customer|customers|supplier|suppliers|sale|sales|quote|quotes|purchase|purchases|setting|settings)\b/;
+        return targetKeyword.test(text);
+    }
+
+    function buildNaturalLanguageActionHint() {
+        return t(
+            'chat_action_natural_language_hint',
+            'Data changes require action confirmation. Use /action prepare <module> <action> <json payload>, then /action confirm.'
+        );
+    }
+
+    function normalizeActionId(value) {
+        var id = Number(value || 0);
+        return Number.isFinite(id) && id > 0 ? Math.floor(id) : 0;
+    }
+
+    function getActionResponseData(json) {
+        if (!json || typeof json !== 'object') {
+            return {};
+        }
+
+        if (json.data && typeof json.data === 'object') {
+            return json.data;
+        }
+
+        if (json.action && typeof json.action === 'object') {
+            return json.action;
+        }
+
+        if (json.result && typeof json.result === 'object') {
+            return json.result;
+        }
+
+        return json;
+    }
+
+    function getPendingActionItems(json) {
+        var data = getActionResponseData(json);
+        var candidates = [
+            data.items,
+            data.actions,
+            data.pending_actions,
+            data.pending,
+            data.records
+        ];
+
+        for (var i = 0; i < candidates.length; i++) {
+            if (Array.isArray(candidates[i])) {
+                return candidates[i];
+            }
+        }
+
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        return [];
+    }
+
+    function getActionStatusLabel(status, fallback) {
+        var normalized = String(status || fallback || 'pending').trim().toLowerCase();
+        if (!normalized) {
+            normalized = 'pending';
+        }
+
+        return normalized;
+    }
+
+    function formatActionDescriptor(item, fallbackStatus) {
+        var id = normalizeActionId(item && item.id);
+        var moduleName = String((item && item.module) || '').trim();
+        var actionName = String((item && item.action) || '').trim();
+        var status = getActionStatusLabel(item && item.status, fallbackStatus);
+        var descriptor = id ? '#' + String(id) + ' ' : '';
+
+        descriptor += moduleName && actionName ? moduleName + '.' + actionName : t('chat_action_label', 'AI action');
+        descriptor += ' [' + status + ']';
+
+        return descriptor;
+    }
+
+    function formatActionHint(item, fallbackCommand) {
+        var id = normalizeActionId(item && item.id);
+        var status = getActionStatusLabel(item && item.status, fallbackCommand);
+        var confirmCommand = id ? '/action confirm ' + String(id) : '/action confirm <id>';
+        var cancelCommand = id ? '/action cancel ' + String(id) : '/action cancel <id>';
+        var prepareCommand = '/action prepare <module> <action> <json payload>';
+
+        if (status === 'pending' || status === 'prepared') {
+            return t('chat_action_pending_hint', 'Use /action confirm <id> or /action cancel <id>.')
+                .replace('/action confirm <id>', confirmCommand)
+                .replace('/action cancel <id>', cancelCommand);
+        }
+
+        if (status === 'executed') {
+            return t('chat_action_executed_hint', 'Use /action pending to review the queue or /action prepare <module> <action> <json payload> to create a new action.')
+                .replace('/action prepare <module> <action> <json payload>', prepareCommand);
+        }
+
+        if (status === 'cancelled' || status === 'failed') {
+            return t('chat_action_complete_hint', 'Use /action pending to review the queue or /action prepare <module> <action> <json payload> to create a new action.')
+                .replace('/action prepare <module> <action> <json payload>', prepareCommand);
+        }
+
+        return t('chat_action_command_help', 'Commands: /action pending, /action confirm [id], /action cancel [id], /action prepare <module> <action> <json payload>.');
+    }
+
+    function formatPendingActionNotice(items) {
+        var validItems = (Array.isArray(items) ? items : [])
+            .map(function (item) {
+                return item && typeof item === 'object' ? item : null;
+            })
+            .filter(function (item) {
+                return normalizeActionId(item && item.id) > 0;
+            });
+
+        if (!validItems.length) {
+            return t('chat_action_pending_empty', 'No pending actions.')
+                + '\n'
+                + t('chat_action_pending_prepare_hint', 'Use /action prepare <module> <action> <json payload> to create one.');
+        }
+
+        var limit = Math.min(validItems.length, 5);
+        var lines = [];
+
+        for (var i = 0; i < limit; i++) {
+            var item = validItems[i];
+            var preview = String(item.preview_text || item.summary || item.description || '').trim();
+            var line = formatActionDescriptor(item, 'pending');
+            if (preview) {
+                line += ' - ' + preview;
+            }
+            lines.push(line);
+        }
+
+        if (validItems.length > limit) {
+            lines.push(t('chat_action_pending_more', '+:count more pending actions.').replace(':count', String(validItems.length - limit)));
+        }
+
+        lines.push(formatActionHint(validItems[0], 'pending'));
+
+        return t('chat_action_pending_title', 'Pending AI actions')
+            + ' (' + String(validItems.length) + ')'
+            + '\n'
+            + lines.join('\n');
+    }
+
+    function formatActionNotice(titleKey, fallbackTitle, item, fallbackStatus, bodyText) {
+        var lines = [];
+        var descriptor = formatActionDescriptor(item, fallbackStatus);
+
+        lines.push(t(titleKey, fallbackTitle));
+        lines.push(descriptor);
+
+        if (bodyText) {
+            lines.push(String(bodyText));
+        }
+
+        lines.push(formatActionHint(item, fallbackStatus));
+
+        return lines.join('\n');
+    }
+
+    function actionUiEnabled() {
+        return !!(((config || {}).features || {}).actions_enabled) && !!(((config || {}).permissions || {}).can_edit);
+    }
+
+    function getActionToolbar(container) {
+        return container.querySelector('[data-chat-action-toolbar]');
+    }
+
+    function getPendingQueueHost(container) {
+        return container.querySelector('[data-chat-pending-queue]');
+    }
+
+    function buildActionToolbar(container) {
+        if (!actionUiEnabled()) {
+            return;
+        }
+
+        if (getActionToolbar(container) && getPendingQueueHost(container)) {
+            return;
+        }
+
+        var repliesHost = container.querySelector('[data-chat-suggested-replies]');
+        if (!repliesHost || !repliesHost.parentNode) {
+            return;
+        }
+
+        var toolbar = document.createElement('div');
+        toolbar.className = 'mt-3 d-flex flex-wrap gap-2';
+        toolbar.setAttribute('data-chat-action-toolbar', '1');
+
+        var pendingButton = document.createElement('button');
+        pendingButton.type = 'button';
+        pendingButton.className = 'btn btn-sm btn-light-primary';
+        pendingButton.setAttribute('data-chat-quick-action', 'pending');
+        pendingButton.textContent = t('chat_action_toolbar_pending', 'Pending Actions');
+
+        var confirmLatestButton = document.createElement('button');
+        confirmLatestButton.type = 'button';
+        confirmLatestButton.className = 'btn btn-sm btn-light-success';
+        confirmLatestButton.setAttribute('data-chat-quick-action', 'confirm_latest');
+        confirmLatestButton.textContent = t('chat_action_toolbar_confirm_latest', 'Confirm Latest');
+
+        var cancelLatestButton = document.createElement('button');
+        cancelLatestButton.type = 'button';
+        cancelLatestButton.className = 'btn btn-sm btn-light-danger';
+        cancelLatestButton.setAttribute('data-chat-quick-action', 'cancel_latest');
+        cancelLatestButton.textContent = t('chat_action_toolbar_cancel_latest', 'Cancel Latest');
+
+        toolbar.appendChild(pendingButton);
+        toolbar.appendChild(confirmLatestButton);
+        toolbar.appendChild(cancelLatestButton);
+
+        var queueHost = document.createElement('div');
+        queueHost.className = 'mt-3';
+        queueHost.setAttribute('data-chat-pending-queue', '1');
+
+        repliesHost.parentNode.insertBefore(toolbar, repliesHost);
+        repliesHost.parentNode.insertBefore(queueHost, repliesHost);
+    }
+
+    function getActionStatusBadgeClass(status) {
+        switch (String(status || '').toLowerCase()) {
+            case 'confirmed':
+                return 'badge-light-primary';
+            case 'executed':
+                return 'badge-light-success';
+            case 'cancelled':
+                return 'badge-light-dark';
+            case 'failed':
+                return 'badge-light-danger';
+            case 'expired':
+                return 'badge-light-danger';
+            case 'pending':
+            default:
+                return 'badge-light-warning';
+        }
+    }
+
+    function normalizePendingQueueItems(items) {
+        return (Array.isArray(items) ? items : []).map(function (item) {
+            return item && typeof item === 'object' ? item : null;
+        }).filter(function (item) {
+            return normalizeActionId(item.id) > 0;
+        });
+    }
+
+    function renderPendingQueue(container, items, options) {
+        if (!actionUiEnabled()) {
+            return;
+        }
+
+        buildActionToolbar(container);
+        var host = getPendingQueueHost(container);
+        if (!host) {
+            return;
+        }
+
+        var opts = options || {};
+        if (opts.loading) {
+            host.innerHTML = '<div class="text-muted fs-8">' + e(t('chat_action_queue_loading', 'Loading pending actions...')) + '</div>';
+            return;
+        }
+
+        var queueItems = normalizePendingQueueItems(items);
+        if (!queueItems.length) {
+            host.innerHTML = '<div class="text-muted fs-8">' + e(t('chat_action_queue_empty', 'No pending actions in this conversation.')) + '</div>';
+            return;
+        }
+
+        host.innerHTML = '';
+
+        var title = document.createElement('div');
+        title.className = 'fw-semibold text-gray-900 fs-8 mb-2';
+        title.textContent = t('chat_action_queue_title', 'Pending Queue') + ' (' + String(queueItems.length) + ')';
+        host.appendChild(title);
+
+        queueItems.forEach(function (item) {
+            var row = document.createElement('div');
+            row.className = 'border border-gray-300 rounded p-3 mb-2';
+
+            var descriptor = document.createElement('div');
+            descriptor.className = 'd-flex flex-wrap align-items-center justify-content-between gap-2 mb-2';
+
+            var label = document.createElement('div');
+            label.className = 'text-gray-900 fw-semibold fs-8';
+            label.textContent = formatActionDescriptor(item, 'pending');
+            descriptor.appendChild(label);
+
+            var statusBadge = document.createElement('span');
+            statusBadge.className = 'badge ' + getActionStatusBadgeClass(item.status);
+            statusBadge.textContent = getActionStatusLabel(item.status, 'pending');
+            descriptor.appendChild(statusBadge);
+            row.appendChild(descriptor);
+
+            var previewText = String(item.preview_text || '').trim();
+            if (previewText) {
+                var preview = document.createElement('div');
+                preview.className = 'text-muted fs-8 mb-2';
+                preview.textContent = previewText;
+                row.appendChild(preview);
+            }
+
+            var canMutate = ['pending', 'confirmed'].indexOf(getActionStatusLabel(item.status, 'pending')) !== -1;
+            if (canMutate) {
+                var actions = document.createElement('div');
+                actions.className = 'd-flex flex-wrap gap-2';
+
+                var confirmButton = document.createElement('button');
+                confirmButton.type = 'button';
+                confirmButton.className = 'btn btn-sm btn-light-success';
+                confirmButton.setAttribute('data-chat-pending-confirm-id', String(normalizeActionId(item.id)));
+                confirmButton.textContent = t('chat_action_confirm_button', 'Confirm');
+                actions.appendChild(confirmButton);
+
+                var cancelButton = document.createElement('button');
+                cancelButton.type = 'button';
+                cancelButton.className = 'btn btn-sm btn-light-danger';
+                cancelButton.setAttribute('data-chat-pending-cancel-id', String(normalizeActionId(item.id)));
+                cancelButton.textContent = t('chat_action_cancel_button', 'Cancel');
+                actions.appendChild(cancelButton);
+
+                row.appendChild(actions);
+            }
+
+            host.appendChild(row);
+        });
+    }
+
+    function refreshPendingQueue(container, options) {
+        if (!actionUiEnabled()) {
+            return Promise.resolve([]);
+        }
+
+        buildActionToolbar(container);
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            renderPendingQueue(container, []);
+            return Promise.resolve([]);
+        }
+
+        var opts = options || {};
+        if (opts.loading) {
+            renderPendingQueue(container, [], { loading: true });
+        }
+
+        return loadPendingActions(container).then(function (items) {
+            renderPendingQueue(container, items);
+            return items;
+        }).catch(function (error) {
+            renderPendingQueue(container, []);
+            if (!opts.silent) {
+                warning(container, (error && error.message) || t('chat_provider_error', 'Unable to load pending actions.'));
+            }
+            throw error;
+        });
+    }
+
     function getQuoteMissingModalNode(container) {
         return container.querySelector('[data-chat-quote-missing-modal]');
     }
@@ -448,12 +833,16 @@
         container.__aichatBusy = !!isBusy;
         var input = container.querySelector('[data-kt-element="input"]');
         var sendButton = container.querySelector('[data-kt-element="send"]');
+        var actionButtons = container.querySelectorAll('[data-chat-quick-action], [data-chat-pending-confirm-id], [data-chat-pending-cancel-id]');
         if (input) {
             input.disabled = !!isBusy;
         }
         if (sendButton) {
             sendButton.disabled = !!isBusy;
         }
+        Array.prototype.forEach.call(actionButtons, function (button) {
+            button.disabled = !!isBusy;
+        });
     }
 
     function isBusy(container) {
@@ -498,6 +887,27 @@
         var regen = row.querySelector('[data-chat-action="regenerate"]');
         var up = row.querySelector('[data-chat-action="feedback-up"]');
         var down = row.querySelector('[data-chat-action="feedback-down"]');
+        var assistantActions = row.querySelector('[data-chat-assistant-actions]');
+
+        if (assistantActions) {
+            assistantActions.classList.toggle('d-none', !!(message && message.is_action_notice));
+        }
+
+        if (message && message.is_action_notice) {
+            if (copy) {
+                copy.disabled = true;
+            }
+            if (regen) {
+                regen.disabled = true;
+            }
+            if (up) {
+                up.disabled = true;
+            }
+            if (down) {
+                down.disabled = true;
+            }
+            return;
+        }
 
         var hasId = !!(message && message.id);
         var canRegenerate = !!(message && message.id && message.can_regenerate);
@@ -652,6 +1062,7 @@
             setTitle(container, t('new_chat', 'New Chat'));
             renderMessages(container, []);
             renderQuoteDraft(container, null);
+            renderPendingQueue(container, []);
             return Promise.resolve(null);
         }
 
@@ -670,6 +1081,9 @@
             }
             setTitle(container, conversation.title || t('new_chat', 'New Chat'));
             renderMessages(container, payload.messages || []);
+            refreshPendingQueue(container, { silent: true }).catch(function () {
+                return [];
+            });
             return payload;
         });
     }
@@ -881,6 +1295,269 @@
         return /^\/cancel(?:\s+.*)?$/i.test(String(prompt || '').trim());
     }
 
+    function parseActionPrepareCommand(prompt) {
+        var trimmed = String(prompt || '').trim();
+        var match = trimmed.match(/^\/action\s+prepare(?:\s+([\s\S]+))?$/i);
+        if (!match) {
+            return null;
+        }
+
+        var remainder = String(match[1] || '').trim();
+        if (!remainder) {
+            throw new Error(t('chat_action_prepare_usage', 'Use /action prepare <module> <action> <json payload>.'));
+        }
+
+        var parts = remainder.split(/\s+/);
+        if (parts.length < 2) {
+            throw new Error(t('chat_action_prepare_usage', 'Use /action prepare <module> <action> <json payload>.'));
+        }
+
+        var moduleName = String(parts.shift() || '').trim();
+        var actionName = String(parts.shift() || '').trim();
+        var payloadText = parts.join(' ').trim();
+        var payload = {};
+        if (payloadText) {
+            try {
+                payload = JSON.parse(payloadText);
+                if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+                    throw new Error('invalid');
+                }
+            } catch (error) {
+                throw new Error(t('chat_action_invalid_payload', 'The action payload is invalid or incomplete.'));
+            }
+        }
+
+        return {
+            module: moduleName.toLowerCase(),
+            action: actionName.toLowerCase(),
+            payload: payload
+        };
+    }
+
+    function isActionPendingCommand(prompt) {
+        return /^\/action\s+pending(?:\s*)$/i.test(String(prompt || '').trim());
+    }
+
+    function parseActionConfirmCommand(prompt) {
+        var trimmed = String(prompt || '').trim();
+        var match = trimmed.match(/^\/action\s+confirm(?:\s+([\s\S]+))?$/i);
+        if (!match) {
+            return null;
+        }
+
+        var idText = String(match[1] || '').trim();
+        if (!idText) {
+            return 0;
+        }
+
+        if (!/^\d+$/.test(idText)) {
+            throw new Error(t('chat_action_confirm_usage', 'Use /action confirm or /action confirm <id>.'));
+        }
+
+        return Number(idText);
+    }
+
+    function parseActionCancelCommand(prompt) {
+        var trimmed = String(prompt || '').trim();
+        var match = trimmed.match(/^\/action\s+cancel(?:\s+([\s\S]+))?$/i);
+        if (!match) {
+            return null;
+        }
+
+        var idText = String(match[1] || '').trim();
+        if (!idText) {
+            return 0;
+        }
+
+        if (!/^\d+$/.test(idText)) {
+            throw new Error(t('chat_action_cancel_usage', 'Use /action cancel or /action cancel <id>.'));
+        }
+
+        return Number(idText);
+    }
+
+    function appendActionNotice(container, text) {
+        createMessageRow(container, 'assistant', {
+            role: 'assistant',
+            content: text,
+            created_at: new Date().toISOString(),
+            can_regenerate: false,
+            is_action_notice: true
+        });
+    }
+
+    function loadPendingActions(container) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return Promise.resolve([]);
+        }
+
+        var url = actionRoute('actions_pending_url_template', conversationId, null);
+        if (!url) {
+            return Promise.resolve([]);
+        }
+
+        return request(url, { method: 'GET' }).then(function (json) {
+            return getPendingActionItems(json);
+        });
+    }
+
+    function resolveActionIdForCommand(container, requestedId) {
+        var normalizedRequestedId = normalizeActionId(requestedId);
+        if (normalizedRequestedId > 0) {
+            return Promise.resolve(normalizedRequestedId);
+        }
+
+        return loadPendingActions(container).then(function (items) {
+            var firstValidItem = (Array.isArray(items) ? items : []).find(function (item) {
+                return normalizeActionId(item && item.id) > 0;
+            });
+
+            if (!firstValidItem) {
+                throw new Error(
+                    t('chat_action_pending_empty', 'No pending actions.')
+                    + ' '
+                    + t('chat_action_pending_prepare_hint', 'Use /action prepare <module> <action> <json payload> to create one.')
+                );
+            }
+
+            return normalizeActionId(firstValidItem.id);
+        });
+    }
+
+    function handleActionCommandError(container, error, fallbackMessage) {
+        warning(container, (error && error.message) || fallbackMessage || t('chat_provider_error', 'Unable to process action command.'));
+    }
+
+    function prepareAction(container, command) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return createConversation(container).then(function () {
+                return prepareAction(container, command);
+            });
+        }
+
+        var url = actionRoute('actions_prepare_url_template', conversationId, null);
+        if (!url) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Action prepare route is missing.')));
+        }
+
+        return request(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                module: command.module,
+                action: command.action,
+                payload: command.payload || {},
+                channel: 'web'
+            })
+        }).then(function (json) {
+            var data = getActionResponseData(json);
+            var message = formatActionNotice(
+                'chat_action_prepared',
+                'Action prepared. Confirm to execute.',
+                {
+                    id: data.id || 0,
+                    module: data.module || command.module,
+                    action: data.action || command.action,
+                    status: data.status || 'pending'
+                },
+                'pending',
+                data.preview_text ? String(data.preview_text) : ''
+            );
+            appendActionNotice(container, message);
+            return refreshPendingQueue(container, { silent: true }).catch(function () {
+                return [];
+            }).then(function () {
+                return data;
+            });
+        });
+    }
+
+    function confirmAction(container, actionId) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Conversation is required.')));
+        }
+
+        return resolveActionIdForCommand(container, actionId).then(function (resolvedId) {
+            var url = actionRoute('actions_confirm_url_template', conversationId, resolvedId);
+            if (!url) {
+                throw new Error(t('chat_provider_error', 'Action confirm route is missing.'));
+            }
+
+            return request(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            }).then(function (json) {
+                var data = getActionResponseData(json);
+                appendActionNotice(
+                    container,
+                    formatActionNotice(
+                        'chat_action_executed',
+                        'Action executed successfully.',
+                        {
+                            id: data.id || resolvedId,
+                            module: data.module || '',
+                            action: data.action || '',
+                            status: data.status || 'executed'
+                        },
+                        'executed',
+                        data.preview_text ? String(data.preview_text) : ''
+                    )
+                );
+                return refreshPendingQueue(container, { silent: true }).catch(function () {
+                    return [];
+                }).then(function () {
+                    return data;
+                });
+            });
+        });
+    }
+
+    function cancelAction(container, actionId) {
+        var conversationId = getActiveConversationId(container);
+        if (!conversationId) {
+            return Promise.reject(new Error(t('chat_provider_error', 'Conversation is required.')));
+        }
+
+        return resolveActionIdForCommand(container, actionId).then(function (resolvedId) {
+            var url = actionRoute('actions_cancel_url_template', conversationId, resolvedId);
+            if (!url) {
+                throw new Error(t('chat_provider_error', 'Action cancel route is missing.'));
+            }
+
+            return request(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            }).then(function (json) {
+                var data = getActionResponseData(json);
+                appendActionNotice(
+                    container,
+                    formatActionNotice(
+                        'chat_action_cancelled',
+                        'Action cancelled.',
+                        {
+                            id: data.id || resolvedId,
+                            module: data.module || '',
+                            action: data.action || '',
+                            status: data.status || 'cancelled'
+                        },
+                        'cancelled',
+                        data.preview_text ? String(data.preview_text) : ''
+                    )
+                );
+                return refreshPendingQueue(container, { silent: true }).catch(function () {
+                    return [];
+                }).then(function () {
+                    return data;
+                });
+            });
+        });
+    }
+
     function submitQuoteWizard(container, message) {
         var conversationId = getActiveConversationId(container);
         if (!conversationId) {
@@ -942,6 +1619,83 @@
             return;
         }
 
+        if (isActionCommand(prompt)) {
+            var actionCommand = null;
+
+            try {
+                actionCommand = parseActionPrepareCommand(prompt);
+                if (!actionCommand) {
+                    var pendingId = parseActionConfirmCommand(prompt);
+                    if (pendingId !== null) {
+                        actionCommand = { kind: 'confirm', id: pendingId };
+                    } else {
+                        var cancelId = parseActionCancelCommand(prompt);
+                        if (cancelId !== null) {
+                            actionCommand = { kind: 'cancel', id: cancelId };
+                        } else if (isActionPendingCommand(prompt)) {
+                            actionCommand = { kind: 'pending' };
+                        }
+                    }
+                } else {
+                    actionCommand.kind = 'prepare';
+                }
+            } catch (error) {
+                warning(container, error.message || t('chat_action_invalid_payload', 'The action payload is invalid or incomplete.'));
+                return;
+            }
+
+            if (!actionCommand) {
+                warning(container, t('chat_action_command_help', 'Commands: /action pending, /action confirm [id], /action cancel [id], /action prepare <module> <action> <json payload>.'));
+                return;
+            }
+
+            input.value = '';
+            warning(container, '');
+            setBusy(container, true);
+
+            if (actionCommand.kind === 'prepare') {
+                prepareAction(container, actionCommand).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to prepare action.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+
+                return;
+            }
+
+            if (actionCommand.kind === 'pending') {
+                refreshPendingQueue(container, { loading: true, silent: true }).then(function (items) {
+                    appendActionNotice(container, formatPendingActionNotice(items));
+                }).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to load pending actions.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+
+                return;
+            }
+
+            if (actionCommand.kind === 'confirm') {
+                confirmAction(container, actionCommand.id).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to confirm action.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+
+                return;
+            }
+
+            if (actionCommand.kind === 'cancel') {
+                cancelAction(container, actionCommand.id).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to cancel action.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+
+                return;
+            }
+        }
+
         var conversationId = getActiveConversationId(container);
         if (!conversationId) {
             createConversation(container).then(function () {
@@ -960,8 +1714,10 @@
             return;
         }
 
+        var showMutationHint = actionUiEnabled() && isLikelyMutationIntent(prompt);
+
         input.value = '';
-        warning(container, '');
+        warning(container, showMutationHint ? buildNaturalLanguageActionHint() : '');
         setBusy(container, true);
 
         createMessageRow(container, 'user', {
@@ -1225,6 +1981,7 @@
             if (!id) {
                 setTitle(container, t('new_chat', 'New Chat'));
                 renderMessages(container, []);
+                renderPendingQueue(container, []);
                 return null;
             }
 
@@ -1247,6 +2004,10 @@
 
         updateModelOptions(container);
         renderReplies(container, []);
+        if (actionUiEnabled()) {
+            buildActionToolbar(container);
+            renderPendingQueue(container, []);
+        }
         if (quoteFeatureEnabled()) {
             setQuoteMode(container, false);
         }
@@ -1286,6 +2047,96 @@
             if (sendButton && container.contains(sendButton)) {
                 event.preventDefault();
                 send(container);
+                return;
+            }
+
+            var quickActionButton = event.target.closest('[data-chat-quick-action]');
+            if (quickActionButton && container.contains(quickActionButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                var quickAction = String(quickActionButton.getAttribute('data-chat-quick-action') || '');
+                warning(container, '');
+                setBusy(container, true);
+
+                if (quickAction === 'pending') {
+                    refreshPendingQueue(container, { loading: true, silent: true }).then(function (items) {
+                        appendActionNotice(container, formatPendingActionNotice(items));
+                    }).catch(function (error) {
+                        warning(container, error.message || t('chat_provider_error', 'Unable to load pending actions.'));
+                    }).finally(function () {
+                        setBusy(container, false);
+                    });
+                    return;
+                }
+
+                if (quickAction === 'confirm_latest') {
+                    confirmAction(container, 0).catch(function (error) {
+                        warning(container, error.message || t('chat_provider_error', 'Unable to confirm action.'));
+                    }).finally(function () {
+                        setBusy(container, false);
+                    });
+                    return;
+                }
+
+                if (quickAction === 'cancel_latest') {
+                    cancelAction(container, 0).catch(function (error) {
+                        warning(container, error.message || t('chat_provider_error', 'Unable to cancel action.'));
+                    }).finally(function () {
+                        setBusy(container, false);
+                    });
+                    return;
+                }
+
+                setBusy(container, false);
+                return;
+            }
+
+            var queueConfirmButton = event.target.closest('[data-chat-pending-confirm-id]');
+            if (queueConfirmButton && container.contains(queueConfirmButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                var confirmId = normalizeActionId(queueConfirmButton.getAttribute('data-chat-pending-confirm-id'));
+                if (!confirmId) {
+                    warning(container, t('chat_action_invalid_payload', 'The action payload is invalid or incomplete.'));
+                    return;
+                }
+
+                warning(container, '');
+                setBusy(container, true);
+                confirmAction(container, confirmId).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to confirm action.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
+                return;
+            }
+
+            var queueCancelButton = event.target.closest('[data-chat-pending-cancel-id]');
+            if (queueCancelButton && container.contains(queueCancelButton)) {
+                event.preventDefault();
+                if (isBusy(container)) {
+                    return;
+                }
+
+                var cancelId = normalizeActionId(queueCancelButton.getAttribute('data-chat-pending-cancel-id'));
+                if (!cancelId) {
+                    warning(container, t('chat_action_invalid_payload', 'The action payload is invalid or incomplete.'));
+                    return;
+                }
+
+                warning(container, '');
+                setBusy(container, true);
+                cancelAction(container, cancelId).catch(function (error) {
+                    warning(container, error.message || t('chat_provider_error', 'Unable to cancel action.'));
+                }).finally(function () {
+                    setBusy(container, false);
+                });
                 return;
             }
 

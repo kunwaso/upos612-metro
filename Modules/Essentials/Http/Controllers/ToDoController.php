@@ -137,7 +137,7 @@ class ToDoController extends Controller
                 )
                 ->editColumn('task', function ($row) use ($priorities) {
                     $html = '<a href="'.action([\Modules\Essentials\Http\Controllers\ToDoController::class, 'show'], [$row->id]).'" >'.$row->task.'</a> <br>
-                        <a data-href="'.action([\Modules\Essentials\Http\Controllers\ToDoController::class, 'viewSharedDocs'], [$row->id]).'" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary view-shared-docs">'.__('essentials::lang.docs').'</a>';
+                        <a data-href="'.action([\Modules\Essentials\Http\Controllers\ToDoController::class, 'viewSharedDocs'], [$row->id]).'" class="btn btn-sm btn-light-info view-shared-docs">'.__('essentials::lang.docs').'</a>';
 
                     if (! empty($row->priority)) {
                         $bg_color = ! empty($this->priority_colors[$row->priority]) ? $this->priority_colors[$row->priority] : 'bg-gray';

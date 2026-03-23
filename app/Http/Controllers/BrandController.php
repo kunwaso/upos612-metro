@@ -46,7 +46,7 @@ class BrandController extends Controller
                 ->addColumn(
                     'action',
                     '@can("brand.update")
-                    <button data-href="{{action(\'App\Http\Controllers\BrandController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary edit_brand_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
+                    <button data-href="{{action(\'App\Http\Controllers\BrandController@edit\', [$id])}}" class="btn btn-sm btn-light-info edit_brand_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
                         &nbsp;
                     @endcan
                     @can("brand.delete")

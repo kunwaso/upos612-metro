@@ -36,7 +36,7 @@ class PrinterController extends Controller
                 ->addColumn(
                     'action',
                     '@can("printer.update")
-                    <a href="{{action(\'App\Http\Controllers\PrinterController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a>
+                    <a href="{{action(\'App\Http\Controllers\PrinterController@edit\', [$id])}}" class="btn btn-sm btn-light-info"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</a>
                         &nbsp;
                     @endcan
                     @can("printer.delete")

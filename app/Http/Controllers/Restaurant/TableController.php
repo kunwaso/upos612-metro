@@ -34,7 +34,7 @@ class TableController extends Controller
                 ->addColumn(
                     'action',
                     '@role("Admin#'.$business_id.'")
-                    <button data-href="{{action(\'App\Http\Controllers\Restaurant\TableController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary edit_table_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
+                    <button data-href="{{action(\'App\Http\Controllers\Restaurant\TableController@edit\', [$id])}}" class="btn btn-sm btn-light-info edit_table_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
                         &nbsp;
                     @endrole
                     @role("Admin#'.$business_id.'")

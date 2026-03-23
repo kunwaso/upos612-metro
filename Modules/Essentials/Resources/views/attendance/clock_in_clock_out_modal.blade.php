@@ -33,7 +33,7 @@
 	    	@if($is_location_required)
 		    	<div class="row">
 		    		<div class="col-md-12">
-		    			<b>@lang('messages.location'):</b> <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary" id="get_current_location"> <i class="fas fa-map-marker-alt"></i> @lang('essentials::lang.get_current_location')</button>
+		    			<b>@lang('messages.location'):</b> <button type="button" class="btn btn-sm btn-light-info" id="get_current_location"> <i class="fas fa-map-marker-alt"></i> @lang('essentials::lang.get_current_location')</button>
 		    			<br><span class="clock_in_out_location"></span>
 		    		</div>
 		    		<div class="col-md-12 ask_location" style="display: none;">

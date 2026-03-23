@@ -42,7 +42,7 @@
                     @component('components.widget', ['class' => 'box box-solid', 'title' => $page->title])
                         @slot('tool')
                             <div class="box-tools" style="display: flex;">
-                                <a class="tw-dw-btn tw-dw-btn-outline tw-dw-btn-xs tw-dw-btn-primary "
+                                <a class="btn btn-sm btn-light-info "
                                     href="{{action([\Modules\Cms\Http\Controllers\CmsPageController::class, 'edit'], [$page->id, 'type' => $post_type])}}">
                                     <i class="fa fa-edit"></i>
                                 </a>

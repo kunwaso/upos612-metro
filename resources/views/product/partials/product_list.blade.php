@@ -55,7 +55,7 @@
                             &nbsp;
                             {!! Form::open(['url' => action([\App\Http\Controllers\ProductController::class, 'bulkEdit']), 'method' => 'post', 'id' => 'bulk_edit_form' ]) !!}
                             {!! Form::hidden('selected_products', null, ['id' => 'selected_products_for_edit']); !!}
-                            <button type="submit" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary" id="edit-selected"> <i class="fa fa-edit"></i>{{__('lang_v1.bulk_edit')}}</button>
+                            <button type="submit" class="btn btn-sm btn-light-info" id="edit-selected"> <i class="fa fa-edit"></i>{{__('lang_v1.bulk_edit')}}</button>
                             {!! Form::close() !!}
                         @endif
                         &nbsp;

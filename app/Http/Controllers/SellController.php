@@ -244,7 +244,7 @@ class SellController extends Controller
                                     </li>
                                 </ul></div>';
                             }else {
-                                return '<a href="' . action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'sycs_sale'], [$row->id]) . '" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info tw-w-max sycs_sale">' . __('zatcaintegrationksa::lang.sync') . '</a>';
+                                return '<a href="' . action([\Modules\ZatcaIntegrationKsa\Http\Controllers\ZatcaInvoiceController::class, 'sycs_sale'], [$row->id]) . '" class="btn btn-sm btn-light-primary text-nowrap sycs_sale">' . __('zatcaintegrationksa::lang.sync') . '</a>';
                             }
 
 

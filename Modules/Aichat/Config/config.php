@@ -128,6 +128,19 @@ return [
             ],
         ],
     ],
+    'actions' => [
+        'enabled' => filter_var(env('AICHAT_ACTIONS_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'confirmation_ttl_minutes' => (int) env('AICHAT_ACTIONS_CONFIRMATION_TTL_MINUTES', 10),
+        'modules' => [
+            'products' => filter_var(env('AICHAT_ACTIONS_PRODUCTS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'contacts' => filter_var(env('AICHAT_ACTIONS_CONTACTS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'settings' => filter_var(env('AICHAT_ACTIONS_SETTINGS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'sales' => filter_var(env('AICHAT_ACTIONS_SALES_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'quotes' => filter_var(env('AICHAT_ACTIONS_QUOTES_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'purchases' => filter_var(env('AICHAT_ACTIONS_PURCHASES_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+            'reports' => filter_var(env('AICHAT_ACTIONS_REPORTS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        ],
+    ],
     'telegram' => [
         'request_timeout_seconds' => (int) env('AICHAT_TELEGRAM_REQUEST_TIMEOUT_SECONDS', 20),
         'verify_ssl' => filter_var(env('AICHAT_TELEGRAM_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),

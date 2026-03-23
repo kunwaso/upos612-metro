@@ -80,7 +80,7 @@
             ]); !!}
             
             {{-- Upload button --}}
-            <label for="variation_img_{{$variation_index}}_{{$value_index}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary variation-upload-btn" style="cursor: pointer; margin: 0;">
+            <label for="variation_img_{{$variation_index}}_{{$value_index}}" class="btn btn-sm btn-light-info variation-upload-btn" style="cursor: pointer; margin: 0;">
                 <i class="fas fa-camera"></i> 
                 <span class="image-count-badge" style="display: none;"></span>
             </label>

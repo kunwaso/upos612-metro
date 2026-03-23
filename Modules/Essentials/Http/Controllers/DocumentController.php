@@ -82,12 +82,12 @@ class DocumentController extends Controller
                     </button>
                     @endif
                     @if($type == "document")
-                        <a href ="{{action(\'\Modules\Essentials\Http\Controllers\DocumentController@download\',[$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-info download">
+                        <a href ="{{action(\'\Modules\Essentials\Http\Controllers\DocumentController@download\',[$id])}}" class="btn btn-sm btn-light-primary download">
                              <i class="fa fa-download"></i>
                              @lang( "essentials::lang.download")
                         </a>
                     @elseif($type == "memos")
-                            <button data-href ="{{action(\'\Modules\Essentials\Http\Controllers\DocumentController@show\',[$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary view_memos">
+                            <button data-href ="{{action(\'\Modules\Essentials\Http\Controllers\DocumentController@show\',[$id])}}" class="btn btn-sm btn-light-info view_memos">
                                 <i class="fa fa-eye"></i>
                                 @lang("essentials::lang.view")
                             </button>

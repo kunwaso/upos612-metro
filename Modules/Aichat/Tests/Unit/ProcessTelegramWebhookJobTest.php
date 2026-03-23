@@ -6,12 +6,14 @@ use App\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Aichat\Entities\ChatConversation;
 use Modules\Aichat\Entities\ChatMessage;
+use Modules\Aichat\Entities\ChatPendingAction;
 use Modules\Aichat\Entities\ChatSetting;
 use Modules\Aichat\Entities\ProductQuoteDraft;
 use Modules\Aichat\Entities\TelegramBot;
 use Modules\Aichat\Entities\TelegramChat;
 use Modules\Aichat\Jobs\ProcessTelegramWebhookJob;
 use Modules\Aichat\Utils\AIChatUtil;
+use Modules\Aichat\Utils\ChatActionUtil;
 use Modules\Aichat\Utils\ChatProductQuoteWizardUtil;
 use Modules\Aichat\Utils\ChatUtil;
 use Modules\Aichat\Utils\ChatWorkflowUtil;
@@ -20,6 +22,13 @@ use Tests\TestCase;
 
 class ProcessTelegramWebhookJobTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('aichat.actions.enabled', true);
+    }
+
     protected function tearDown(): void
     {
         RateLimiter::clear('aichat:telegram:chat:44:777');
@@ -599,6 +608,667 @@ class ProcessTelegramWebhookJobTest extends TestCase
         );
 
         $this->assertSame('Hello from assistant.', $sentMessage);
+    }
+
+    public function test_actions_command_lists_pending_actions_for_private_chat(): void
+    {
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/actions',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000666', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000666';
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('listPendingActions')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000666')
+            ->andReturn([
+                [
+                    'id' => 91,
+                    'module' => 'products',
+                    'action' => 'update',
+                    'preview_text' => 'Update product #15',
+                ],
+            ]);
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertStringContainsString(__('aichat::lang.telegram_action_pending_header'), (string) $sentMessage);
+        $this->assertStringContainsString('#91 products.update - Update product #15', (string) $sentMessage);
+    }
+
+    public function test_confirm_action_command_confirms_latest_pending_action_when_no_id_is_provided(): void
+    {
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/confirm_action',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000777', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000777';
+        $pendingAction = new ChatPendingAction(['id' => 88, 'module' => 'products', 'action' => 'update']);
+        $pendingAction->id = 88;
+        $executedAction = new ChatPendingAction(['id' => 88, 'module' => 'products', 'action' => 'update']);
+        $executedAction->id = 88;
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('getLatestPendingActionForUser')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000777')
+            ->andReturn($pendingAction);
+        $chatActionUtil->shouldReceive('confirmAction')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000777', 88, 'telegram', null)
+            ->andReturn($executedAction);
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertStringContainsString(__('aichat::lang.telegram_action_confirm_success'), (string) $sentMessage);
+        $this->assertStringContainsString('#88 products.update', (string) $sentMessage);
+    }
+
+    public function test_cancel_action_command_cancels_latest_pending_action_when_no_id_is_provided(): void
+    {
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/cancel_action',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000778', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000778';
+        $pendingAction = new ChatPendingAction(['id' => 89, 'module' => 'products', 'action' => 'delete']);
+        $pendingAction->id = 89;
+        $cancelledAction = new ChatPendingAction(['id' => 89, 'module' => 'products', 'action' => 'delete']);
+        $cancelledAction->id = 89;
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('getLatestPendingActionForUser')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000778')
+            ->andReturn($pendingAction);
+        $chatActionUtil->shouldReceive('cancelAction')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000778', 89, null)
+            ->andReturn($cancelledAction);
+        $chatActionUtil->shouldNotReceive('confirmAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertStringContainsString(__('aichat::lang.telegram_action_cancel_success'), (string) $sentMessage);
+        $this->assertStringContainsString('#89 products.delete', (string) $sentMessage);
+    }
+
+    public function test_confirm_action_command_confirms_specified_pending_action_by_id(): void
+    {
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/confirm_action 91',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000779', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000779';
+        $pendingAction = new ChatPendingAction(['id' => 91, 'module' => 'sales', 'action' => 'update']);
+        $pendingAction->id = 91;
+        $executedAction = new ChatPendingAction(['id' => 91, 'module' => 'sales', 'action' => 'update']);
+        $executedAction->id = 91;
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('getPendingActionByIdForUser')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000779', 91)
+            ->andReturn($pendingAction);
+        $chatActionUtil->shouldReceive('confirmAction')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000779', 91, 'telegram', null)
+            ->andReturn($executedAction);
+        $chatActionUtil->shouldNotReceive('cancelAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertStringContainsString(__('aichat::lang.telegram_action_confirm_success'), (string) $sentMessage);
+        $this->assertStringContainsString('#91 sales.update', (string) $sentMessage);
+    }
+
+    public function test_cancel_action_command_cancels_specified_pending_action_by_id(): void
+    {
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/cancel_action 92',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000780', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000780';
+        $pendingAction = new ChatPendingAction(['id' => 92, 'module' => 'purchases', 'action' => 'delete']);
+        $pendingAction->id = 92;
+        $cancelledAction = new ChatPendingAction(['id' => 92, 'module' => 'purchases', 'action' => 'delete']);
+        $cancelledAction->id = 92;
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('getPendingActionByIdForUser')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000780', 92)
+            ->andReturn($pendingAction);
+        $chatActionUtil->shouldReceive('cancelAction')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000780', 92, null)
+            ->andReturn($cancelledAction);
+        $chatActionUtil->shouldNotReceive('confirmAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertStringContainsString(__('aichat::lang.telegram_action_cancel_success'), (string) $sentMessage);
+        $this->assertStringContainsString('#92 purchases.delete', (string) $sentMessage);
+    }
+
+    public function test_invalid_pending_action_id_returns_safe_message_without_crashing(): void
+    {
+        config()->set('aichat.actions.enabled', true);
+
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/confirm_action 999',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000781', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000781';
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('buildModelOptions');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldReceive('getPendingActionByIdForUser')
+            ->once()
+            ->with(44, 5, '00000000-0000-0000-0000-000000000781', 999)
+            ->andThrow(new \Illuminate\Database\Eloquent\ModelNotFoundException());
+        $chatActionUtil->shouldNotReceive('confirmAction');
+        $chatActionUtil->shouldNotReceive('cancelAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertSame(__('aichat::lang.telegram_action_failed'), $sentMessage);
+    }
+
+    public function test_actions_command_returns_disabled_message_when_feature_flag_is_off(): void
+    {
+        config()->set('aichat.actions.enabled', false);
+
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/actions',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('getOrCreateTelegramConversation');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldNotReceive('listPendingActions');
+        $chatActionUtil->shouldNotReceive('confirmAction');
+        $chatActionUtil->shouldNotReceive('cancelAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertSame(__('aichat::lang.chat_action_disabled'), $sentMessage);
+    }
+
+    public function test_confirm_action_command_returns_disabled_message_when_feature_flag_is_off(): void
+    {
+        config()->set('aichat.actions.enabled', false);
+
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/confirm_action 91',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('getOrCreateTelegramConversation');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldNotReceive('confirmAction');
+        $chatActionUtil->shouldNotReceive('cancelAction');
+        $chatActionUtil->shouldNotReceive('listPendingActions');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertSame(__('aichat::lang.chat_action_disabled'), $sentMessage);
+    }
+
+    public function test_cancel_action_command_returns_disabled_message_when_feature_flag_is_off(): void
+    {
+        config()->set('aichat.actions.enabled', false);
+
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/cancel_action 91',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+        $chatUtil->shouldNotReceive('getOrCreateTelegramConversation');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldNotReceive('confirmAction');
+        $chatActionUtil->shouldNotReceive('cancelAction');
+        $chatActionUtil->shouldNotReceive('listPendingActions');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertSame(__('aichat::lang.chat_action_disabled'), $sentMessage);
+    }
+
+    public function test_pending_action_commands_do_not_override_active_quote_wizard_flow(): void
+    {
+        config()->set('aichat.actions.enabled', true);
+
+        $sentMessage = null;
+        $job = new TestableProcessTelegramWebhookJob('hook-key', [
+            'message' => [
+                'chat' => ['id' => 777, 'type' => 'private'],
+                'text' => '/confirm_action 91',
+            ],
+        ]);
+        $job->setResolvedUser($this->makeTelegramUser(5, [
+            'aichat.quote_wizard.use' => true,
+            'product_quote.create' => true,
+        ]));
+
+        $bot = new TelegramBot(['business_id' => 44, 'linked_user_id' => 1, 'encrypted_bot_token' => 'encrypted-token']);
+        $telegramChat = new TelegramChat(['business_id' => 44, 'telegram_chat_id' => 777, 'user_id' => 5]);
+        $conversation = new ChatConversation(['id' => '00000000-0000-0000-0000-000000000888', 'business_id' => 44, 'user_id' => 5]);
+        $conversation->id = '00000000-0000-0000-0000-000000000888';
+        $draft = new ProductQuoteDraft([
+            'id' => '00000000-0000-0000-0000-000000000008',
+            'business_id' => 44,
+            'user_id' => 5,
+            'status' => ProductQuoteDraft::STATUS_COLLECTING,
+        ]);
+        $assistantMessage = new ChatMessage([
+            'content' => 'Wizard still active.',
+        ]);
+
+        $chatUtil = \Mockery::mock(ChatUtil::class);
+        $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
+        $chatUtil->shouldReceive('isChatEnabled')->once()->with(44)->andReturn(true);
+        $chatUtil->shouldReceive('getTelegramChatForBusiness')->once()->with(44, 777)->andReturn($telegramChat);
+        $chatUtil->shouldReceive('isUserAllowedForTelegram')->once()->with(44, 5)->andReturn(true);
+        $chatUtil->shouldReceive('getOrCreateTelegramConversation')->once()->with(44, 777, 5)->andReturn($conversation);
+        $chatUtil->shouldReceive('audit')->once();
+        $chatUtil->shouldReceive('getDecryptedBotToken')->once()->with($bot)->andReturn('telegram-bot-token');
+
+        $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
+        $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn($draft);
+        $quoteWizardUtil->shouldReceive('serializeDraft')->once()->with($draft)->andReturn([]);
+        $quoteWizardUtil->shouldReceive('processStep')->once()->with(
+            $draft,
+            $conversation,
+            5,
+            44,
+            \Mockery::on(function ($input) {
+                return ($input['channel'] ?? null) === 'telegram'
+                    && ($input['message'] ?? null) === '/confirm_action 91';
+            })
+        )->andReturn([
+            'draft' => $draft,
+            'assistant_message' => $assistantMessage,
+            'state' => ['status' => ProductQuoteDraft::STATUS_COLLECTING],
+        ]);
+
+        $chatActionUtil = \Mockery::mock(ChatActionUtil::class);
+        $chatActionUtil->shouldNotReceive('listPendingActions');
+        $chatActionUtil->shouldNotReceive('confirmAction');
+        $chatActionUtil->shouldNotReceive('cancelAction');
+
+        $telegramApi = \Mockery::mock(TelegramApiUtil::class);
+        $telegramApi->shouldReceive('sendMessage')->once()->with(
+            'telegram-bot-token',
+            777,
+            \Mockery::on(function ($message) use (&$sentMessage) {
+                $sentMessage = (string) $message;
+
+                return true;
+            })
+        );
+
+        $job->handle(
+            $chatUtil,
+            \Mockery::mock(ChatWorkflowUtil::class),
+            \Mockery::mock(AIChatUtil::class),
+            $telegramApi,
+            $quoteWizardUtil,
+            $chatActionUtil
+        );
+
+        $this->assertSame('Wizard still active.', $sentMessage);
     }
 
     protected function makeTelegramUser(int $id, array $abilities): User

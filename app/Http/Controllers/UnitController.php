@@ -49,7 +49,7 @@ class UnitController extends Controller
                 ->addColumn(
                     'action',
                     '@can("unit.update")
-                    <button data-href="{{action(\'App\Http\Controllers\UnitController@edit\', [$id])}}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary edit_unit_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
+                    <button data-href="{{action(\'App\Http\Controllers\UnitController@edit\', [$id])}}" class="btn btn-sm btn-light-info edit_unit_button"><i class="glyphicon glyphicon-edit"></i> @lang("messages.edit")</button>
                         &nbsp;
                     @endcan
                     @can("unit.delete")

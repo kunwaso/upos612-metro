@@ -78,7 +78,7 @@
                     @if(!$loop->first)
                       <button class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-error pull-right remove-modifier-row" type="button"><i class="fa fa-minus"></i></button>
                     @else
-                      <button class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary pull-right add-modifier-row" type="button" data-html="{{ $html }}">
+                      <button class="btn btn-sm btn-light-info pull-right add-modifier-row" type="button" data-html="{{ $html }}">
                         <i class="fa fa-plus"></i>
                       </button>
                     @endif

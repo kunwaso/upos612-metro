@@ -162,7 +162,7 @@
                                                                     'url' => action([\App\Http\Controllers\AccountTypeController::class, 'destroy'], $account_type->id),
                                                                     'method' => 'delete',
                                                                 ]) !!}
-                                                                <button type="button" class="tw-dw-btn tw-dw-btn-primary tw-dw-btn-outline tw-dw-btn-xs btn-modal"
+                                                                <button type="button" class="btn btn-sm btn-light-info btn-modal"
                                                                     data-href="{{ action([\App\Http\Controllers\AccountTypeController::class, 'edit'], $account_type->id) }}"
                                                                     data-container="#account_type_modal">
                                                                     <i class="fa fa-edit"></i> @lang('messages.edit')</button>
@@ -183,7 +183,7 @@
                                                                         'url' => action([\App\Http\Controllers\AccountTypeController::class, 'destroy'], $sub_type->id),
                                                                         'method' => 'delete',
                                                                     ]) !!}
-                                                                    <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-primary btn-modal"
+                                                                    <button type="button" class="btn btn-sm btn-light-info btn-modal"
                                                                         data-href="{{ action([\App\Http\Controllers\AccountTypeController::class, 'edit'], $sub_type->id) }}"
                                                                         data-container="#account_type_modal">
                                                                         <i class="fa fa-edit"></i> @lang('messages.edit')</button>
