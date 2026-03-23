@@ -10,10 +10,10 @@
                             <a href="{{ url('/') }}" class="item-link link1 active">Home</a>
                         </li>
                         <li class="menu-item">
-                            <a href="{{ url('shop/page/about') }}" class="item-link link1">About</a>
+                            <a href="{{ url('/shop/page/about-us') }}" class="item-link link1">About</a>
                         </li>
                         <li class="menu-item has-child">
-                            <a href="{{ url('shop/page/services') }}" class="item-link link1"> @lang('cms::lang.products')</a>
+                            <a href="#" class="item-link link1"> @lang('cms::lang.products')</a>
                             <ul class="sub-menu">
                                 <li class="sub-menu-item">
                                     <a href="{{ url('shop/products/bao-bi-cuon') }}" class="item-link link1">Bao bi cuon</a>
@@ -21,6 +21,16 @@
                                 <li class="sub-menu-item">
                                     <a href="{{ url('shop/products/hop-thung-carton') }}" class="item-link link1">Hop thung carton</a>
                                 </li>
+                                <li class="sub-menu-item">
+                                    <a href="{{ url('shop/products/day-dai') }}" class="item-link link1">Day dai</a>
+                                </li>
+                                <li class="sub-menu-item">
+                                    <a href="{{ url('shop/products/air-silicagel') }}" class="item-link link1">Air silicagel</a>
+                                </li>
+                                <li class="sub-menu-item">
+                                    <a href="{{ url('shop/products/sanphamkhac') }}" class="item-link link1">San pham khac</a>
+                                </li>
+
                             </ul>
                         </li>
                         <li class="menu-item has-child">

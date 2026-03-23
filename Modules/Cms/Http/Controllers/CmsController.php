@@ -51,6 +51,35 @@ class CmsController extends Controller
         return view('cms::frontend.products.baobicuon')
             ->with(compact('page'));
     }
+
+    public function hopthungcarton()
+    {
+        $page = $this->cmsUtil->getPageByLayout('products.hopthungcarton');
+        return view('cms::frontend.products.hopthungcarton')
+            ->with(compact('page'));
+    }
+    
+    public function daydai()
+    {
+        $page = $this->cmsUtil->getPageByLayout('products.daydai');
+        return view('cms::frontend.products.daydai')
+            ->with(compact('page'));
+    }
+
+    public function airsilicagel()
+    {
+        $page = $this->cmsUtil->getPageByLayout('products.airsilicagel');
+        return view('cms::frontend.products.airsilicagel')
+            ->with(compact('page'));
+    }
+    
+    public function sanphamkhac()
+    {
+        $page = $this->cmsUtil->getPageByLayout('products.sanphamkhac');
+        return view('cms::frontend.products.sanphamkhac')
+            ->with(compact('page'));
+    }
+    
     
     /**
      * Show the form for creating a new resource.
@@ -146,6 +175,13 @@ class CmsController extends Controller
         $page = $this->cmsUtil->getPageByLayout('contact');
 
         return view('cms::frontend.pages.contact_us')
+            ->with(compact('page'));
+    }
+
+    public function aboutUs(Request $request)
+    {
+        $page = $this->cmsUtil->getPageByLayout('pages.about_us');
+        return view('cms::frontend.pages.about_us')
             ->with(compact('page'));
     }
 

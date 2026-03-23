@@ -21,8 +21,16 @@ Route::get('shop/blog/{slug}-{id}', [Modules\Cms\Http\Controllers\CmsController:
 Route::get('shop/contact-us', [Modules\Cms\Http\Controllers\CmsController::class, 'contactUs'])->name('cms.contact.us');
 Route::post('shop/submit-contact-form', [Modules\Cms\Http\Controllers\CmsController::class, 'postContactForm'])->name('cms.submit.contact.form');
 
+// about us routes
+Route::get('shop/about-us', [Modules\Cms\Http\Controllers\CmsController::class, 'aboutUs'])->name('cms.about.us');
+
 // products routes
 Route::get('shop/products/bao-bi-cuon', [Modules\Cms\Http\Controllers\CmsController::class, 'baobicuon'])->name('cms.products.baobicuon');
+Route::get('shop/products/hop-thung-carton', [Modules\Cms\Http\Controllers\CmsController::class, 'hopthungcarton'])->name('cms.products.hopthungcarton');
+Route::get('shop/products/day-dai', [Modules\Cms\Http\Controllers\CmsController::class, 'daydai'])->name('cms.products.daydai');
+Route::get('shop/products/air-silicagel', [Modules\Cms\Http\Controllers\CmsController::class, 'airsilicagel'])->name('cms.products.airsilicagel');
+Route::get('shop/products/sanphamkhac', [Modules\Cms\Http\Controllers\CmsController::class, 'sanphamkhac'])->name('cms.products.sanphamkhac');
+
 
 // Backward compatibility redirects: c/* -> shop/*
 Route::redirect('c/page/{page}', 'shop/page/{page}', 301);
