@@ -10,7 +10,7 @@
                             <a href="{{ url('/') }}" class="item-link link1 active">Home</a>
                         </li>
                         <li class="menu-item">
-                            <a href="{{ url('/shop/page/about-us') }}" class="item-link link1">About</a>
+                            <a href="{{ url('/shop/about-us') }}" class="item-link link1">About</a>
                         </li>
                         <li class="menu-item has-child">
                             <a href="#" class="item-link link1"> @lang('cms::lang.products')</a>

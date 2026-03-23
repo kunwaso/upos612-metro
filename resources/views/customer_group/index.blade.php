@@ -21,7 +21,7 @@
             @can('customer.create')
                 @slot('tool')
                     <div class="box-tools">
-                        <a class="tw-dw-btn tw-bg-gradient-to-r tw-from-indigo-600 tw-to-blue-500 tw-font-bold tw-text-white tw-border-none tw-rounded-full btn-modal"
+                        <a class="btn btn-sm btn-primary btn-modal"
                             data-href="{{ action([\App\Http\Controllers\CustomerGroupController::class, 'create']) }}"
                             data-container=".customer_groups_modal">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"

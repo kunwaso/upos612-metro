@@ -1399,3 +1399,86 @@ ul.dt-button-collection {
 .small-box.bg-gray .small-box-footer:hover {
     color: var(--bs-primary, #1b84ff);
 }
+
+/* -------------------------------------------------------------------------
+   DataTables pagination (legacy markup) -> Metronic-like simple numbers UI
+   Targets: ul.pagination > li.paginate_button > a
+   ------------------------------------------------------------------------- */
+.dataTables_wrapper .dataTables_paginate {
+    margin-top: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    margin: 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    margin-left: 0 !important;
+    padding: 0 0.5rem;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--bs-gray-700, #4b5675) !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition:
+        color 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button > a:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button > a:focus {
+    color: var(--bs-primary, #1b84ff) !important;
+    background-color: var(--bs-secondary-bg, #f1f1f4) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.active > a,
+.dataTables_wrapper .dataTables_paginate .paginate_button.active > a:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button.active > a:focus {
+    color: #fff !important;
+    background-color: var(--bs-primary, #1b84ff) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled > a,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled > a:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled > a:focus {
+    color: var(--bs-gray-400, #c4cada) !important;
+    background: transparent !important;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous > a,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next > a {
+    min-width: 2rem;
+    padding: 0;
+    font-size: 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous > a::before,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next > a::before {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous > a::before {
+    content: "\2039";
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.next > a::before {
+    content: "\203A";
+}
