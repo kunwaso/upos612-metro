@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Business;
 use App\BusinessLocation;
 use App\Contact;
+use App\ContactFeed;
 use App\CustomerGroup;
 use App\Notifications\CustomerNotification;
 use App\PurchaseLine;
 use App\Transaction;
 use App\TransactionPayment;
 use App\User;
+use App\Http\Requests\ContactFeedSyncRequest;
+use App\Utils\ContactFeedUtil;
 use App\Utils\ContactUtil;
 use App\Utils\ModuleUtil;
 use App\Utils\NotificationUtil;
@@ -35,6 +38,8 @@ class ContactController extends Controller
 
     protected $notificationUtil;
 
+    protected $contactFeedUtil;
+
     /**
      * Constructor
      *
@@ -46,13 +51,15 @@ class ContactController extends Controller
         ModuleUtil $moduleUtil,
         TransactionUtil $transactionUtil,
         NotificationUtil $notificationUtil,
-        ContactUtil $contactUtil
+        ContactUtil $contactUtil,
+        ContactFeedUtil $contactFeedUtil
     ) {
         $this->commonUtil = $commonUtil;
         $this->contactUtil = $contactUtil;
         $this->moduleUtil = $moduleUtil;
         $this->transactionUtil = $transactionUtil;
         $this->notificationUtil = $notificationUtil;
+        $this->contactFeedUtil = $contactFeedUtil;
     }
 
     /**
@@ -230,6 +237,12 @@ class ContactController extends Controller
                                 <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=documents_and_notes" class="menu-link px-3">
                                     <i class="fas fa-paperclip me-2" aria-hidden="true"></i>
                                      '.__('lang_v1.documents_and_notes').'
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=feeds" class="menu-link px-3">
+                                    <i class="fas fa-rss me-2" aria-hidden="true"></i>
+                                     Feeds
                                 </a>
                             </div>';
                     }
@@ -456,6 +469,12 @@ class ContactController extends Controller
                                 <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=documents_and_notes" class="menu-link px-3">
                                     <i class="fas fa-paperclip me-2" aria-hidden="true"></i>
                                      '.__('lang_v1.documents_and_notes').'
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=feeds" class="menu-link px-3">
+                                    <i class="fas fa-rss me-2" aria-hidden="true"></i>
+                                     Feeds
                                 </a>
                             </div>';
                     }
@@ -1710,6 +1729,143 @@ class ContactController extends Controller
             return view('contact.partials.contact_payments_tab')
                     ->with(compact('payments', 'payment_types'));
         }
+    }
+
+    /**
+     * Return saved feed list for a contact/provider as HTML partial.
+     *
+     * @param \App\Http\Requests\ContactFeedSyncRequest $request
+     * @param int $contact_id
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function getContactFeeds(ContactFeedSyncRequest $request, $contact_id)
+    {
+        $business_id = $request->session()->get('user.business_id');
+        $validated = $request->validated();
+        $contact = $this->getAuthorizedContactForFeeds($business_id, $contact_id);
+        $provider = $this->contactFeedUtil->normalizeProvider($validated['provider'] ?? null);
+        $limit = $this->contactFeedUtil->normalizeLimit($validated['limit'] ?? null);
+        $feeds = $this->contactFeedUtil->getFeedsForContact($business_id, $contact->id, $provider, $limit);
+
+        return view('contact.partials.contact_feeds_list')
+            ->with(compact('feeds', 'provider'));
+    }
+
+    /**
+     * Load feeds for a contact.
+     * If records already exist, skips external call and serves DB state.
+     *
+     * @param \App\Http\Requests\ContactFeedSyncRequest $request
+     * @param int $contact_id
+     * @return array<string, mixed>
+     */
+    public function loadContactFeeds(ContactFeedSyncRequest $request, $contact_id)
+    {
+        $business_id = $request->session()->get('user.business_id');
+        $validated = $request->validated();
+        $contact = $this->getAuthorizedContactForFeeds($business_id, $contact_id);
+
+        try {
+            return $this->contactFeedUtil->loadFeeds($business_id, $contact, $validated);
+        } catch (\Throwable $e) {
+            \Log::warning('Contact feed load failed: '.$e->getMessage(), [
+                'contact_id' => $contact_id,
+                'business_id' => $business_id,
+            ]);
+
+            $provider = $this->contactFeedUtil->normalizeProvider($validated['provider'] ?? null);
+            $existing_count = ContactFeed::forContact($business_id, $contact->id)
+                ->where('provider', $provider)
+                ->count();
+
+            return [
+                'success' => false,
+                'msg' => __('messages.something_went_wrong'),
+                'inserted_count' => 0,
+                'skipped_count' => 0,
+                'existing_count' => $existing_count,
+                'provider' => $provider,
+                'last_synced_at' => null,
+            ];
+        }
+    }
+
+    /**
+     * Incrementally update feeds for a contact/provider.
+     *
+     * @param \App\Http\Requests\ContactFeedSyncRequest $request
+     * @param int $contact_id
+     * @return array<string, mixed>
+     */
+    public function updateContactFeeds(ContactFeedSyncRequest $request, $contact_id)
+    {
+        $business_id = $request->session()->get('user.business_id');
+        $validated = $request->validated();
+        $contact = $this->getAuthorizedContactForFeeds($business_id, $contact_id);
+
+        try {
+            return $this->contactFeedUtil->updateFeeds($business_id, $contact, $validated);
+        } catch (\Throwable $e) {
+            \Log::warning('Contact feed update failed: '.$e->getMessage(), [
+                'contact_id' => $contact_id,
+                'business_id' => $business_id,
+            ]);
+
+            $provider = $this->contactFeedUtil->normalizeProvider($validated['provider'] ?? null);
+            $existing_count = ContactFeed::forContact($business_id, $contact->id)
+                ->where('provider', $provider)
+                ->count();
+
+            return [
+                'success' => false,
+                'msg' => __('messages.something_went_wrong'),
+                'inserted_count' => 0,
+                'skipped_count' => 0,
+                'existing_count' => $existing_count,
+                'provider' => $provider,
+                'last_synced_at' => null,
+            ];
+        }
+    }
+
+    /**
+     * Validate feed-access permissions and return scoped contact.
+     *
+     * @param int $business_id
+     * @param int $contact_id
+     * @return \App\Contact
+     */
+    private function getAuthorizedContactForFeeds($business_id, $contact_id)
+    {
+        $user = auth()->user();
+
+        if (! $user->can('supplier.view') && ! $user->can('customer.view') && ! $user->can('customer.view_own') && ! $user->can('supplier.view_own')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $contact = Contact::where('business_id', $business_id)->find($contact_id);
+        if (empty($contact)) {
+            abort(404);
+        }
+
+        $is_selected_contacts = ! empty($user->selected_contacts);
+        $user_contacts = [];
+        if ($is_selected_contacts && method_exists($user, 'contactAccess')) {
+            $user_contacts = $user->contactAccess->pluck('id')->toArray();
+        }
+
+        if (! $user->can('supplier.view') && $user->can('supplier.view_own')) {
+            if ($contact->created_by != $user->id && ! in_array($contact->id, $user_contacts)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        if (! $user->can('customer.view') && $user->can('customer.view_own')) {
+            if ($contact->created_by != $user->id && ! in_array($contact->id, $user_contacts)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        return $contact;
     }
 
     public function getContactDue($contact_id)

@@ -79,6 +79,15 @@ final class FileDiscovery
         private readonly PathGuard $pathGuard,
         private readonly int $maxFileBytes,
     ) {
+        $configuredRoots = $this->parseCsvEnv('MCP_SEMANTIC_INCLUDE_ROOTS');
+        if ($configuredRoots !== []) {
+            $this->defaultRoots = $configuredRoots;
+        }
+
+        $configuredRootFiles = $this->parseCsvEnv('MCP_SEMANTIC_INCLUDE_ROOT_FILES');
+        if ($configuredRootFiles !== []) {
+            $this->defaultRootFiles = $configuredRootFiles;
+        }
     }
 
     /**
@@ -228,5 +237,23 @@ final class FileDiscovery
             'size' => $size,
             'mtime' => is_int($mtime) ? $mtime : (int) $mtime,
         ];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function parseCsvEnv(string $name): array
+    {
+        $raw = getenv($name);
+        if ($raw === false) {
+            return [];
+        }
+
+        $items = array_map(
+            static fn (string $item): string => trim($item),
+            explode(',', $raw)
+        );
+
+        return array_values(array_filter($items, static fn (string $item): bool => $item !== ''));
     }
 }

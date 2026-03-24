@@ -263,6 +263,12 @@
                             @lang('lang_v1.activities')
                         </a>
                     </li>
+                    <li class="nav-item mt-2">
+                        <a class="nav-link text-active-primary ms-0 me-10 py-5 {{ $view_type === 'feeds' ? 'active' : '' }}"
+                            href="#tab_feeds" data-bs-toggle="tab" data-bs-target="#tab_feeds">
+                            Feeds
+                        </a>
+                    </li>
                     @if (!empty($contact_view_tabs))
                         @foreach ($contact_view_tabs as $key => $tabs)
                             @foreach ($tabs as $index => $value)
@@ -521,6 +527,11 @@
                 </div>
             </div>
 
+            {{-- Feeds tab --}}
+            <div class="tab-pane fade {{ $view_type === 'feeds' ? 'show active' : '' }}" id="tab_feeds">
+                @include('contact.partials.feeds_tab')
+            </div>
+
             {{-- Module tabs --}}
             @if (!empty($contact_view_tabs))
                 @foreach ($contact_view_tabs as $key => $tabs)
@@ -563,6 +574,10 @@
 @section('javascript')
 <script type="text/javascript">
     var contactActiveTab = @json($view_type ?? 'ledger');
+    var contactFeedsLoaded = false;
+    var contactFeedsListUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'getContactFeeds'], [$contact->id]) }}";
+    var contactFeedsLoadUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'loadContactFeeds'], [$contact->id]) }}";
+    var contactFeedsUpdateUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'updateContactFeeds'], [$contact->id]) }}";
 
     $(document).ready(function () {
         // Activate correct tab from $view_type
@@ -576,6 +591,7 @@
             'documents_and_notes': '#tab_documents',
             'reward_point': '#tab_reward',
             'activities': '#tab_activities',
+            'feeds': '#tab_feeds',
             'overview': '#tab_overview',
         };
 
@@ -666,6 +682,17 @@
             }
         });
 
+        // Load feeds when tab is opened the first time
+        $('[data-bs-target="#tab_feeds"]').one('shown.bs.tab', function () {
+            contactFeedsLoaded = true;
+            get_contact_feeds();
+        });
+
+        if (contactActiveTab === 'feeds') {
+            contactFeedsLoaded = true;
+            get_contact_feeds();
+        }
+
         $('#discount_date').datetimepicker({
             format: moment_date_format + ' ' + moment_time_format,
             ignoreReadonly: true,
@@ -747,6 +774,110 @@
                 });
             },
         });
+    }
+
+    $(document).on('click', '#load_contact_feeds_btn', function (e) {
+        e.preventDefault();
+        sync_contact_feeds('load', $(this));
+    });
+
+    $(document).on('click', '#update_contact_feeds_btn', function (e) {
+        e.preventDefault();
+        sync_contact_feeds('update', $(this));
+    });
+
+    $(document).on('change', '#contact_feeds_provider', function () {
+        if (contactFeedsLoaded) {
+            get_contact_feeds();
+        }
+    });
+
+    function get_contact_feeds() {
+        var provider = $('#contact_feeds_provider').val() || 'google';
+        var $container = $('#contact_feeds_div');
+
+        $container.html(
+            '<div class="d-flex align-items-center justify-content-center py-10">' +
+            '<span class="spinner-border spinner-border-sm me-2"></span>' +
+            '<span class="text-muted fw-semibold">Loading feeds...</span>' +
+            '</div>'
+        );
+
+        $.ajax({
+            method: 'GET',
+            url: contactFeedsListUrl,
+            dataType: 'html',
+            data: { provider: provider, limit: 20 },
+            success: function (result) {
+                $container.html(result);
+            },
+            error: function () {
+                $container.html(
+                    '<div class="alert alert-light-danger mb-0">' +
+                    'Unable to load feeds. Please try again.' +
+                    '</div>'
+                );
+            },
+        });
+    }
+
+    function sync_contact_feeds(action, $button) {
+        var provider = $('#contact_feeds_provider').val() || 'google';
+        var endpoint = action === 'update' ? contactFeedsUpdateUrl : contactFeedsLoadUrl;
+
+        $button.attr('data-kt-indicator', 'on').prop('disabled', true);
+
+        $.ajax({
+            method: 'POST',
+            url: endpoint,
+            dataType: 'json',
+            data: { provider: provider, limit: 20 },
+            success: function (result) {
+                render_contact_feeds_summary(result);
+
+                if (result.success) {
+                    toastr.success(result.msg);
+                } else {
+                    toastr.warning(result.msg);
+                }
+
+                contactFeedsLoaded = true;
+                get_contact_feeds();
+            },
+            error: function (xhr) {
+                var result = xhr.responseJSON || {
+                    success: false,
+                    msg: 'Unable to sync feeds at the moment.',
+                    inserted_count: 0,
+                    skipped_count: 0,
+                    existing_count: 0,
+                    provider: provider,
+                    last_synced_at: null,
+                };
+                render_contact_feeds_summary(result);
+                toastr.error(result.msg || 'Unable to sync feeds at the moment.');
+            },
+            complete: function () {
+                $button.removeAttr('data-kt-indicator').prop('disabled', false);
+            },
+        });
+    }
+
+    function render_contact_feeds_summary(result) {
+        var $summary = $('#contact_feeds_summary');
+        var stateClass = result.success ? 'alert-light-success' : 'alert-light-warning';
+
+        $summary
+            .removeClass('d-none alert-light-success alert-light-warning alert-light-primary')
+            .addClass(stateClass)
+            .html(
+                '<div class="fw-semibold">' + (result.msg || '') + '</div>' +
+                '<div class="fs-7 text-gray-700 mt-1">' +
+                    'Inserted: ' + (result.inserted_count || 0) + ' | ' +
+                    'Skipped: ' + (result.skipped_count || 0) + ' | ' +
+                    'Existing: ' + (result.existing_count || 0) +
+                '</div>'
+            );
     }
 
     function get_contact_ledger() {

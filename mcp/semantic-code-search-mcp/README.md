@@ -111,6 +111,8 @@ Use grep MCP for exact strings, selectors, routes, and regex/pattern search.
 - `MCP_SEMANTIC_MAX_FILE_BYTES`
 - `MCP_SEMANTIC_CHUNK_LINES`
 - `MCP_SEMANTIC_CHUNK_OVERLAP`
+- `MCP_SEMANTIC_INCLUDE_ROOTS` (optional CSV override for indexed top-level roots)
+- `MCP_SEMANTIC_INCLUDE_ROOT_FILES` (optional CSV override for indexed root files)
 
 ## Indexed Scope and Guardrails
 
@@ -127,6 +129,11 @@ Default indexed scope includes:
 - `config`
 - `src`
 - selected root files such as `AGENTS.md`, `composer.json`, and `composer.lock`
+
+You can override indexed scope with:
+
+- `MCP_SEMANTIC_INCLUDE_ROOTS` (for example `app,Modules,routes,resources/views,mcp,ai,tests,config`)
+- `MCP_SEMANTIC_INCLUDE_ROOT_FILES` (for example `AGENTS.md,composer.json,README.md`)
 
 Blocked or skipped paths include:
 

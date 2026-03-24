@@ -112,6 +112,14 @@ class Contact extends Authenticatable
     }
 
     /**
+     * Get all feeds for the contact.
+     */
+    public function feeds()
+    {
+        return $this->hasMany(\App\ContactFeed::class, 'contact_id');
+    }
+
+    /**
      * Return list of contact dropdown for a business
      *
      * @param $business_id int

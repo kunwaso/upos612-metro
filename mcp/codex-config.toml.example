@@ -26,10 +26,10 @@ env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 
 [mcp_servers.gitnexus]
 command = "npx"
-args = ["-y", "gitnexus@latest", "mcp"]
+args = ["-y", "gitnexus@1.4.8", "mcp"]
 
 # Optional: requires Ollama + nomic-embed-text (ollama pull nomic-embed-text)
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }

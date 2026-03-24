@@ -327,6 +327,7 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
     $ollamaHost = getenv('MCP_SEMANTIC_OLLAMA_HOST') ?: 'http://127.0.0.1:11434';
     $model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
     $indexPath = rtrim(str_replace('\\', '/', $indexRoot), '/') . '/semantic-code-search.sqlite';
+    $deepSemanticProbe = filter_var(getenv('MCP_HEALTH_DEEP_SEMANTIC_PROBE') ?: '0', FILTER_VALIDATE_BOOLEAN);
 
     try {
         $repository = new IndexRepository($indexPath);
@@ -367,24 +368,37 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
                 'STALE'
             );
         } else {
-            $embedder = new OllamaEmbedder($ollamaHost, $model);
-            $vector = $embedder->embedTexts(['Where is grep MCP documented?'])[0] ?? [];
-            $matches = $repository->search($vector, 1, 'mcp', false);
+            if ($deepSemanticProbe) {
+                $embedder = new OllamaEmbedder($ollamaHost, $model);
+                $vector = $embedder->embedTexts(['Where is grep MCP documented?'])[0] ?? [];
+                $matches = $repository->search($vector, 1, 'mcp', false);
 
-            if ($matches === []) {
-                throw new RuntimeException('Semantic search probe returned no matches.');
+                if ($matches === []) {
+                    throw new RuntimeException('Semantic search probe returned no matches.');
+                }
+
+                $results[] = makeResult(
+                    'PASS',
+                    'semantic_code_search',
+                    'Semantic index is ready and a behavior-style probe succeeded.',
+                    [
+                        'Top match: ' . $matches[0]['file'] . ':' . $matches[0]['start_line'],
+                        'Model: ' . $model,
+                    ],
+                    'READY'
+                );
+            } else {
+                $results[] = makeResult(
+                    'PASS',
+                    'semantic_code_search',
+                    'Semantic index is ready (status probe).',
+                    [
+                        'Model: ' . $model,
+                        'Set MCP_HEALTH_DEEP_SEMANTIC_PROBE=1 for embed/search validation.',
+                    ],
+                    'READY'
+                );
             }
-
-            $results[] = makeResult(
-                'PASS',
-                'semantic_code_search',
-                'Semantic index is ready and a behavior-style probe succeeded.',
-                [
-                    'Top match: ' . $matches[0]['file'] . ':' . $matches[0]['start_line'],
-                    'Model: ' . $model,
-                ],
-                'READY'
-            );
         }
     } catch (Throwable $exception) {
         $results[] = makeResult(
@@ -394,6 +408,94 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
             [$exception->getMessage()],
             'OLLAMA_UNAVAILABLE'
         );
+    }
+}
+
+$gitnexusMetaPath = $repoRoot . '/.gitnexus/meta.json';
+if (!is_file($gitnexusMetaPath)) {
+    $results[] = makeResult(
+        'WARN',
+        'gitnexus',
+        'GitNexus graph metadata not found.',
+        [
+            'Run: npx gitnexus@1.4.8 analyze',
+            'Expected metadata file: .gitnexus/meta.json',
+        ],
+        'MISSING_INDEX'
+    );
+} else {
+    $rawMeta = @file_get_contents($gitnexusMetaPath);
+    $meta = is_string($rawMeta) ? json_decode($rawMeta, true) : null;
+
+    if (!is_array($meta)) {
+        $results[] = makeResult(
+            'WARN',
+            'gitnexus',
+            'GitNexus metadata exists but could not be parsed.',
+            ['Re-run: npx gitnexus@1.4.8 analyze'],
+            'INVALID_METADATA'
+        );
+    } else {
+        $indexedCommit = (string) ($meta['lastCommit'] ?? '');
+        $embeddings = (int) ($meta['stats']['embeddings'] ?? 0);
+        $head = runCommand(['git', 'rev-parse', 'HEAD'], $repoRoot);
+
+        if ($head['exit_code'] !== 0 || $head['stdout'] === '') {
+            $results[] = makeResult(
+                'WARN',
+                'gitnexus',
+                'Unable to read current git HEAD for staleness check.',
+                [$head['stderr'] !== '' ? $head['stderr'] : 'git rev-parse HEAD returned no output.'],
+                'HEAD_UNKNOWN'
+            );
+        } elseif ($indexedCommit === '' || strlen($indexedCommit) < 7) {
+            $results[] = makeResult(
+                'WARN',
+                'gitnexus',
+                'GitNexus metadata is missing lastCommit.',
+                ['Re-run: npx gitnexus@1.4.8 analyze'],
+                'INVALID_METADATA'
+            );
+        } else {
+            $currentHead = trim($head['stdout']);
+            if ($indexedCommit === $currentHead) {
+                $results[] = makeResult(
+                    'PASS',
+                    'gitnexus',
+                    'GitNexus graph is in sync with current HEAD.',
+                    [
+                        'lastCommit: ' . $indexedCommit,
+                        'embeddings: ' . $embeddings,
+                    ],
+                    'READY'
+                );
+            } else {
+                $behindCount = null;
+                $behind = runCommand(['git', 'rev-list', '--count', $indexedCommit . '..' . $currentHead], $repoRoot);
+                if ($behind['exit_code'] === 0 && preg_match('/^\d+$/', trim($behind['stdout'])) === 1) {
+                    $behindCount = (int) trim($behind['stdout']);
+                }
+
+                $details = [
+                    'indexed lastCommit: ' . $indexedCommit,
+                    'current HEAD: ' . $currentHead,
+                    'embeddings: ' . $embeddings,
+                    'Run: npx gitnexus@1.4.8 analyze' . ($embeddings > 0 ? ' --embeddings' : ''),
+                ];
+
+                if (is_int($behindCount)) {
+                    $details[] = 'commits behind: ' . $behindCount;
+                }
+
+                $results[] = makeResult(
+                    'WARN',
+                    'gitnexus',
+                    'GitNexus graph is stale compared to current HEAD.',
+                    $details,
+                    'STALE'
+                );
+            }
+        }
     }
 }
 

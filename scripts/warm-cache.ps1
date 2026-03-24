@@ -1,159 +1,322 @@
 <#
 .SYNOPSIS
-    Pre-warm the read_file_cache and optionally re-index semantic code search.
+    Unified MCP warm/index automation for Codex sessions.
 
 .DESCRIPTION
-    Run directly or via Windows Task Scheduler (see -Register switch) to ensure
-    the disk cache is always warm before starting a Cursor or Codex session.
+    Automates read-file cache warm-up, semantic indexing, and GitNexus refresh with
+    two explicit profiles:
+      - startup: fast daily readiness
+      - nightly-embeddings: deeper nightly maintenance with GitNexus embeddings
 
-    Direct usage:
-        .\scripts\warm-cache.ps1
+    It can also register/unregister Windows Task Scheduler jobs for nightly runs.
 
-    Register as a nightly Task Scheduler job (run once, as Administrator):
-        .\scripts\warm-cache.ps1 -Register
-
-    Unregister the scheduled task:
-        .\scripts\warm-cache.ps1 -Unregister
-
-.PARAMETER Register
-    Creates a Windows Scheduled Task that runs this script nightly at 02:00.
-
-.PARAMETER Unregister
-    Removes the Windows Scheduled Task created by -Register.
-
-.PARAMETER SkipSemantic
-    Skip semantic index re-build even if Ollama is reachable.
-
-.PARAMETER MaxFiles
-    Maximum number of files to warm into the read_file cache (default 10000).
+.EXAMPLES
+    .\scripts\warm-cache.ps1
+    .\scripts\warm-cache.ps1 -Profile nightly-embeddings
+    .\scripts\warm-cache.ps1 -Register
+    .\scripts\warm-cache.ps1 -Unregister
 #>
 
 param(
+    [ValidateSet('startup', 'nightly-embeddings')]
+    [string]$Profile = 'startup',
     [switch]$Register,
     [switch]$Unregister,
     [switch]$SkipSemantic,
-    [int]$MaxFiles = 10000
+    [switch]$SkipGitNexus,
+    [switch]$DryRun,
+    [int]$MaxFiles = 5000,
+    [string]$WarmPath = 'app',
+    [string]$GitNexusVersion = '1.4.8'
 )
 
 $ErrorActionPreference = 'Stop'
 
-$TaskName   = 'UPOS612-WarmCache'
-$RepoRoot   = Split-Path -Parent $PSScriptRoot
+$TaskNameStartup = 'UPOS612-MCP-Startup'
+$TaskNameNightlyEmbeddings = 'UPOS612-GitNexus-Embeddings'
+$RepoRoot = Split-Path -Parent $PSScriptRoot
 $ScriptPath = Join-Path $RepoRoot 'scripts\warm-cache.ps1'
+$LogRoot = Join-Path $RepoRoot '.cache\mcp-automation'
 
-# ── Task Scheduler registration ──────────────────────────────────────────────
-
-if ($Unregister) {
-    if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
-        Write-Host "Scheduled task '$TaskName' removed."
-    } else {
-        Write-Host "No scheduled task named '$TaskName' found."
+function Ensure-LogRoot {
+    if (-not (Test-Path $LogRoot)) {
+        New-Item -ItemType Directory -Path $LogRoot -Force | Out-Null
     }
-    exit 0
 }
 
-if ($Register) {
-    $PhpExe   = (Get-Command php -ErrorAction SilentlyContinue)?.Source
-    if (-not $PhpExe) {
-        throw 'php.exe not found on PATH. Add WAMP PHP to your system PATH and retry.'
-    }
-
-    $Action   = New-ScheduledTaskAction `
-        -Execute 'powershell.exe' `
-        -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$ScriptPath`" -SkipSemantic:$false"
-
-    $Trigger  = New-ScheduledTaskTrigger -Daily -At '02:00'
-    $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable:$false
-
-    Register-ScheduledTask `
-        -TaskName  $TaskName `
-        -Action    $Action `
-        -Trigger   $Trigger `
-        -Settings  $Settings `
-        -RunLevel  Highest `
-        -Force | Out-Null
-
-    Write-Host "Scheduled task '$TaskName' registered — runs nightly at 02:00."
-    Write-Host "To run immediately: Start-ScheduledTask -TaskName '$TaskName'"
-    exit 0
+function New-LogFilePath {
+    Ensure-LogRoot
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    return Join-Path $LogRoot "mcp-$Profile-$stamp.log"
 }
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = 'INFO'
+    )
+
+    $line = "[{0}] [{1}] {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level.ToUpperInvariant(), $Message
+    Write-Host $line
+    Add-Content -Path $script:LogFile -Value $line
+}
 
 function Find-Php {
-    $php = (Get-Command php -ErrorAction SilentlyContinue)?.Source
-    if (-not $php) { throw 'php.exe not found on PATH.' }
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    $php = $null
+    if ($null -ne $phpCommand) {
+        $php = $phpCommand.Source
+    }
+
+    if (-not $php) {
+        throw 'php.exe not found on PATH.'
+    }
     return $php
+}
+
+function Find-Npx {
+    $npxCmd = Get-Command npx.cmd -ErrorAction SilentlyContinue
+    if ($null -ne $npxCmd) {
+        return $npxCmd.Source
+    }
+
+    $npxCommand = Get-Command npx -ErrorAction SilentlyContinue
+    if ($null -ne $npxCommand) {
+        return $npxCommand.Source
+    }
+
+    return $null
+}
+
+function Find-Npm {
+    $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if ($null -ne $npmCmd) {
+        return $npmCmd.Source
+    }
+
+    $npmCommand = Get-Command npm -ErrorAction SilentlyContinue
+    if ($null -ne $npmCommand) {
+        return $npmCommand.Source
+    }
+
+    return $null
+}
+
+function Find-GitNexusCli {
+    $gitnexusCommand = Get-Command gitnexus -ErrorAction SilentlyContinue
+    if ($null -ne $gitnexusCommand) {
+        return $gitnexusCommand.Source
+    }
+
+    return $null
 }
 
 function Test-OllamaReachable {
     param([string]$BaseUrl = 'http://127.0.0.1:11434')
+
     try {
-        $response = Invoke-WebRequest -Uri "$BaseUrl/api/tags" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+        $response = Invoke-WebRequest -Uri "$BaseUrl/api/tags" -TimeoutSec 3 -UseBasicParsing -ErrorAction SilentlyContinue
         return $response.StatusCode -eq 200
     } catch {
         return $false
     }
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+function Invoke-CommandSafe {
+    param(
+        [string]$Label,
+        [scriptblock]$Action
+    )
 
-$Php = Find-Php
-Write-Host "Repo root : $RepoRoot"
-Write-Host "PHP       : $Php"
-Write-Host ""
+    if ($DryRun) {
+        Write-Log "DRY RUN: $Label"
+        return $true
+    }
 
-# 1. Warm read_file_cache ─────────────────────────────────────────────────────
+    try {
+        $global:LASTEXITCODE = 0
+        & $Action
+        $code = $LASTEXITCODE
+        if ($code -ne $null -and $code -ne 0) {
+            Write-Log "$Label failed with exit code $code" 'WARN'
+            return $false
+        }
 
-$WarmBin = Join-Path $RepoRoot 'mcp\read-file-cache-mcp\bin\warm-cache'
-$WarmVendor = Join-Path $RepoRoot 'mcp\read-file-cache-mcp\vendor\autoload.php'
-
-if (-not (Test-Path $WarmVendor)) {
-    Write-Warning "read-file-cache-mcp vendor missing — skipping. Run: cd mcp/read-file-cache-mcp && composer install"
-} else {
-    Write-Host "[1/2] Warming read_file_cache (max $MaxFiles files)..."
-    $env:MCP_READ_FILE_WORKSPACE_ROOT = $RepoRoot
-    $env:MCP_READ_FILE_CACHE_ROOT     = Join-Path $RepoRoot '.cache\read-file-cache-mcp'
-
-    & $Php $WarmBin --max-files=$MaxFiles
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "warm-cache exited with code $LASTEXITCODE — cache may be partial."
-    } else {
-        Write-Host "  read_file_cache warm complete."
+        Write-Log "$Label completed."
+        return $true
+    } catch {
+        Write-Log "$Label threw: $($_.Exception.Message)" 'WARN'
+        return $false
     }
 }
 
-# 2. Re-index semantic code search ────────────────────────────────────────────
+function Register-Tasks {
+    $actionStartup = New-ScheduledTaskAction `
+        -Execute 'powershell.exe' `
+        -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$ScriptPath`" -Profile startup -SkipSemantic:$false -SkipGitNexus:$false"
+    $triggerStartup = New-ScheduledTaskTrigger -Daily -At '02:00'
 
-$SemanticBin    = Join-Path $RepoRoot 'mcp\semantic-code-search-mcp\bin\index-codebase'
-$SemanticVendor = Join-Path $RepoRoot 'mcp\semantic-code-search-mcp\vendor\autoload.php'
+    $actionNightly = New-ScheduledTaskAction `
+        -Execute 'powershell.exe' `
+        -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$ScriptPath`" -Profile nightly-embeddings -SkipSemantic:$false -SkipGitNexus:$false"
+    $triggerNightly = New-ScheduledTaskTrigger -Daily -At '03:00'
 
-if ($SkipSemantic) {
-    Write-Host "[2/2] Semantic re-index skipped (-SkipSemantic)."
-} elseif (-not (Test-Path $SemanticVendor)) {
-    Write-Warning "semantic-code-search-mcp vendor missing — skipping. Run: cd mcp/semantic-code-search-mcp && composer install"
-} else {
-    $OllamaHost = $env:MCP_SEMANTIC_OLLAMA_HOST
-    if (-not $OllamaHost) { $OllamaHost = 'http://127.0.0.1:11434' }
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable:$false
 
-    Write-Host "[2/2] Checking Ollama at $OllamaHost..."
-    if (-not (Test-OllamaReachable -BaseUrl $OllamaHost)) {
-        Write-Warning "  Ollama not reachable — skipping semantic re-index. Start Ollama and retry."
-    } else {
-        Write-Host "  Ollama reachable. Running semantic index..."
-        $env:MCP_SEMANTIC_WORKSPACE_ROOT = $RepoRoot
-        $env:MCP_SEMANTIC_INDEX_ROOT     = Join-Path $RepoRoot '.cache\semantic-code-search-mcp'
-        $env:MCP_SEMANTIC_OLLAMA_HOST    = $OllamaHost
+    Register-ScheduledTask -TaskName $TaskNameStartup -Action $actionStartup -Trigger $triggerStartup -Settings $settings -RunLevel Highest -Force | Out-Null
+    Register-ScheduledTask -TaskName $TaskNameNightlyEmbeddings -Action $actionNightly -Trigger $triggerNightly -Settings $settings -RunLevel Highest -Force | Out-Null
 
-        & $Php $SemanticBin
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "  Semantic index exited with code $LASTEXITCODE."
+    Write-Host "Registered tasks:"
+    Write-Host " - $TaskNameStartup (02:00 daily)"
+    Write-Host " - $TaskNameNightlyEmbeddings (03:00 daily)"
+}
+
+function Unregister-Tasks {
+    foreach ($taskName in @($TaskNameStartup, $TaskNameNightlyEmbeddings)) {
+        if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            Write-Host "Removed scheduled task '$taskName'."
         } else {
-            Write-Host "  Semantic index complete."
+            Write-Host "No scheduled task named '$taskName' found."
         }
     }
 }
 
-Write-Host ""
-Write-Host "Done. Cache is ready for next Cursor/Codex session."
+if ($Unregister) {
+    Unregister-Tasks
+    exit 0
+}
+
+if ($Register) {
+    Register-Tasks
+    exit 0
+}
+
+$script:LogFile = New-LogFilePath
+Write-Log "Profile: $Profile"
+Write-Log "Repo root: $RepoRoot"
+
+$Php = Find-Php
+$Npx = Find-Npx
+$Npm = Find-Npm
+$GitNexusCli = Find-GitNexusCli
+
+Write-Log "PHP: $Php"
+if ($Npx) {
+    Write-Log "npx: $Npx"
+} else {
+    Write-Log 'npx: not found'
+}
+if ($Npm) {
+    Write-Log "npm: $Npm"
+} else {
+    Write-Log 'npm: not found'
+}
+if ($GitNexusCli) {
+    Write-Log "gitnexus: $GitNexusCli"
+} else {
+    Write-Log 'gitnexus: not found'
+}
+
+# 1) Warm read_file_cache
+$WarmBin = Join-Path $RepoRoot 'mcp\read-file-cache-mcp\bin\warm-cache'
+$WarmVendor = Join-Path $RepoRoot 'mcp\read-file-cache-mcp\vendor\autoload.php'
+if (-not (Test-Path $WarmVendor)) {
+    Write-Log 'read-file-cache-mcp vendor missing; skipping warm-cache.' 'WARN'
+} else {
+    $env:MCP_READ_FILE_WORKSPACE_ROOT = $RepoRoot
+    $env:MCP_READ_FILE_CACHE_ROOT = Join-Path $RepoRoot '.cache\read-file-cache-mcp'
+
+    $warmLabel = "Warm read_file_cache (path=$WarmPath, max_files=$MaxFiles)"
+    if ([string]::IsNullOrWhiteSpace($WarmPath)) {
+        Invoke-CommandSafe -Label $warmLabel -Action { & $Php $WarmBin "--max-files=$MaxFiles" } | Out-Null
+    } else {
+        Invoke-CommandSafe -Label $warmLabel -Action { & $Php $WarmBin "--path=$WarmPath" "--max-files=$MaxFiles" } | Out-Null
+    }
+}
+
+# 2) Semantic index (optional but enabled by default in this workflow)
+$SemanticBin = Join-Path $RepoRoot 'mcp\semantic-code-search-mcp\bin\index-codebase'
+$SemanticVendor = Join-Path $RepoRoot 'mcp\semantic-code-search-mcp\vendor\autoload.php'
+if ($SkipSemantic) {
+    Write-Log 'Semantic indexing skipped by flag.'
+} elseif (-not (Test-Path $SemanticVendor)) {
+    Write-Log 'semantic-code-search-mcp vendor missing; skipping semantic index.' 'WARN'
+} else {
+    $ollamaHost = $env:MCP_SEMANTIC_OLLAMA_HOST
+    if ([string]::IsNullOrWhiteSpace($ollamaHost)) {
+        $ollamaHost = 'http://127.0.0.1:11434'
+    }
+
+    if (-not (Test-OllamaReachable -BaseUrl $ollamaHost)) {
+        Write-Log "Ollama not reachable at $ollamaHost; skipping semantic index." 'WARN'
+    } else {
+        $env:MCP_SEMANTIC_WORKSPACE_ROOT = $RepoRoot
+        $env:MCP_SEMANTIC_INDEX_ROOT = Join-Path $RepoRoot '.cache\semantic-code-search-mcp'
+        $env:MCP_SEMANTIC_OLLAMA_HOST = $ollamaHost
+        if (-not $env:MCP_SEMANTIC_EMBED_MODEL) {
+            $env:MCP_SEMANTIC_EMBED_MODEL = 'nomic-embed-text'
+        }
+
+        # Startup keeps the semantic pass fast; nightly keeps broader coverage.
+        if ($Profile -eq 'startup') {
+            $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'mcp/README.md'
+            $env:MCP_SEMANTIC_CHUNK_LINES = '20'
+            $env:MCP_SEMANTIC_CHUNK_OVERLAP = '4'
+            $env:MCP_SEMANTIC_MAX_FILE_BYTES = '262144'
+        } else {
+            $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,mcp,ai,tests,config,src'
+            $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
+            $env:MCP_SEMANTIC_CHUNK_LINES = '120'
+            $env:MCP_SEMANTIC_CHUNK_OVERLAP = '20'
+            $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
+        }
+
+        $semanticLabel = "Semantic index refresh ($Profile)"
+        Invoke-CommandSafe -Label $semanticLabel -Action { & $Php $SemanticBin --force } | Out-Null
+    }
+}
+
+# 3) GitNexus refresh cadence
+if ($SkipGitNexus) {
+    Write-Log 'GitNexus refresh skipped by flag.'
+} else {
+    $gitnexusArgs = @('analyze')
+    if ($Profile -eq 'nightly-embeddings') {
+        $gitnexusArgs += '--embeddings'
+        Write-Log 'GitNexus nightly profile: embeddings enabled (--embeddings).'
+    }
+    $npxArgs = @('-y', "gitnexus@$GitNexusVersion") + $gitnexusArgs
+
+    $ok = $false
+    if ($Npx) {
+        $ok = Invoke-CommandSafe -Label "GitNexus analyze via npx ($Profile)" -Action { & $Npx @npxArgs }
+    } else {
+        Write-Log 'npx not found; trying local gitnexus CLI fallback.' 'WARN'
+    }
+
+    if (-not $ok -and $Npx -and $Npm) {
+        Write-Log 'Attempting npm cache verify before one npx retry.' 'WARN'
+        $cacheOk = Invoke-CommandSafe -Label 'npm cache verify' -Action { & $Npm cache verify }
+        if ($cacheOk) {
+            $ok = Invoke-CommandSafe -Label "GitNexus analyze via npx retry ($Profile)" -Action { & $Npx @npxArgs }
+        }
+    }
+
+    if (-not $ok -and $GitNexusCli) {
+        Write-Log 'Falling back to local gitnexus CLI.' 'WARN'
+        $ok = Invoke-CommandSafe -Label "GitNexus analyze via local CLI ($Profile)" -Action { & $GitNexusCli @gitnexusArgs }
+    }
+
+    if (-not $ok) {
+        Write-Log 'GitNexus analyze failed after npx/local fallback attempts.' 'WARN'
+    }
+}
+
+# 4) Health check
+$HealthScript = Join-Path $RepoRoot 'scripts\check-mcp-health.php'
+if (Test-Path $HealthScript) {
+    Invoke-CommandSafe -Label 'MCP health check' -Action { & $Php $HealthScript } | Out-Null
+}
+
+Write-Log "Done. Log file: $script:LogFile"

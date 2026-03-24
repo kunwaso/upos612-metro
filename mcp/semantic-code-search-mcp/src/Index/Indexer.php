@@ -76,9 +76,7 @@ final class Indexer
             }
 
             $chunks = $this->chunker->chunk($file['path'], $content);
-            $embeddings = $chunks === []
-                ? []
-                : $this->embedder->embedTexts(array_column($chunks, 'content'));
+            [$chunks, $embeddings] = $this->embedChunks($file['path'], $chunks);
 
             $chunksWritten += $this->repository->replaceFile(
                 $file['path'],
@@ -101,5 +99,64 @@ final class Indexer
             'model' => $this->embedder->model(),
             'index_path' => $this->repository->indexPath(),
         ];
+    }
+
+    /**
+     * @param array<int, array{id: string, path: string, start_line: int, end_line: int, content: string}> $chunks
+     * @return array{
+     *   0: array<int, array{id: string, path: string, start_line: int, end_line: int, content: string}>,
+     *   1: array<int, array<int, float>>
+     * }
+     */
+    private function embedChunks(string $path, array $chunks): array
+    {
+        if ($chunks === []) {
+            return [[], []];
+        }
+
+        try {
+            return [$chunks, $this->embedder->embedTexts(array_column($chunks, 'content'))];
+        } catch (SemanticCodeSearchException $exception) {
+            if (! $this->isContextLengthOverflow($exception)) {
+                throw $exception;
+            }
+        }
+
+        $keptChunks = [];
+        $embeddings = [];
+
+        foreach ($chunks as $chunk) {
+            try {
+                $vector = $this->embedder->embedTexts([$chunk['content']])[0] ?? null;
+            } catch (SemanticCodeSearchException $chunkException) {
+                if ($this->isContextLengthOverflow($chunkException)) {
+                    continue;
+                }
+
+                throw $chunkException;
+            }
+
+            if (! is_array($vector)) {
+                continue;
+            }
+
+            $keptChunks[] = $chunk;
+            $embeddings[] = $vector;
+        }
+
+        if ($keptChunks === []) {
+            return [[], []];
+        }
+
+        return [$keptChunks, $embeddings];
+    }
+
+    private function isContextLengthOverflow(SemanticCodeSearchException $exception): bool
+    {
+        if ($exception->errorCode() !== 'EMBEDDING_FAILED') {
+            return false;
+        }
+
+        return str_contains(strtolower($exception->getMessage()), 'context length');
     }
 }

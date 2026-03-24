@@ -1,46 +1,41 @@
 # Codex MCP setup (this project)
 
-Use these steps so Codex indexes and reads this codebase faster.
+Use this runbook to make the Codex MCP stack deterministic and fast in this repo.
 
 ## 1. Codex config
 
-Copy the example config into your Codex config file (create the file if it doesn’t exist):
+Copy or merge `mcp/codex-config.toml.example` into your user config:
 
-- **Windows:** `%USERPROFILE%\.codex\config.toml` (e.g. `C:\Users\<You>\.codex\config.toml`)
-- **macOS/Linux:** `~/.codex/config.toml`
+- Windows: `%USERPROFILE%\.codex\config.toml`
+- macOS/Linux: `~/.codex/config.toml`
 
-**Option A — copy the whole example (if you don’t have Codex config yet):**
+PowerShell copy example:
 
 ```powershell
-# Windows PowerShell: ensure directory exists, then copy
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex"
 Copy-Item "D:\wamp64\www\upos612\mcp\codex-config.toml.example" "$env:USERPROFILE\.codex\config.toml"
-# Then replace <repo-root> in config.toml with your local repo path.
 ```
 
-**Option B — merge by hand:** Open `mcp/codex-config.toml.example`, copy the `[mcp_servers.*]` blocks into your existing `~/.codex/config.toml`, then replace every `<repo-root>` placeholder with your local checkout path (for example `D:/wamp64/www/upos612`).
+Then replace `<repo-root>` with your local checkout path (example: `D:/wamp64/www/upos612`).
 
-Then restart Codex (or reload the extension) so it picks up the MCP servers.
+Notes:
 
-## 2. One-time: install read-file-cache MCP deps
+- GitNexus is pinned to `gitnexus@1.4.8` (no `@latest` drift).
+- `semantic_code_search` is enabled with explicit workspace/index scope envs.
 
-From repo root:
+Restart Codex after config changes.
+
+## 2. One-time installs
+
+Read-file cache MCP:
 
 ```powershell
-cd D:\wamp64\www\upos612\mcp\read-file-cache-mcp
+Set-Location D:\wamp64\www\upos612\mcp\read-file-cache-mcp
 composer install
-cd D:\wamp64\www\upos612
+Set-Location D:\wamp64\www\upos612
 ```
 
-Or in one line (PowerShell):
-
-```powershell
-Set-Location D:\wamp64\www\upos612\mcp\read-file-cache-mcp; composer install; Set-Location D:\wamp64\www\upos612
-```
-
-## 3. One-time (browser audits): install audit-web MCP deps
-
-From repo root:
+Optional browser-audit MCP:
 
 ```powershell
 Set-Location D:\wamp64\www\upos612\mcp\audit-web-mcp
@@ -50,102 +45,144 @@ npx playwright install
 Set-Location D:\wamp64\www\upos612
 ```
 
-## 4. Before or during Codex: warm the read-file cache
+## 3. Startup orchestration (single command)
 
-From repo root, run once per session (or after a big pull) so file reads are faster:
+Use `scripts/warm-cache.ps1` as the canonical startup entrypoint.
 
-```powershell
-cd D:\wamp64\www\upos612
-php mcp/read-file-cache-mcp/bin/warm-cache
-php scripts/check-mcp-health.php
-```
-
-Optional: `--max-files=10000` or `--path=app` to limit scope.
-
-## 5. Grep MCP: ripgrep (rg) on PATH
-
-The grep MCP server runs `rg` (ripgrep). Ensure it is on your PATH:
-
-- **Windows:** `winget install BurntSushi.ripgrep.MSVC` or [releases](https://github.com/BurntSushi/ripgrep/releases), then restart the terminal/Codex.
-- **macOS:** `brew install ripgrep`
-
-If `rg` is missing, grep MCP will return `RIPGREP_NOT_AVAILABLE`.
-
-## 6. GitNexus: code intelligence graph (requires Node/npx)
-
-GitNexus provides impact analysis, symbol context, safe renames, and execution-flow queries via an MCP server backed by an on-disk knowledge graph.
-
-**Prerequisites:** Node.js (v18+) and `npx` on PATH.
-
-**Build the graph** (one-time, then after large changes or new commits):
+Startup profile:
 
 ```powershell
-cd D:\wamp64\www\upos612
-npx gitnexus analyze
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup
 ```
 
-This writes the graph to `.gitnexus/` (git-ignored). The GitNexus MCP server in `codex-config.toml.example` reads from it automatically.
+Nightly embeddings profile:
 
-**Verify:** Check `.gitnexus/meta.json` exists and `stats.nodes > 0`. Compare `lastCommit` to `git rev-parse HEAD`; if they differ, re-run `npx gitnexus analyze`.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile nightly-embeddings
+```
 
-**Optional embeddings:** Add `--embeddings` to preserve or build semantic embeddings (requires more time and disk).
+Useful flags:
 
-## 7. Optional: semantic search (Ollama required)
+- `-DryRun`
+- `-SkipSemantic`
+- `-SkipGitNexus`
+- `-WarmPath app`
+- `-MaxFiles 5000`
 
-If you use the semantic_code_search server and have Ollama installed:
+Windows helper:
+
+```powershell
+.\warm-and-index.bat --profile startup
+.\warm-and-index.bat --profile nightly-embeddings --dry-run
+```
+
+The script writes logs to `.cache/mcp-automation/`.
+
+## 4. Hook automation (post-commit + post-merge)
+
+Install managed blocks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\manage-mcp-hooks.ps1 -Action install
+```
+
+Check status:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\manage-mcp-hooks.ps1 -Action status
+```
+
+Managed hook payloads live in:
+
+- `scripts/hooks/post-commit-mcp.sh`
+- `scripts/hooks/post-merge-mcp.sh`
+
+Hook logs are written to `.cache/mcp-hooks/`.
+
+## 5. Semantic and GitNexus cadence
+
+Semantic (Ollama required):
 
 ```powershell
 ollama pull nomic-embed-text
-cd D:\wamp64\www\upos612
-php mcp/semantic-code-search-mcp/bin/index-codebase
+php mcp/semantic-code-search-mcp/bin/index-codebase --force
+```
+
+GitNexus graph refresh:
+
+```powershell
+npx -y gitnexus@1.4.8 analyze
+```
+
+Nightly deep graph (embeddings):
+
+```powershell
+npx -y gitnexus@1.4.8 analyze --embeddings
+```
+
+Health check (after setup/startup changes):
+
+```powershell
 php scripts/check-mcp-health.php
 ```
 
-Run `index-codebase` again after large codebase changes. Use `--force` to re-index everything.
+Optional deep semantic probe (slower, runs embed/search validation):
 
-**When to re-index:** Re-run `index-codebase` after large refactors, new modules, or when semantic results seem stale. Use `--force` for a full re-index when the workspace or embed model has changed.
+```powershell
+$env:MCP_HEALTH_DEEP_SEMANTIC_PROBE='1'
+php scripts/check-mcp-health.php
+Remove-Item Env:MCP_HEALTH_DEEP_SEMANTIC_PROBE
+```
 
-## 8. POS smoke auth bootstrap (recommended)
+## 6. Rollback toggles
+
+Disable semantic quickly:
+
+- Startup: add `-SkipSemantic`
+- Config: comment/remove `[mcp_servers.semantic_code_search]` in `~/.codex/config.toml`
+
+Disable GitNexus refresh quickly:
+
+- Startup: add `-SkipGitNexus`
+- Hooks: uninstall managed blocks
+
+Disable managed hooks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\manage-mcp-hooks.ps1 -Action uninstall
+```
+
+Note: scheduled-task register/unregister can require elevated privileges.
+
+Revert pinned GitNexus (not recommended):
+
+- Change `gitnexus@1.4.8` back to your preferred version in `~/.codex/config.toml`.
+
+## 7. POS smoke auth bootstrap (optional)
 
 Use this when smoke automation is blocked by `/login` redirect:
 
 ```powershell
-# 1) Login once in interactive browser and save auth state
 .\scripts\audit-pos-smoke.ps1 -Mode bootstrap -BaseUrl https://upos612
-
-# 2) Run one authenticated POS smoke
 .\scripts\audit-pos-smoke.ps1 -Mode single -BaseUrl https://upos612 -PosPath pos
-
-# 3) Run authenticated matrix by route prefix
 .\scripts\audit-pos-smoke.ps1 -Mode matrix -BaseUrl https://upos612 -PathPrefix pos
 ```
 
-Default auth state path is `output/playwright/audit-web-mcp/reports/.auth/pos-admin.json` (kept local by `.gitignore` via `/output`).
+Default auth state path:
 
-## 9. Plan files: do not rewrite
+`output/playwright/audit-web-mcp/reports/.auth/pos-admin.json`
 
-Plans in `.cursor/plans/*.plan.md` are **canonical**. When you give Codex a plan file to execute or "plan from," it must not rewrite or replace it. In-repo rules: **AGENTS.md** (intent `execute-plan`) and **.cursor/plans/README.md** §7. If your Codex setup supports project or global instructions, add that `.cursor/plans/*.plan.md` are canonical and must not be rewritten (see .cursor/plans/README.md §7).
+## 8. Plan files are canonical
+
+Do not rewrite `.cursor/plans/*.plan.md` when asked to execute a plan.
+Follow `AGENTS.md` (`execute-plan`) and `.cursor/plans/README.md` section 7.
 
 ---
 
-**Summary**
+## Quick checklist
 
-| Step | Command / action |
-|------|-------------------|
-| Config | Copy `mcp/codex-config.toml.example` to `~/.codex/config.toml` (or merge), then restart Codex |
-| One-time | `cd mcp/read-file-cache-mcp && composer install` |
-| One-time (browser audits) | `cd mcp/audit-web-mcp && composer install && npm install && npx playwright install` |
-| Before Codex | `php mcp/read-file-cache-mcp/bin/warm-cache` then `php scripts/check-mcp-health.php` (from repo root) |
-| Grep: ripgrep | Install `rg` (e.g. `winget install BurntSushi.ripgrep.MSVC` on Windows) so grep MCP works |
-| GitNexus graph | `npx gitnexus analyze` (from repo root; requires Node/npx) |
-| Optional semantic | `php mcp/semantic-code-search-mcp/bin/index-codebase` (from repo root; needs Ollama) |
-| POS smoke auth | `.\scripts\audit-pos-smoke.ps1 -Mode bootstrap` then `-Mode single` / `-Mode matrix` |
-| Plan files | Do not rewrite `.cursor/plans/*.plan.md`; see AGENTS.md and .cursor/plans/README.md §7 |
-
-**Session start checklist**
-
-- Run `php mcp/read-file-cache-mcp/bin/warm-cache` once per session or after a big pull (from repo root).
-- Run `php scripts/check-mcp-health.php` after startup changes, cache warm-up, or MCP dependency installs.
-- If using semantic search: run `index_status` (or the CLI below) to confirm the index is ready; if not, run `php mcp/semantic-code-search-mcp/bin/index-codebase`.
-- Optional: agents can call `warm_cache` and `index_status` at session start when the MCP is available.
-- Or double-click `warm-and-index.bat` (Windows, repo root) to warm the read cache, try semantic indexing when available, and print the MCP health summary.
+1. Config merged and Codex restarted.
+2. `composer install` done for `mcp/read-file-cache-mcp` (and optional audit-web MCP deps).
+3. Startup profile runs and writes logs.
+4. `php scripts/check-mcp-health.php` reports required MCPs as `PASS`.
+5. Hooks installed (or intentionally disabled).

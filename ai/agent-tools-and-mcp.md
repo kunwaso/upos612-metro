@@ -68,6 +68,24 @@ Availability is not enough; do a quick health check for each server you depend o
 
 Treat a tool as degraded if it repeatedly times out, returns empty/partial payloads, loops on stale index errors, or returns metadata without the expected content body.
 
+### 0.3b Codex five-tool routing contract
+
+Use this route order so the stack behaves like one system:
+
+| Scenario | Tool route | Required guardrails |
+|---|---|---|
+| Exact symbol/string fix | `grep` -> `read_file_cache` -> `laravel_mysql` (if route/schema/test context needed) | Before editing a Util/controller method: run GitNexus impact first. |
+| Unknown architecture / behavior question | `semantic_code_search` (`index_status` first) -> GitNexus `query/context` -> targeted `grep` -> `read_file_cache` | If semantic is stale/not ready, skip semantic immediately and continue with GitNexus + grep route. |
+| Route/schema task | `laravel_mysql` first -> `grep` -> `read_file_cache` | Keep schema/routes truth from repo-aware MCP, not guesswork. |
+| Refactor-impact task | GitNexus `impact` -> edit -> tests/lints -> GitNexus `detect_changes` | `impact` before edit and `detect_changes` before commit are mandatory. |
+
+Stop/retry policy for degraded tools:
+
+1. Try the preferred tool once.
+2. Retry once only when the failure is likely transient (timeout/transport).
+3. If it fails again, mark degraded and move to fallback path immediately.
+4. Do not loop on the same failing tool within the same step.
+
 ### 0.3a Deep/external task startup macro
 
 For **deep research**, **GitHub/trending intake**, or **external adaptation** tasks, use this startup order once the required MCPs are available.
@@ -390,12 +408,12 @@ env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 
 [mcp_servers.gitnexus]
 command = "npx"
-args = ["-y", "gitnexus@latest", "mcp"]
+args = ["-y", "gitnexus@1.4.8", "mcp"]
 
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
 ```
 
 Short local example:
@@ -463,7 +481,7 @@ If you use the MCP servers in the Codex extension, do the following so the codeb
    ```
    Requires Ollama and the embed model (e.g. `ollama pull nomic-embed-text`).
 
-   If Ollama is unavailable or the index is missing, the health check reports `OLLAMA_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `laravel_mysql` -> `grep` -> `read_file_cache`.
+   If Ollama is unavailable or the index is missing, the health check reports `OLLAMA_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `gitnexus` -> `grep` -> `read_file_cache` -> `laravel_mysql`.
 
 4. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works. For startup probes, use a **small path-scoped search** instead of a broad repo scan.
 

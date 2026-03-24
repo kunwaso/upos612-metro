@@ -31,4 +31,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google_custom_search' => [
+        'api_key' => env('GOOGLE_CUSTOM_SEARCH_API_KEY'),
+        'search_engine_id' => env('GOOGLE_CUSTOM_SEARCH_ENGINE_ID'),
+        'base_url' => env('GOOGLE_CUSTOM_SEARCH_BASE_URL', 'https://www.googleapis.com/customsearch/v1'),
+        'default_limit' => env('GOOGLE_CUSTOM_SEARCH_DEFAULT_LIMIT', 20),
+        'timeout' => env('GOOGLE_CUSTOM_SEARCH_TIMEOUT', 10),
+    ],
+
+    'contact_feeds' => [
+        'default_provider' => env('CONTACT_FEEDS_DEFAULT_PROVIDER', 'google'),
+        'providers' => ['google', 'facebook', 'linkedin'],
+    ],
+
 ];

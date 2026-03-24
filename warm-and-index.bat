@@ -1,21 +1,33 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
+set "PROFILE=startup"
 set "WARM_PATH=app"
 set "WARM_MAX_FILES=5000"
-set "RUN_SEMANTIC=0"
+set "DRY_RUN=0"
+set "SKIP_SEMANTIC=0"
+set "SKIP_GITNEXUS=0"
+set "REGISTER=0"
+set "UNREGISTER=0"
+set "NO_PAUSE=0"
 
 :parse_args
 if "%~1"=="" goto args_done
-if /i "%~1"=="--semantic" (
-    set "RUN_SEMANTIC=1"
+if /i "%~1"=="--profile" (
+    if "%~2"=="" goto usage
+    set "PROFILE=%~2"
+    shift
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--nightly-embeddings" (
+    set "PROFILE=nightly-embeddings"
     shift
     goto parse_args
 )
 if /i "%~1"=="--all" (
     set "WARM_PATH="
-    set "WARM_MAX_FILES=5000"
     shift
     goto parse_args
 )
@@ -33,56 +45,82 @@ if /i "%~1"=="--max-files" (
     shift
     goto parse_args
 )
+if /i "%~1"=="--dry-run" (
+    set "DRY_RUN=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--skip-semantic" (
+    set "SKIP_SEMANTIC=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--skip-gitnexus" (
+    set "SKIP_GITNEXUS=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--register" (
+    set "REGISTER=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--unregister" (
+    set "UNREGISTER=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--no-pause" (
+    set "NO_PAUSE=1"
+    shift
+    goto parse_args
+)
 echo Unknown argument: %~1
 goto usage
 
 :args_done
-echo === Warm read-file cache ===
-if defined WARM_PATH (
-    echo Path: %WARM_PATH%   Max files: %WARM_MAX_FILES%
-    php mcp/read-file-cache-mcp/bin/warm-cache --path=%WARM_PATH% --max-files=%WARM_MAX_FILES%
+if "%REGISTER%"=="1" if "%UNREGISTER%"=="1" (
+    echo [ERROR] --register and --unregister cannot be used together.
+    goto usage
+)
+
+echo === MCP warm/index orchestration ===
+if "%REGISTER%"=="1" (
+    echo Mode    : register scheduled tasks
+) else if "%UNREGISTER%"=="1" (
+    echo Mode    : unregister scheduled tasks
 ) else (
-    echo Path: [root]   Max files: %WARM_MAX_FILES%
-    php mcp/read-file-cache-mcp/bin/warm-cache --max-files=%WARM_MAX_FILES%
+    echo Profile : !PROFILE!
 )
-if errorlevel 1 (
-    echo [WARN] warm-cache failed. Running health check below for details.
+if defined WARM_PATH (
+    echo Warm path: !WARM_PATH!
+) else (
+    echo Warm path: [root]
 )
+echo Max files: !WARM_MAX_FILES!
+if "%SKIP_SEMANTIC%"=="1" echo Semantic : skipped
+if "%SKIP_GITNEXUS%"=="1" echo GitNexus : skipped
 echo.
 
-echo === Semantic index (optional) ===
-if "%RUN_SEMANTIC%"=="0" (
-    echo Skipped by default. Use --semantic to build semantic index.
-    echo.
-    goto health_check
-)
+if "%REGISTER%"=="1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\warm-cache.ps1" -Register
+) else if "%UNREGISTER%"=="1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\warm-cache.ps1" -Unregister
+) else (
+    set "ARG_WARM="
+    if defined WARM_PATH set "ARG_WARM=-WarmPath !WARM_PATH!"
+    set "ARG_DRY="
+    if "%DRY_RUN%"=="1" set "ARG_DRY=-DryRun"
+    set "ARG_SKIP_SEMANTIC="
+    if "%SKIP_SEMANTIC%"=="1" set "ARG_SKIP_SEMANTIC=-SkipSemantic"
+    set "ARG_SKIP_GITNEXUS="
+    if "%SKIP_GITNEXUS%"=="1" set "ARG_SKIP_GITNEXUS=-SkipGitNexus"
 
-where ollama >nul 2>nul
+    powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\warm-cache.ps1" -Profile !PROFILE! -MaxFiles !WARM_MAX_FILES! !ARG_WARM! !ARG_DRY! !ARG_SKIP_SEMANTIC! !ARG_SKIP_GITNEXUS!
+)
 if errorlevel 1 (
-    echo Ollama was not found on PATH. Skipping semantic index build.
-    echo.
-    goto health_check
+    echo [WARN] warm-cache script reported failures. Review the generated log under .cache\mcp-automation.
 )
-
-where curl >nul 2>nul
-if not errorlevel 1 (
-    curl --silent --max-time 2 http://127.0.0.1:11434/api/tags >nul 2>nul
-    if errorlevel 1 (
-        echo Ollama is not reachable at http://127.0.0.1:11434. Skipping semantic index build.
-        echo.
-        goto health_check
-    )
-)
-
-php mcp/semantic-code-search-mcp/bin/index-codebase
-if errorlevel 1 (
-    echo [WARN] Semantic index build did not complete. The health check below will report the exact status.
-)
-echo.
-
-:health_check
-echo === MCP health check ===
-php scripts/check-mcp-health.php
 echo.
 
 echo === GitNexus quick check ===
@@ -95,22 +133,22 @@ set "CODEX_CFG=%USERPROFILE%\.codex\config.toml"
 if exist "%CODEX_CFG%" (
     findstr /i /c:"gitnexus@latest" "%CODEX_CFG%" >nul
     if not errorlevel 1 (
-        echo [WARN] Codex config uses gitnexus@latest ^(can cause MCP handshake timeouts^).
-        echo        Prefer a pinned version or a local/global gitnexus binary.
+        echo [WARN] Codex config uses gitnexus@latest. Prefer a pinned version.
     )
 )
 echo.
 
-pause
+if "%NO_PAUSE%"=="0" pause
 endlocal
 goto :eof
 
 :usage
 echo Usage:
-echo   warm-and-index.bat [--semantic] [--all] [--path ^<dir^>] [--max-files ^<n^>]
+echo   warm-and-index.bat [--profile startup^|nightly-embeddings] [--all] [--path ^<dir^>] [--max-files ^<n^>] [--dry-run] [--skip-semantic] [--skip-gitnexus] [--no-pause]
+echo   warm-and-index.bat [--register ^| --unregister]
 echo.
 echo Defaults:
-echo   --path app --max-files 500
+echo   --profile startup --path app --max-files 5000
 echo.
 pause
 endlocal
