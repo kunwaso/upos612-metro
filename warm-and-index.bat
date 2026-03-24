@@ -3,7 +3,7 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 
 set "WARM_PATH=app"
-set "WARM_MAX_FILES=500"
+set "WARM_MAX_FILES=5000"
 set "RUN_SEMANTIC=0"
 
 :parse_args

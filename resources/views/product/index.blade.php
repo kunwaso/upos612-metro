@@ -247,6 +247,8 @@
         var productTable = $table.DataTable({
             processing: true,
             serverSide: true,
+            scrollX: true,
+            autoWidth: false,
             ajax: {
                 url: '{{ route('products.index') }}',
                 type: 'GET',
@@ -290,12 +292,14 @@
                 {
                     data: 'current_stock',
                     name: 'current_stock',
-                    className: 'text-end pe-0'
+                    className: 'text-end pe-0',
+                    searchable: false
                 },
                 {
                     data: 'selling_price',
                     name: 'min_price',
-                    className: 'text-end pe-0'
+                    className: 'text-end pe-0',
+                    searchable: false
                 },
                 {
                     data: 'slot_codes',
@@ -308,7 +312,8 @@
                 {
                     data: 'status',
                     name: 'products.is_inactive',
-                    className: 'text-end pe-0'
+                    className: 'text-end pe-0',
+                    searchable: false
                 },
                 {
                     data: 'action',

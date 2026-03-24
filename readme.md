@@ -65,6 +65,8 @@ git push -u origin main
 
 php artisan vendor:publish --tag=cms-assets --force
 
+./warm-and-index.bat
+
 write me a prompt to rebuild the view as above dicussion
 
 write me a prompt to implement detail phase by phase task by task with detail todo list make sure when user search it run and show correct data

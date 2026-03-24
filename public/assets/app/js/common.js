@@ -160,6 +160,12 @@ $(document).ready(function () {
     }
 
     var datatable_export_button_class = 'btn btn-sm btn-outline btn-outline-dashed btn-outline-secondary';
+    var is_mobile_datatable_layout = window.matchMedia
+        ? window.matchMedia('(max-width: 767.98px)').matches
+        : $(window).width() < 768;
+    var datatable_dom_layout = is_mobile_datatable_layout
+        ? '<"row margin-bottom-20 text-center g-2"<"col-12 mb-2"f><"col-12 mb-2"B><"col-12"l>r>tip'
+        : '<"row margin-bottom-20 text-center"<"col-sm-1"l><"col-sm-8"B><"col-sm-3"f> r>tip';
 
     if (
         $.fn.dataTable &&
@@ -177,7 +183,7 @@ $(document).ready(function () {
         });
     }
 
-    var buttons = [
+    var base_datatable_buttons = [
         // {
         //     extend: 'copy',
         //     text: '<i class="fa fa-files-o" aria-hidden="true"></i> ' + LANG.copy,
@@ -277,7 +283,23 @@ $(document).ready(function () {
     };
 
     if (non_utf8_languages.indexOf(app_locale) == -1) {
-        buttons.push(pdf_btn);
+        base_datatable_buttons.push(pdf_btn);
+    }
+
+    var buttons = base_datatable_buttons;
+    if (is_mobile_datatable_layout) {
+        buttons = [
+            {
+                extend: 'collection',
+                text: '<i class="fa fa-download" aria-hidden="true"></i> Export',
+                className: datatable_export_button_class,
+                autoClose: true,
+                collectionLayout: 'dropdown',
+                buttons: $.map(base_datatable_buttons, function (buttonConfig) {
+                    return $.extend(true, {}, buttonConfig);
+                }),
+            },
+        ];
     }
 
     //Datables
@@ -285,7 +307,7 @@ $(document).ready(function () {
         //Uncomment below line to enable save state of datatable.
         //stateSave: true,
         fixedHeader: true,
-        dom: '<"row margin-bottom-20 text-center"<"col-sm-1"l><"col-sm-8"B><"col-sm-3"f> r>tip',
+        dom: datatable_dom_layout,
         buttons: buttons,
         aLengthMenu: [
             [25, 50, 100, 200, 500, 1000, -1],
