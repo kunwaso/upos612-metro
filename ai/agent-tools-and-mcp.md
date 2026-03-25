@@ -4,6 +4,8 @@ This document explains which tool families an agent may have, when to use them, 
 
 Tool names vary by platform. Treat the names below as tool families with common examples, not as a promise that every environment exposes the same command names.
 
+This file is the canonical home for tool routing, MCP choice, and degraded-tool fallback. Keep `AGENTS.md` focused on policy, `AGENTS-FAST.md` focused on short routing, and `readme.md` focused on entry points.
+
 ---
 
 ## 0. Compatibility and Startup Check
@@ -35,6 +37,8 @@ At the start of a Codex or Cursor session, **first classify the task** using the
 1. Check `grep` for exact or regex search.
 2. Check `read_file_cache` for workspace file reads.
 3. If unavailable, fall back to the host platform's built-in grep, codebase search, and file read tools.
+
+For conceptual or general-advice questions, stop here unless repo grounding would materially change the answer.
 
 **On-demand (repo-specific tasks only — implement, analyze, investigate, execute-plan, tenant-audit, log-scan, lint-fix):**
 
@@ -182,6 +186,13 @@ This keeps external evaluation grounded in local repo truth instead of drifting 
 - In Cursor Chat, the built-in Grep/instant Grep is acceptable when MCP grep is not available.
 - Do **not** run `rg` or `grep` in the shell for repository search unless no repo-aware search tool exists in the current environment.
 
+### 2.3a Syntax, parse, and lint checks
+
+- Treat `php -l`, lints, and small test runs as **verification tools**, not discovery tools.
+- For a syntax or parse issue, first narrow the scope with `grep` and `read_file_cache`; only then run `php -l` on the suspected or changed file.
+- For lint-fix work, read the diagnostics first; do not start with broad parse/test commands when the failing file or line is already known.
+- If the issue is confined to one file, prefer one targeted check over a repo-wide verify step.
+
 ### 2.4 Repo-aware MCP preference
 
 When `laravel_mysql` is enabled, prefer it over ad hoc shell exploration for:
@@ -206,6 +217,12 @@ If the preferred MCP server is unavailable or degraded:
 2. Keep the same behavior split: grep for exact, semantic/codebase for meaning, read-file for content.
 3. Switch quickly; do not keep retrying a failing tool in a loop.
 4. State the fallback briefly in your response when it materially affects confidence or speed.
+
+Semantic-specific rule:
+
+- If `semantic_code_search` returns `OLLAMA_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately.
+- Continue with `grep` -> `read_file_cache` -> `laravel_mysql` only if repo-aware routes/schema/project structure are still required.
+- Do not block startup or simple explain tasks on semantic readiness.
 
 ### 2.7 Minimize edit/write round-trips (faster execution)
 

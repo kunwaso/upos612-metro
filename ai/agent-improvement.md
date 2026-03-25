@@ -73,6 +73,27 @@ You **can** approximate the *goals* of “better behavior” and “faster conve
 - **Plans:** When writing a plan (e.g. in `.cursor/plans/` or AGENTS.md), include a **“Directories to create (if missing)”** line and a **file list summary** so the agent doesn’t have to infer or discover layout mid-run.
 - **Effect:** Fewer round-trips and less backtracking → faster runs. See `ai/agent-tools-and-mcp.md` §2.7 for edit/write preferences.
 
+### 2.7 Canonical ownership and overlap cleanup
+
+Use one primary document per rule family so improvements do not create three competing summaries:
+
+| Rule family | Primary home | Common overlap to avoid |
+|------|------------------|-------------|
+| Policy, lanes, five checks, review gate | `AGENTS.md` | Repeating full policy in README or tool docs |
+| Fast execution defaults | `AGENTS-FAST.md` | Repeating detailed edge cases that belong in `AGENTS.md` |
+| Tool selection and fallback | `ai/agent-tools-and-mcp.md` | Embedding full MCP routing tables in README |
+| Plan structure and verification | `.cursor/plans/README.md` | Ad hoc phased-plan formats in prompts or scratch docs |
+| User-facing examples and shortcuts | `readme.md` | Turning README into a second policy source |
+
+Overlap map for this repo:
+
+- `AGENTS.md` and `AGENTS-FAST.md` both discuss lanes; keep the detailed logic in `AGENTS.md` and the short default path in `AGENTS-FAST.md`.
+- `AGENTS.md` and `ai/agent-tools-and-mcp.md` both mention tools; keep policy in `AGENTS.md`, but keep the exact tool contract and degraded-tool behavior in `ai/agent-tools-and-mcp.md`.
+- `readme.md` may keep shortcuts and examples, but should link back to canonical docs instead of storing scratch policy.
+- `.cursor/plans/README.md` owns phased-plan shape; when a plan request appears elsewhere, point back here instead of inventing a new structure.
+
+If you improve one workflow rule, update the primary home first, then trim or relink any overlapping summary.
+
 ---
 
 ## 3. Summary

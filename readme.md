@@ -28,42 +28,50 @@ When working with an AI coding agent (e.g. Cursor, Codex) that uses this repo’
 
 All commands are scoped to **Metronic 8.3.3** and project rules: no new theme, no invented CSS classes. See `ai/ui-components.md` for design principles and anti-patterns, and `AGENTS.md` / `AGENTS-FAST.md` for the full intent router.
 
+## Agent Workflow
+
+Use these docs in this order when working with Codex or Cursor in this repo:
+
+1. `AGENTS-FAST.md` for the short lane picker and day-to-day execution defaults
+2. `AGENTS.md` for the canonical workflow, tool-depth policy, and five checks
+3. `ai/agent-tools-and-mcp.md` for exact tool choice, MCP fallback, and startup behavior
+4. `.cursor/plans/README.md` for phased implementation plans with verification and todo lists
+
+README is only the entry point. It should link to the canonical docs above instead of duplicating policy.
+
+## Request A Phased Plan
+
+Use a prompt like this when you want a plan another agent can execute directly:
+
+```text
+Build me a detailed implementation plan phase by phase, task by task, with a todo list.
+Use `.cursor/plans/README.md` format.
+Explain what this plan actually does.
+For each phase include:
+- goal
+- task table with reference and deliverable
+- verification
+- assumptions and no-change areas
+Make sure the plan is decision-complete so the agent can code correctly.
+```
+
+## Common Repo Shortcuts
+
+Useful repo commands that are worth keeping visible:
+
+```bash
+php artisan vendor:publish --tag=cms-assets --force
+./warm-and-index.bat
+./warm-and-index.bat --skip-gitnexus --no-pause
+```
+
 ## Installation & Documentation
 
 You will find installation guide and documentation in the downloaded zip file.
 Also, For complete updated documentation of the ultimate pos please visit online [documentation guide](http://ultimatefosters.com/ultimate-pos/).
 
+The Ultimate POS software is licensed under the [Codecanyon license](https://codecanyon.net/licenses/standard).
+
 ## Security Vulnerabilities
 
 If you discover a security vulnerability within ultimate POS, please send an e-mail to support at [thewebfosters@gmail.com](mailto:thewebfosters@gmail.com). All security vulnerabilities will be promptly addressed.
-
-##build me a detail plan implement phase to phase , task by task with todolist make sure agents coding correctly
-
-The Ultimate POS software is licensed under the [Codecanyon license](https://codecanyon.net/licenses/standard).
-
-## Run the log-scan: look at the newest Laravel log and fix any issues. run all autofixes
-
-##“@.cursor/rules/ui-layout-first-then-data.mdc — rebuild the business settings page: layout match first, then controller data.”
-
-##“Copy public/html/[FOLDER] into resources/views/[FOLDER]. Each HTML → Blade: extend layouts.app, put only the content inside #kt_content into @section('content'), use asset('assets/...'). No full page shell—layout already has it.”
-
-## after created a plan alway ask. what this plan actually do?
-
-## build me a detail plan implement phase to phase , task by task with todolist make sure agents coding correctly refference ui style @public/html [https://preview.keenthemes.com/html/metronic/docs/base/utilities](https://preview.keenthemes.com/html/metronic/docs/base/utilities) ( ask me question to make sure plan correctly )
-
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin [https://github.com/kunwaso/upos612-metro.git](https://github.com/kunwaso/upos612-metro.git)
-git push -u origin main
-
-php artisan vendor:publish --tag=cms-assets --force
-
-./warm-and-index.bat
-
-write me a prompt to rebuild the view as above dicussion
-
-write me a prompt to implement detail phase by phase task by task with detail todo list make sure when user search it run and show correct data
-
-warm-and-index.bat --skip-gitnexus --no-pause

@@ -12,7 +12,7 @@ Use this structure so plans double as a spec and an execution checklist:
 |--------|--------|
 | **Design** | Goal, scope, repo-specific constraints (e.g. “UI uses `/stream` and `/regenerate`”). Resolve unknowns; for large features, note when user validation is needed before coding. |
 | **Public interface** | Config keys, new/updated method signatures, return shapes. Makes contracts clear before implementation. |
-| **Implementation steps** | Numbered list. Each step: what to do, which file(s), and a **Verify:** line (lints, tests, or smoke check). |
+| **Implementation steps** | Numbered list. Each step: what to do, which file(s), who owns the change when work is split, and a **Verify:** line (lints, tests, or smoke check). |
 | **Tests** | Which test files and scenarios; where to use TDD (“write failing test first for step X”). |
 | **Assumptions** | Explicit scope: e.g. “No DB migration”, “No route changes”, “No frontend contract change”. |
 | **Done criteria** | Before calling work done: lints on changed files, relevant tests pass, five checks (AGENTS.md §0.3) and goal met. |
@@ -28,6 +28,26 @@ Every implementation step should have a **Verify:** line so the plan can be exec
 - **Verify:** Manual smoke: send message with fabric insight, confirm tool is called
 
 If a step has no verification, add at least: “Verify: lints on changed files.”
+
+## 2.1 Phase ownership and no-guess deliverables
+
+For phased or delegated work, plans must also be **decision complete**:
+
+- Name the owning scope for each task when work is split (for example: backend logic, view layer, JS, or main agent only).
+- Deliverables must say what the implementer should preserve, remove, or keep compatible; avoid vague rows such as “update page” or “refactor controller”.
+- If a task depends on another phase, say so explicitly instead of leaving the implementer to infer order.
+- If the plan assumes “no change” areas, state them in the task or assumptions section so the implementer does not widen scope.
+
+Good deliverable examples:
+
+- “Keep route names and request payload shape; move query logic into `*Util.php`; add Form Request validation.”
+- “Replace legacy Metronic wrappers in the Blade view; keep input `name`/`id` attributes used by JS.”
+
+Bad deliverable examples:
+
+- “Clean this up.”
+- “Fix controller.”
+- “Update search flow.”
 
 ---
 
@@ -61,6 +81,8 @@ This prevents unnecessary migration/route work and keeps scope clear.
 ## 6. Plan quality checklist (before locking)
 
 - [ ] Every implementation step has a **Verify:** (lints, tests, or smoke).
+- [ ] Every phased task has a clear owner or explicitly says “main agent only”.
+- [ ] Deliverables are specific enough that another agent can implement them without making hidden design decisions.
 - [ ] Paths are relative to repo root (or clearly scoped to one repo).
 - [ ] Scope is explicit (migration yes/no, routes, frontend contract).
 - [ ] Test section names files and scenarios; TDD is called out where desired.
@@ -73,6 +95,8 @@ This prevents unnecessary migration/route work and keeps scope clear.
 When generating a plan, ask for:
 
 - A **Verify:** line for each implementation step.
+- File ownership or “main agent only” for phase-split work.
+- Deliverables that state what must stay compatible, not just what to change.
 - Paths **relative to repo root**.
 - A short **Done** section: “Lints on changed files; run tests X, Y; confirm five checks (AGENTS.md §0.3).”
 - Explicit **scope**: “No DB migration”, “No route changes”, etc., when applicable.

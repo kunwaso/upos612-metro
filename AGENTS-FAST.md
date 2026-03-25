@@ -17,6 +17,18 @@ Apply the first matching rule:
 
 If there is still conflict, apply the safest interpretation and note the assumption — only stop and ask if the conflict would cause data loss, a destructive action, or a security violation.
 
+## 1.1) Document Ownership
+
+Use one primary home per rule family:
+
+1. `AGENTS.md` = policy, mode, intent lanes, five checks, and review gate
+2. `AGENTS-FAST.md` = fast routing and short execution defaults
+3. `ai/agent-tools-and-mcp.md` = tool choice, MCP fallback, and startup rules
+4. `.cursor/plans/README.md` = phased-plan structure and verification checklist
+5. `readme.md` = lightweight entry points and examples only
+
+If a short doc and a canonical doc overlap, follow the canonical doc and trim the short doc to a summary plus a link.
+
 ---
 
 ## 2) Mode Check
@@ -36,14 +48,14 @@ Pick one lane first:
 
 | Intent | Use when | Default flow |
 |---|---|---|
-| `tiny` | Single file or tightly scoped change | restate -> inspect -> edit -> verify |
-| `explain` | User wants understanding only | search -> read -> answer |
+| `tiny` | Single file or tightly scoped change | restate -> grep/read smallest target -> edit -> verify changed scope |
+| `explain` | User wants understanding only | reasoning or grep -> targeted read -> answer; stop before heavy repo tools unless repo truth is required |
 | `analyze` | Audit module, clone, or understand codebase | project_map/filesystem -> grep first -> targeted/parallel reads -> full read only when editing |
 | `dependency-eval` | Evaluate a GitHub repo, library, or dependency before adoption | project_map -> composer/manifests -> fetch upstream docs -> compare -> adopt/adapt/reject |
 | `external-adapt` | Adapt a pattern or example from an external repo | project_map -> closest local example -> fetch upstream docs -> map into route/Form Request/Util/controller/view/module |
-| `investigate` | "doesn't work", "stops after X" | grep -> read -> compare bind vs DOM update |
+| `investigate` | "doesn't work", "stops after X" | restate flow -> grep exact identifier -> targeted read -> compare bind vs DOM update -> fix or answer |
 | `review` | User asks for review/audit | findings first -> evidence -> brief summary |
-| `implement` | Default for fix/feature | inspect -> plan -> edit -> verify |
+| `implement` | Default for fix/feature | inspect -> plan with files/verification -> edit -> verify changed scope first, then broader checks if needed |
 | `log-scan` | User asks to scan/fix Laravel log or fix issues from `storage/logs` | glob latest `storage/logs/laravel-*.log` -> read -> parse errors -> investigate -> fix -> verify |
 | `lint-fix` | User asks to fix linter errors, IDE diagnostics, or "fix lint" | Read lints (scope) -> fix each finding -> re-run lints |
 | `test-fix` | User asks to fix failing tests or pastes test output | parse output -> locate failure -> fix test or code -> re-run tests |
@@ -58,6 +70,13 @@ Pick one lane first:
 
 Use full `AGENTS.md` process for multi-file or higher-risk work.
 
+Stop conditions for the most common lanes:
+
+1. Conceptual question: answer from reasoning first; only add repo grounding if it changes the answer.
+2. Repo-aware explain: stop after `grep` + targeted `read_file` unless schema/routes truth is still missing.
+3. Small syntax/lint bug: search/read first, then run one narrowed check such as `php -l path/to/File.php`.
+4. Degraded semantic tooling: skip it immediately and continue with `grep` + `read_file_cache`.
+
 ## 3.1) Skill-First Flow
 
 For anything larger than `tiny`, use this compact sequence:
@@ -70,6 +89,8 @@ For anything larger than `tiny`, use this compact sequence:
 
 If a matching helper already exists in `.cursor/skills/` or `.cursor/prompts/`, use it.
 
+For multi-file work, name the target files or scopes, ownership split, no-change areas, and per-phase verification before editing.
+
 ---
 
 ## 4) Tiny-Task Fast Lane
@@ -80,7 +101,7 @@ For single-file or very small changes:
 2. Narrow target with grep/semantic search.
 3. Read only the required file or line range.
 4. Make minimal edit.
-5. Run closest validation (lint/test/manual check).
+5. Run closest validation on the narrowed scope. For PHP syntax issues, use grep/read first and run `php -l` only on the suspected or changed file.
 6. Report what changed and what was verified.
 
 **Analyze/scan (module audit, clone, codebase understanding):** Grep (or glob) first to list files and find references; read only flagged files or line ranges, in parallel when independent (3–5 per turn); full-file read only when editing. See `ai/agent-tools-and-mcp.md` §2.8.
@@ -89,18 +110,18 @@ For single-file or very small changes:
 
 ## 5) Tool Ladder (Availability + Health)
 
-Preferred order:
+Preferred order for most tasks:
 
-1. `laravel_mysql` for repo-aware routes/schema/tests/project map
-2. `grep` for exact/pattern search
-3. `read_file_cache` for file content and slices
+1. `grep` for exact/pattern search
+2. `read_file_cache` for file content and slices
+3. `laravel_mysql` for repo-aware routes/schema/tests/project map when the task actually needs repo structure truth
 4. `semantic_code_search` when exact symbols are unknown (optional)
 
 Required baseline for this repo:
 
-1. `laravel_mysql`
-2. `grep`
-3. `read_file_cache`
+1. `grep`
+2. `read_file_cache`
+3. `laravel_mysql` on demand for repo-specific structure, schema, routes, or tests
 
 Optional:
 
@@ -129,6 +150,12 @@ If a preferred tool is available but unhealthy/degraded (for example timeout, em
 2. Keep the same split: grep for exact, semantic for meaning, read tool for content.
 3. Do not loop on the failing tool; fall back immediately.
 4. Note the fallback briefly when it affects confidence or speed.
+
+Quick routing examples:
+
+1. "What is DPO?" -> answer from reasoning; no repo setup.
+2. "In this repo, where is the CMS product hero rendered?" -> `grep` -> `read_file_cache`; stop there unless layout ownership is still unclear.
+3. "Fix syntax error in `app/Utils/ContactFeedUtil.php`" -> `grep`/read the failing area first -> run `php -l app/Utils/ContactFeedUtil.php` only after the file is narrowed.
 
 ---
 

@@ -80,6 +80,23 @@ For non-trivial work, prefer this skill-first sequence before you start writing 
 
 When a matching helper exists under `.cursor/skills/` or `.cursor/prompts/`, use it instead of improvising a brand-new workflow.
 
+For multi-file work, the plan must name the target files or scopes, any main-agent vs worker ownership split, the locked assumptions or no-change areas, and the verification step for each phase before editing begins.
+
+### 0.1c.1 Canonical document ownership
+
+Use one primary home for each rule family so agents do not have to reconcile overlapping instructions at runtime.
+
+| Rule family | Primary home | Secondary / entry point | Notes |
+|---|---|---|---|
+| Policy, mode, lanes, five checks | `AGENTS.md` | `AGENTS-FAST.md` | Update `AGENTS.md` first when rules change. |
+| Fast routing and day-to-day shortcuts | `AGENTS-FAST.md` | `readme.md` | Keep this short; summarize and link rather than restating policy. |
+| Tool routing, MCP choice, degraded-tool fallback | `ai/agent-tools-and-mcp.md` | `AGENTS.md`, `AGENTS-FAST.md` | This is the tool contract; other docs should point here. |
+| Workflow tuning and overlap cleanup | `ai/agent-improvement.md` | `AGENTS.md` | Use this for meta-guidance, not new competing policy. |
+| Plan shape and execution checklist | `.cursor/plans/README.md` | `AGENTS.md` | Plans should reference this instead of inventing a new format. |
+| User-facing shortcuts and examples | `readme.md` | `AGENTS-FAST.md` | README is an entry point, not the source of truth for policy. |
+
+If two docs overlap, keep the detailed rule in the primary home and reduce the secondary doc to a summary plus a link.
+
 ### 0.1d Tool depth policy
 
 Three rules that together keep answers fast when the task is simple and thorough when it is not.
@@ -94,6 +111,7 @@ Before opening a single file or running any search, ask in this fixed order:
    - *Conceptual / general advice / product comparison* → answer from reasoning first; offer to add repo grounding on request.
    - *"In this repo" or "in UPOS"* → grep or a single targeted read on a known path.
    - *Schema / routes / DB shape* → `laravel_mysql` / DB tools only now.
+   - *Small syntax / lint / parse issue on a known file* → grep/read the failing path first; only then run `php -l`, lints, or tests on the narrowed scope.
 
 2. **Can I answer without touching the codebase?** If yes, answer. Append one line: *"I skipped repo grounding; say if you want me to verify this in the codebase."*
 
@@ -113,11 +131,14 @@ Before opening a single file or running any search, ask in this fixed order:
 |---------------|----------------|----------------------|
 | Conceptual / comparison / general advice | ≤ 2 | No (`project_map`, `warm_cache`, DB map: skip) |
 | Explain (repo-aware) | ≤ 3 | grep + read_file only |
+| Small syntax / lint / parse issue | ≤ 4 | grep + read_file + one targeted verify command on narrowed files |
 | Investigate / debug | ≤ 5 | grep → read → laravel_mysql if needed |
 | Implement / execute-plan | No hard limit | All tools, classify first |
 | Full autofix / health check | No hard limit | All tools |
 
 "Tool rounds" counts each distinct MCP or platform tool call (one grep = 1, one read = 1, one project_map = 1).
+
+Parse and lint commands are **verify steps**, not discovery steps. Do not use `php -l`, `phpstan`, or broad test runs before search/read has narrowed the failing file, symbol, or scope.
 
 If you are about to exceed the budget for a conceptual question, **stop, answer from what you have, and offer a deeper pass** instead of running more tools automatically.
 
@@ -191,6 +212,16 @@ Before you answer or stop, verify:
 
 Do not send the final response until all five checks pass. If any check fails, do one more read or edit, then re-run the checks.
 
+### 0.3a Response review gate
+
+Apply this short gate before every final answer, including plan-only turns:
+
+1. **Primary-home check** — Are you following the canonical doc for this rule family, or did you accidentally rely on a secondary summary?
+2. **Verification check** — Did every edit, diagnosis, or plan step end with a concrete verification action or explicit note that verification was not run?
+3. **Caller-impact check** — If you touched a Util, controller method, shared view partial, or workflow rule, did you read enough adjacent context to avoid a caller regression?
+4. **Assumption check** — Are any defaults or skipped checks stated explicitly instead of left implicit?
+5. **Answer-shape check** — Does the final response say what changed, what was verified, and any remaining risk in the smallest clear form?
+
 ### 0.4 Tools you can use when reasoning
 
 When you reason again and need more information or another step, choose from these tools (use them instead of guessing):
@@ -213,6 +244,7 @@ When you reason again and need more information or another step, choose from the
 
 **Run and verify**
 - **Run terminal command** - Run tests, artisan, composer, migrations. Use when: you need to verify behavior or run the app.
+- **Syntax / parse checks** - For commands such as `php -l`, narrow with grep/read first, then run the check only on the suspected or changed file; do not use parse checks as the first discovery tool.
 - **Read lints** - Read linter/IDE diagnostics for a file or directory. Use after edits to catch syntax or style issues.
 
 **Plan and organize**
@@ -252,6 +284,8 @@ Fallback rule:
 2. If degraded or unavailable, switch immediately to the next fastest repo-aware tool for that step (search, read, verify).
 3. Keep the behavior split: exact via grep, meaning via semantic/codebase, content via read tools.
 4. State the fallback briefly when it materially affects speed or confidence.
+
+If semantic tooling is `OLLAMA_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately and continue with `grep` → `read_file` → `laravel_mysql` only when repo-aware structure or schema truth is still required.
 
 ### 0.4e Scan Laravel log and autofix
 
