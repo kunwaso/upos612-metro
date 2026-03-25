@@ -628,6 +628,38 @@
         return window.bootstrap.Modal.getOrCreateInstance(modalNode);
     }
 
+    function isDrawerChatContainer(container) {
+        return !!container && String(container.getAttribute('data-aichat-chat-container') || '') === 'drawer';
+    }
+
+    function setQuoteModalDrawerZIndex(container, active) {
+        if (!isDrawerChatContainer(container)) {
+            return;
+        }
+
+        if (typeof container.__aichatOriginalZIndex === 'undefined') {
+            container.__aichatOriginalZIndex = container.style.zIndex || '';
+        }
+
+        if (active) {
+            container.style.zIndex = '2000';
+            return;
+        }
+
+        container.style.zIndex = container.__aichatOriginalZIndex;
+    }
+
+    function bindQuoteMissingModalLayerReset(modalNode) {
+        if (!modalNode || modalNode.__aichatQuoteModalLayerBound) {
+            return;
+        }
+
+        modalNode.__aichatQuoteModalLayerBound = true;
+        modalNode.addEventListener('hidden.bs.modal', function () {
+            setQuoteModalDrawerZIndex(modalNode.__aichatQuoteModalOwner || null, false);
+        });
+    }
+
     function openQuoteMissingModal(container) {
         var modalNode = getQuoteMissingModalNode(container);
         var draft = container.__aichatQuoteDraft || null;
@@ -659,6 +691,12 @@
                 chatInput.focus();
             }
             return;
+        }
+
+        if (isDrawerChatContainer(container)) {
+            modalNode.__aichatQuoteModalOwner = container;
+            bindQuoteMissingModalLayerReset(modalNode);
+            setQuoteModalDrawerZIndex(container, true);
         }
 
         modal.show();

@@ -293,10 +293,13 @@ class PurchaseController extends Controller
         //Accounts
         $accounts = $this->moduleUtil->accountsDropdown($business_id, true);
 
+        //Added check because $users is of no use if enable_contact_assign if false
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
+
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
 
         return view('purchase.create')
-            ->with(compact('taxes', 'orderStatuses', 'business_locations', 'currency_details', 'default_purchase_status', 'customer_groups', 'types', 'shortcuts', 'payment_line', 'payment_types', 'accounts', 'bl_attributes', 'common_settings'));
+            ->with(compact('taxes', 'orderStatuses', 'business_locations', 'currency_details', 'default_purchase_status', 'customer_groups', 'types', 'shortcuts', 'payment_line', 'payment_types', 'accounts', 'bl_attributes', 'common_settings', 'users'));
     }
 
     /**
@@ -619,6 +622,9 @@ class PurchaseController extends Controller
 
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
 
+        //Added check because $users is of no use if enable_contact_assign if false
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
+
         $purchase_orders = null;
         if (! empty($common_settings['enable_purchase_order'])) {
             $purchase_orders = Transaction::where('business_id', $business_id)
@@ -647,7 +653,8 @@ class PurchaseController extends Controller
                 'types',
                 'shortcuts',
                 'purchase_orders',
-                'common_settings'
+                'common_settings',
+                'users'
             ));
     }
 
@@ -1453,3 +1460,4 @@ class PurchaseController extends Controller
         return $output;
     }
 }
+

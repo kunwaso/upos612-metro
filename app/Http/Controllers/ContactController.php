@@ -587,7 +587,7 @@ class ContactController extends Controller
         $module_form_parts = $this->moduleUtil->getModuleData('contact_form_part');
 
         //Added check because $users is of no use if enable_contact_assign if false
-        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
         return view('contact.create')
             ->with(compact('types', 'customer_groups', 'selected_type', 'module_form_parts', 'users'));
@@ -833,11 +833,13 @@ class ContactController extends Controller
             }
 
             //Added check because $users is of no use if enable_contact_assign if false
-            $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+            $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
             return view('contact.edit')
                 ->with(compact('contact', 'types', 'customer_groups', 'opening_balance', 'users'));
         }
+
+        return redirect()->route('contacts.show', ['contact' => $id, 'view' => 'edit']);
     }
 
     /**
@@ -1928,3 +1930,4 @@ class ContactController extends Controller
         ];
     }
 }
+

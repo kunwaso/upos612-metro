@@ -692,6 +692,43 @@ class ChatUtil
         return ! empty($chunks) ? $chunks : [mb_substr($normalized, 0, $limit)];
     }
 
+    public function normalizeTelegramOutboundText(string $text): string
+    {
+        $normalized = str_replace(["\r\n", "\r"], "\n", trim($text));
+        if ($normalized === '') {
+            return __('aichat::lang.chat_provider_empty_response');
+        }
+
+        $lines = preg_split('/\n/u', $normalized) ?: [$normalized];
+        $cleanedLines = [];
+
+        foreach ($lines as $line) {
+            $cleanedLine = trim($line);
+            if ($cleanedLine === '') {
+                $cleanedLines[] = '';
+                continue;
+            }
+
+            $cleanedLine = preg_replace('/^\s{0,3}#{1,6}\s+/u', '', $cleanedLine) ?? $cleanedLine;
+            $cleanedLine = preg_replace('/^\s*>\s?/u', '', $cleanedLine) ?? $cleanedLine;
+            $cleanedLine = preg_replace('/^\s*[\*\-\+•]\s+/u', '- ', $cleanedLine) ?? $cleanedLine;
+            $cleanedLine = preg_replace('/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/u', '$1 ($2)', $cleanedLine) ?? $cleanedLine;
+
+            $cleanedLine = str_replace(['***', '___', '**', '__', '`'], '', $cleanedLine);
+            $cleanedLine = preg_replace('/\*([^*\n]+)\*/u', '$1', $cleanedLine) ?? $cleanedLine;
+            $cleanedLine = preg_replace('/_([^_\n]+)_/u', '$1', $cleanedLine) ?? $cleanedLine;
+            $cleanedLine = preg_replace('/[ \t]{2,}/u', ' ', $cleanedLine) ?? $cleanedLine;
+
+            $cleanedLines[] = trim($cleanedLine);
+        }
+
+        $cleaned = implode("\n", $cleanedLines);
+        $cleaned = preg_replace("/\n{3,}/u", "\n\n", $cleaned) ?? $cleaned;
+        $cleaned = trim($cleaned);
+
+        return $cleaned !== '' ? $cleaned : __('aichat::lang.chat_provider_empty_response');
+    }
+
     public function listConversationsForUser(int $business_id, int $user_id, bool $include_archived = false, ?int $fabric_id = null)
     {
         $query = ChatConversation::forBusiness($business_id)->forUser($user_id)->orderByDesc('updated_at');
@@ -1265,6 +1302,15 @@ class ChatUtil
         $reasoningRules = trim((string) ($settings->reasoning_rules ?? ''));
         if ($reasoningRules !== '') {
             $sections[] = 'Reasoning and response rules:' . "\n" . $reasoningRules;
+        }
+
+        if ($channel === 'telegram') {
+            $sections[] = implode("\n", [
+                'Telegram response format:',
+                '- Return plain, readable text optimized for Telegram.',
+                '- Do not use markdown markers such as **, __, or `.',
+                '- Use numbered lists with "1." and child bullets with "-" when needed.',
+            ]);
         }
 
         if (! empty($systemPrompt)) {

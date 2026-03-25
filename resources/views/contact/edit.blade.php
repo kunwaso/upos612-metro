@@ -213,9 +213,9 @@
           </div>
         </div>
 
-        @if(config('constants.enable_contact_assign') && $contact->type !== 'lead')
+        @if(config('constants.enable_contact_assign'))
           <!-- User in create customer & supplier -->
-          <div class="col-md-6">
+          <div class="col-md-6 contact_assign_div {{ $contact->type === 'lead' ? 'hide' : '' }}">
                 <div class="form-group">
                     {!! Form::label('assigned_to_users', __('lang_v1.assigned_to') . ':' ) !!}
                     <div class="input-group">

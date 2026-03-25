@@ -30,7 +30,7 @@ final class FileDiscovery
 
         $paths = [];
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($start, RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS),
+            new RecursiveDirectoryIterator($start, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
 

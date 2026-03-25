@@ -6,6 +6,9 @@
 {{-- Hidden inputs for JS --}}
 <input type="hidden" id="sell_list_filter_customer_id" value="{{ $contact->id }}">
 <input type="hidden" id="purchase_list_filter_supplier_id" value="{{ $contact->id }}">
+@php
+    $can_edit_contact = auth()->user()->can('supplier.update') || auth()->user()->can('customer.update');
+@endphp
 
 {{-- Toolbar --}}
 <div class="toolbar d-flex flex-stack py-3 py-lg-5" id="kt_toolbar">
@@ -105,9 +108,9 @@
 
                             {{-- Actions --}}
                             <div class="d-flex my-4 gap-2">
-                                @if (auth()->user()->can('supplier.update') || auth()->user()->can('customer.update'))
-                                    <a href="{{ action([\App\Http\Controllers\ContactController::class, 'edit'], [$contact->id]) }}"
-                                        class="btn btn-sm btn-light-primary">
+                                @if ($can_edit_contact)
+                                    <a href="#"
+                                        class="btn btn-sm btn-light-primary js-open-contact-edit-tab">
                                         <i class="ki-duotone ki-pencil fs-4"><span class="path1"></span><span class="path2"></span></i>
                                         @lang('messages.edit')
                                     </a>
@@ -201,6 +204,14 @@
                             @lang('messages.overview')
                         </a>
                     </li>
+                    @if ($can_edit_contact)
+                        <li class="nav-item mt-2 d-none">
+                            <a class="nav-link text-active-primary ms-0 me-10 py-5 {{ $view_type === 'edit' ? 'active' : '' }}"
+                                href="#tab_edit" data-bs-toggle="tab" data-bs-target="#tab_edit">
+                                @lang('messages.edit')
+                            </a>
+                        </li>
+                    @endif
                     <li class="nav-item mt-2">
                         <a class="nav-link text-active-primary ms-0 me-10 py-5 {{ $view_type === 'ledger' ? 'active' : '' }}"
                             href="#tab_ledger" data-bs-toggle="tab" data-bs-target="#tab_ledger">
@@ -294,9 +305,9 @@
                         <div class="card-title m-0">
                             <h3 class="fw-bold m-0">@lang('lang_v1.contact_info')</h3>
                         </div>
-                        @if (auth()->user()->can('supplier.update') || auth()->user()->can('customer.update'))
-                            <a href="{{ action([\App\Http\Controllers\ContactController::class, 'edit'], [$contact->id]) }}"
-                                class="btn btn-sm btn-primary align-self-center">
+                        @if ($can_edit_contact)
+                            <a href="#"
+                                class="btn btn-sm btn-primary align-self-center js-open-contact-edit-tab">
                                 @lang('messages.edit')
                             </a>
                         @endif
@@ -409,6 +420,23 @@
                 </div>
             </div>
             {{-- End Overview tab --}}
+
+            @if ($can_edit_contact)
+                <div class="tab-pane fade {{ $view_type === 'edit' ? 'show active' : '' }}" id="tab_edit">
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-header cursor-pointer">
+                            <div class="card-title m-0">
+                                <h3 class="fw-bold m-0">@lang('contact.edit_contact')</h3>
+                            </div>
+                        </div>
+                        <div class="card-body p-9">
+                            <div id="contact_edit_tab_container" data-edit-url="{{ route('contacts.edit', ['contact' => $contact->id]) }}">
+                                <div class="text-muted">Loading edit form...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Ledger tab --}}
             <div class="tab-pane fade {{ $view_type === 'ledger' ? 'show active' : '' }}" id="tab_ledger">
@@ -574,15 +602,183 @@
 @section('javascript')
 <script type="text/javascript">
     var contactActiveTab = @json($view_type ?? 'ledger');
+    var canEditContact = @json($can_edit_contact);
     var contactFeedsLoaded = false;
+    var contactEditTabLoaded = false;
     var contactFeedsListUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'getContactFeeds'], [$contact->id]) }}";
     var contactFeedsLoadUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'loadContactFeeds'], [$contact->id]) }}";
     var contactFeedsUpdateUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'updateContactFeeds'], [$contact->id]) }}";
+    var contactEditUrl = "{{ route('contacts.edit', ['contact' => $contact->id]) }}";
 
     $(document).ready(function () {
+        var initContactEditTabForm = function ($container) {
+            var $form = $container.find('form#contact_edit_form');
+            if (! $form.length) {
+                return;
+            }
+            $form.attr('novalidate', 'novalidate');
+
+            var $contactType = $form.find('select#contact_type');
+            var $assignDiv = $form.find('div.contact_assign_div');
+            var $leadAdditionalDiv = $form.find('div.lead_additional_div');
+            var $firstName = $form.find('input[name="first_name"]');
+            var $leadUsers = $form.find('#user_id');
+
+            var syncDynamicRequiredFields = function () {
+                var selectedRadio = $form.find('input[name="contact_type_radio"]:checked').val();
+                var isIndividual = selectedRadio === 'individual';
+                var isLead = $contactType.val() === 'lead';
+
+                if ($firstName.length) {
+                    $firstName.prop('required', isIndividual);
+                }
+                if ($leadUsers.length) {
+                    $leadUsers.prop('required', isLead);
+                }
+            };
+
+            $form.find('input[type=radio][name="contact_type_radio"]')
+                .off('change.contact_edit_tab_radio')
+                .on('change.contact_edit_tab_radio', function () {
+                    if (this.value === 'individual') {
+                        $form.find('div.individual').show();
+                        $form.find('div.business').hide();
+                    } else if (this.value === 'business') {
+                        $form.find('div.individual').hide();
+                        $form.find('div.business').show();
+                    }
+                    syncDynamicRequiredFields();
+                });
+
+            var toggleExportDiv = function () {
+                if ($form.find('#is_customer_export').is(':checked')) {
+                    $form.find('div.export_div').show();
+                } else {
+                    $form.find('div.export_div').hide();
+                }
+            };
+            toggleExportDiv();
+
+            $form.find('#is_customer_export')
+                .off('change.contact_edit_tab_export')
+                .on('change.contact_edit_tab_export', toggleExportDiv);
+
+            $form.find('.more_btn')
+                .off('click.contact_edit_tab_more')
+                .on('click.contact_edit_tab_more', function () {
+                    $form.find($(this).data('target')).toggleClass('hide');
+                });
+
+            $leadAdditionalDiv.hide();
+            $assignDiv.removeClass('hide').show();
+
+            var syncContactType = function () {
+                var t = $contactType.val();
+                if (t === 'supplier') {
+                    $form.find('div.supplier_fields').fadeIn();
+                    $form.find('div.customer_fields').fadeOut();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t === 'both') {
+                    $form.find('div.supplier_fields').fadeIn();
+                    $form.find('div.customer_fields').fadeIn();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t === 'customer') {
+                    $form.find('div.customer_fields').fadeIn();
+                    $form.find('div.supplier_fields').fadeOut();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t === 'lead') {
+                    $form.find('div.customer_fields').fadeOut();
+                    $form.find('div.supplier_fields').fadeOut();
+                    $form.find('div.opening_balance').fadeOut();
+                    $form.find('div.pay_term').fadeOut();
+                    $leadAdditionalDiv.fadeIn();
+                    $assignDiv.addClass('hide').fadeOut();
+                    $form.find('div.shipping_addr_div').hide();
+                }
+                syncDynamicRequiredFields();
+            };
+            syncContactType();
+
+            $contactType
+                .off('change.contact_edit_tab_type')
+                .on('change.contact_edit_tab_type', syncContactType);
+
+            $form.find('.select2').each(function () {
+                var $select = $(this);
+                if ($select.data('select2')) {
+                    $select.select2('destroy');
+                }
+                $select.select2({
+                    dropdownParent: $container,
+                    width: '100%',
+                });
+            });
+
+            $form.off('submit.contact_edit_tab').on('submit.contact_edit_tab', function (e) {
+                e.preventDefault();
+                var $submitButton = $form.find('button[type="submit"]').first();
+                __disable_submit_button($submitButton);
+
+                $.ajax({
+                    method: 'POST',
+                    url: $form.attr('action'),
+                    dataType: 'json',
+                    data: $form.serialize(),
+                    success: function (result) {
+                        if (result.success === true || result.success == true) {
+                            toastr.success(result.msg);
+                            window.location = "{{ route('contacts.show', ['contact' => $contact->id]) }}?view=overview";
+                        } else {
+                            toastr.error(result.msg || "{{ __('messages.something_went_wrong') }}");
+                            $submitButton.prop('disabled', false);
+                        }
+                    },
+                    error: function () {
+                        toastr.error("{{ __('messages.something_went_wrong') }}");
+                        $submitButton.prop('disabled', false);
+                    },
+                });
+            });
+        };
+
+        var loadContactEditTab = function () {
+            if (!canEditContact || contactEditTabLoaded) {
+                return;
+            }
+
+            var $container = $('#contact_edit_tab_container');
+            if (! $container.length) {
+                return;
+            }
+
+            $container.html('<div class="text-muted">Loading edit form...</div>');
+            $.ajax({
+                url: contactEditUrl,
+                dataType: 'html',
+                success: function (result) {
+                    var $response = $('<div>').html(result);
+                    var $form = $response.find('form#contact_edit_form').first();
+
+                    if (! $form.length) {
+                        $container.html('<div class="text-danger">Unable to load edit form.</div>');
+                        return;
+                    }
+
+                    $form.find('button[data-bs-dismiss="modal"], button[data-dismiss="modal"]').remove();
+                    $container.html($form);
+                    initContactEditTabForm($container);
+                    contactEditTabLoaded = true;
+                },
+                error: function () {
+                    $container.html('<div class="text-danger">Unable to load edit form.</div>');
+                },
+            });
+        };
+
         // Activate correct tab from $view_type
         var tabMap = {
             'ledger': '#tab_ledger',
+            'edit': '#tab_edit',
             'purchase': '#tab_purchases',
             'stock_report': '#tab_stock',
             'sales': '#tab_sales',
@@ -602,6 +798,15 @@
                 tabInstance.show();
             }
         }
+
+        $(document).on('click', '.js-open-contact-edit-tab', function (e) {
+            e.preventDefault();
+            var editTabTrigger = document.querySelector('[data-bs-target="#tab_edit"]');
+            if (editTabTrigger) {
+                var editTabInstance = new bootstrap.Tab(editTabTrigger);
+                editTabInstance.show();
+            }
+        });
 
         $('#ledger_date_range').daterangepicker(
             dateRangeSettings,
@@ -688,9 +893,16 @@
             get_contact_feeds();
         });
 
+        $('[data-bs-target="#tab_edit"]').one('shown.bs.tab', function () {
+            loadContactEditTab();
+        });
+
         if (contactActiveTab === 'feeds') {
             contactFeedsLoaded = true;
             get_contact_feeds();
+        }
+        if (contactActiveTab === 'edit') {
+            loadContactEditTab();
         }
 
         $('#discount_date').datetimepicker({
@@ -783,7 +995,40 @@
 
     $(document).on('click', '#update_contact_feeds_btn', function (e) {
         e.preventDefault();
-        sync_contact_feeds('update', $(this));
+        var $button = $(this);
+        var provider = $('#contact_feeds_provider').val() || 'google';
+
+        if (provider !== 'google') {
+            sync_contact_feeds('update', $button);
+            return;
+        }
+
+        swal({
+            title: 'Add keyword for update',
+            text: 'Company/contact name is always included. Add an optional keyword for more relevant Google news.',
+            content: {
+                element: 'input',
+                attributes: {
+                    placeholder: 'Example: open new branch',
+                    maxlength: 120,
+                },
+            },
+            buttons: {
+                cancel: true,
+                confirm: 'Update Feed',
+            },
+        }).then(function (keyword) {
+            if (keyword === null) {
+                return;
+            }
+
+            var normalizedKeyword = '';
+            if (typeof keyword === 'string') {
+                normalizedKeyword = keyword.trim().replace(/\s+/g, ' ');
+            }
+
+            sync_contact_feeds('update', $button, normalizedKeyword);
+        });
     });
 
     $(document).on('change', '#contact_feeds_provider', function () {
@@ -821,9 +1066,14 @@
         });
     }
 
-    function sync_contact_feeds(action, $button) {
+    function sync_contact_feeds(action, $button, keyword) {
         var provider = $('#contact_feeds_provider').val() || 'google';
         var endpoint = action === 'update' ? contactFeedsUpdateUrl : contactFeedsLoadUrl;
+        var payload = { provider: provider, limit: 20 };
+
+        if (action === 'update' && typeof keyword === 'string' && keyword.length > 0) {
+            payload.keyword = keyword;
+        }
 
         $button.attr('data-kt-indicator', 'on').prop('disabled', true);
 
@@ -831,7 +1081,7 @@
             method: 'POST',
             url: endpoint,
             dataType: 'json',
-            data: { provider: provider, limit: 20 },
+            data: payload,
             success: function (result) {
                 render_contact_feeds_summary(result);
 

@@ -158,6 +158,20 @@ class ChatUtilTelegramConversationTest extends TestCase
         }
     }
 
+    public function test_normalize_telegram_outbound_text_strips_markdown_markers()
+    {
+        $chatUtil = $this->makeChatUtil();
+
+        $normalized = $chatUtil->normalizeTelegramOutboundText(
+            "1. **Product A**\n* **SKU:** PE-Roll-38664\n* **Unit Price:** 190,000.00"
+        );
+
+        $this->assertSame(
+            "1. Product A\n- SKU: PE-Roll-38664\n- Unit Price: 190,000.00",
+            $normalized
+        );
+    }
+
     protected function makeChatUtil(): ChatUtil
     {
         $chatAuditUtil = \Mockery::mock(ChatAuditUtil::class);

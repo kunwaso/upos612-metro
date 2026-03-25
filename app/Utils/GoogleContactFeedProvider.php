@@ -3,6 +3,7 @@
 namespace App\Utils;
 
 use App\Contact;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -24,6 +25,8 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
         $search_engine_id = (string) config('services.google_custom_search.search_engine_id');
         $base_url = (string) config('services.google_custom_search.base_url', 'https://www.googleapis.com/customsearch/v1');
         $timeout = (int) config('services.google_custom_search.timeout', 10);
+        $verify_ssl = config('services.google_custom_search.verify_ssl', true);
+        $ca_bundle = trim((string) config('services.google_custom_search.ca_bundle', ''));
 
         if (empty($api_key) || empty($search_engine_id)) {
             throw new \RuntimeException('Google Custom Search credentials are not configured.');
@@ -48,12 +51,27 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
                 'sort' => 'date',
             ];
 
-            $response = Http::timeout($timeout)
-                ->acceptJson()
-                ->get($base_url, $params);
+            $request = Http::timeout($timeout)->acceptJson();
+            if (! $this->isSslVerificationEnabled($verify_ssl)) {
+                $request = $request->withoutVerifying();
+            } elseif (! empty($ca_bundle)) {
+                $request = $request->withOptions(['verify' => $ca_bundle]);
+            }
+
+            try {
+                $response = $request->get($base_url, $params);
+            } catch (\Throwable $e) {
+                if ($this->isSslCertificateError($e->getMessage())) {
+                    throw new \RuntimeException(
+                        'Google SSL verification failed (cURL error 60). Set GOOGLE_CUSTOM_SEARCH_CA_BUNDLE to a valid cacert.pem path, or set GOOGLE_CUSTOM_SEARCH_VERIFY_SSL=false for local development only.'
+                    );
+                }
+
+                throw $e;
+            }
 
             if (! $response->successful()) {
-                throw new \RuntimeException('Google Custom Search request failed: '.$response->status());
+                throw new \RuntimeException($this->buildGoogleRequestErrorMessage($response));
             }
 
             $response_items = Arr::get($response->json(), 'items', []);
@@ -76,6 +94,61 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
     }
 
     /**
+     * Normalize SSL verification config flag.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    protected function isSslVerificationEnabled($value)
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $normalized = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $normalized === null ? true : $normalized;
+    }
+
+    /**
+     * Detect certificate-chain verification failures.
+     *
+     * @param string $message
+     * @return bool
+     */
+    protected function isSslCertificateError($message)
+    {
+        $message = (string) $message;
+
+        return stripos($message, 'cURL error 60') !== false
+            || stripos($message, 'SSL certificate problem') !== false;
+    }
+
+    /**
+     * Build request error message from Google API payload.
+     *
+     * @param \Illuminate\Http\Client\Response $response
+     * @return string
+     */
+    protected function buildGoogleRequestErrorMessage(Response $response)
+    {
+        $status = (int) $response->status();
+        $message = trim((string) Arr::get($response->json(), 'error.message', ''));
+        $reason = trim((string) Arr::get($response->json(), 'error.errors.0.reason', ''));
+        $parts = ['Google Custom Search request failed: '.$status];
+
+        if (! empty($message)) {
+            $parts[] = $message;
+        }
+
+        if (! empty($reason) && stripos($message, $reason) === false) {
+            $parts[] = 'Reason: '.$reason;
+        }
+
+        return implode(' | ', $parts);
+    }
+
+    /**
      * Build search query from contact identity and optional location.
      *
      * @param \App\Contact $contact
@@ -84,20 +157,25 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
      */
     protected function buildQuery(Contact $contact, array $options = [])
     {
-        if (! empty($options['query'])) {
-            return (string) $options['query'];
-        }
-
         $name = trim((string) ($contact->supplier_business_name ?: $contact->name));
+        $name = str_replace('"', '', $name);
         $city = trim((string) ($contact->city ?? ''));
         $state = trim((string) ($contact->state ?? ''));
         $country = trim((string) ($contact->country ?? ''));
+        $keyword = trim((string) ($options['keyword'] ?? $options['query'] ?? ''));
+        $keyword = str_replace('"', '', $keyword);
+        $keyword = preg_replace('/\s+/u', ' ', $keyword) ?: '';
 
         if (empty($name)) {
             $name = 'business';
         }
 
-        $query = '"'.$name.'" latest news';
+        $query = '"'.$name.'"';
+        if (! empty($keyword)) {
+            $query .= ' "'.$keyword.'"';
+        }
+
+        $query .= ' latest news';
         $location = trim(implode(' ', array_filter([$city, $state, $country])));
         if (! empty($location)) {
             $query .= ' "'.$location.'"';

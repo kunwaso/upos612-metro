@@ -155,8 +155,9 @@ class ContactFeedUtil extends Util
     {
         $provider = $this->normalizeProvider($options['provider'] ?? null);
         $limit = $this->normalizeLimit($options['limit'] ?? null);
+        $keyword = trim((string) ($options['keyword'] ?? ''));
 
-        return $this->syncFeeds($business_id, $contact, $provider, $limit, true);
+        return $this->syncFeeds($business_id, $contact, $provider, $limit, true, $keyword);
     }
 
     /**
@@ -167,9 +168,10 @@ class ContactFeedUtil extends Util
      * @param string $provider
      * @param int $limit
      * @param bool $incremental
+     * @param string $keyword
      * @return array<string, mixed>
      */
-    protected function syncFeeds($business_id, Contact $contact, $provider, $limit, $incremental)
+    protected function syncFeeds($business_id, Contact $contact, $provider, $limit, $incremental, $keyword = '')
     {
         $existing_query = ContactFeed::forContact($business_id, $contact->id)->where('provider', $provider);
         $existing_count_before = (int) $existing_query->count();
@@ -177,6 +179,10 @@ class ContactFeedUtil extends Util
             'provider' => $provider,
             'limit' => $limit,
         ];
+
+        if ($keyword !== '') {
+            $options['keyword'] = $keyword;
+        }
 
         if ($incremental) {
             $latest_published_at = $existing_query->max('published_at');

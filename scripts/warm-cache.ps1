@@ -25,7 +25,7 @@ param(
     [switch]$SkipSemantic,
     [switch]$SkipGitNexus,
     [switch]$DryRun,
-    [int]$MaxFiles = 5000,
+    [int]$MaxFiles = 500,
     [string]$WarmPath = 'app',
     [string]$GitNexusVersion = '1.4.8'
 )
@@ -227,11 +227,19 @@ if (-not (Test-Path $WarmVendor)) {
     $env:MCP_READ_FILE_WORKSPACE_ROOT = $RepoRoot
     $env:MCP_READ_FILE_CACHE_ROOT = Join-Path $RepoRoot '.cache\read-file-cache-mcp'
 
-    $warmLabel = "Warm read_file_cache (path=$WarmPath, max_files=$MaxFiles)"
+    $warmTargets = @()
     if ([string]::IsNullOrWhiteSpace($WarmPath)) {
-        Invoke-CommandSafe -Label $warmLabel -Action { & $Php $WarmBin "--max-files=$MaxFiles" } | Out-Null
+        # Avoid expensive workspace-root scans; warm common source roots in bounded batches.
+        $warmTargets = @('app', 'Modules', 'resources', 'routes', 'config', 'ai', 'mcp', 'tests')
+    } elseif ($WarmPath -like '*,*') {
+        $warmTargets = $WarmPath.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
     } else {
-        Invoke-CommandSafe -Label $warmLabel -Action { & $Php $WarmBin "--path=$WarmPath" "--max-files=$MaxFiles" } | Out-Null
+        $warmTargets = @($WarmPath)
+    }
+
+    foreach ($target in $warmTargets) {
+        $warmLabel = "Warm read_file_cache (path=$target, max_files=$MaxFiles)"
+        Invoke-CommandSafe -Label $warmLabel -Action { & $Php $WarmBin "--path=$target" "--max-files=$MaxFiles" } | Out-Null
     }
 }
 

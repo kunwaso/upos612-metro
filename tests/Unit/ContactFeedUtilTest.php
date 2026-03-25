@@ -206,6 +206,21 @@ class ContactFeedUtilTest extends TestCase
         $this->assertStringContainsString('not configured', strtolower($result['msg']));
     }
 
+    public function test_google_query_always_keeps_contact_name_with_optional_keyword(): void
+    {
+        $provider = new ExposedGoogleContactFeedProvider();
+        $contact = $this->makeContact(63);
+
+        $query_with_keyword = $provider->exposeBuildQuery($contact, ['keyword' => 'just open a new branch']);
+        $this->assertStringContainsString('"Acme Industries"', $query_with_keyword);
+        $this->assertStringContainsString('"just open a new branch"', $query_with_keyword);
+        $this->assertStringContainsString('latest news', strtolower($query_with_keyword));
+
+        $query_with_custom = $provider->exposeBuildQuery($contact, ['query' => 'raw steel forecast']);
+        $this->assertStringContainsString('"Acme Industries"', $query_with_custom);
+        $this->assertStringContainsString('"raw steel forecast"', $query_with_custom);
+    }
+
     protected function makeUtilWithGoogleProvider(ContactFeedProviderInterface $provider): ContactFeedUtil
     {
         $util = new ContactFeedUtil(
@@ -262,5 +277,13 @@ class ThrowingProvider implements ContactFeedProviderInterface
     public function search(Contact $contact, array $options = [])
     {
         throw new \RuntimeException($this->message);
+    }
+}
+
+class ExposedGoogleContactFeedProvider extends GoogleContactFeedProvider
+{
+    public function exposeBuildQuery(Contact $contact, array $options = [])
+    {
+        return $this->buildQuery($contact, $options);
     }
 }

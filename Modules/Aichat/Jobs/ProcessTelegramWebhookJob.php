@@ -652,7 +652,8 @@ class ProcessTelegramWebhookJob implements ShouldQueue
                 $userId
             );
 
-            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $assistantTextToSend);
+            $telegramTextToSend = $chatUtil->normalizeTelegramOutboundText($assistantTextToSend);
+            $this->safeSendText($telegramApi, $chatUtil, $bot, $chatId, $telegramTextToSend);
         } catch (\Throwable $exception) {
             $errorText = (string) ($exception->getMessage() ?: __('aichat::lang.chat_provider_error'));
             $chatUtil->appendMessage($conversation, ChatMessage::ROLE_ERROR, $errorText, $provider, $model, $userId);

@@ -854,6 +854,7 @@ class ProductController extends Controller
         $latestQuoteLine = null;
         $latestQuoteSummary = null;
         $latestQuoteRecipientEmail = '';
+        $productContactUsers = [];
 
         $activityToday = collect();
         $activityWeek = collect();
@@ -914,6 +915,92 @@ class ProductController extends Controller
                 : '');
         }
 
+        if ($activeTab === 'contacts') {
+            $contactQuoteRows = ProductQuote::forBusiness($business_id)
+                ->whereHas('lines', function ($query) use ($id) {
+                    $query->where('product_id', $id);
+                })
+                ->with([
+                    'contact:id,name,supplier_business_name,email,mobile',
+                    'transaction:id,final_total',
+                ])
+                ->orderByDesc('id')
+                ->get([
+                    'id',
+                    'contact_id',
+                    'customer_name',
+                    'customer_email',
+                    'transaction_id',
+                    'grand_total',
+                    'sent_at',
+                    'confirmed_at',
+                ]);
+
+            $avatarPool = ['300-6.jpg', '300-2.jpg', '300-1.jpg', '300-5.jpg', '300-9.jpg', '300-14.jpg'];
+
+            $productContactUsers = $contactQuoteRows
+                ->groupBy(function ($quote) {
+                    return ! empty($quote->contact_id) ? 'contact:' . $quote->contact_id : 'guest:' . $quote->id;
+                })
+                ->values()
+                ->map(function ($quoteGroup, $index) use ($avatarPool) {
+                    $latestQuote = $quoteGroup->sortByDesc('id')->first();
+                    $contact = $latestQuote->contact;
+
+                    $displayName = trim((string) (
+                        $latestQuote->customer_name
+                        ?: optional($contact)->name
+                        ?: optional($contact)->supplier_business_name
+                    ));
+                    if ($displayName === '') {
+                        $displayName = __('product.customer') . ' #' . (int) $latestQuote->id;
+                    }
+
+                    $companyLabel = trim((string) (
+                        $latestQuote->customer_email
+                        ?: optional($contact)->email
+                        ?: optional($contact)->mobile
+                    ));
+                    if ($companyLabel === '') {
+                        $companyLabel = '-';
+                    }
+
+                    $quoteCount = (int) $quoteGroup->whereNull('transaction_id')->count();
+                    $orderCount = (int) $quoteGroup->whereNotNull('transaction_id')->count();
+                    $quoteTotal = (float) $quoteGroup->whereNull('transaction_id')->sum('grand_total');
+                    $salesTotal = (float) $quoteGroup
+                        ->whereNotNull('transaction_id')
+                        ->sum(function ($quote) {
+                            return (float) (optional($quote->transaction)->final_total ?? $quote->grand_total ?? 0);
+                        });
+
+                    if ($orderCount > 0 && $quoteCount > 0) {
+                        $statusLabel = 'Sale Order + Current Quote';
+                    } elseif ($orderCount > 0) {
+                        $statusLabel = 'Sale Order';
+                    } else {
+                        $statusLabel = 'Current Quote';
+                    }
+
+                    return [
+                        'id' => (int) ($latestQuote->contact_id ?? 0),
+                        'name' => $displayName,
+                        'position' => $statusLabel,
+                        'company' => $companyLabel,
+                        'avatar' => $avatarPool[$index % count($avatarPool)],
+                        'earnings' => $quoteTotal,
+                        'tasks' => (string) $quoteCount,
+                        'sales' => $salesTotal,
+                        'online' => $quoteCount > 0,
+                    ];
+                })
+                ->sortByDesc(function (array $userRow) {
+                    return (float) ($userRow['sales'] ?? 0) + (float) ($userRow['earnings'] ?? 0);
+                })
+                ->values()
+                ->all();
+        }
+
         if ($activeTab === 'activity') {
             $activityLogUtil = app(ProductActivityLogUtil::class);
             $activityToday = $activityLogUtil->getForProduct($business_id, (int) $id, ProductActivityLog::PERIOD_TODAY);
@@ -948,6 +1035,7 @@ class ProductController extends Controller
             'latestQuoteLine',
             'latestQuoteSummary',
             'latestQuoteRecipientEmail',
+            'productContactUsers',
             'activityToday',
             'activityWeek',
             'activityMonth',

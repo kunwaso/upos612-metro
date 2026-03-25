@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 set "PROFILE=startup"
 set "WARM_PATH=app"
-set "WARM_MAX_FILES=5000"
+set "WARM_MAX_FILES=500"
 set "DRY_RUN=0"
 set "SKIP_SEMANTIC=0"
 set "SKIP_GITNEXUS=0"
@@ -148,7 +148,7 @@ echo   warm-and-index.bat [--profile startup^|nightly-embeddings] [--all] [--pat
 echo   warm-and-index.bat [--register ^| --unregister]
 echo.
 echo Defaults:
-echo   --profile startup --path app --max-files 5000
+echo   --profile startup --path app --max-files 500
 echo.
 pause
 endlocal

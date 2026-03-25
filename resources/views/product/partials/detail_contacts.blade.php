@@ -29,14 +29,7 @@
         <div id="kt_product_users_card_pane" class="tab-pane fade show active">
             <div class="row g-6 g-xl-9">
                 @php
-                    $users = [
-                        ['name' => 'Emma Smith', 'position' => 'Art Director', 'company' => 'Starter Inc.', 'avatar' => '300-6.jpg', 'earnings' => '$14,560', 'tasks' => '13', 'sales' => '$236,400', 'online' => true],
-                        ['name' => 'Melody Macy', 'position' => 'Fabric Analyst', 'company' => 'Starter Ltd.', 'avatar' => '300-2.jpg', 'earnings' => '$12,000', 'tasks' => '25', 'sales' => '$180,200', 'online' => true],
-                        ['name' => 'Max Smith', 'position' => 'Software Engineer', 'company' => 'Starter Inc.', 'avatar' => '300-1.jpg', 'earnings' => '$8,750', 'tasks' => '42', 'sales' => '$120,800', 'online' => false],
-                        ['name' => 'Sean Bean', 'position' => 'QA Manager', 'company' => 'Starter Inc.', 'avatar' => '300-5.jpg', 'earnings' => '$6,840', 'tasks' => '18', 'sales' => '$92,600', 'online' => true],
-                        ['name' => 'Brian Cox', 'position' => 'Fabric Designer', 'company' => 'Starter Ltd.', 'avatar' => '300-9.jpg', 'earnings' => '$9,200', 'tasks' => '31', 'sales' => '$155,400', 'online' => false],
-                        ['name' => 'Mikaela Collins', 'position' => 'Marketing Director', 'company' => 'Starter Inc.', 'avatar' => '300-14.jpg', 'earnings' => '$15,300', 'tasks' => '9', 'sales' => '$245,100', 'online' => true],
-                    ];
+                    $users = collect($productContactUsers ?? [])->values()->all();
                 @endphp
 
                 @foreach($users as $user)
@@ -49,11 +42,11 @@
                                 <div class="bg-success position-absolute border border-4 border-body h-15px w-15px rounded-circle translate-middle start-100 top-100 ms-n3 mt-n3"></div>
                                 @endif
                             </div>
-                            <a href="#" class="fs-4 text-gray-800 text-hover-primary fw-bold mb-0">{{ $user['name'] }}</a>
+                            <a href="{{ !empty($user['id']) ? route('contacts.show', ['contact' => $user['id']]) : '#' }}" class="fs-4 text-gray-800 text-hover-primary fw-bold mb-0">{{ $user['name'] }}</a>
                             <div class="fw-semibold text-gray-500 mb-6">{{ $user['position'] }}, {{ $user['company'] }}</div>
                             <div class="d-flex flex-center flex-wrap">
                                 <div class="border border-gray-300 border-dashed rounded min-w-80px py-3 px-4 mx-2 mb-3">
-                                    <div class="fs-6 fw-bold text-gray-700">{{ $user['earnings'] }}</div>
+                                    <div class="fs-6 fw-bold text-gray-700">@format_currency((float) ($user['earnings'] ?? 0))</div>
                                     <div class="fw-semibold text-gray-500">{{ __('product.earnings') }}</div>
                                 </div>
                                 <div class="border border-gray-300 border-dashed rounded min-w-80px py-3 px-4 mx-2 mb-3">
@@ -61,7 +54,7 @@
                                     <div class="fw-semibold text-gray-500">{{ __('product.tasks') }}</div>
                                 </div>
                                 <div class="border border-gray-300 border-dashed rounded min-w-80px py-3 px-4 mx-2 mb-3">
-                                    <div class="fs-6 fw-bold text-gray-700">{{ $user['sales'] }}</div>
+                                    <div class="fs-6 fw-bold text-gray-700">@format_currency((float) ($user['sales'] ?? 0))</div>
                                     <div class="fw-semibold text-gray-500">{{ __('product.sales') }}</div>
                                 </div>
                             </div>
@@ -93,13 +86,13 @@
                                             <img alt="Pic" src="{{ asset('assets/media/avatars/' . $user['avatar']) }}" />
                                         </div>
                                         <div class="d-flex flex-column">
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-bold">{{ $user['name'] }}</a>
+                                            <a href="{{ !empty($user['id']) ? route('contacts.show', ['contact' => $user['id']]) : '#' }}" class="text-gray-800 text-hover-primary fw-bold">{{ $user['name'] }}</a>
                                             <span class="text-gray-500 fw-semibold">{{ $user['company'] }}</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td>{{ $user['position'] }}</td>
-                                <td>{{ $user['earnings'] }}</td>
+                                <td>@format_currency((float) ($user['earnings'] ?? 0))</td>
                                 <td>{{ $user['tasks'] }}</td>
                             </tr>
                             @endforeach

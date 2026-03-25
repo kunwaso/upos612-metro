@@ -156,6 +156,48 @@ class ChatUtilPromptAssemblyTest extends TestCase
         $this->assertStringContainsString('/action confirm <id>', $systemPrompt);
     }
 
+    public function test_build_provider_messages_adds_telegram_format_guidance_for_telegram_channel()
+    {
+        $chatUtil = $this->makePromptAwareChatUtil(
+            'Be concise.',
+            'Org context line',
+            '- Display name: Ray',
+            '- Org memory',
+            '- User memory',
+            ''
+        );
+
+        $conversation = new ChatConversation([
+            'id' => '00000000-0000-0000-0000-000000000004',
+            'business_id' => 102,
+        ]);
+
+        $messages = $chatUtil->buildProviderMessages(
+            $conversation,
+            'Business instruction',
+            null,
+            30,
+            null,
+            'List products',
+            null,
+            null,
+            7,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            'telegram'
+        );
+
+        $systemPrompt = (string) $messages[0]['content'];
+
+        $this->assertStringContainsString('Telegram response format:', $systemPrompt);
+        $this->assertStringContainsString('Do not use markdown markers', $systemPrompt);
+    }
+
     protected function makePromptAwareChatUtil(
         string $reasoningRules,
         string $organizationContext,

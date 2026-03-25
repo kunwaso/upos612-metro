@@ -279,7 +279,7 @@ class PurchaseOrderController extends Controller
         $shipping_statuses = $this->transactionUtil->shipping_statuses();
 
         //Added check because $users is of no use if enable_contact_assign if false
-        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
 
@@ -566,7 +566,7 @@ class PurchaseOrderController extends Controller
         $shipping_statuses = $this->transactionUtil->shipping_statuses();
 
         //Added check because $users is of no use if enable_contact_assign if false
-        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
         $delivery_date = ! empty($purchase->delivery_date) ? $this->productUtil->format_date($purchase->delivery_date, true) : null;
 
@@ -934,3 +934,4 @@ class PurchaseOrderController extends Controller
         }
     }
 }
+

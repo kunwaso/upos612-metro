@@ -20,6 +20,15 @@ Set these keys in `.env`:
 4. `GOOGLE_CUSTOM_SEARCH_DEFAULT_LIMIT` (default: `20`)
 5. `GOOGLE_CUSTOM_SEARCH_TIMEOUT` (default: `10`)
 6. `CONTACT_FEEDS_DEFAULT_PROVIDER` (default: `google`)
+7. `GOOGLE_CUSTOM_SEARCH_VERIFY_SSL` (default: `true`)
+8. `GOOGLE_CUSTOM_SEARCH_CA_BUNDLE` (optional path to `cacert.pem`, for example `D:/wamp64/cacert.pem`)
+
+### TLS / cURL 60 on Windows
+
+If you see `cURL error 60: SSL certificate problem`, configure one of:
+
+1. Preferred: set `GOOGLE_CUSTOM_SEARCH_CA_BUNDLE` to a valid CA bundle file (`cacert.pem`) and keep `GOOGLE_CUSTOM_SEARCH_VERIFY_SSL=true`.
+2. Local dev fallback only: set `GOOGLE_CUSTOM_SEARCH_VERIFY_SSL=false`.
 
 ## Provider Behavior
 

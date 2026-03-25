@@ -66,8 +66,9 @@ class BookingController extends Controller
 
         $types = Contact::getContactTypes();
         $customer_groups = CustomerGroup::forDropdown($business_id);
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
-        return view('restaurant.booking.index', compact('business_locations', 'customers', 'correspondents', 'types', 'customer_groups'));
+        return view('restaurant.booking.index', compact('business_locations', 'customers', 'correspondents', 'types', 'customer_groups', 'users'));
     }
 
     /**
@@ -322,3 +323,4 @@ class BookingController extends Controller
         }
     }
 }
+

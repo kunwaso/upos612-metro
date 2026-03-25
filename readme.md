@@ -6,7 +6,6 @@ Ultimate POS is a POS application by [Ultimate Fosters](http://ultimatefosters.c
 
 When working with an AI coding agent (e.g. Cursor, Codex) that uses this repo’s `AGENTS.md` and `ai/ui-components.md`, you can steer design and UI work with the following commands. Type the command (or a short phrase that matches it) in chat; the agent will treat it as the corresponding intent and follow the flow described in `AGENTS-FAST.md` / `AGENTS.md`.
 
-
 | Command        | What it does                                                                                                                                                                     | How to use                                                                           |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | **/audit**     | Run technical quality checks on a view: accessibility (focus, contrast), responsive structure, asset paths, Metronic compliance.                                                 | e.g. “/audit product edit page” or “audit `resources/views/product/edit.blade.php`”. |
@@ -27,7 +26,6 @@ When working with an AI coding agent (e.g. Cursor, Codex) that uses this repo’
 | **/onboard**   | Design or refine onboarding flows: first-time hints, tooltips, or step-by-step UI using existing patterns and translation keys.                                                  | e.g. “/onboard first login” or “add a short onboarding for this feature”.            |
 | **/teach**     | One-time setup: gather design/UI context (e.g. which pages matter, brand constraints) and document it for the agent (e.g. in `ai/` or a short doc).                              | e.g. “/teach design context” or “record our UI preferences for the agent”.           |
 
-
 All commands are scoped to **Metronic 8.3.3** and project rules: no new theme, no invented CSS classes. See `ai/ui-components.md` for design principles and anti-patterns, and `AGENTS.md` / `AGENTS-FAST.md` for the full intent router.
 
 ## Installation & Documentation
@@ -39,11 +37,11 @@ Also, For complete updated documentation of the ultimate pos please visit online
 
 If you discover a security vulnerability within ultimate POS, please send an e-mail to support at [thewebfosters@gmail.com](mailto:thewebfosters@gmail.com). All security vulnerabilities will be promptly addressed.
 
-##build me a detail plan  implement phase to phase , task by task with todolist make sure agents coding correctly 
+##build me a detail plan implement phase to phase , task by task with todolist make sure agents coding correctly
 
 The Ultimate POS software is licensed under the [Codecanyon license](https://codecanyon.net/licenses/standard).
 
-## Run the log-scan: look at the newest Laravel log and fix any issues.  run all autofixes
+## Run the log-scan: look at the newest Laravel log and fix any issues. run all autofixes
 
 ##“@.cursor/rules/ui-layout-first-then-data.mdc — rebuild the business settings page: layout match first, then controller data.”
 
@@ -51,10 +49,7 @@ The Ultimate POS software is licensed under the [Codecanyon license](https://cod
 
 ## after created a plan alway ask. what this plan actually do?
 
-## build me a detail plan  implement phase to phase , task by task with todolist make sure agents coding correctly  refference ui style @public/html  [https://preview.keenthemes.com/html/metronic/docs/base/utilities](https://preview.keenthemes.com/html/metronic/docs/base/utilities) ( ask me question to make sure plan correctly )
-
-
-
+## build me a detail plan implement phase to phase , task by task with todolist make sure agents coding correctly refference ui style @public/html [https://preview.keenthemes.com/html/metronic/docs/base/utilities](https://preview.keenthemes.com/html/metronic/docs/base/utilities) ( ask me question to make sure plan correctly )
 
 git init
 git add README.md
@@ -70,3 +65,5 @@ php artisan vendor:publish --tag=cms-assets --force
 write me a prompt to rebuild the view as above dicussion
 
 write me a prompt to implement detail phase by phase task by task with detail todo list make sure when user search it run and show correct data
+
+warm-and-index.bat --skip-gitnexus --no-pause

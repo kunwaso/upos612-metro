@@ -556,70 +556,99 @@ $(document).ready(function() {
 
     //On display of add contact modal
     $('.contact_modal').on('shown.bs.modal', function(e) {
-        $('input[type=radio][name="contact_type_radio"]').on('change', function() {
-            if (this.value == 'individual') {
-                $('div.individual').show();
-                $('div.business').hide();
-            } else if (this.value == 'business') {
-                $('div.individual').hide();
-                $('div.business').show();
-            }
-        });
-        if ($('#is_customer_export').is(':checked')) {
-            $('div.export_div').show();
+        var $contactModal = $(this);
+        var $contactType = $contactModal.find('select#contact_type');
+        var $assignDiv = $contactModal.find('div.contact_assign_div');
+        var $leadAdditionalDiv = $contactModal.find('div.lead_additional_div');
+
+        $contactModal.find('input[type=radio][name="contact_type_radio"]')
+            .off('change.contact_modal_radio')
+            .on('change.contact_modal_radio', function() {
+                if (this.value == 'individual') {
+                    $contactModal.find('div.individual').show();
+                    $contactModal.find('div.business').hide();
+                } else if (this.value == 'business') {
+                    $contactModal.find('div.individual').hide();
+                    $contactModal.find('div.business').show();
+                }
+            });
+
+        if ($contactModal.find('#is_customer_export').is(':checked')) {
+            $contactModal.find('div.export_div').show();
         }
-        $('#is_customer_export').on('change', function () {
-            if ($(this).is(':checked')) {
-                $('div.export_div').show();
-            } else {
-                $('div.export_div').hide();
-            }
-        });
+        $contactModal
+            .find('#is_customer_export')
+            .off('change.contact_modal_export')
+            .on('change.contact_modal_export', function () {
+                if ($(this).is(':checked')) {
+                    $contactModal.find('div.export_div').show();
+                } else {
+                    $contactModal.find('div.export_div').hide();
+                }
+            });
 
-        $('.more_btn').click(function(){
-            $($(this).data('target')).toggleClass('hide');
-        });
-        $('div.lead_additional_div').hide();
+        $contactModal.find('.more_btn')
+            .off('click.contact_modal_more')
+            .on('click.contact_modal_more', function() {
+                $contactModal.find($(this).data('target')).toggleClass('hide');
+            });
 
-        if ($('select#contact_type').val() == 'customer') {
-            $('div.supplier_fields').hide();
-            $('div.customer_fields').show();
-        } else if ($('select#contact_type').val() == 'supplier') {
-            $('div.supplier_fields').show();
-            $('div.customer_fields').hide();
-        }  else if ($('select#contact_type').val() == 'lead') {
-            $('div.supplier_fields').hide();
-            $('div.customer_fields').hide();
-            $('div.opening_balance').hide();
-            $('div.pay_term').hide();
-            $('div.lead_additional_div').show();
-            $('div.shipping_addr_div').hide();
+        $leadAdditionalDiv.hide();
+        $assignDiv.removeClass('hide').show();
+
+        if ($contactType.val() == 'customer') {
+            $contactModal.find('div.supplier_fields').hide();
+            $contactModal.find('div.customer_fields').show();
+        } else if ($contactType.val() == 'supplier') {
+            $contactModal.find('div.supplier_fields').show();
+            $contactModal.find('div.customer_fields').hide();
+        }  else if ($contactType.val() == 'lead') {
+            $contactModal.find('div.supplier_fields').hide();
+            $contactModal.find('div.customer_fields').hide();
+            $contactModal.find('div.opening_balance').hide();
+            $contactModal.find('div.pay_term').hide();
+            $leadAdditionalDiv.show();
+            $assignDiv.addClass('hide').hide();
+            $contactModal.find('div.shipping_addr_div').hide();
         }
 
-        $('select#contact_type').change(function() {
-            var t = $(this).val();
+        $contactType
+            .off('change.contact_modal_type')
+            .on('change.contact_modal_type', function() {
+                var t = $(this).val();
 
-            if (t == 'supplier') {
-                $('div.supplier_fields').fadeIn();
-                $('div.customer_fields').fadeOut();
-            } else if (t == 'both') {
-                $('div.supplier_fields').fadeIn();
-                $('div.customer_fields').fadeIn();
-            } else if (t == 'customer') {
-                $('div.customer_fields').fadeIn();
-                $('div.supplier_fields').fadeOut();
-            } else if (t == 'lead') {
-                $('div.customer_fields').fadeOut();
-                $('div.supplier_fields').fadeOut();
-                $('div.opening_balance').fadeOut();
-                $('div.pay_term').fadeOut();
-                $('div.lead_additional_div').fadeIn();
-                $('div.shipping_addr_div').hide();
+                if (t == 'supplier') {
+                    $contactModal.find('div.supplier_fields').fadeIn();
+                    $contactModal.find('div.customer_fields').fadeOut();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t == 'both') {
+                    $contactModal.find('div.supplier_fields').fadeIn();
+                    $contactModal.find('div.customer_fields').fadeIn();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t == 'customer') {
+                    $contactModal.find('div.customer_fields').fadeIn();
+                    $contactModal.find('div.supplier_fields').fadeOut();
+                    $assignDiv.removeClass('hide').fadeIn();
+                } else if (t == 'lead') {
+                    $contactModal.find('div.customer_fields').fadeOut();
+                    $contactModal.find('div.supplier_fields').fadeOut();
+                    $contactModal.find('div.opening_balance').fadeOut();
+                    $contactModal.find('div.pay_term').fadeOut();
+                    $leadAdditionalDiv.fadeIn();
+                    $assignDiv.addClass('hide').fadeOut();
+                    $contactModal.find('div.shipping_addr_div').hide();
+                }
+            });
+
+        $contactModal.find('.select2').each(function () {
+            var $select = $(this);
+            if ($select.data('select2')) {
+                $select.select2('destroy');
             }
-        });
-
-        $(".contact_modal").find('.select2').each( function(){
-            $(this).select2();
+            $select.select2({
+                dropdownParent: $contactModal,
+                width: '100%',
+            });
         });
 
         $('form#contact_add_form, form#contact_edit_form')

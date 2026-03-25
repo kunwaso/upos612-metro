@@ -7,7 +7,157 @@
 @section('content')
 
 
+            <!-- Hero Banner -->
+            <div class="section-hero v1">
+                <div class="hero-image"></div>
+                <div class="container">
+                    <div class="content-wrap text-center">
+                        <div class="title text-display-2 effectFade fadeRotateX">
+                            <span class="title1 fw-semibold text-gradient-1"
+                                >Build Smarter with</span
+                            >
+                            <br />
+                            <div class="title2 d-flex gap-20 justify-content-center flex-wrap">
+                                <span class="fw-semibold text-gradient-1">Full-Stack AI</span>
+                            </div>
+                        </div>
+                        <p class="text effectFade fadeUp">
+                            Unlock growth with our full-stack AI services, delivering smart,
+                            efficient solutions from <br />
+                            strategy to deployment for innovative business success.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- /Hero Banner -->
+            <!-- section-services -->
+            <div id="services" class="section-services flat-spacing">
+                <div class="container">
+                    <div class="top">
+                        <div class="heading-section center mb-48">
+                            <div class="heading-title text-gradient-3 effectFade fadeRotateX">
+                                Bao bì dạng cuộn
+                            </div>
+                        </div>
+                        <p class="text text-center effectFade fadeUp">
+                            Bao bì dạng cuộn là một loại bao bì được sử dụng để bảo vệ và giữ cho sản phẩm của bạn an toàn và sạch sẽ.
+                        </p>
+                    </div>
+                    <div class="accordion-faq_list gap-32" >
+                        <div  class="accordion-faq_item style-1 effectFade fadeRotateX" >
+                            <div class="accordion-action ">
+                                <div class="accordion-title">
+                                    Màng PE
+                                    <i class="icon icon-arrow-top-right"></i>
+                                </div>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="image">
+                                    <img src="assets/images/section/service-8.jpg" alt="" />
+                                </div>
+                                <div class="content">
+                                    <div class="text-body-3 text-neutral-300 text">
+                                        Màng PE là một loại màng được sử dụng để bảo vệ và giữ cho sản phẩm của bạn an toàn và sạch sẽ.
+                                    </div>
 
+                                
+                                    <div class="list-tags">
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Chủng loại: Màng PE quấn taynhẹ, nhỏ gọnvà màng PE quấn máy khổ rộng 50cm - 1m5, nặng 15kg - 25kg.</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Ứng dụng: Quấn pallet hàng hóa, bao bọc hàng hóa, chống bụi bẩn, chống trầy xước trong quá trình vận chuyển.</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Chất liệu: Nhựa Polyetylen, độ dãn cao, bám dính tốt</a
+                                        >
+                                    </div>
+                                    <div class="text-body-1 num">01</div>
+                                </div>
+                            </div>
+                        
+                        </div>
+                    </div>
+
+                    <div class="accordion-faq_list pt-30">
+                        <div  class="accordion-faq_item style-1 effectFade fadeRotateX" >
+                            <div class="accordion-action ">
+                                <div class="accordion-title">
+                                    Data Engineering & Pipelines
+                                    <i class="icon icon-arrow-top-right"></i>
+                                </div>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="image">
+                                    <img src="assets/images/section/service-8.jpg" alt="" />
+                                </div>
+                                <div class="content">
+                                    <div class="text-body-3 text-neutral-300 text">
+                                        Reliable data flows from ingestion to features, built
+                                        for scale and cost control. Our robust data engineering
+                                        ensures clean, consistent, and efficient
+                                        pipelines—enabling seamless integration, real-time
+                                        analytics, and optimized performance that power scalable
+                                        AI systems and sustainable business growth.
+                                    </div>
+                                    <div class="list-tags">
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Data cleaning & chunking</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Hybrid search</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Freshness, citations, and re-ranking</a
+                                        >
+                                    </div>
+                                    <div class="text-body-1 num">04</div>
+                                </div>
+                            </div>
+                        
+                        </div>
+                    </div>
+                    <div class="accordion-faq_list pt-30">
+                        <div  class="accordion-faq_item style-1 effectFade fadeRotateX" >
+                            <div class="accordion-action ">
+                                <div class="accordion-title">
+                                    Data Engineering & Pipelines
+                                    <i class="icon icon-arrow-top-right"></i>
+                                </div>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="image">
+                                    <img src="assets/images/section/service-8.jpg" alt="" />
+                                </div>
+                                <div class="content">
+                                    <div class="text-body-3 text-neutral-300 text">
+                                        Reliable data flows from ingestion to features, built
+                                        for scale and cost control. Our robust data engineering
+                                        ensures clean, consistent, and efficient
+                                        pipelines—enabling seamless integration, real-time
+                                        analytics, and optimized performance that power scalable
+                                        AI systems and sustainable business growth.
+                                    </div>
+                                    <div class="list-tags">
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Data cleaning & chunking</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Hybrid search</a
+                                        >
+                                        <a href="#" class="tags-item fw-semibold"
+                                            >Freshness, citations, and re-ranking</a
+                                        >
+                                    </div>
+                                    <div class="text-body-1 num">04</div>
+                                </div>
+                            </div>
+                        
+                        </div>
+                    </div>
+
+            </div>
+            <!-- /section-services -->
             <!-- section-pricing -->
             <div id="pricing" class="section-pricing flat-spacing pt-0">
                 <div class="container">

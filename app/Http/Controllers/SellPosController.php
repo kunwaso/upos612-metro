@@ -262,7 +262,7 @@ class SellPosController extends Controller
         $edit_price = auth()->user()->can('edit_product_price_from_pos_screen');
 
         //Added check because $users is of no use if enable_contact_assign if false
-        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
 
         return view('sale_pos.create')
             ->with(compact(
@@ -1120,7 +1120,7 @@ class SellPosController extends Controller
         $customer_due = $customer_due != 0 ? $this->transactionUtil->num_f($customer_due, true) : '';
 
         //Added check because $users is of no use if enable_contact_assign if false
-        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, true) : [];
+        $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
         $only_payment = request()->segment(2) == 'payment';
 
         return view('sale_pos.edit')
@@ -3055,3 +3055,4 @@ class SellPosController extends Controller
         }
     }
 }
+

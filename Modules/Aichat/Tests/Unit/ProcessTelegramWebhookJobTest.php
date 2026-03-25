@@ -536,6 +536,8 @@ class ProcessTelegramWebhookJobTest extends TestCase
             'response_max_chars' => null,
         ]);
         $credential = (object) ['encrypted_api_key' => 'encrypted-ai-key'];
+        $assistantMarkdown = "1. **Product A**\n* **SKU:** PE-Roll-38664";
+        $assistantTelegramText = "1. Product A\n- SKU: PE-Roll-38664";
 
         $chatUtil = \Mockery::mock(ChatUtil::class);
         $chatUtil->shouldReceive('findTelegramBotByWebhookKey')->once()->with('hook-key')->andReturn($bot);
@@ -553,11 +555,15 @@ class ProcessTelegramWebhookJobTest extends TestCase
             ->with(
                 $conversation,
                 ChatMessage::ROLE_ASSISTANT,
-                'Hello from assistant.',
+                $assistantMarkdown,
                 'openai',
                 'gpt-4o-mini',
                 5
             );
+        $chatUtil->shouldReceive('normalizeTelegramOutboundText')
+            ->once()
+            ->with($assistantMarkdown)
+            ->andReturn($assistantTelegramText);
         $chatUtil->shouldReceive('getDecryptedBotToken')->twice()->with($bot)->andReturn('telegram-bot-token');
 
         $chatWorkflowUtil = \Mockery::mock(ChatWorkflowUtil::class);
@@ -575,14 +581,14 @@ class ProcessTelegramWebhookJobTest extends TestCase
             ]);
         $chatWorkflowUtil->shouldReceive('normalizeAssistantText')
             ->once()
-            ->with('Hello from assistant.', $settings)
-            ->andReturn(['text' => 'Hello from assistant.']);
+            ->with($assistantMarkdown, $settings)
+            ->andReturn(['text' => $assistantMarkdown]);
 
         $aiChatUtil = \Mockery::mock(AIChatUtil::class);
         $aiChatUtil->shouldReceive('generateText')
             ->once()
             ->with('openai', 'decrypted-ai-key', 'gpt-4o-mini', \Mockery::type('array'))
-            ->andReturn('Hello from assistant.');
+            ->andReturn($assistantMarkdown);
 
         $quoteWizardUtil = \Mockery::mock(ChatProductQuoteWizardUtil::class);
         $quoteWizardUtil->shouldReceive('getLatestActiveDraftForChannel')->once()->with(44, 5, null, 777)->andReturn(null);
@@ -607,7 +613,7 @@ class ProcessTelegramWebhookJobTest extends TestCase
             $quoteWizardUtil
         );
 
-        $this->assertSame('Hello from assistant.', $sentMessage);
+        $this->assertSame($assistantTelegramText, $sentMessage);
     }
 
     public function test_actions_command_lists_pending_actions_for_private_chat(): void
