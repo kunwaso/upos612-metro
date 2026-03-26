@@ -9,8 +9,10 @@ use App\Utils\ContactFeedUtil;
 use App\Utils\FacebookContactFeedProvider;
 use App\Utils\GoogleContactFeedProvider;
 use App\Utils\LinkedInContactFeedProvider;
+use App\Utils\SerpApiGoogleContactFeedProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -36,6 +38,7 @@ class ContactFeedUtilTest extends TestCase
             $table->string('provider', 50)->index();
             $table->string('title', 512);
             $table->text('snippet')->nullable();
+            $table->text('image_url')->nullable();
             $table->text('canonical_url');
             $table->string('url_hash', 64)->index();
             $table->string('source_name')->nullable();
@@ -47,8 +50,9 @@ class ContactFeedUtilTest extends TestCase
         });
 
         config()->set('services.contact_feeds.default_provider', 'google');
-        config()->set('services.contact_feeds.providers', ['google', 'facebook', 'linkedin']);
-        config()->set('services.google_custom_search.default_limit', 20);
+        config()->set('services.contact_feeds.providers', ['google']);
+        config()->set('services.google_custom_search.default_limit', 30);
+        config()->set('services.serpapi_google.fallback_enabled', true);
     }
 
     protected function tearDown(): void
@@ -82,6 +86,7 @@ class ContactFeedUtilTest extends TestCase
             'provider' => 'google',
             'title' => 'Existing story',
             'snippet' => 'already saved',
+            'image_url' => 'https://images.example.com/existing.jpg',
             'canonical_url' => 'https://example.com/existing',
             'url_hash' => $hash,
             'source_name' => 'example.com',
@@ -90,7 +95,7 @@ class ContactFeedUtilTest extends TestCase
             'raw_payload' => ['existing' => true],
         ]);
 
-        $result = $util->loadFeeds(1, $contact, ['provider' => 'google', 'limit' => 20]);
+        $result = $util->loadFeeds(1, $contact, ['provider' => 'google', 'limit' => 30]);
 
         $this->assertTrue($result['success']);
         $this->assertSame(0, $result['inserted_count']);
@@ -105,6 +110,7 @@ class ContactFeedUtilTest extends TestCase
                 'provider' => 'google',
                 'title' => 'Existing story',
                 'snippet' => 'old',
+                'image_url' => 'https://images.example.com/a.jpg',
                 'canonical_url' => 'https://example.com/a?utm_source=test',
                 'source_name' => 'example.com',
                 'published_at' => now()->subDays(2)->toDateTimeString(),
@@ -114,6 +120,7 @@ class ContactFeedUtilTest extends TestCase
                 'provider' => 'google',
                 'title' => 'New story',
                 'snippet' => 'new',
+                'image_url' => 'https://images.example.com/b.jpg',
                 'canonical_url' => 'https://example.com/b?utm_medium=social',
                 'source_name' => 'example.com',
                 'published_at' => now()->toDateTimeString(),
@@ -123,6 +130,7 @@ class ContactFeedUtilTest extends TestCase
                 'provider' => 'google',
                 'title' => 'New story duplicate in same payload',
                 'snippet' => 'new duplicate',
+                'image_url' => 'https://images.example.com/b-alt.jpg',
                 'canonical_url' => 'https://example.com/b?utm_campaign=xyz',
                 'source_name' => 'example.com',
                 'published_at' => now()->toDateTimeString(),
@@ -140,6 +148,7 @@ class ContactFeedUtilTest extends TestCase
             'provider' => 'google',
             'title' => 'Existing story',
             'snippet' => 'old',
+            'image_url' => 'https://images.example.com/existing.jpg',
             'canonical_url' => $existing_canonical,
             'url_hash' => $util->hashUrl('google', $existing_canonical),
             'source_name' => 'example.com',
@@ -148,12 +157,85 @@ class ContactFeedUtilTest extends TestCase
             'raw_payload' => ['existing' => true],
         ]);
 
-        $result = $util->updateFeeds(1, $contact, ['provider' => 'google', 'limit' => 20]);
+        $result = $util->updateFeeds(1, $contact, ['provider' => 'google', 'limit' => 30]);
 
         $this->assertTrue($result['success']);
         $this->assertSame(1, $result['inserted_count']);
         $this->assertSame(2, $result['skipped_count']);
         $this->assertSame(2, ContactFeed::forContact(1, $contact->id)->where('provider', 'google')->count());
+        $this->assertSame(
+            'https://images.example.com/b.jpg',
+            ContactFeed::forContact(1, $contact->id)->where('title', 'New story')->value('image_url')
+        );
+    }
+
+    public function test_update_feeds_skips_items_with_older_or_equal_published_dates(): void
+    {
+        $provider_items = [
+            [
+                'provider' => 'google',
+                'title' => 'Old story',
+                'snippet' => 'old',
+                'canonical_url' => 'https://example.com/old-story',
+                'source_name' => 'example.com',
+                'published_at' => now()->subDays(2)->toDateTimeString(),
+                'raw_payload' => ['id' => 'old'],
+            ],
+            [
+                'provider' => 'google',
+                'title' => 'Same day story',
+                'snippet' => 'same',
+                'canonical_url' => 'https://example.com/same-story',
+                'source_name' => 'example.com',
+                'published_at' => now()->subDay()->toDateTimeString(),
+                'raw_payload' => ['id' => 'same'],
+            ],
+            [
+                'provider' => 'google',
+                'title' => 'Undated but new',
+                'snippet' => 'undated',
+                'canonical_url' => 'https://example.com/undated-story',
+                'source_name' => 'example.com',
+                'published_at' => null,
+                'raw_payload' => ['id' => 'undated'],
+            ],
+            [
+                'provider' => 'google',
+                'title' => 'Fresh story',
+                'snippet' => 'fresh',
+                'canonical_url' => 'https://example.com/fresh-story',
+                'source_name' => 'example.com',
+                'published_at' => now()->toDateTimeString(),
+                'raw_payload' => ['id' => 'fresh'],
+            ],
+        ];
+        $util = $this->makeUtilWithGoogleProvider(new StaticProvider($provider_items));
+        $contact = $this->makeContact(52);
+
+        ContactFeed::create([
+            'business_id' => 1,
+            'contact_id' => $contact->id,
+            'provider' => 'google',
+            'title' => 'Existing latest',
+            'snippet' => 'existing',
+            'image_url' => null,
+            'canonical_url' => 'https://example.com/existing-latest',
+            'url_hash' => $util->hashUrl('google', 'https://example.com/existing-latest'),
+            'source_name' => 'example.com',
+            'published_at' => now()->subDay(),
+            'fetched_at' => now()->subHour(),
+            'raw_payload' => ['existing' => true],
+        ]);
+
+        $result = $util->updateFeeds(1, $contact, ['provider' => 'google', 'limit' => 30]);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(2, $result['inserted_count']);
+        $this->assertSame(2, $result['skipped_count']);
+        $this->assertDatabaseHas('contact_feeds', ['title' => 'Fresh story']);
+        $this->assertDatabaseHas('contact_feeds', ['title' => 'Undated but new']);
+        $this->assertDatabaseMissing('contact_feeds', ['title' => 'Old story']);
+        $this->assertDatabaseMissing('contact_feeds', ['title' => 'Same day story']);
     }
 
     public function test_update_feeds_returns_safe_error_payload_when_provider_fails(): void
@@ -167,6 +249,7 @@ class ContactFeedUtilTest extends TestCase
             'provider' => 'google',
             'title' => 'Existing story',
             'snippet' => 'old',
+            'image_url' => null,
             'canonical_url' => 'https://example.com/existing',
             'url_hash' => $util->hashUrl('google', 'https://example.com/existing'),
             'source_name' => 'example.com',
@@ -190,35 +273,100 @@ class ContactFeedUtilTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Unsupported provider selected.');
 
-        $util->normalizeProvider('x');
+        $util->normalizeProvider('facebook');
     }
 
-    public function test_placeholder_provider_returns_predictable_not_configured_response(): void
+    public function test_google_provider_paginates_three_pages_and_extracts_image_url(): void
     {
-        $util = $this->makeUtilWithGoogleProvider(new StaticProvider([]));
-        $contact = $this->makeContact(52);
+        config()->set('services.google_custom_search.api_key', 'test-key');
+        config()->set('services.google_custom_search.search_engine_id', 'test-cx');
 
-        $result = $util->updateFeeds(1, $contact, ['provider' => 'facebook', 'limit' => 20]);
+        $starts = [];
+        Http::fake(function ($request) use (&$starts) {
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            $starts[] = (int) ($query['start'] ?? 1);
 
-        $this->assertFalse($result['success']);
-        $this->assertSame(0, $result['inserted_count']);
-        $this->assertSame(0, $result['existing_count']);
-        $this->assertStringContainsString('not configured', strtolower($result['msg']));
+            return Http::response([
+                'items' => [[
+                    'title' => 'Story '.$query['start'],
+                    'link' => 'https://example.com/story-'.$query['start'],
+                    'snippet' => 'Story snippet '.$query['start'],
+                    'displayLink' => 'example.com',
+                    'pagemap' => [
+                        'cse_image' => [
+                            ['src' => 'https://images.example.com/story-'.$query['start'].'.jpg'],
+                        ],
+                        'metatags' => [[
+                            'article:published_time' => now()->toIso8601String(),
+                        ]],
+                    ],
+                ]],
+            ]);
+        });
+
+        $provider = new GoogleContactFeedProvider();
+        $contact = $this->makeContact(63);
+        $items = $provider->search($contact, ['limit' => 30, 'published_after' => now()->subDays(2)->toDateTimeString()]);
+
+        $this->assertCount(3, $items);
+        $this->assertSame([1, 11, 21], $starts);
+        $this->assertSame('https://images.example.com/story-1.jpg', $items[0]['image_url']);
     }
 
-    public function test_google_query_always_keeps_contact_name_with_optional_keyword(): void
+    public function test_google_query_always_keeps_contact_name_and_latest_news_phrase(): void
     {
         $provider = new ExposedGoogleContactFeedProvider();
-        $contact = $this->makeContact(63);
+        $contact = $this->makeContact(64);
 
-        $query_with_keyword = $provider->exposeBuildQuery($contact, ['keyword' => 'just open a new branch']);
-        $this->assertStringContainsString('"Acme Industries"', $query_with_keyword);
-        $this->assertStringContainsString('"just open a new branch"', $query_with_keyword);
-        $this->assertStringContainsString('latest news', strtolower($query_with_keyword));
+        $query = $provider->exposeBuildQuery($contact);
 
-        $query_with_custom = $provider->exposeBuildQuery($contact, ['query' => 'raw steel forecast']);
-        $this->assertStringContainsString('"Acme Industries"', $query_with_custom);
-        $this->assertStringContainsString('"raw steel forecast"', $query_with_custom);
+        $this->assertStringContainsString('"Acme Industries"', $query);
+        $this->assertStringContainsString('latest news', strtolower($query));
+    }
+
+    public function test_google_date_restrict_is_built_from_published_after(): void
+    {
+        $provider = new ExposedGoogleContactFeedProvider();
+
+        $this->assertSame('d8', $provider->exposeBuildDateRestrict(now()->subDays(7)->toDateTimeString()));
+    }
+
+    public function test_google_provider_falls_back_to_serpapi_when_google_access_is_forbidden(): void
+    {
+        config()->set('services.google_custom_search.api_key', 'google-key');
+        config()->set('services.google_custom_search.search_engine_id', 'google-cx');
+        config()->set('services.serpapi_google.api_key', 'serp-key');
+
+        Http::fake([
+            'https://www.googleapis.com/customsearch/v1*' => Http::response([
+                'error' => [
+                    'message' => 'This project does not have the access to Custom Search JSON API.',
+                    'errors' => [
+                        ['reason' => 'forbidden'],
+                    ],
+                ],
+            ], 403),
+            'https://serpapi.com/search*' => Http::response([
+                'news_results' => [[
+                    'title' => 'Fallback story',
+                    'link' => 'https://example.com/fallback-story',
+                    'snippet' => 'Fetched from fallback provider.',
+                    'thumbnail' => 'https://images.example.com/fallback.jpg',
+                    'source' => 'Example News',
+                    'date' => now()->toIso8601String(),
+                ]],
+            ], 200),
+        ]);
+
+        $provider = new GoogleContactFeedProvider(new SerpApiGoogleContactFeedProvider());
+        $contact = $this->makeContact(65);
+        $items = $provider->search($contact, ['limit' => 10]);
+
+        $this->assertCount(1, $items);
+        $this->assertSame('Fallback story', $items[0]['title']);
+        $this->assertSame('https://images.example.com/fallback.jpg', $items[0]['image_url']);
+        $this->assertSame('google', $items[0]['provider']);
+        $this->assertSame('serpapi_google', $items[0]['raw_payload']['_feed_source']);
     }
 
     protected function makeUtilWithGoogleProvider(ContactFeedProviderInterface $provider): ContactFeedUtil
@@ -285,5 +433,10 @@ class ExposedGoogleContactFeedProvider extends GoogleContactFeedProvider
     public function exposeBuildQuery(Contact $contact, array $options = [])
     {
         return $this->buildQuery($contact, $options);
+    }
+
+    public function exposeBuildDateRestrict($published_after)
+    {
+        return $this->buildDateRestrict($published_after);
     }
 }

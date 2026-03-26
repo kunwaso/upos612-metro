@@ -7,16 +7,16 @@
 @section('content')
 <!-- Hero Banner -->
 <div class="section-hero v1">
-    <div class="hero-image"></div>
+    <div class="hero-roller"></div>
     <div class="container">
         <div class="content-wrap text-center">
             <div class="title text-display-2 effectFade fadeRotateX">
-                <span class="title1 fw-semibold text-gradient-1"
-                    >Cuộn màng PE- Băng keo  </span
+                <span class="title1 fw-semibold text-gradient-4"
+                    > Bao bì dạng cuộn</span
                 >
                 <br />
                 <div class="title2 d-flex gap-20 justify-content-center flex-wrap">
-                    <span class="fw-semibold text-gradient-1">Cuộn giấy chống sốc</span>
+                    <span class="fw-semibold text-gradient-1"></span>
                 </div>
             </div>
             <p class="text effectFade fadeUp">

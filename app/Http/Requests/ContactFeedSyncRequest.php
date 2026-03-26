@@ -14,9 +14,8 @@ class ContactFeedSyncRequest extends FormRequest
     public function rules()
     {
         return [
-            'provider' => ['nullable', 'string', 'in:google,facebook,linkedin'],
-            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'keyword' => ['nullable', 'string', 'max:120'],
+            'provider' => ['nullable', 'string', 'in:google'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:30'],
         ];
     }
 }

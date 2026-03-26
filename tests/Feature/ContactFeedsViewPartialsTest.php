@@ -8,14 +8,15 @@ use Tests\TestCase;
 
 class ContactFeedsViewPartialsTest extends TestCase
 {
-    public function test_feeds_tab_partial_renders_provider_selector_and_action_buttons(): void
+    public function test_feeds_tab_partial_renders_google_refresh_ui(): void
     {
         $html = view('contact.partials.feeds_tab')->render();
 
-        $this->assertStringContainsString('id="contact_feeds_provider"', $html);
-        $this->assertStringContainsString('id="load_contact_feeds_btn"', $html);
+        $this->assertStringContainsString('Google Related News', $html);
         $this->assertStringContainsString('id="update_contact_feeds_btn"', $html);
         $this->assertStringContainsString('id="contact_feeds_div"', $html);
+        $this->assertStringNotContainsString('id="contact_feeds_provider"', $html);
+        $this->assertStringNotContainsString('id="load_contact_feeds_btn"', $html);
     }
 
     public function test_contact_feeds_list_partial_renders_empty_state(): void
@@ -25,7 +26,7 @@ class ContactFeedsViewPartialsTest extends TestCase
             'provider' => 'google',
         ])->render();
 
-        $this->assertStringContainsString('No feed records found', $html);
+        $this->assertStringContainsString('No Google news stories', $html);
     }
 
     public function test_contact_feeds_list_partial_renders_feed_cards(): void
@@ -38,6 +39,7 @@ class ContactFeedsViewPartialsTest extends TestCase
             'published_at' => now(),
             'fetched_at' => now(),
         ]);
+        $feed->image_url = 'https://images.example.com/acme.jpg';
         $feed->published_at = now();
         $feed->fetched_at = now();
 
@@ -47,7 +49,8 @@ class ContactFeedsViewPartialsTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('Acme Latest Update', $html);
-        $this->assertStringContainsString('Open Source', $html);
+        $this->assertStringContainsString('Open Article', $html);
+        $this->assertStringContainsString('https://images.example.com/acme.jpg', $html);
         $this->assertStringContainsString('badge-light-info', $html);
     }
 }

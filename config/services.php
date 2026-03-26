@@ -35,15 +35,25 @@ return [
         'api_key' => env('GOOGLE_CUSTOM_SEARCH_API_KEY'),
         'search_engine_id' => env('GOOGLE_CUSTOM_SEARCH_ENGINE_ID'),
         'base_url' => env('GOOGLE_CUSTOM_SEARCH_BASE_URL', 'https://www.googleapis.com/customsearch/v1'),
-        'default_limit' => env('GOOGLE_CUSTOM_SEARCH_DEFAULT_LIMIT', 20),
+        'default_limit' => env('GOOGLE_CUSTOM_SEARCH_DEFAULT_LIMIT', 30),
         'timeout' => env('GOOGLE_CUSTOM_SEARCH_TIMEOUT', 10),
         'verify_ssl' => env('GOOGLE_CUSTOM_SEARCH_VERIFY_SSL', true),
         'ca_bundle' => env('GOOGLE_CUSTOM_SEARCH_CA_BUNDLE', env('AICHAT_HTTP_CA_BUNDLE')),
     ],
 
+    'serpapi_google' => [
+        'api_key' => env('SERPAPI_API_KEY'),
+        'base_url' => env('SERPAPI_BASE_URL', 'https://serpapi.com/search'),
+        'timeout' => env('SERPAPI_TIMEOUT', 10),
+        'verify_ssl' => env('SERPAPI_VERIFY_SSL', true),
+        'ca_bundle' => env('SERPAPI_CA_BUNDLE', env('AICHAT_HTTP_CA_BUNDLE')),
+        'fallback_enabled' => env('CONTACT_FEEDS_GOOGLE_FALLBACK_ENABLED', true),
+    ],
+
     'contact_feeds' => [
         'default_provider' => env('CONTACT_FEEDS_DEFAULT_PROVIDER', 'google'),
-        'providers' => ['google', 'facebook', 'linkedin'],
+        'providers' => ['google'],
+        'google_fallback_provider' => env('CONTACT_FEEDS_GOOGLE_FALLBACK_PROVIDER', 'serpapi_google'),
     ],
 
 ];

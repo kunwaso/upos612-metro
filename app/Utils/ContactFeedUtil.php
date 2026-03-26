@@ -49,9 +49,9 @@ class ContactFeedUtil extends Util
      */
     public function getAllowedProviders()
     {
-        $providers = config('services.contact_feeds.providers', ['google', 'facebook', 'linkedin']);
+        $providers = config('services.contact_feeds.providers', ['google']);
 
-        return is_array($providers) ? $providers : ['google', 'facebook', 'linkedin'];
+        return is_array($providers) ? $providers : ['google'];
     }
 
     /**
@@ -80,10 +80,10 @@ class ContactFeedUtil extends Util
      */
     public function normalizeLimit($limit)
     {
-        $default_limit = (int) config('services.google_custom_search.default_limit', 20);
+        $default_limit = (int) config('services.google_custom_search.default_limit', 30);
         $normalized = is_numeric($limit) ? (int) $limit : $default_limit;
 
-        return max(1, min($normalized, 50));
+        return max(1, min($normalized, 30));
     }
 
     /**
@@ -95,7 +95,7 @@ class ContactFeedUtil extends Util
      * @param int $limit
      * @return \Illuminate\Support\Collection
      */
-    public function getFeedsForContact($business_id, $contact_id, $provider, $limit = 20)
+    public function getFeedsForContact($business_id, $contact_id, $provider, $limit = 30)
     {
         $provider = $this->normalizeProvider($provider);
         $limit = $this->normalizeLimit($limit);
@@ -129,7 +129,7 @@ class ContactFeedUtil extends Util
 
             return [
                 'success' => true,
-                'msg' => 'Existing feed found. Loaded from database without searching again.',
+                'msg' => 'Existing Google feed found. Loaded from database without searching again.',
                 'inserted_count' => 0,
                 'skipped_count' => 0,
                 'existing_count' => $existing_count,
@@ -155,9 +155,8 @@ class ContactFeedUtil extends Util
     {
         $provider = $this->normalizeProvider($options['provider'] ?? null);
         $limit = $this->normalizeLimit($options['limit'] ?? null);
-        $keyword = trim((string) ($options['keyword'] ?? ''));
 
-        return $this->syncFeeds($business_id, $contact, $provider, $limit, true, $keyword);
+        return $this->syncFeeds($business_id, $contact, $provider, $limit, true);
     }
 
     /**
@@ -168,10 +167,9 @@ class ContactFeedUtil extends Util
      * @param string $provider
      * @param int $limit
      * @param bool $incremental
-     * @param string $keyword
      * @return array<string, mixed>
      */
-    protected function syncFeeds($business_id, Contact $contact, $provider, $limit, $incremental, $keyword = '')
+    protected function syncFeeds($business_id, Contact $contact, $provider, $limit, $incremental)
     {
         $existing_query = ContactFeed::forContact($business_id, $contact->id)->where('provider', $provider);
         $existing_count_before = (int) $existing_query->count();
@@ -179,22 +177,22 @@ class ContactFeedUtil extends Util
             'provider' => $provider,
             'limit' => $limit,
         ];
-
-        if ($keyword !== '') {
-            $options['keyword'] = $keyword;
-        }
+        $latest_published_at = null;
 
         if ($incremental) {
-            $latest_published_at = $existing_query->max('published_at');
-            if (! empty($latest_published_at)) {
-                $options['published_after'] = Carbon::parse($latest_published_at)->toDateTimeString();
+            $latest_published_value = $existing_query->max('published_at');
+            if (! empty($latest_published_value)) {
+                $latest_published_at = Carbon::parse($latest_published_value);
+                $options['published_after'] = $latest_published_at->toDateTimeString();
             }
         }
 
         try {
             $provider_impl = $this->resolveProvider($provider);
             $items = $provider_impl->search($contact, $options);
-            $persisted = $this->persistItems($business_id, $contact->id, $provider, $items);
+            $filtered_items = $this->filterIncrementalItems($items, $latest_published_at);
+            $filtered_out_count = max(0, count($items) - count($filtered_items));
+            $persisted = $this->persistItems($business_id, $contact->id, $provider, $filtered_items);
         } catch (\Throwable $e) {
             $last_synced_at = $existing_query->max('fetched_at');
 
@@ -216,14 +214,14 @@ class ContactFeedUtil extends Util
             ->where('provider', $provider)
             ->max('fetched_at');
         $inserted = (int) $persisted['inserted_count'];
-        $skipped = (int) $persisted['skipped_count'];
+        $skipped = (int) $persisted['skipped_count'] + (int) ($filtered_out_count ?? 0);
 
         if ($inserted > 0) {
             $msg = $incremental
-                ? 'Feed updated successfully with latest news.'
-                : 'News loaded successfully from provider.';
+                ? 'Google related news updated successfully.'
+                : 'Google related news loaded successfully.';
         } else {
-            $msg = 'No new feed items were found.';
+            $msg = 'No new Google feed items were found.';
         }
 
         return [
@@ -271,6 +269,7 @@ class ContactFeedUtil extends Util
                 'provider' => $provider,
                 'title' => mb_substr((string) ($item['title'] ?? ''), 0, 512),
                 'snippet' => ! empty($item['snippet']) ? (string) $item['snippet'] : null,
+                'image_url' => $this->normalizeImageUrl($item['image_url'] ?? null),
                 'canonical_url' => $canonical_url,
                 'url_hash' => $hash,
                 'source_name' => ! empty($item['source_name']) ? (string) $item['source_name'] : null,
@@ -311,7 +310,7 @@ class ContactFeedUtil extends Util
             ContactFeed::upsert(
                 $rows_to_insert,
                 ['business_id', 'contact_id', 'provider', 'url_hash'],
-                ['title', 'snippet', 'source_name', 'published_at', 'fetched_at', 'raw_payload', 'updated_at']
+                ['title', 'snippet', 'image_url', 'source_name', 'published_at', 'fetched_at', 'raw_payload', 'updated_at']
             );
         }
 
@@ -395,6 +394,54 @@ class ContactFeedUtil extends Util
     public function hashUrl($provider, $canonical_url)
     {
         return hash('sha256', strtolower($provider.'|'.$canonical_url));
+    }
+
+    /**
+     * Exclude stale dated items during incremental sync while allowing
+     * undated items through for hash-based dedupe.
+     *
+     * @param array<int, array<string, mixed>> $items
+     * @param \Illuminate\Support\Carbon|null $latest_published_at
+     * @return array<int, array<string, mixed>>
+     */
+    protected function filterIncrementalItems(array $items, $latest_published_at = null)
+    {
+        if (empty($latest_published_at)) {
+            return $items;
+        }
+
+        $filtered = [];
+        foreach ($items as $item) {
+            $published_at = $this->parseDate($item['published_at'] ?? null);
+            if (! empty($published_at) && Carbon::parse($published_at)->lessThanOrEqualTo($latest_published_at)) {
+                continue;
+            }
+
+            $filtered[] = $item;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Normalize preview image URL.
+     *
+     * @param mixed $url
+     * @return string|null
+     */
+    protected function normalizeImageUrl($url)
+    {
+        $url = trim((string) $url);
+        if (empty($url)) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+
+        return $url;
     }
 
     /**

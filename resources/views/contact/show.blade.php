@@ -604,6 +604,8 @@
     var contactActiveTab = @json($view_type ?? 'ledger');
     var canEditContact = @json($can_edit_contact);
     var contactFeedsLoaded = false;
+    var contactFeedsProvider = 'google';
+    var contactFeedsLimit = 30;
     var contactEditTabLoaded = false;
     var contactFeedsListUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'getContactFeeds'], [$contact->id]) }}";
     var contactFeedsLoadUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'loadContactFeeds'], [$contact->id]) }}";
@@ -889,8 +891,7 @@
 
         // Load feeds when tab is opened the first time
         $('[data-bs-target="#tab_feeds"]').one('shown.bs.tab', function () {
-            contactFeedsLoaded = true;
-            get_contact_feeds();
+            initialize_contact_feeds();
         });
 
         $('[data-bs-target="#tab_edit"]').one('shown.bs.tab', function () {
@@ -898,8 +899,7 @@
         });
 
         if (contactActiveTab === 'feeds') {
-            contactFeedsLoaded = true;
-            get_contact_feeds();
+            initialize_contact_feeds();
         }
         if (contactActiveTab === 'edit') {
             loadContactEditTab();
@@ -988,57 +988,21 @@
         });
     }
 
-    $(document).on('click', '#load_contact_feeds_btn', function (e) {
-        e.preventDefault();
-        sync_contact_feeds('load', $(this));
-    });
-
     $(document).on('click', '#update_contact_feeds_btn', function (e) {
         e.preventDefault();
-        var $button = $(this);
-        var provider = $('#contact_feeds_provider').val() || 'google';
+        sync_contact_feeds('update', $(this));
+    });
 
-        if (provider !== 'google') {
-            sync_contact_feeds('update', $button);
+    function initialize_contact_feeds() {
+        if (contactFeedsLoaded) {
+            get_contact_feeds();
             return;
         }
 
-        swal({
-            title: 'Add keyword for update',
-            text: 'Company/contact name is always included. Add an optional keyword for more relevant Google news.',
-            content: {
-                element: 'input',
-                attributes: {
-                    placeholder: 'Example: open new branch',
-                    maxlength: 120,
-                },
-            },
-            buttons: {
-                cancel: true,
-                confirm: 'Update Feed',
-            },
-        }).then(function (keyword) {
-            if (keyword === null) {
-                return;
-            }
-
-            var normalizedKeyword = '';
-            if (typeof keyword === 'string') {
-                normalizedKeyword = keyword.trim().replace(/\s+/g, ' ');
-            }
-
-            sync_contact_feeds('update', $button, normalizedKeyword);
-        });
-    });
-
-    $(document).on('change', '#contact_feeds_provider', function () {
-        if (contactFeedsLoaded) {
-            get_contact_feeds();
-        }
-    });
+        sync_contact_feeds('load', $('#update_contact_feeds_btn'));
+    }
 
     function get_contact_feeds() {
-        var provider = $('#contact_feeds_provider').val() || 'google';
         var $container = $('#contact_feeds_div');
 
         $container.html(
@@ -1052,7 +1016,7 @@
             method: 'GET',
             url: contactFeedsListUrl,
             dataType: 'html',
-            data: { provider: provider, limit: 20 },
+            data: { provider: contactFeedsProvider, limit: contactFeedsLimit },
             success: function (result) {
                 $container.html(result);
             },
@@ -1066,16 +1030,19 @@
         });
     }
 
-    function sync_contact_feeds(action, $button, keyword) {
-        var provider = $('#contact_feeds_provider').val() || 'google';
+    function sync_contact_feeds(action, $button) {
         var endpoint = action === 'update' ? contactFeedsUpdateUrl : contactFeedsLoadUrl;
-        var payload = { provider: provider, limit: 20 };
-
-        if (action === 'update' && typeof keyword === 'string' && keyword.length > 0) {
-            payload.keyword = keyword;
-        }
+        var payload = { provider: contactFeedsProvider, limit: contactFeedsLimit };
 
         $button.attr('data-kt-indicator', 'on').prop('disabled', true);
+        if (action === 'load') {
+            $('#contact_feeds_div').html(
+                '<div class=\"d-flex align-items-center justify-content-center py-10\">' +
+                '<span class=\"spinner-border spinner-border-sm me-2\"></span>' +
+                '<span class=\"text-muted fw-semibold\">Searching Google for related news...</span>' +
+                '</div>'
+            );
+        }
 
         $.ajax({
             method: 'POST',
@@ -1101,7 +1068,7 @@
                     inserted_count: 0,
                     skipped_count: 0,
                     existing_count: 0,
-                    provider: provider,
+                    provider: contactFeedsProvider,
                     last_synced_at: null,
                 };
                 render_contact_feeds_summary(result);
@@ -1126,6 +1093,7 @@
                     'Inserted: ' + (result.inserted_count || 0) + ' | ' +
                     'Skipped: ' + (result.skipped_count || 0) + ' | ' +
                     'Existing: ' + (result.existing_count || 0) +
+                    (result.last_synced_at ? ' | Last sync: ' + result.last_synced_at : '') +
                 '</div>'
             );
     }

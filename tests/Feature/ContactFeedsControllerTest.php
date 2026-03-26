@@ -51,6 +51,7 @@ class ContactFeedsControllerTest extends TestCase
             $table->string('provider', 50)->index();
             $table->string('title', 512);
             $table->text('snippet')->nullable();
+            $table->text('image_url')->nullable();
             $table->text('canonical_url');
             $table->string('url_hash', 64)->index();
             $table->string('source_name')->nullable();
@@ -84,7 +85,7 @@ class ContactFeedsControllerTest extends TestCase
         $controller = $this->makeController($feed_util);
         $request = $this->makeFeedRequest('/contacts/99/feeds/load', 'POST', [
             'provider' => 'google',
-            'limit' => 20,
+            'limit' => 30,
         ], ['user.business_id' => 1]);
 
         try {
@@ -120,14 +121,14 @@ class ContactFeedsControllerTest extends TestCase
         $controller = $this->makeController($feed_util);
         $request = $this->makeFeedRequest('/contacts/15/feeds/load', 'POST', [
             'provider' => 'google',
-            'limit' => 20,
+            'limit' => 30,
         ], ['user.business_id' => 1]);
 
         $this->expectException(NotFoundHttpException::class);
         $controller->loadContactFeeds($request, 15);
     }
 
-    public function test_feed_sync_request_rejects_invalid_provider_and_limit(): void
+    public function test_feed_sync_request_rejects_non_google_provider_and_invalid_limit(): void
     {
         $user = $this->makeUser([
             'supplier.view' => true,
@@ -139,7 +140,7 @@ class ContactFeedsControllerTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->makeFeedRequest('/contacts/1/feeds/load', 'POST', [
-            'provider' => 'x',
+            'provider' => 'facebook',
             'limit' => 99,
         ], ['user.business_id' => 1]);
     }
@@ -170,6 +171,7 @@ class ContactFeedsControllerTest extends TestCase
             'provider' => 'google',
             'title' => 'Existing story',
             'snippet' => 'existing',
+            'image_url' => 'https://images.example.com/existing.jpg',
             'canonical_url' => 'https://example.com/existing',
             'url_hash' => hash('sha256', 'google|https://example.com/existing'),
             'source_name' => 'example.com',
@@ -191,7 +193,7 @@ class ContactFeedsControllerTest extends TestCase
         $controller = $this->makeController($feed_util);
         $request = $this->makeFeedRequest('/contacts/21/feeds/load', 'POST', [
             'provider' => 'google',
-            'limit' => 20,
+            'limit' => 30,
         ], ['user.business_id' => 1]);
 
         $result = $controller->loadContactFeeds($request, 21);

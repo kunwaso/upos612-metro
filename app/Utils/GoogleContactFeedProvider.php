@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\Http;
 class GoogleContactFeedProvider implements ContactFeedProviderInterface
 {
     /**
+     * @var \App\Utils\SerpApiGoogleContactFeedProvider|null
+     */
+    protected $serpApiProvider;
+
+    public function __construct(?SerpApiGoogleContactFeedProvider $serpApiProvider = null)
+    {
+        $this->serpApiProvider = $serpApiProvider;
+    }
+
+    /**
      * Search Google Custom Search and return normalized items.
      *
      * @param \App\Contact $contact
@@ -20,6 +30,35 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
      * @throws \RuntimeException
      */
     public function search(Contact $contact, array $options = [])
+    {
+        $limit = isset($options['limit']) ? (int) $options['limit'] : (int) config('services.google_custom_search.default_limit', 30);
+        $limit = max(1, min($limit, 30));
+        $query = $this->buildQuery($contact, $options);
+        $options['query'] = $query;
+
+        try {
+            return $this->searchGoogleCustomSearch($contact, $options, $limit, $query);
+        } catch (\Throwable $e) {
+            if (! $this->shouldUseSerpApiFallback($e)) {
+                throw $e;
+            }
+
+            try {
+                return $this->serpApiProvider->search($contact, $options);
+            } catch (\Throwable $fallbackException) {
+                throw new \RuntimeException($e->getMessage().' | SerpApi fallback failed: '.$fallbackException->getMessage());
+            }
+        }
+    }
+
+    /**
+     * @param \App\Contact $contact
+     * @param array $options
+     * @param int $limit
+     * @param string $query
+     * @return array<int, array<string, mixed>>
+     */
+    protected function searchGoogleCustomSearch(Contact $contact, array $options, $limit, $query)
     {
         $api_key = (string) config('services.google_custom_search.api_key');
         $search_engine_id = (string) config('services.google_custom_search.search_engine_id');
@@ -32,10 +71,7 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
             throw new \RuntimeException('Google Custom Search credentials are not configured.');
         }
 
-        $limit = isset($options['limit']) ? (int) $options['limit'] : (int) config('services.google_custom_search.default_limit', 20);
-        $limit = max(1, min($limit, 50));
-
-        $query = $this->buildQuery($contact, $options);
+        $date_restrict = $this->buildDateRestrict($options['published_after'] ?? null);
         $items = [];
         $remaining = $limit;
         $start = 1;
@@ -50,6 +86,9 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
                 'start' => $start,
                 'sort' => 'date',
             ];
+            if (! empty($date_restrict)) {
+                $params['dateRestrict'] = $date_restrict;
+            }
 
             $request = Http::timeout($timeout)->acceptJson();
             if (! $this->isSslVerificationEnabled($verify_ssl)) {
@@ -91,6 +130,36 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
         }
 
         return $items;
+    }
+
+    /**
+     * @param \Throwable $exception
+     * @return bool
+     */
+    protected function shouldUseSerpApiFallback(\Throwable $exception)
+    {
+        if (! $this->serpApiProvider) {
+            return false;
+        }
+
+        $fallback_enabled = config('services.serpapi_google.fallback_enabled', true);
+        $fallback_provider = (string) config('services.contact_feeds.google_fallback_provider', 'serpapi_google');
+        $has_fallback_key = trim((string) config('services.serpapi_google.api_key', '')) !== '';
+        $message = strtolower(trim((string) $exception->getMessage()));
+
+        if (! $this->isSslVerificationEnabled($fallback_enabled) || ! $has_fallback_key || $fallback_provider !== 'serpapi_google') {
+            return false;
+        }
+
+        return $message === ''
+            || strpos($message, 'google custom search credentials are not configured') !== false
+            || strpos($message, 'google custom search request failed: 403') !== false
+            || strpos($message, 'google custom search request failed: 429') !== false
+            || strpos($message, 'permission_denied') !== false
+            || strpos($message, 'forbidden') !== false
+            || strpos($message, 'quota') !== false
+            || strpos($message, 'custom search json api') !== false
+            || strpos($message, 'api key not valid') !== false;
     }
 
     /**
@@ -162,20 +231,12 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
         $city = trim((string) ($contact->city ?? ''));
         $state = trim((string) ($contact->state ?? ''));
         $country = trim((string) ($contact->country ?? ''));
-        $keyword = trim((string) ($options['keyword'] ?? $options['query'] ?? ''));
-        $keyword = str_replace('"', '', $keyword);
-        $keyword = preg_replace('/\s+/u', ' ', $keyword) ?: '';
 
         if (empty($name)) {
             $name = 'business';
         }
 
-        $query = '"'.$name.'"';
-        if (! empty($keyword)) {
-            $query .= ' "'.$keyword.'"';
-        }
-
-        $query .= ' latest news';
+        $query = '"'.$name.'" latest news';
         $location = trim(implode(' ', array_filter([$city, $state, $country])));
         if (! empty($location)) {
             $query .= ' "'.$location.'"';
@@ -203,6 +264,7 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
             'provider' => 'google',
             'title' => $title,
             'snippet' => trim((string) Arr::get($item, 'snippet', '')),
+            'image_url' => $this->extractImageUrl($item),
             'canonical_url' => $url,
             'source_name' => (string) Arr::get($item, 'displayLink', ''),
             'published_at' => $this->extractPublishedAt($item),
@@ -240,5 +302,94 @@ class GoogleContactFeedProvider implements ContactFeedProviderInterface
         }
 
         return null;
+    }
+
+    /**
+     * Approximate Google date restriction for fresher incremental pulls.
+     *
+     * @param string|null $published_after
+     * @return string|null
+     */
+    protected function buildDateRestrict($published_after)
+    {
+        if (empty($published_after)) {
+            return null;
+        }
+
+        try {
+            $days = max(1, Carbon::parse($published_after)->diffInDays(now()) + 1);
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        if ($days <= 30) {
+            return 'd'.$days;
+        }
+
+        if ($days <= 180) {
+            return 'w'.(int) ceil($days / 7);
+        }
+
+        if ($days <= 730) {
+            return 'm'.(int) ceil($days / 30);
+        }
+
+        return 'y'.(int) ceil($days / 365);
+    }
+
+    /**
+     * Extract a preview image URL from common Google result metadata fields.
+     *
+     * @param array $item
+     * @return string|null
+     */
+    protected function extractImageUrl(array $item)
+    {
+        $meta = Arr::get($item, 'pagemap.metatags.0', []);
+        $candidates = [
+            Arr::get($item, 'pagemap.cse_image.0.src'),
+            Arr::get($item, 'pagemap.cse_thumbnail.0.src'),
+            Arr::get($item, 'pagemap.imageobject.0.url'),
+            Arr::get($item, 'pagemap.imageobject.0.contenturl'),
+            Arr::get($meta, 'og:image'),
+            Arr::get($meta, 'og:image:url'),
+            Arr::get($meta, 'twitter:image'),
+            Arr::get($meta, 'image'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $normalized = $this->normalizeImageUrl($candidate);
+            if (! empty($normalized)) {
+                return $normalized;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize preview image URL.
+     *
+     * @param mixed $url
+     * @return string|null
+     */
+    protected function normalizeImageUrl($url)
+    {
+        $url = trim((string) $url);
+        if (empty($url)) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+
+        $scheme = strtolower((string) $parts['scheme']);
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        return $url;
     }
 }
