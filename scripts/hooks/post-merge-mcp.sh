@@ -26,11 +26,17 @@ mkdir -p "$LOG_DIR"
   SEMANTIC_BIN="$REPO_ROOT/mcp/semantic-code-search-mcp/bin/index-codebase"
   SEMANTIC_VENDOR="$REPO_ROOT/mcp/semantic-code-search-mcp/vendor/autoload.php"
   if [ -f "$SEMANTIC_VENDOR" ]; then
+    PYTHON_BIN=""
+    if command -v python >/dev/null 2>&1; then
+      PYTHON_BIN="$(python -c 'import sys; print(sys.executable)' 2>/dev/null | tr -d '\r')"
+      [ -z "$PYTHON_BIN" ] && PYTHON_BIN="$(command -v python)"
+    fi
     MCP_SEMANTIC_INCLUDE_ROOTS="mcp/README.md" \
     MCP_SEMANTIC_CHUNK_LINES="20" \
     MCP_SEMANTIC_CHUNK_OVERLAP="4" \
     MCP_SEMANTIC_MAX_FILE_BYTES="262144" \
-      php "$SEMANTIC_BIN" --force >/dev/null 2>&1 || true
+    MCP_SEMANTIC_PYTHON_BIN="$PYTHON_BIN" \
+      php "$SEMANTIC_BIN" >/dev/null 2>&1 || true
   fi
 
   if command -v npx >/dev/null 2>&1; then

@@ -308,8 +308,15 @@ if ($SkipSemantic) {
         $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
     }
 
-    $semanticLabel = "Semantic index refresh ($Profile)"
-    Invoke-CommandSafe -Label $semanticLabel -Action { & $Php $SemanticBin --force } | Out-Null
+    $semanticArgs = @()
+    $semanticMode = 'incremental'
+    if ($Profile -eq 'nightly-embeddings') {
+        $semanticArgs += '--force'
+        $semanticMode = 'force'
+    }
+
+    $semanticLabel = "Semantic index refresh ($Profile, $semanticMode)"
+    Invoke-CommandSafe -Label $semanticLabel -Action { & $Php $SemanticBin @semanticArgs } | Out-Null
 }
 
 # 3) GitNexus refresh cadence
