@@ -22,13 +22,12 @@ class SendMailboxMessageJob implements ShouldQueue
 
     public array $payload;
 
-    public $queue = 'mailbox-send';
-
     public function __construct(int $businessId, int $userId, array $payload)
     {
         $this->businessId = $businessId;
         $this->userId = $userId;
         $this->payload = $payload;
+        $this->onQueue('mailbox-send');
     }
 
     public function handle(MailboxSendUtil $sendUtil): void

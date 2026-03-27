@@ -69,6 +69,7 @@
                                     <div class="col-md-6">
                                         <label class="form-label">IMAP password</label>
                                         <input type="password" name="imap_password" class="form-control form-control-solid" required>
+                                        <div class="text-muted fs-8 mt-1">Zoho tip: use a Zoho app password, not your normal account password.</div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Inbox folder</label>
@@ -185,6 +186,7 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label">IMAP password</label>
                                                     <input type="password" name="imap_password" class="form-control form-control-solid" placeholder="Leave blank to keep existing">
+                                                    <div class="text-muted fs-8 mt-1">Zoho tip: keep or replace with a Zoho app password.</div>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label">Inbox folder</label>

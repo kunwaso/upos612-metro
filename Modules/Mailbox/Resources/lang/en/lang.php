@@ -25,6 +25,8 @@ return [
     'account_removed' => 'Mailbox account disconnected successfully.',
     'connection_successful' => 'Connection successful.',
     'connection_failed' => 'Connection failed: :message',
+    'auth_failed_help' => 'Authentication failed. Recheck username/password and use a provider app password if required.',
+    'zoho_auth_help' => 'Zoho rejected login. Use full Zoho email as username, enable IMAP in Zoho Mail, and use a Zoho app password (not the normal account password).',
     'test_connection' => 'Test connection',
     'testing_connection' => 'Testing...',
     'mark_as_read' => 'Mark as read',

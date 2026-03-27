@@ -19,11 +19,10 @@ class SyncMailboxAccountJob implements ShouldQueue
 
     public int $accountId;
 
-    public $queue = 'mailbox-sync';
-
     public function __construct(int $accountId)
     {
         $this->accountId = $accountId;
+        $this->onQueue('mailbox-sync');
     }
 
     public function handle(MailboxSyncUtil $syncUtil): void

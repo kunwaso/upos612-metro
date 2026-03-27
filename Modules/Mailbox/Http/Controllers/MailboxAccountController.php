@@ -2,6 +2,7 @@
 
 namespace Modules\Mailbox\Http\Controllers;
 
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\Mailbox\Entities\MailboxAccount;
@@ -24,10 +25,11 @@ class MailboxAccountController extends Controller
 
     public function testConnection(TestMailboxConnectionRequest $request, MailboxAccountUtil $accountUtil)
     {
+        $payload = $request->validated();
+
         try {
             $businessId = (int) $request->session()->get('user.business_id');
             $userId = (int) auth()->id();
-            $payload = $request->validated();
 
             if (! empty($payload['existing_account_id'])) {
                 $existingAccount = $accountUtil->getAccountForOwner($businessId, $userId, (int) $payload['existing_account_id']);
@@ -44,7 +46,7 @@ class MailboxAccountController extends Controller
         } catch (\Throwable $exception) {
             return response()->json([
                 'success' => false,
-                'message' => __('mailbox::lang.connection_failed', ['message' => $exception->getMessage()]),
+                'message' => $this->friendlyConnectionErrorMessage($exception, $payload),
             ], 422);
         }
     }
@@ -62,7 +64,7 @@ class MailboxAccountController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('status', ['success' => false, 'msg' => __('mailbox::lang.connection_failed', ['message' => $exception->getMessage()])]);
+                ->with('status', ['success' => false, 'msg' => $this->friendlyConnectionErrorMessage($exception, $payload)]);
         }
 
         return redirect()->route('mailbox.accounts.index')->with('status', ['success' => true, 'msg' => __('mailbox::lang.account_connected')]);
@@ -82,7 +84,7 @@ class MailboxAccountController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('status', ['success' => false, 'msg' => __('mailbox::lang.connection_failed', ['message' => $exception->getMessage()])]);
+                ->with('status', ['success' => false, 'msg' => $this->friendlyConnectionErrorMessage($exception, $payload)]);
         }
 
         return redirect()->route('mailbox.accounts.index')->with('status', ['success' => true, 'msg' => __('mailbox::lang.account_updated')]);
@@ -132,5 +134,22 @@ class MailboxAccountController extends Controller
         unset($payload['existing_account_id']);
 
         return $payload;
+    }
+
+    protected function friendlyConnectionErrorMessage(\Throwable $exception, array $payload): string
+    {
+        $error = (string) $exception->getMessage();
+        $normalized = Str::upper($error);
+        $host = Str::lower((string) ($payload['imap_host'] ?? ''));
+
+        if (Str::contains($normalized, 'AUTHENTICATIONFAILED') || Str::contains($normalized, 'INVALID CREDENTIAL')) {
+            if (Str::contains($host, 'zoho.')) {
+                return __('mailbox::lang.zoho_auth_help');
+            }
+
+            return __('mailbox::lang.auth_failed_help');
+        }
+
+        return __('mailbox::lang.connection_failed', ['message' => $error]);
     }
 }
