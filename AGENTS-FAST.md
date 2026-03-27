@@ -135,7 +135,7 @@ Use this exact handoff so tools complement each other instead of overlapping:
 2. **Meaning/architecture work** -> `semantic_code_search` (`index_status` first) -> `gitnexus` (`query`/`context`) -> `grep` for exact confirmation -> `read_file_cache`.
 3. **Before editing Util/controller methods** -> run `gitnexus_impact` for blast radius and flag HIGH/CRITICAL risk.
 4. **Before commit** -> run `gitnexus_detect_changes` to confirm affected scope and execution-flow impact.
-5. **If semantic degrades** (`NOT_INDEXED`, `STALE`, `OLLAMA_UNAVAILABLE`) -> fallback immediately to `gitnexus` + `grep` + `read_file_cache` + `laravel_mysql`.
+5. **If semantic degrades** (`NOT_INDEXED`, `STALE`, `EMBEDDER_UNAVAILABLE`) -> fallback immediately to `gitnexus` + `grep` + `read_file_cache` + `laravel_mysql`.
 
 Session-start check:
 

@@ -28,8 +28,8 @@ env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 command = "npx"
 args = ["-y", "gitnexus@1.4.8", "mcp"]
 
-# Optional: requires Ollama + nomic-embed-text (ollama pull nomic-embed-text)
+# Optional: fully local Hugging Face embeddings (install python deps in mcp/semantic-code-search-mcp/scripts/requirements.txt)
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_PYTHON_BIN = "C:/Users/<user>/AppData/Local/Python/pythoncore-3.14-64/python.exe", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-base-en", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }

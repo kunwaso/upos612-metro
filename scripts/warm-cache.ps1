@@ -111,15 +111,42 @@ function Find-GitNexusCli {
     return $null
 }
 
-function Test-OllamaReachable {
-    param([string]$BaseUrl = 'http://127.0.0.1:11434')
+function Resolve-PythonBinary {
+    param(
+        [string]$ConfiguredPath = ''
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ConfiguredPath) -and (Test-Path $ConfiguredPath)) {
+        return (Resolve-Path $ConfiguredPath).Path
+    }
+
+    $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -eq $pythonCommand) {
+        return $null
+    }
+
+    $candidate = $pythonCommand.Source
+    if ([string]::IsNullOrWhiteSpace($candidate)) {
+        return $null
+    }
 
     try {
-        $response = Invoke-WebRequest -Uri "$BaseUrl/api/tags" -TimeoutSec 3 -UseBasicParsing -ErrorAction SilentlyContinue
-        return $response.StatusCode -eq 200
+        $probe = & $candidate -c "import sys; print(sys.executable)" 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($probe)) {
+            $resolvedProbe = $probe.Trim()
+            if (Test-Path $resolvedProbe) {
+                return (Resolve-Path $resolvedProbe).Path
+            }
+        }
     } catch {
-        return $false
+        # Fall through to candidate path.
     }
+
+    if (Test-Path $candidate) {
+        return (Resolve-Path $candidate).Path
+    }
+
+    return $null
 }
 
 function Invoke-CommandSafe {
@@ -251,38 +278,38 @@ if ($SkipSemantic) {
 } elseif (-not (Test-Path $SemanticVendor)) {
     Write-Log 'semantic-code-search-mcp vendor missing; skipping semantic index.' 'WARN'
 } else {
-    $ollamaHost = $env:MCP_SEMANTIC_OLLAMA_HOST
-    if ([string]::IsNullOrWhiteSpace($ollamaHost)) {
-        $ollamaHost = 'http://127.0.0.1:11434'
-    }
-
-    if (-not (Test-OllamaReachable -BaseUrl $ollamaHost)) {
-        Write-Log "Ollama not reachable at $ollamaHost; skipping semantic index." 'WARN'
+    $env:MCP_SEMANTIC_WORKSPACE_ROOT = $RepoRoot
+    $env:MCP_SEMANTIC_INDEX_ROOT = Join-Path $RepoRoot '.cache\semantic-code-search-mcp'
+    $resolvedPython = Resolve-PythonBinary -ConfiguredPath $env:MCP_SEMANTIC_PYTHON_BIN
+    if (-not [string]::IsNullOrWhiteSpace($resolvedPython)) {
+        $env:MCP_SEMANTIC_PYTHON_BIN = $resolvedPython
+        Write-Log "Semantic python runtime: $resolvedPython"
     } else {
-        $env:MCP_SEMANTIC_WORKSPACE_ROOT = $RepoRoot
-        $env:MCP_SEMANTIC_INDEX_ROOT = Join-Path $RepoRoot '.cache\semantic-code-search-mcp'
-        $env:MCP_SEMANTIC_OLLAMA_HOST = $ollamaHost
-        if (-not $env:MCP_SEMANTIC_EMBED_MODEL) {
-            $env:MCP_SEMANTIC_EMBED_MODEL = 'nomic-embed-text'
-        }
-
-        # Startup keeps the semantic pass fast; nightly keeps broader coverage.
-        if ($Profile -eq 'startup') {
-            $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'mcp/README.md'
-            $env:MCP_SEMANTIC_CHUNK_LINES = '20'
-            $env:MCP_SEMANTIC_CHUNK_OVERLAP = '4'
-            $env:MCP_SEMANTIC_MAX_FILE_BYTES = '262144'
-        } else {
-            $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,mcp,ai,tests,config,src'
-            $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
-            $env:MCP_SEMANTIC_CHUNK_LINES = '120'
-            $env:MCP_SEMANTIC_CHUNK_OVERLAP = '20'
-            $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
-        }
-
-        $semanticLabel = "Semantic index refresh ($Profile)"
-        Invoke-CommandSafe -Label $semanticLabel -Action { & $Php $SemanticBin --force } | Out-Null
+        Write-Log 'Python runtime not found; semantic embedding may fail.' 'WARN'
     }
+    if (-not $env:MCP_SEMANTIC_EMBED_BACKEND) {
+        $env:MCP_SEMANTIC_EMBED_BACKEND = 'huggingface'
+    }
+    if (-not $env:MCP_SEMANTIC_EMBED_MODEL) {
+        $env:MCP_SEMANTIC_EMBED_MODEL = 'BAAI/bge-base-en'
+    }
+
+    # Startup keeps the semantic pass fast; nightly keeps broader coverage.
+    if ($Profile -eq 'startup') {
+        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'mcp/README.md'
+        $env:MCP_SEMANTIC_CHUNK_LINES = '20'
+        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '4'
+        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '262144'
+    } else {
+        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,mcp,ai,tests,config,src'
+        $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
+        $env:MCP_SEMANTIC_CHUNK_LINES = '120'
+        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '20'
+        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
+    }
+
+    $semanticLabel = "Semantic index refresh ($Profile)"
+    Invoke-CommandSafe -Label $semanticLabel -Action { & $Php $SemanticBin --force } | Out-Null
 }
 
 # 3) GitNexus refresh cadence

@@ -1,0 +1,23 @@
+.mailbox-account-chip {
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.mailbox-account-chip.active,
+.mailbox-account-chip:hover {
+    border-color: var(--bs-primary-border-subtle, #d7e9ff);
+    background: var(--bs-primary-bg-subtle, #eef6ff);
+}
+
+.mailbox-unread-row td {
+    background: rgba(0, 103, 255, 0.04);
+}
+
+.mailbox-thread-body {
+    line-height: 1.7;
+}
+
+.mailbox-thread-body img {
+    max-width: 100%;
+    height: auto;
+}

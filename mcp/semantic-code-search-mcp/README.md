@@ -1,10 +1,11 @@
 # Semantic Code Search MCP Server
 
-Standalone MCP server for local-only semantic code search in this workspace.
+Standalone MCP server for fully local semantic code search in this workspace.
 
 ## Status
 
-- Optional. Use it when exact symbols are unknown and a behavior-level search is needed.
+- Optional. Use it when exact symbols are unknown and behavior-level search is needed.
+- No external API calls at runtime.
 
 ## Location
 
@@ -14,14 +15,22 @@ Standalone MCP server for local-only semantic code search in this workspace.
 
 - PHP `^8.1`
 - Composer
-- Ollama running locally for production use
+- Python `>=3.10`
+- Local Python packages from `scripts/requirements.txt`
+- Local Hugging Face model files (default: `BAAI/bge-base-en`)
 
 ## Install
 
 ```bash
 cd mcp/semantic-code-search-mcp
 composer install
-ollama pull nomic-embed-text
+python -m pip install -r scripts/requirements.txt
+```
+
+Download or pre-cache your embedding model locally once (example):
+
+```bash
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-base-en')"
 ```
 
 ## Run
@@ -38,55 +47,53 @@ Default semantic index location:
 <repo-root>/.cache/semantic-code-search-mcp/semantic-code-search.sqlite
 ```
 
-## Embedding model upgrade (recommended)
+## Embedding Defaults
 
-The default `nomic-embed-text` model is a good starting point but produces weaker results on nuanced "where is X done?" queries compared to larger models. For noticeably better semantic search quality while keeping all data local, upgrade to `mxbai-embed-large`:
+- Backend: local Hugging Face (`MCP_SEMANTIC_EMBED_BACKEND=huggingface`)
+- Model: `BAAI/bge-base-en`
+- Device: auto (`cuda` if available, otherwise `cpu`; `mps` on Apple Silicon if available)
+- Batch encoding: enabled (`MCP_SEMANTIC_HF_BATCH_SIZE=24`)
+- Normalization: enabled (`MCP_SEMANTIC_HF_NORMALIZE=1`)
+- BGE query instruction: enabled for query embedding
+- Offline/local-only loading: enabled (`MCP_SEMANTIC_HF_LOCAL_FILES_ONLY=1`)
+
+Switch to a smaller model for lower memory:
+
+- `MCP_SEMANTIC_EMBED_MODEL=BAAI/bge-small-en`
+
+## Building the Index (CLI or MCP)
+
+Semantic search requires an index.
+
+1. CLI:
 
 ```bash
-ollama pull mxbai-embed-large
+php mcp/semantic-code-search-mcp/bin/index-codebase
 ```
 
-Then update your MCP config and re-index:
-
-```toml
-# ~/.codex/config.toml or .cursor/mcp.json
-MCP_SEMANTIC_EMBED_MODEL = "mxbai-embed-large"
-```
+Force full re-index:
 
 ```bash
 php mcp/semantic-code-search-mcp/bin/index-codebase --force
 ```
 
-Trade-off: `mxbai-embed-large` uses ~560 MB VRAM/RAM vs ~270 MB for `nomic-embed-text` and indexing takes longer. Both are fully local; no data leaves your machine.
+2. MCP tool:
 
-Model comparison for this use case:
+- `index_codebase(force?)`
 
-| Model | Quality | RAM | Index speed |
-|-------|---------|-----|-------------|
-| `nomic-embed-text` | Good | ~270 MB | Faster |
-| `mxbai-embed-large` | Better | ~560 MB | Slower |
+## Validation Script
 
-Switch back at any time by reverting the env var and re-running `--force`.
+Quick local validation for indexing + semantic search:
 
----
+```bash
+php mcp/semantic-code-search-mcp/bin/validate-local-search
+```
 
-## Building the index (CLI or MCP)
+Fast deterministic validation (no Python model load):
 
-**Index required.** Unlike grep MCP, this server needs a semantic index for meaning-based search.
-
-You can build the index in two ways:
-
-1. **CLI (recommended for first run or after big changes)** — from repo root:
-   ```bash
-   php mcp/semantic-code-search-mcp/bin/index-codebase
-   ```
-   Use `--force` to re-index all files even when unchanged:
-   ```bash
-   php mcp/semantic-code-search-mcp/bin/index-codebase --force
-   ```
-   Uses the same env as the MCP server (`MCP_SEMANTIC_WORKSPACE_ROOT`, `MCP_SEMANTIC_INDEX_ROOT`, `MCP_SEMANTIC_OLLAMA_HOST`, `MCP_SEMANTIC_EMBED_MODEL`). Requires Ollama with the embed model (e.g. `ollama pull nomic-embed-text`).
-
-2. **MCP tool** — when the server is running in Cursor/Codex, call the `index_codebase` tool (optionally with `force: true`).
+```bash
+php mcp/semantic-code-search-mcp/bin/validate-local-search --backend=deterministic
+```
 
 ## Tool Contract
 
@@ -106,8 +113,16 @@ Use grep MCP for exact strings, selectors, routes, and regex/pattern search.
 
 - `MCP_SEMANTIC_WORKSPACE_ROOT`
 - `MCP_SEMANTIC_INDEX_ROOT`
-- `MCP_SEMANTIC_OLLAMA_HOST`
+- `MCP_SEMANTIC_EMBED_BACKEND` (`huggingface` or `deterministic`)
 - `MCP_SEMANTIC_EMBED_MODEL`
+- `MCP_SEMANTIC_PYTHON_BIN` (default `python`)
+- `MCP_SEMANTIC_HF_DEVICE` (`auto`, `cuda`, `cpu`, `mps`)
+- `MCP_SEMANTIC_HF_BATCH_SIZE`
+- `MCP_SEMANTIC_HF_MAX_LENGTH`
+- `MCP_SEMANTIC_HF_TIMEOUT_SECONDS`
+- `MCP_SEMANTIC_HF_NORMALIZE`
+- `MCP_SEMANTIC_HF_LOCAL_FILES_ONLY`
+- `MCP_SEMANTIC_HF_QUERY_INSTRUCTION`
 - `MCP_SEMANTIC_MAX_FILE_BYTES`
 - `MCP_SEMANTIC_CHUNK_LINES`
 - `MCP_SEMANTIC_CHUNK_OVERLAP`
@@ -179,12 +194,8 @@ Use placeholder paths in repo docs and replace them locally:
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-base-en", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1" }
 ```
-
-Short local example:
-
-- If your clone lives at `D:/path/to/rey`, then `<repo-root>` becomes `D:/path/to/rey`.
 
 ## Cursor Config
 
@@ -201,8 +212,9 @@ Example project-level config:
       "env": {
         "MCP_SEMANTIC_WORKSPACE_ROOT": "<repo-root>",
         "MCP_SEMANTIC_INDEX_ROOT": "<repo-root>/.cache/semantic-code-search-mcp",
-        "MCP_SEMANTIC_OLLAMA_HOST": "http://127.0.0.1:11434",
-        "MCP_SEMANTIC_EMBED_MODEL": "nomic-embed-text"
+        "MCP_SEMANTIC_EMBED_BACKEND": "huggingface",
+        "MCP_SEMANTIC_EMBED_MODEL": "BAAI/bge-base-en",
+        "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY": "1"
       }
     }
   }
@@ -210,3 +222,4 @@ Example project-level config:
 ```
 
 Official Cursor docs: [docs.cursor.com/context/model-context-protocol](https://docs.cursor.com/context/model-context-protocol)
+

@@ -1,0 +1,122 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use SemanticCodeSearchMcp\Embeddings\EmbedderFactory;
+use SemanticCodeSearchMcp\Embeddings\QueryEmbedder;
+use SemanticCodeSearchMcp\Index\Chunker;
+use SemanticCodeSearchMcp\Index\FileDiscovery;
+use SemanticCodeSearchMcp\Index\Indexer;
+use SemanticCodeSearchMcp\Index\IndexRepository;
+use SemanticCodeSearchMcp\PathGuard;
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '1');
+
+$serverRoot = realpath(__DIR__.'/..');
+if ($serverRoot === false) {
+    fwrite(STDERR, "Unable to resolve semantic MCP server root.\n");
+    exit(1);
+}
+
+$autoload = $serverRoot.'/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Missing vendor/autoload.php. Run: cd mcp/semantic-code-search-mcp && composer install\n");
+    exit(1);
+}
+
+require_once $autoload;
+
+$backend = 'huggingface';
+foreach (array_slice($argv, 1) as $argument) {
+    if (str_starts_with($argument, '--backend=')) {
+        $backend = strtolower(substr($argument, strlen('--backend=')));
+    }
+}
+
+putenv('MCP_SEMANTIC_EMBED_BACKEND='.$backend);
+if (getenv('MCP_SEMANTIC_EMBED_MODEL') === false || getenv('MCP_SEMANTIC_EMBED_MODEL') === '') {
+    putenv('MCP_SEMANTIC_EMBED_MODEL=BAAI/bge-base-en');
+}
+
+$workspaceRoot = str_replace('\\', '/', sys_get_temp_dir().'/semantic-local-search-'.bin2hex(random_bytes(6)));
+$indexRoot = $workspaceRoot.'/.cache/semantic-code-search-mcp';
+
+$deleteDirectory = static function (string $path) use (&$deleteDirectory): void {
+    if (!is_dir($path)) {
+        return;
+    }
+
+    $items = scandir($path);
+    if ($items === false) {
+        return;
+    }
+
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $fullPath = $path.'/'.$item;
+        if (is_dir($fullPath)) {
+            $deleteDirectory($fullPath);
+            continue;
+        }
+
+        @unlink($fullPath);
+    }
+
+    @rmdir($path);
+};
+
+$createFile = static function (string $path, string $content): void {
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+        throw new RuntimeException(sprintf('Unable to create directory: %s', $directory));
+    }
+
+    file_put_contents($path, $content);
+};
+
+try {
+    $createFile($workspaceRoot.'/AGENTS.md', "Semantic search guidance lives here.\nUse search_code for behavior-level discovery.\n");
+    $createFile($workspaceRoot.'/ai/agent-tools-and-mcp.md', "grep MCP is documented in this file.\nSemantic queries should use search_code.\n");
+    $createFile($workspaceRoot.'/app/Utils/FooUtil.php', "<?php\n\n// utility placeholder\n");
+
+    $pathGuard = new PathGuard($workspaceRoot);
+    $discovery = new FileDiscovery($pathGuard, 1024 * 1024);
+    $chunker = new Chunker(30, 6);
+    $repository = new IndexRepository($indexRoot.'/semantic-code-search.sqlite');
+    $embedder = EmbedderFactory::fromEnvironment($serverRoot);
+    $indexer = new Indexer($discovery, $chunker, $repository, $embedder, str_replace('\\', '/', $workspaceRoot));
+
+    $indexResult = $indexer->index(null, true);
+    if (($indexResult['chunks_written'] ?? 0) < 1) {
+        throw new RuntimeException('Index validation failed: no chunks were written.');
+    }
+
+    $query = 'Where is grep MCP documented?';
+    $vector = $embedder instanceof QueryEmbedder
+        ? $embedder->embedQuery($query)
+        : ($embedder->embedTexts([$query])[0] ?? []);
+
+    $results = $repository->search($vector, 3);
+    if ($results === []) {
+        throw new RuntimeException('Search validation failed: no semantic matches returned.');
+    }
+
+    $top = $results[0];
+    echo "Validation passed.\n";
+    echo 'Backend: '.$backend."\n";
+    echo 'Model:   '.$embedder->model()."\n";
+    echo 'Top hit: '.$top['file'].':'.$top['start_line']." (score ".$top['score'].")\n";
+} catch (Throwable $exception) {
+    fwrite(STDERR, 'Validation failed: '.$exception->getMessage()."\n");
+    exit(1);
+} finally {
+    $deleteDirectory($workspaceRoot);
+}
+
+exit(0);
+

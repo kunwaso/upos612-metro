@@ -23,7 +23,7 @@ This file is the canonical home for tool routing, MCP choice, and degraded-tool 
 | `audit_web` | Recommended for browser audits | Interactive or headless Playwright URL audits with persisted JSON/Markdown findings, screenshots, traces, and triage metadata |
 | `grep` | Recommended | Exact string, selector, route, ID, translation key, and regex search |
 | `read_file_cache` | Recommended | Fast cached line-based reads for workspace text files |
-| `semantic_code_search` | Optional | Meaning-based discovery when exact symbols are unknown; requires indexing and Ollama |
+| `semantic_code_search` | Optional | Meaning-based discovery when exact symbols are unknown; requires indexing and local Hugging Face embeddings |
 | `chrome-devtools` | Optional adjunct | Live Chrome DevTools inspection for timing-sensitive, silent, performance, or ambiguous browser issues |
 
 No single MCP server is strictly required for every task. If one is unavailable or degraded, fall back in a consistent order instead of guessing.
@@ -60,7 +60,7 @@ Repo-local startup check:
 php scripts/check-mcp-health.php
 ```
 
-The health check uses a **path-scoped** grep probe, confirms `read_file_cache` returns actual file text, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `OLLAMA_UNAVAILABLE`.
+The health check uses a **path-scoped** grep probe, confirms `read_file_cache` returns actual file text, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`.
 
 Availability is not enough; do a quick health check for each server you depend on:
 
@@ -220,7 +220,7 @@ If the preferred MCP server is unavailable or degraded:
 
 Semantic-specific rule:
 
-- If `semantic_code_search` returns `OLLAMA_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately.
+- If `semantic_code_search` returns `EMBEDDER_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately.
 - Continue with `grep` -> `read_file_cache` -> `laravel_mysql` only if repo-aware routes/schema/project structure are still required.
 - Do not block startup or simple explain tasks on semantic readiness.
 
@@ -349,7 +349,7 @@ Use when:
 
 - the exact symbol is unknown
 - the question is behavioral or architectural
-- Ollama and the local semantic index are available
+- Local Hugging Face embedding dependencies and the semantic index are available
 
 Remember:
 
@@ -430,7 +430,7 @@ args = ["-y", "gitnexus@1.4.8", "mcp"]
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_OLLAMA_HOST = "http://127.0.0.1:11434", MCP_SEMANTIC_EMBED_MODEL = "nomic-embed-text", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-base-en", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
 ```
 
 Short local example:
@@ -473,7 +473,7 @@ Example project-level config with placeholders:
 }
 ```
 
-If semantic search is enabled in Cursor, add the semantic server the same way and point it at your local Ollama/index setup.
+If semantic search is enabled in Cursor, add the semantic server the same way and point it at your local Hugging Face/index setup.
 
 Official Cursor docs: [docs.cursor.com/context/model-context-protocol](https://docs.cursor.com/context/model-context-protocol)
 
@@ -496,9 +496,9 @@ If you use the MCP servers in the Codex extension, do the following so the codeb
    ```bash
    php mcp/semantic-code-search-mcp/bin/index-codebase
    ```
-   Requires Ollama and the embed model (e.g. `ollama pull nomic-embed-text`).
+   Requires local Python dependencies and a local embed model cache (see `mcp/semantic-code-search-mcp/README.md`).
 
-   If Ollama is unavailable or the index is missing, the health check reports `OLLAMA_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `gitnexus` -> `grep` -> `read_file_cache` -> `laravel_mysql`.
+   If the local embedder is unavailable or the index is missing, the health check reports `EMBEDDER_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `gitnexus` -> `grep` -> `read_file_cache` -> `laravel_mysql`.
 
 4. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works. For startup probes, use a **small path-scoped search** instead of a broad repo scan.
 

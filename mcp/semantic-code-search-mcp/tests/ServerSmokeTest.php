@@ -123,7 +123,7 @@ final class ServerSmokeTest extends TestCase
         $environment = [
             'MCP_SEMANTIC_WORKSPACE_ROOT' => $this->workspaceRoot(),
             'MCP_SEMANTIC_INDEX_ROOT' => $this->workspacePath('.cache/semantic-code-search-mcp'),
-            'MCP_SEMANTIC_OLLAMA_HOST' => 'mock://deterministic',
+            'MCP_SEMANTIC_EMBED_BACKEND' => 'deterministic',
             'MCP_SEMANTIC_EMBED_MODEL' => 'mock-deterministic',
             'MCP_SEMANTIC_MAX_FILE_BYTES' => '1048576',
             'MCP_SEMANTIC_CHUNK_LINES' => '24',

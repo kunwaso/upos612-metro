@@ -7,6 +7,7 @@ namespace SemanticCodeSearchMcp;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Result\CallToolResult;
 use SemanticCodeSearchMcp\Embeddings\Embedder;
+use SemanticCodeSearchMcp\Embeddings\QueryEmbedder;
 use SemanticCodeSearchMcp\Index\Indexer;
 use SemanticCodeSearchMcp\Index\IndexRepository;
 use Throwable;
@@ -74,9 +75,11 @@ final class SemanticSearchTool
                 $pathIsFile = is_file($resolved);
             }
 
-            $embedded = $this->embedder->embedTexts([$query]);
-            $vector = $embedded[0] ?? null;
-            if (!is_array($vector)) {
+            $vector = $this->embedder instanceof QueryEmbedder
+                ? $this->embedder->embedQuery($query)
+                : ($this->embedder->embedTexts([$query])[0] ?? null);
+
+            if (!is_array($vector) || $vector === []) {
                 throw new SemanticCodeSearchException('EMBEDDING_FAILED', 'Unable to embed the search query.');
             }
 

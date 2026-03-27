@@ -101,10 +101,11 @@ Hook logs are written to `.cache/mcp-hooks/`.
 
 ## 5. Semantic and GitNexus cadence
 
-Semantic (Ollama required):
+Semantic (fully local Hugging Face):
 
 ```powershell
-ollama pull nomic-embed-text
+python -m pip install -r mcp/semantic-code-search-mcp/scripts/requirements.txt
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-base-en')"
 php mcp/semantic-code-search-mcp/bin/index-codebase --force
 ```
 

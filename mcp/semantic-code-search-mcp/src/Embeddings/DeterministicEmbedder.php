@@ -6,7 +6,7 @@ namespace SemanticCodeSearchMcp\Embeddings;
 
 use SemanticCodeSearchMcp\VectorMath;
 
-final class DeterministicEmbedder implements Embedder
+final class DeterministicEmbedder implements Embedder, QueryEmbedder
 {
     private int $dimensions;
 
@@ -43,6 +43,11 @@ final class DeterministicEmbedder implements Embedder
         }
 
         return $vectors;
+    }
+
+    public function embedQuery(string $query): array
+    {
+        return $this->embedTexts([$query])[0] ?? [];
     }
 
     /**

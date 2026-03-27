@@ -33,7 +33,7 @@ if ($indexRoot === false || $indexRoot === '') {
     $indexRoot = realpath($indexRoot) ?: $indexRoot;
 }
 
-$model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
+$model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'BAAI/bge-base-en';
 
 if ($serverRoot === false || $workspaceRoot === false) {
     fwrite(STDERR, "Unable to resolve server or workspace root. Set MCP_SEMANTIC_WORKSPACE_ROOT if needed.\n");

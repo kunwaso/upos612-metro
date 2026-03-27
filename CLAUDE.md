@@ -55,7 +55,7 @@ Available servers (should match `.cursor/mcp.json` for parity):
 | `grep` | Guarded ripgrep search (requires `rg` on PATH) |
 | `read_file_cache` | Cached workspace file reads |
 | `audit_web` | Browser audit via Playwright |
-| `semantic_code_search` | Local semantic search (optional; requires Ollama) |
+| `semantic_code_search` | Local semantic search (optional; requires local Hugging Face embeddings) |
 | `gitnexus` | Code intelligence graph — impact, context, rename, query |
 
 ---

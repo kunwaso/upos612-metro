@@ -22,5 +22,6 @@
     "ZatcaIntegrationKsa": true,
     "Aichat": true,
     "Projectauto": true,
-    "StorageManager": true
+    "StorageManager": true,
+    "Mailbox": true
 }

@@ -31,6 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'client_id' => env('MAILBOX_GMAIL_CLIENT_ID'),
+        'client_secret' => env('MAILBOX_GMAIL_CLIENT_SECRET'),
+        'redirect' => env('MAILBOX_GMAIL_REDIRECT_URI'),
+    ],
+
     'google_custom_search' => [
         'api_key' => env('GOOGLE_CUSTOM_SEARCH_API_KEY'),
         'search_engine_id' => env('GOOGLE_CUSTOM_SEARCH_ENGINE_ID'),

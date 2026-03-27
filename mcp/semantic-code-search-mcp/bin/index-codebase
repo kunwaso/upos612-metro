@@ -12,9 +12,7 @@ declare(strict_types=1);
  *   php mcp/semantic-code-search-mcp/bin/index-codebase --force
  */
 
-use SemanticCodeSearchMcp\Embeddings\DeterministicEmbedder;
-use SemanticCodeSearchMcp\Embeddings\Embedder;
-use SemanticCodeSearchMcp\Embeddings\OllamaEmbedder;
+use SemanticCodeSearchMcp\Embeddings\EmbedderFactory;
 use SemanticCodeSearchMcp\Index\Chunker;
 use SemanticCodeSearchMcp\Index\FileDiscovery;
 use SemanticCodeSearchMcp\Index\Indexer;
@@ -24,11 +22,11 @@ use SemanticCodeSearchMcp\PathGuard;
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 ini_set('display_errors', '1');
 
-$serverRoot = realpath(__DIR__ . '/..');
-$workspaceRoot = getenv('MCP_SEMANTIC_WORKSPACE_ROOT') ?: realpath(__DIR__ . '/../../..');
+$serverRoot = realpath(__DIR__.'/..');
+$workspaceRoot = getenv('MCP_SEMANTIC_WORKSPACE_ROOT') ?: realpath(__DIR__.'/../../..');
 $indexRoot = getenv('MCP_SEMANTIC_INDEX_ROOT');
 if ($indexRoot === false || $indexRoot === '') {
-    $indexRoot = ($workspaceRoot !== false ? $workspaceRoot : realpath(__DIR__ . '/../../..')) . '/.cache/semantic-code-search-mcp';
+    $indexRoot = ($workspaceRoot !== false ? $workspaceRoot : realpath(__DIR__.'/../../..')).'/.cache/semantic-code-search-mcp';
 } else {
     $indexRoot = realpath($indexRoot) ?: $indexRoot;
 }
@@ -38,7 +36,7 @@ if ($serverRoot === false || $workspaceRoot === false) {
     exit(1);
 }
 
-$autoload = $serverRoot . '/vendor/autoload.php';
+$autoload = $serverRoot.'/vendor/autoload.php';
 if (!is_file($autoload)) {
     fwrite(STDERR, "Missing vendor/autoload.php. Run: cd mcp/semantic-code-search-mcp && composer install\n");
     exit(1);
@@ -53,40 +51,37 @@ $readPositiveInt = static function (string $name, int $default): int {
     if ($raw === false || $raw === '') {
         return $default;
     }
+
     $value = filter_var($raw, FILTER_VALIDATE_INT);
+
     return ($value !== false && $value >= 1) ? $value : $default;
 };
 
 $maxFileBytes = $readPositiveInt('MCP_SEMANTIC_MAX_FILE_BYTES', 2097152);
 $chunkLines = $readPositiveInt('MCP_SEMANTIC_CHUNK_LINES', 60);
 $chunkOverlap = $readPositiveInt('MCP_SEMANTIC_CHUNK_OVERLAP', 15);
-$ollamaHost = getenv('MCP_SEMANTIC_OLLAMA_HOST') ?: 'http://127.0.0.1:11434';
-$model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
+$model = EmbedderFactory::modelFromEnvironment();
 $normalizedWorkspaceRoot = str_replace('\\', '/', $workspaceRoot);
 
 $pathGuard = new PathGuard($workspaceRoot);
 $discovery = new FileDiscovery($pathGuard, $maxFileBytes);
 $chunker = new Chunker($chunkLines, min($chunkOverlap, max(0, $chunkLines - 1)));
-$indexPath = rtrim(str_replace('\\', '/', $indexRoot), '/') . '/semantic-code-search.sqlite';
+$indexPath = rtrim(str_replace('\\', '/', $indexRoot), '/').'/semantic-code-search.sqlite';
 $repository = new IndexRepository($indexPath);
-
-/** @var Embedder $embedder */
-$embedder = str_starts_with($ollamaHost, 'mock://')
-    ? new DeterministicEmbedder($model)
-    : new OllamaEmbedder($ollamaHost, $model);
+$embedder = EmbedderFactory::fromEnvironment($serverRoot);
 
 $indexer = new Indexer($discovery, $chunker, $repository, $embedder, $normalizedWorkspaceRoot);
 
 echo "Workspace: {$normalizedWorkspaceRoot}\n";
 echo "Index:     {$indexPath}\n";
 echo "Model:     {$model}\n";
-echo "Force:     " . ($force ? 'yes' : 'no') . "\n";
-echo "Indexing…\n";
+echo 'Force:     '.($force ? 'yes' : 'no')."\n";
+echo "Indexing...\n";
 
 try {
     $result = $indexer->index(null, $force);
 } catch (Throwable $e) {
-    fwrite(STDERR, "Index failed: " . $e->getMessage() . "\n");
+    fwrite(STDERR, 'Index failed: '.$e->getMessage()."\n");
     exit(1);
 }
 
@@ -97,3 +92,4 @@ echo sprintf(
     $result['files_scanned'],
     $result['files_removed']
 );
+

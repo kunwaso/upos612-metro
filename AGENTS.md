@@ -285,7 +285,7 @@ Fallback rule:
 3. Keep the behavior split: exact via grep, meaning via semantic/codebase, content via read tools.
 4. State the fallback briefly when it materially affects speed or confidence.
 
-If semantic tooling is `OLLAMA_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately and continue with `grep` → `read_file` → `laravel_mysql` only when repo-aware structure or schema truth is still required.
+If semantic tooling is `EMBEDDER_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately and continue with `grep` → `read_file` → `laravel_mysql` only when repo-aware structure or schema truth is still required.
 
 ### 0.4e Scan Laravel log and autofix
 

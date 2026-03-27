@@ -9,7 +9,8 @@ use ReadFileCacheMcp\FileCache;
 use ReadFileCacheMcp\FileDiscovery;
 use ReadFileCacheMcp\PathGuard as ReadFilePathGuard;
 use ReadFileCacheMcp\ReadFileTool;
-use SemanticCodeSearchMcp\Embeddings\OllamaEmbedder;
+use SemanticCodeSearchMcp\Embeddings\EmbedderFactory;
+use SemanticCodeSearchMcp\Embeddings\QueryEmbedder;
 use SemanticCodeSearchMcp\Index\IndexRepository;
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
@@ -71,22 +72,6 @@ function runCommand(array $command, string $cwd): array
         'stdout' => trim($stdout),
         'stderr' => trim($stderr),
     ];
-}
-
-function httpReachable(string $baseUrl): bool
-{
-    $url = rtrim($baseUrl, '/') . '/api/tags';
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'ignore_errors' => true,
-            'timeout' => 2,
-        ],
-    ]);
-
-    $result = @file_get_contents($url, false, $context);
-
-    return $result !== false;
 }
 
 function relativePath(string $repoRoot, string $path): string
@@ -310,7 +295,7 @@ if ($auditWebMissing !== []) {
     }
 }
 
-$semanticServerRoot = $repoRoot . '/mcp/semantic-code-search-mcp';
+$semanticServerRoot = $repoRoot.'/mcp/semantic-code-search-mcp';
 if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
     $results[] = makeResult(
         'WARN',
@@ -323,29 +308,16 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
     require_once $semanticServerRoot . '/vendor/autoload.php';
 
     $workspaceRoot = getenv('MCP_SEMANTIC_WORKSPACE_ROOT') ?: $repoRoot;
-    $indexRoot = getenv('MCP_SEMANTIC_INDEX_ROOT') ?: ($repoRoot . '/.cache/semantic-code-search-mcp');
-    $ollamaHost = getenv('MCP_SEMANTIC_OLLAMA_HOST') ?: 'http://127.0.0.1:11434';
-    $model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
-    $indexPath = rtrim(str_replace('\\', '/', $indexRoot), '/') . '/semantic-code-search.sqlite';
+    $indexRoot = getenv('MCP_SEMANTIC_INDEX_ROOT') ?: ($repoRoot.'/.cache/semantic-code-search-mcp');
+    $model = EmbedderFactory::modelFromEnvironment();
+    $indexPath = rtrim(str_replace('\\', '/', $indexRoot), '/').'/semantic-code-search.sqlite';
     $deepSemanticProbe = filter_var(getenv('MCP_HEALTH_DEEP_SEMANTIC_PROBE') ?: '0', FILTER_VALIDATE_BOOLEAN);
 
     try {
         $repository = new IndexRepository($indexPath);
         $status = $repository->status(str_replace('\\', '/', $workspaceRoot), $model);
-        $ollamaAvailable = httpReachable($ollamaHost);
 
-        if (!$ollamaAvailable) {
-            $results[] = makeResult(
-                'WARN',
-                'semantic_code_search',
-                'Semantic search is optional and Ollama is not reachable.',
-                [
-                    'Expected Ollama endpoint: ' . $ollamaHost,
-                    'Start Ollama or update MCP_SEMANTIC_OLLAMA_HOST before using search_code.',
-                ],
-                'OLLAMA_UNAVAILABLE'
-            );
-        } elseif (!$status['ready']) {
+        if (!$status['ready']) {
             $results[] = makeResult(
                 'WARN',
                 'semantic_code_search',
@@ -369,8 +341,11 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
             );
         } else {
             if ($deepSemanticProbe) {
-                $embedder = new OllamaEmbedder($ollamaHost, $model);
-                $vector = $embedder->embedTexts(['Where is grep MCP documented?'])[0] ?? [];
+                $embedder = EmbedderFactory::fromEnvironment($semanticServerRoot);
+                $query = 'Where is grep MCP documented?';
+                $vector = $embedder instanceof QueryEmbedder
+                    ? $embedder->embedQuery($query)
+                    : ($embedder->embedTexts([$query])[0] ?? []);
                 $matches = $repository->search($vector, 1, 'mcp', false);
 
                 if ($matches === []) {
@@ -406,7 +381,7 @@ if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
             'semantic_code_search',
             'Semantic search is optional and the readiness probe could not complete.',
             [$exception->getMessage()],
-            'OLLAMA_UNAVAILABLE'
+            'EMBEDDER_UNAVAILABLE'
         );
     }
 }

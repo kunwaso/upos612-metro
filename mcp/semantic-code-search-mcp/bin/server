@@ -5,9 +5,7 @@ declare(strict_types=1);
 
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
-use SemanticCodeSearchMcp\Embeddings\DeterministicEmbedder;
-use SemanticCodeSearchMcp\Embeddings\Embedder;
-use SemanticCodeSearchMcp\Embeddings\OllamaEmbedder;
+use SemanticCodeSearchMcp\Embeddings\EmbedderFactory;
 use SemanticCodeSearchMcp\Index\Chunker;
 use SemanticCodeSearchMcp\Index\FileDiscovery;
 use SemanticCodeSearchMcp\Index\Indexer;
@@ -53,8 +51,6 @@ try {
     $maxFileBytes = $readPositiveInt('MCP_SEMANTIC_MAX_FILE_BYTES', 2097152);
     $chunkLines = $readPositiveInt('MCP_SEMANTIC_CHUNK_LINES', 60);
     $chunkOverlap = $readPositiveInt('MCP_SEMANTIC_CHUNK_OVERLAP', 15);
-    $ollamaHost = getenv('MCP_SEMANTIC_OLLAMA_HOST') ?: 'http://127.0.0.1:11434';
-    $model = getenv('MCP_SEMANTIC_EMBED_MODEL') ?: 'nomic-embed-text';
     $normalizedWorkspaceRoot = str_replace('\\', '/', realpath($workspaceRoot) ?: $workspaceRoot);
 
     $pathGuard = new PathGuard($workspaceRoot);
@@ -62,10 +58,7 @@ try {
     $chunker = new Chunker($chunkLines, min($chunkOverlap, max(0, $chunkLines - 1)));
     $repository = new IndexRepository(rtrim(str_replace('\\', '/', $indexRoot), '/').'/semantic-code-search.sqlite');
 
-    /** @var Embedder $embedder */
-    $embedder = str_starts_with($ollamaHost, 'mock://')
-        ? new DeterministicEmbedder($model)
-        : new OllamaEmbedder($ollamaHost, $model);
+    $embedder = EmbedderFactory::fromEnvironment($serverRoot);
 
     $indexer = new Indexer($discovery, $chunker, $repository, $embedder, $normalizedWorkspaceRoot);
     $tool = new SemanticSearchTool($pathGuard, $indexer, $repository, $embedder, $normalizedWorkspaceRoot);

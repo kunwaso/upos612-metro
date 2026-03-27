@@ -12,7 +12,7 @@ Recommended startup order in this repo:
 4. `audit_web` - optional (browser audits/smoke)
 5. `semantic_code_search` - optional
 
-Run `php scripts/check-mcp-health.php` from repo root to verify the current machine is ready. The health check uses path-scoped probes for grep, validates that `read_file_cache` returns actual file text, reports `audit_web` readiness as `READY`, `MISSING_DEPENDENCIES`, or `PLAYWRIGHT_UNAVAILABLE`, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `OLLAMA_UNAVAILABLE`.
+Run `php scripts/check-mcp-health.php` from repo root to verify the current machine is ready. The health check uses path-scoped probes for grep, validates that `read_file_cache` returns actual file text, reports `audit_web` readiness as `READY`, `MISSING_DEPENDENCIES`, or `PLAYWRIGHT_UNAVAILABLE`, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`.
 
 - `laravel-mysql-mcp` - Laravel repo-aware routes/schema/tests/tools MCP server. **Recommended** when available for repo-aware introspection and verification.
   - README: [mcp/laravel-mysql-mcp/README.md](./laravel-mysql-mcp/README.md)
