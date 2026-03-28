@@ -66,8 +66,11 @@ Useful flags:
 - `-DryRun`
 - `-SkipSemantic`
 - `-SkipGitNexus`
+- `-DeepSemanticProbe`
+- `-RequireGitNexusReady`
+- `-RequireSemanticReady`
 - `-WarmPath app`
-- `-MaxFiles 5000`
+- `-MaxFiles 1000`
 
 Windows helper:
 
@@ -125,6 +128,12 @@ Health check (after setup/startup changes):
 
 ```powershell
 php scripts/check-mcp-health.php
+```
+
+Strict shared-code startup contract:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup -RequireGitNexusReady
 ```
 
 Optional deep semantic probe (slower, runs embed/search validation):
@@ -186,4 +195,5 @@ Follow `AGENTS.md` (`execute-plan`) and `.cursor/plans/README.md` section 7.
 2. `composer install` done for `mcp/read-file-cache-mcp` (and optional audit-web MCP deps).
 3. Startup profile runs and writes logs.
 4. `php scripts/check-mcp-health.php` reports required MCPs as `PASS`.
-5. Hooks installed (or intentionally disabled).
+5. `gitnexus` is `READY` before shared-code edits and `semantic_code_search` is `READY` before behavior-level discovery.
+6. Hooks installed (or intentionally disabled).

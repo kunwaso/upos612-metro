@@ -140,12 +140,12 @@ try {
         'properties' => [
             'path' => [
                 'type' => 'string',
-                'description' => 'Optional subdirectory (relative to workspace) to warm. Omit to warm from workspace root.',
+                'description' => 'Optional subdirectory (relative to workspace) to warm. Omit for fast source-root warming, or use "." for the whole workspace.',
             ],
             'max_files' => [
                 'type' => 'integer',
                 'minimum' => 1,
-                'description' => 'Maximum number of files to warm. Default 5000, max 50000.',
+                'description' => 'Maximum number of files to warm. Default 500, max 50000.',
             ],
         ],
         'additionalProperties' => false,

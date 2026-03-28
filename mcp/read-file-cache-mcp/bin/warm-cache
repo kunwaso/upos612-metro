@@ -10,8 +10,9 @@ declare(strict_types=1);
  *
  * Usage:
  *   php mcp/read-file-cache-mcp/bin/warm-cache
- *   php mcp/read-file-cache-mcp/bin/warm-cache --max-files=10000
+ *   php mcp/read-file-cache-mcp/bin/warm-cache --max-files=1000
  *   php mcp/read-file-cache-mcp/bin/warm-cache --path=app
+ *   php mcp/read-file-cache-mcp/bin/warm-cache --path=.
  */
 
 use ReadFileCacheMcp\DiskCache;
@@ -46,13 +47,13 @@ if (!is_file($autoload)) {
 require_once $autoload;
 
 $pathArg = '';
-$maxFiles = 5000;
+$maxFiles = 500;
 foreach (array_slice($argv ?? [], 1) as $arg) {
     if (str_starts_with($arg, '--path=')) {
         $pathArg = trim(substr($arg, 7));
     } elseif (str_starts_with($arg, '--max-files=')) {
         $maxFiles = (int) substr($arg, 12);
-        $maxFiles = $maxFiles >= 1 ? min($maxFiles, 50000) : 5000;
+        $maxFiles = $maxFiles >= 1 ? min($maxFiles, 50000) : 500;
     }
 }
 
@@ -74,14 +75,38 @@ $diskCache = new DiskCache($cacheRoot, $maxFileBytes, $maxDiskCacheFiles, $maxDi
 $cache = new FileCache($maxFileBytes, 128, 33554432, $diskCache);
 $fileDiscovery = new FileDiscovery($pathGuard);
 
-$paths = $fileDiscovery->discover($pathArg, $maxFiles);
+$warmTargets = $pathArg === ''
+    ? ['app', 'Modules', 'resources', 'routes', 'config', 'ai', 'mcp', 'tests']
+    : (($pathArg === '.' || $pathArg === './') ? [''] : [$pathArg]);
+$paths = [];
+$seen = [];
+
+foreach ($warmTargets as $target) {
+    $remaining = $maxFiles - count($paths);
+    if ($remaining <= 0) {
+        break;
+    }
+
+    foreach ($fileDiscovery->discover($target, $remaining) as $absolutePath) {
+        if (isset($seen[$absolutePath])) {
+            continue;
+        }
+
+        $seen[$absolutePath] = true;
+        $paths[] = $absolutePath;
+
+        if (count($paths) >= $maxFiles) {
+            break 2;
+        }
+    }
+}
 $warmed = 0;
 $skipped = 0;
 $errors = 0;
 
 echo "Workspace: " . str_replace('\\', '/', $workspaceRoot) . "\n";
 echo "Cache:     " . str_replace('\\', '/', $cacheRoot) . "\n";
-echo "Path:      " . ($pathArg === '' ? '(root)' : $pathArg) . "\n";
+echo "Path:      " . ($pathArg === '' ? '(default source roots)' : $pathArg) . "\n";
 echo "Max files: {$maxFiles}\n";
 echo "Warming…\n";
 

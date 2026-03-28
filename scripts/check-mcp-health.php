@@ -22,6 +22,10 @@ if ($repoRoot === false) {
     exit(1);
 }
 
+$gitnexusVersion = '1.4.8';
+$requireGitNexusReady = filter_var(getenv('MCP_HEALTH_REQUIRE_GITNEXUS_READY') ?: '0', FILTER_VALIDATE_BOOLEAN);
+$requireSemanticReady = filter_var(getenv('MCP_HEALTH_REQUIRE_SEMANTIC_READY') ?: '0', FILTER_VALIDATE_BOOLEAN);
+
 /**
  * @return array{level: string, name: string, summary: string, details: array<int, string>, status?: string}
  */
@@ -86,8 +90,28 @@ function relativePath(string $repoRoot, string $path): string
     return $normalizedPath;
 }
 
+/**
+ * @return array<string, mixed>|null
+ */
+function readJsonFile(string $path): ?array
+{
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || trim($raw) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($raw, true);
+
+    return is_array($decoded) ? $decoded : null;
+}
+
 $results = [];
 $requiredFailure = false;
+$optionalFailure = false;
 
 $laravelServerRoot = $repoRoot . '/mcp/laravel-mysql-mcp';
 $laravelMissing = [];
@@ -110,7 +134,8 @@ if ($laravelMissing !== []) {
         'FAIL',
         'laravel_mysql',
         'Required Laravel MCP prerequisites are incomplete.',
-        $laravelMissing
+        $laravelMissing,
+        'MISSING_DEPENDENCIES'
     );
 } else {
     $results[] = makeResult(
@@ -120,7 +145,8 @@ if ($laravelMissing !== []) {
         [
             'Repo-aware tools should be available once the server is registered in Codex/Cursor.',
             'Verified prerequisites: root vendor, MCP vendor, artisan, and PHP 8.1+.',
-        ]
+        ],
+        'READY'
     );
 }
 
@@ -141,7 +167,8 @@ if ($grepMissing !== []) {
         'FAIL',
         'grep',
         'Required grep MCP prerequisites are incomplete.',
-        $grepMissing
+        $grepMissing,
+        'MISSING_DEPENDENCIES'
     );
 } else {
     $grepProbe = runCommand(
@@ -158,7 +185,8 @@ if ($grepMissing !== []) {
             [
                 $grepProbe['stderr'] !== '' ? $grepProbe['stderr'] : 'rg did not return the expected match.',
                 'Health checks should stay path-scoped; do not use broad repo scans for startup probes.',
-            ]
+            ],
+            'PROBE_FAILED'
         );
     } else {
         $results[] = makeResult(
@@ -168,7 +196,8 @@ if ($grepMissing !== []) {
             [
                 'Probe command: rg -n --max-count 1 --fixed-strings "MCP Servers" mcp/README.md',
                 $grepProbe['stdout'],
-            ]
+            ],
+            'READY'
         );
     }
 }
@@ -185,7 +214,8 @@ if ($readFileMissing !== []) {
         'FAIL',
         'read_file_cache',
         'Required read-file-cache MCP prerequisites are incomplete.',
-        $readFileMissing
+        $readFileMissing,
+        'MISSING_DEPENDENCIES'
     );
 } else {
     require_once $readFileServerRoot . '/vendor/autoload.php';
@@ -226,7 +256,8 @@ if ($readFileMissing !== []) {
                 'Probe file: mcp/README.md',
                 'Cache DB: ' . relativePath($repoRoot, $cacheDb) . (is_file($cacheDb) ? ' (present)' : ' (not found yet)'),
                 sprintf('Cache hit: %s', ($probe->structuredContent['cache_hit'] ?? false) ? 'yes' : 'no'),
-            ]
+            ],
+            'READY'
         );
     } catch (Throwable $exception) {
         $requiredFailure = true;
@@ -234,7 +265,79 @@ if ($readFileMissing !== []) {
             'FAIL',
             'read_file_cache',
             'Small read probe failed.',
-            [$exception->getMessage()]
+            [$exception->getMessage()],
+            'PROBE_FAILED'
+        );
+    }
+}
+
+$cursorMcpConfigPath = $repoRoot . '/.cursor/mcp.json';
+$cursorMcpConfig = readJsonFile($cursorMcpConfigPath);
+if ($cursorMcpConfig === null) {
+    $results[] = makeResult(
+        'WARN',
+        'cursor_mcp_config',
+        'Project-level Cursor MCP config is missing or unreadable.',
+        [
+            'Expected file: .cursor/mcp.json',
+            'Recommended servers: grep, read_file_cache, gitnexus, semantic_code_search.',
+        ],
+        'MISSING_CONFIG'
+    );
+} else {
+    $servers = $cursorMcpConfig['mcpServers'] ?? [];
+    $details = [];
+    $configWarnings = [];
+
+    if (!is_array($servers)) {
+        $configWarnings[] = 'The "mcpServers" object is missing or invalid.';
+    } else {
+        foreach (['grep', 'read_file_cache', 'gitnexus'] as $serverName) {
+            if (!array_key_exists($serverName, $servers)) {
+                $configWarnings[] = sprintf('Missing "%s" server entry.', $serverName);
+            }
+        }
+
+        if (!array_key_exists('semantic_code_search', $servers)) {
+            $configWarnings[] = 'Missing "semantic_code_search" server entry.';
+        }
+
+        $gitnexusArgs = $servers['gitnexus']['args'] ?? [];
+        if (!is_array($gitnexusArgs)) {
+            $configWarnings[] = 'GitNexus server args are missing or invalid.';
+        } else {
+            $joinedArgs = implode(' ', array_map(static fn ($value): string => (string) $value, $gitnexusArgs));
+            if (str_contains($joinedArgs, 'gitnexus@latest')) {
+                $configWarnings[] = sprintf('GitNexus is pinned to @latest; use gitnexus@%s instead.', $gitnexusVersion);
+            } elseif (!str_contains($joinedArgs, 'gitnexus@' . $gitnexusVersion)) {
+                $details[] = sprintf('GitNexus args detected: %s', $joinedArgs !== '' ? $joinedArgs : '(empty)');
+            }
+        }
+    }
+
+    if ($configWarnings !== []) {
+        $results[] = makeResult(
+            'WARN',
+            'cursor_mcp_config',
+            'Project-level Cursor MCP config has drift from the recommended tool stack.',
+            array_merge(
+                ['Checked file: .cursor/mcp.json'],
+                $configWarnings,
+                $details
+            ),
+            'CONFIG_DRIFT'
+        );
+    } else {
+        $results[] = makeResult(
+            'PASS',
+            'cursor_mcp_config',
+            'Project-level Cursor MCP config exposes the recommended repo tool stack.',
+            [
+                'Checked file: .cursor/mcp.json',
+                sprintf('GitNexus pin: gitnexus@%s', $gitnexusVersion),
+                'Servers present: grep, read_file_cache, gitnexus, semantic_code_search.',
+            ],
+            'READY'
         );
     }
 }
@@ -390,14 +493,14 @@ $gitnexusMetaPath = $repoRoot . '/.gitnexus/meta.json';
 if (!is_file($gitnexusMetaPath)) {
     $results[] = makeResult(
         'WARN',
-        'gitnexus',
-        'GitNexus graph metadata not found.',
-        [
-            'Run: npx gitnexus@1.4.8 analyze',
-            'Expected metadata file: .gitnexus/meta.json',
-        ],
-        'MISSING_INDEX'
-    );
+            'gitnexus',
+            'GitNexus graph metadata not found.',
+            [
+                'Run: npx gitnexus@' . $gitnexusVersion . ' analyze',
+                'Expected metadata file: .gitnexus/meta.json',
+            ],
+            'MISSING_INDEX'
+        );
 } else {
     $rawMeta = @file_get_contents($gitnexusMetaPath);
     $meta = is_string($rawMeta) ? json_decode($rawMeta, true) : null;
@@ -407,7 +510,7 @@ if (!is_file($gitnexusMetaPath)) {
             'WARN',
             'gitnexus',
             'GitNexus metadata exists but could not be parsed.',
-            ['Re-run: npx gitnexus@1.4.8 analyze'],
+            ['Re-run: npx gitnexus@' . $gitnexusVersion . ' analyze'],
             'INVALID_METADATA'
         );
     } else {
@@ -428,7 +531,7 @@ if (!is_file($gitnexusMetaPath)) {
                 'WARN',
                 'gitnexus',
                 'GitNexus metadata is missing lastCommit.',
-                ['Re-run: npx gitnexus@1.4.8 analyze'],
+                ['Re-run: npx gitnexus@' . $gitnexusVersion . ' analyze'],
                 'INVALID_METADATA'
             );
         } else {
@@ -455,7 +558,7 @@ if (!is_file($gitnexusMetaPath)) {
                     'indexed lastCommit: ' . $indexedCommit,
                     'current HEAD: ' . $currentHead,
                     'embeddings: ' . $embeddings,
-                    'Run: npx gitnexus@1.4.8 analyze' . ($embeddings > 0 ? ' --embeddings' : ''),
+                    'Run: npx gitnexus@' . $gitnexusVersion . ' analyze' . ($embeddings > 0 ? ' --embeddings' : ''),
                 ];
 
                 if (is_int($behindCount)) {
@@ -474,6 +577,16 @@ if (!is_file($gitnexusMetaPath)) {
     }
 }
 
+foreach ($results as $result) {
+    if ($result['name'] === 'gitnexus' && $requireGitNexusReady && ($result['status'] ?? '') !== 'READY') {
+        $optionalFailure = true;
+    }
+
+    if ($result['name'] === 'semantic_code_search' && $requireSemanticReady && ($result['status'] ?? '') !== 'READY') {
+        $optionalFailure = true;
+    }
+}
+
 echo "MCP health check for " . str_replace('\\', '/', $repoRoot) . "\n";
 echo str_repeat('=', 72) . "\n";
 
@@ -487,8 +600,18 @@ foreach ($results as $result) {
 }
 
 echo str_repeat('-', 72) . "\n";
-echo $requiredFailure
-    ? "Required MCPs are not fully ready. Fix FAIL entries before relying on startup automation.\n"
-    : "Required MCPs are ready. Semantic search remains optional unless you need behavior-level discovery.\n";
+$summary = [];
+foreach ($results as $result) {
+    $summary[] = $result['name'] . '=' . ($result['status'] ?? $result['level']);
+}
+echo 'Startup status: ' . implode(', ', $summary) . "\n";
 
-exit($requiredFailure ? 1 : 0);
+if ($requiredFailure) {
+    echo "Required MCPs are not fully ready. Fix FAIL entries before relying on startup automation.\n";
+} elseif ($optionalFailure) {
+    echo "Optional readiness requirements were enforced and did not pass. Refresh the reported indexes, then rerun the health check.\n";
+} else {
+    echo "Required MCPs are ready. GitNexus and semantic search may still be optional unless your current task requires them.\n";
+}
+
+exit(($requiredFailure || $optionalFailure) ? 1 : 0);

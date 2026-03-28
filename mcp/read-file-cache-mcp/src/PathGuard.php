@@ -229,4 +229,27 @@ final class PathGuard
 
         return true;
     }
+
+    /**
+     * Whether a path should be considered during discovery-based warming.
+     * This is slightly stricter than isAllowedPath() so warm_cache skips
+     * generated cache trees that are safe but not useful to pre-build.
+     */
+    public function isDiscoverablePath(string $resolvedPath): bool
+    {
+        if (!$this->isAllowedPath($resolvedPath)) {
+            return false;
+        }
+
+        $relative = $this->relativePath($resolvedPath);
+        $segments = $relative === '' || $relative === '.' ? [] : explode('/', strtolower($relative));
+
+        foreach ($segments as $segment) {
+            if (in_array($segment, ['.cache', '.phpunit.cache'], true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

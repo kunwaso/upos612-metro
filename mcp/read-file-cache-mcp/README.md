@@ -59,9 +59,9 @@ Successful calls return structured metadata including:
 
 - Tool name: `warm_cache`
 - Input: `warm_cache(path?, max_files?)`
-  - `path`: optional subdirectory (relative to workspace) to warm; omit to warm from workspace root
-  - `max_files`: optional max files to warm (default 5000, max 50000)
-- Call once (e.g. at session start or after cloning) to fill the persistent disk cache so subsequent `read_file` calls are faster. The cache is stored on disk and reused across server restarts.
+  - `path`: optional subdirectory (relative to workspace) to warm; omit to warm the common source roots (`app`, `Modules`, `resources`, `routes`, `config`, `ai`, `mcp`, `tests`), or pass `.` to warm from workspace root
+  - `max_files`: optional max files to warm (default 500, max 50000)
+- Call once (e.g. at session start or after cloning) to fill the persistent disk cache so subsequent `read_file` calls are faster. The cache is stored on disk and reused across server restarts. The default bounded warm path keeps startup fast on larger repos.
 
 Output: `warmed`, `skipped`, `errors`, `paths_scanned`.
 
@@ -69,8 +69,9 @@ Output: `warmed`, `skipped`, `errors`, `paths_scanned`.
 
 ```bash
 php mcp/read-file-cache-mcp/bin/warm-cache
-php mcp/read-file-cache-mcp/bin/warm-cache --max-files=10000
+php mcp/read-file-cache-mcp/bin/warm-cache --max-files=1000
 php mcp/read-file-cache-mcp/bin/warm-cache --path=app
+php mcp/read-file-cache-mcp/bin/warm-cache --path=.
 ```
 
 ## Persistent disk cache
@@ -79,7 +80,7 @@ The server uses a **two-tier cache**: in-memory (per process) and **persistent d
 
 - **Location:** `MCP_READ_FILE_CACHE_ROOT` (default: `<workspace-root>/.cache/read-file-cache-mcp/`). The file `read-file-cache.sqlite` holds cached file contents.
 - **Pre-build:** Call the `warm_cache` tool once to scan allowed workspace files and fill the disk cache. After that, `read_file` will often hit the disk cache (then memory) instead of reading from the filesystem.
-- **Agent usage:** To make the agent use the cache faster, run `warm_cache` once per project (or when the codebase changes). The agent can call it at the start of a session.
+- **Agent usage:** To make the agent use the cache faster, run `warm_cache` once per project (or when the codebase changes). The default call is optimized for fast startup; use `path="."` only when you intentionally want a broader whole-workspace warm.
 
 ## Environment Variables
 

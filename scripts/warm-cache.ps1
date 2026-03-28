@@ -13,6 +13,7 @@
 .EXAMPLES
     .\scripts\warm-cache.ps1
     .\scripts\warm-cache.ps1 -Profile nightly-embeddings
+    .\scripts\warm-cache.ps1 -Profile startup -RequireGitNexusReady
     .\scripts\warm-cache.ps1 -Register
     .\scripts\warm-cache.ps1 -Unregister
 #>
@@ -24,9 +25,12 @@ param(
     [switch]$Unregister,
     [switch]$SkipSemantic,
     [switch]$SkipGitNexus,
+    [switch]$DeepSemanticProbe,
+    [switch]$RequireGitNexusReady,
+    [switch]$RequireSemanticReady,
     [switch]$DryRun,
     [int]$MaxFiles = 500,
-    [string]$WarmPath = 'app',
+    [string]$WarmPath = '',
     [string]$GitNexusVersion = '1.4.8'
 )
 
@@ -294,12 +298,13 @@ if ($SkipSemantic) {
         $env:MCP_SEMANTIC_EMBED_MODEL = 'BAAI/bge-base-en'
     }
 
-    # Startup keeps the semantic pass fast; nightly keeps broader coverage.
+    # Startup keeps the semantic pass fast but useful; nightly keeps broader coverage.
     if ($Profile -eq 'startup') {
-        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'mcp/README.md'
-        $env:MCP_SEMANTIC_CHUNK_LINES = '20'
-        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '4'
-        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '262144'
+        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,resources/views,ai,tests,config,mcp'
+        $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
+        $env:MCP_SEMANTIC_CHUNK_LINES = '80'
+        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '12'
+        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '393216'
     } else {
         $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,mcp,ai,tests,config,src'
         $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
@@ -358,6 +363,16 @@ if ($SkipGitNexus) {
 # 4) Health check
 $HealthScript = Join-Path $RepoRoot 'scripts\check-mcp-health.php'
 if (Test-Path $HealthScript) {
+    if ($DeepSemanticProbe -or $Profile -eq 'nightly-embeddings') {
+        $env:MCP_HEALTH_DEEP_SEMANTIC_PROBE = '1'
+    }
+    if ($RequireGitNexusReady) {
+        $env:MCP_HEALTH_REQUIRE_GITNEXUS_READY = '1'
+    }
+    if ($RequireSemanticReady) {
+        $env:MCP_HEALTH_REQUIRE_SEMANTIC_READY = '1'
+    }
+
     Invoke-CommandSafe -Label 'MCP health check' -Action { & $Php $HealthScript } | Out-Null
 }
 

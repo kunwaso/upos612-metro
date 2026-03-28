@@ -114,14 +114,16 @@ Preferred order for most tasks:
 
 1. `grep` for exact/pattern search
 2. `read_file_cache` for file content and slices
-3. `laravel_mysql` for repo-aware routes/schema/tests/project map when the task actually needs repo structure truth
-4. `semantic_code_search` when exact symbols are unknown (optional)
+3. `gitnexus` for shared-code impact, unfamiliar architecture, and pre-commit scope checks
+4. `laravel_mysql` for repo-aware routes/schema/tests/project map when the task actually needs repo structure truth
+5. `semantic_code_search` when exact symbols are unknown and health says `READY`
 
 Required baseline for this repo:
 
 1. `grep`
 2. `read_file_cache`
 3. `laravel_mysql` on demand for repo-specific structure, schema, routes, or tests
+4. `gitnexus` on demand for shared-code edits, unfamiliar architecture, and pre-commit scope checks
 
 Optional:
 
@@ -140,9 +142,11 @@ Use this exact handoff so tools complement each other instead of overlapping:
 Session-start check:
 
 1. Keep exact startup commands centralized in `mcp/CODEX-SETUP.md`.
-2. Run `php scripts/check-mcp-health.php` from repo root after installing MCP deps, warming caches, or changing local MCP config.
-3. For deep or external work, start with: `project_map` -> `resource://composer` -> `index_status` after cache warm-up.
-4. Treat `semantic_code_search` warnings as non-blocking unless the task needs behavior-level discovery.
+2. On a cold repo-specific session, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup`.
+3. Run `php scripts/check-mcp-health.php` from repo root after startup, dependency changes, or MCP config changes.
+4. If `gitnexus` is not `READY`, refresh it before shared-code edits or refactors.
+5. If `semantic_code_search` is `READY`, use it for behavior-level discovery; otherwise fall back immediately to GitNexus + grep + read_file_cache.
+6. For deep or external repo-specific work, start with: `project_map` -> `resource://composer` -> `index_status` after cache warm-up.
 
 If a preferred tool is available but unhealthy/degraded (for example timeout, empty content, metadata-only responses, stale index, repeated failure):
 
@@ -156,6 +160,15 @@ Quick routing examples:
 1. "What is DPO?" -> answer from reasoning; no repo setup.
 2. "In this repo, where is the CMS product hero rendered?" -> `grep` -> `read_file_cache`; stop there unless layout ownership is still unclear.
 3. "Fix syntax error in `app/Utils/ContactFeedUtil.php`" -> `grep`/read the failing area first -> run `php -l app/Utils/ContactFeedUtil.php` only after the file is narrowed.
+
+### 5.2) Startup Contract
+
+For repo-specific `implement`, `analyze`, and `execute-plan` work:
+
+1. Startup once with `scripts/warm-cache.ps1 -Profile startup`.
+2. Health-check once with `php scripts/check-mcp-health.php`.
+3. Use GitNexus before shared Util/controller/model edits.
+4. Use semantic search only when the health check reports `READY`.
 
 ---
 

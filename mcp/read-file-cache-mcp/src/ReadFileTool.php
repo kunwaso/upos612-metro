@@ -10,6 +10,20 @@ use Throwable;
 
 final class ReadFileTool
 {
+    /**
+     * @var list<string>
+     */
+    private const DEFAULT_WARM_ROOTS = [
+        'app',
+        'Modules',
+        'resources',
+        'routes',
+        'config',
+        'ai',
+        'mcp',
+        'tests',
+    ];
+
     private int $defaultLimit;
 
     private int $maxLimit;
@@ -95,9 +109,9 @@ final class ReadFileTool
     {
         try {
             $underDir = $path !== null && is_string($path) ? trim($path) : '';
-            $maxFiles = is_int($max_files) && $max_files > 0 ? min($max_files, 50000) : 5000;
+            $maxFiles = is_int($max_files) && $max_files > 0 ? min($max_files, 50000) : 500;
 
-            $paths = $this->fileDiscovery->discover($underDir, $maxFiles);
+            $paths = $this->discoverWarmPaths($underDir, $maxFiles);
             $warmed = 0;
             $skipped = 0;
             $errors = 0;
@@ -108,7 +122,7 @@ final class ReadFileTool
                     $this->cache->get($resolved);
                     $warmed++;
                 } catch (ReadFileException $e) {
-                    if ($e->getCode() === 'BINARY_FILE' || $e->getCode() === 'FILE_TOO_LARGE') {
+                    if ($e->errorCode() === 'BINARY_FILE' || $e->errorCode() === 'FILE_TOO_LARGE') {
                         $skipped++;
                     } else {
                         $errors++;
@@ -140,6 +154,53 @@ final class ReadFileTool
                 ['error' => $e->getMessage()]
             );
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function discoverWarmPaths(string $underDir, int $maxFiles): array
+    {
+        $paths = [];
+        $seen = [];
+
+        foreach ($this->warmTargets($underDir) as $target) {
+            $remaining = $maxFiles - count($paths);
+            if ($remaining <= 0) {
+                break;
+            }
+
+            foreach ($this->fileDiscovery->discover($target, $remaining) as $absolutePath) {
+                if (isset($seen[$absolutePath])) {
+                    continue;
+                }
+
+                $seen[$absolutePath] = true;
+                $paths[] = $absolutePath;
+
+                if (count($paths) >= $maxFiles) {
+                    break 2;
+                }
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function warmTargets(string $underDir): array
+    {
+        if ($underDir === '') {
+            return self::DEFAULT_WARM_ROOTS;
+        }
+
+        if ($underDir === '.' || $underDir === './') {
+            return [''];
+        }
+
+        return [$underDir];
     }
 
     /**

@@ -1,6 +1,6 @@
 # AGENTS.md — AI Coding Guide for This Project
 
-**Last verified:** 2026-03-17
+**Last verified:** 2026-03-28
 **Owner:** UPOS Engineering (AI Workflow Maintainers)
 
 This file is the complete policy reference for any AI coding agent working on this codebase.
@@ -46,14 +46,14 @@ Use the first matching lane before doing broader workflow:
 |---|---|---|---|
 | `tiny` | Single-file or tightly scoped request | restate goal → inspect target → edit → verify | Prefer this lane for low-risk, bounded changes. |
 | `explain` | User wants understanding, not changes | grep/semantic search → read → answer | No code edits. No `project_map`, no `laravel_mysql`, no `warm_cache`; use grep and read_file_cache only. |
-| `analyze` | Audit module, clone, or understand codebase | project_map/filesystem → grep first → targeted/parallel reads → full read only when editing | See ai/agent-tools-and-mcp.md §2.8. |
+| `analyze` | Audit module, clone, or understand codebase | startup health → project_map/filesystem → grep first → targeted/parallel reads → full read only when editing | See ai/agent-tools-and-mcp.md §2.8. |
 | `dependency-eval` | Evaluate a GitHub repo, package, or dependency before adoption | project_map/filesystem → `resource://composer`/manifests → fetch upstream docs → compare to repo conventions → recommend adopt/adapt/reject | Use for external code that could change repo dependencies or architecture. Run `project_map`/`composer` only when the question explicitly asks about adoption for **this** repo; skip for generic tool comparisons or "does this tool help?" questions. |
 | `external-adapt` | Adapt a pattern or example from an external repo into this codebase | project_map/filesystem → grep for closest local example → fetch upstream docs/examples → map to route/Form Request/Util/controller/view/module → plan or implement | Prefer adapting the minimum useful pattern; do not copy upstream structure wholesale. |
 | `investigate` | Something is broken or unclear | grep → read → compare render/update flow → answer or fix | Use 0.4a/0.4b for “stops working” bugs. |
 | `review` | User asks for a review or audit | grep/read changed area → identify findings → verify evidence | Findings first, summary second. |
 | `plan` | User wants design or implementation plan | inspect repo truth → write numbered plan → list verification | Do not invent missing repo facts. |
-| `execute-plan` | User attaches or references `.cursor/plans/*.plan.md` to execute or "plan from" | read plan → execute phases/tasks in order; derive steps that match the plan as written | Do **not** rewrite, restructure, or replace the plan. See .cursor/plans/README.md §7. |
-| `implement` | User wants a fix or feature | inspect → numbered plan → edit → verify | Default when the user asks to make the change. For large multi-file phases, see 0.1e for worker delegation. |
+| `execute-plan` | User attaches or references `.cursor/plans/*.plan.md` to execute or "plan from" | startup health → read plan → execute phases/tasks in order; derive steps that match the plan as written | Do **not** rewrite, restructure, or replace the plan. See .cursor/plans/README.md §7. |
+| `implement` | User wants a fix or feature | startup health → inspect → numbered plan → edit → verify | Default when the user asks to make the change. For large multi-file phases, see 0.1e for worker delegation. |
 | `log-scan` | User asks to scan/fix Laravel log, check logs, or fix issues from `storage/logs` | glob latest log → read log → parse errors → investigate → fix → verify | See 0.4e. Use implement mode. |
 | `lint-fix` | User asks to fix linter errors, IDE diagnostics, or "fix lint" | Read lints (scope: path or repo) → fix each finding → re-run lints | See 0.4f. Use implement mode. |
 | `test-fix` | User asks to fix failing tests or pastes test output | parse test output → locate failure → fix test or code → re-run tests | See 0.4g. Use implement mode. |
@@ -67,6 +67,17 @@ Use the first matching lane before doing broader workflow:
 | `design-critique` | User asks for UX review of a screen or flow | read view → assess clarity, hierarchy, empty/error states → short critique + Metronic-safe suggestions | Findings first; no theme change. |
 
 For trivial single-file or tightly scoped work, use the `tiny` lane with a **2–3 step micro-plan**: restate goal → inspect the file/area → edit and verify. Use the full long-form plan for multi-file or higher-risk work.
+
+### 0.1b.1 Repo Startup Contract
+
+For repo-specific `implement`, `analyze`, `investigate`, `execute-plan`, `external-adapt`, or repo-specific `dependency-eval` work on a cold session:
+
+1. Use `scripts/warm-cache.ps1 -Profile startup` as the canonical startup entrypoint when commands are allowed.
+2. Run `php scripts/check-mcp-health.php` and record the status line for `grep`, `read_file_cache`, `gitnexus`, and `semantic_code_search`.
+3. Treat `grep` + `read_file_cache` as the minimum ready set for local repo work.
+4. Treat GitNexus as required before shared Util/controller/model/refactor edits; follow the GitNexus block near the end of this file.
+5. Treat semantic search as the first choice for behavior-level discovery only when health says `READY`; otherwise fall back immediately to GitNexus + grep + read_file_cache.
+6. Do not block conceptual, generic comparison, or tiny explain tasks on startup orchestration.
 
 ### 0.1c Skill-First Workflow
 
@@ -260,6 +271,7 @@ When you reason again and need more information or another step, choose from the
 - **read_file_cache MCP** - When this server is enabled and healthy, use its `read_file(path, offset?, limit?)` tool for workspace file reads. At the start of a Codex or Cursor session, call `warm_cache` once (no args) so subsequent `read_file` calls hit the disk cache and are faster. If responses are degraded (for example empty payloads, metadata-only output, repeated failures), use the next fastest repo-aware fallback and continue.
 - **Semantic code search MCP** - When enabled, use its `search_code` tool for natural-language and contextual codebase queries. Treat it as this project's semantic codebase index and prefer it over the built-in codebase index when both are available. If it returns INDEX_NOT_READY or INDEX_STALE, run `index_codebase` then retry. If semantic MCP is not available, use the host's codebase/semantic search. Follow `ai/agent-tools-and-mcp.md` for when to use it vs grep MCP.
 - **grep MCP** - When available in MCP-aware clients (for example Codex), use the repo-configured `grep` MCP server for exact string/regex and glob-constrained search. Use semantic/index search for higher-level “where/how is this done?” discovery, then refine with grep. Follow `ai/agent-tools-and-mcp.md` for contract details and guardrails.
+- **GitNexus MCP** - When available and indexed, use it for symbol impact, caller/callee context, and execution-flow discovery before shared-code edits, refactors, or unfamiliar architecture work. If it reports the graph is stale, refresh it before relying on impact or context results.
 - **Subagents (task)** - Delegate discrete work with a clear spec and return format. Use `explore` for broad or parallel codebase discovery, `shell` for git/artisan/composer/test work, and `generalPurpose` for multi-step search or reasoning.
 - **Generate image** - Use only when the user explicitly asks for an image or visual asset.
 - **Edit notebook** - Use for Jupyter notebooks or cell-by-cell notebook edits.
@@ -1006,7 +1018,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (11757 symbols, 30193 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (12614 symbols, 27759 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

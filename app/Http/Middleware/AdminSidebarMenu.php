@@ -6,6 +6,7 @@ use App\Utils\ModuleUtil;
 use Closure;
 use Menu;
 use Modules\CustomDashboard\Entities\CustomDashboard;
+use Modules\VasAccounting\Services\CutoverService;
 
 class AdminSidebarMenu
 {
@@ -24,6 +25,10 @@ class AdminSidebarMenu
 
         Menu::create('admin-sidebar-menu', function ($menu) {
             $enabled_modules = !empty(session('business.enabled_modules')) ? session('business.enabled_modules') : [];
+            $business_id = (int) session('user.business_id');
+            $legacy_accounting_retired = app(ModuleUtil::class)->isModuleInstalled('VasAccounting') && $business_id > 0
+                ? app(CutoverService::class)->shouldHideLegacyAccountingMenu($business_id)
+                : false;
 
             $common_settings = !empty(session('business.common_settings')) ? session('business.common_settings') : [];
             $pos_settings = !empty(session('business.pos_settings')) ? json_decode(session('business.pos_settings'), true) : [];
@@ -538,7 +543,7 @@ class AdminSidebarMenu
                 )->order(45);
             }
             //Accounts dropdown
-            if (auth()->user()->can('account.access') && in_array('account', $enabled_modules)) {
+            if (auth()->user()->can('account.access') && in_array('account', $enabled_modules) && ! $legacy_accounting_retired) {
                 $menu->dropdown(
                     __('lang_v1.payment_accounts'),
                     function ($sub) {
@@ -577,6 +582,70 @@ class AdminSidebarMenu
                     <path d="M11 15l2 0"></path>
                   </svg>']
                 )->order(50);
+            }
+
+            if (app(ModuleUtil::class)->isModuleInstalled('VasAccounting') && auth()->user()->can('vas_accounting.access')) {
+                $menu->dropdown(
+                    __('vasaccounting::lang.module_name'),
+                    function ($sub) {
+                        $sub->url(route('vasaccounting.setup.index'), __('vasaccounting::lang.setup'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.setup.*')]);
+                        $sub->url(route('vasaccounting.dashboard.index'), __('vasaccounting::lang.dashboard'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.dashboard.*')]);
+                        $sub->url(route('vasaccounting.chart.index'), __('vasaccounting::lang.chart_of_accounts'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.chart.*')]);
+                        $sub->url(route('vasaccounting.periods.index'), __('vasaccounting::lang.periods'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.periods.*')]);
+                        $sub->url(route('vasaccounting.vouchers.index'), __('vasaccounting::lang.vouchers'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.vouchers.*')]);
+                        if (auth()->user()->can('vas_accounting.cash_bank.manage')) {
+                            $sub->url(route('vasaccounting.cash_bank.index'), __('vasaccounting::lang.cash_bank'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.cash_bank.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.receivables.manage')) {
+                            $sub->url(route('vasaccounting.receivables.index'), __('vasaccounting::lang.receivables'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.receivables.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.payables.manage')) {
+                            $sub->url(route('vasaccounting.payables.index'), __('vasaccounting::lang.payables'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.payables.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.invoices.manage')) {
+                            $sub->url(route('vasaccounting.invoices.index'), __('vasaccounting::lang.invoices'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.invoices.*')]);
+                        }
+                        $sub->url(route('vasaccounting.inventory.index'), __('vasaccounting::lang.inventory'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.inventory.*')]);
+                        if (auth()->user()->can('vas_accounting.tools.manage')) {
+                            $sub->url(route('vasaccounting.tools.index'), __('vasaccounting::lang.tools'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.tools.*')]);
+                        }
+                        $sub->url(route('vasaccounting.assets.index'), __('vasaccounting::lang.fixed_assets'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.assets.*')]);
+                        $sub->url(route('vasaccounting.tax.index'), __('vasaccounting::lang.tax'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.tax.*')]);
+                        $sub->url(route('vasaccounting.einvoices.index'), __('vasaccounting::lang.einvoices'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.einvoices.*')]);
+                        if (auth()->user()->can('vas_accounting.payroll.manage')) {
+                            $sub->url(route('vasaccounting.payroll.index'), __('vasaccounting::lang.payroll'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.payroll.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.contracts.manage')) {
+                            $sub->url(route('vasaccounting.contracts.index'), __('vasaccounting::lang.contracts'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.contracts.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.loans.manage')) {
+                            $sub->url(route('vasaccounting.loans.index'), __('vasaccounting::lang.loans'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.loans.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.costing.manage')) {
+                            $sub->url(route('vasaccounting.costing.index'), __('vasaccounting::lang.costing'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.costing.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.budgets.manage')) {
+                            $sub->url(route('vasaccounting.budgets.index'), __('vasaccounting::lang.budgets'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.budgets.*')]);
+                        }
+                        if (auth()->user()->can('vas_accounting.integrations.manage')) {
+                            $sub->url(route('vasaccounting.integrations.index'), __('vasaccounting::lang.integrations'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.integrations.*')]);
+                        }
+                        $sub->url(route('vasaccounting.closing.index'), __('vasaccounting::lang.closing'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.closing.*')]);
+                        if (auth()->user()->can('vas_accounting.cutover.manage')) {
+                            $sub->url(route('vasaccounting.cutover.index'), __('vasaccounting::lang.cutover'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.cutover.*')]);
+                        }
+                        $sub->url(route('vasaccounting.reports.index'), __('vasaccounting::lang.reports'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.reports.*')]);
+                    },
+                    ['icon' => '<svg aria-hidden="true" class="tw-size-5 tw-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M4 5h16"></path>
+                    <path d="M4 9h16"></path>
+                    <path d="M4 13h6"></path>
+                    <path d="M14 13h6"></path>
+                    <path d="M4 17h8"></path>
+                    <path d="M16 17h4"></path>
+                  </svg>', 'active' => request()->is('vas-accounting*')]
+                )->order(51);
             }
 
             //Reports dropdown

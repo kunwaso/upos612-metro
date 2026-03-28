@@ -1,0 +1,21 @@
+{
+    "name": "nwidart/vasaccounting",
+    "description": "Vietnam Accounting Standards module for UPOS",
+    "authors": [
+        {
+            "name": "UPOS Engineering",
+            "email": "engineering@example.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\VasAccounting\\": ""
+        }
+    }
+}

@@ -23,6 +23,7 @@ This file is the canonical home for tool routing, MCP choice, and degraded-tool 
 | `audit_web` | Recommended for browser audits | Interactive or headless Playwright URL audits with persisted JSON/Markdown findings, screenshots, traces, and triage metadata |
 | `grep` | Recommended | Exact string, selector, route, ID, translation key, and regex search |
 | `read_file_cache` | Recommended | Fast cached line-based reads for workspace text files |
+| `gitnexus` | Recommended for shared-code risk and architecture | Symbol impact, caller/callee context, execution-flow discovery, and pre-commit change detection |
 | `semantic_code_search` | Optional | Meaning-based discovery when exact symbols are unknown; requires indexing and local Hugging Face embeddings |
 | `chrome-devtools` | Optional adjunct | Live Chrome DevTools inspection for timing-sensitive, silent, performance, or ambiguous browser issues |
 
@@ -43,8 +44,9 @@ For conceptual or general-advice questions, stop here unless repo grounding woul
 **On-demand (repo-specific tasks only — implement, analyze, investigate, execute-plan, tenant-audit, log-scan, lint-fix):**
 
 4. Check `laravel_mysql` for repo-aware resources/tools such as `project_map`, routes, schema, and tests. **Skip this step entirely** for conceptual, comparison, explain, dependency-eval (generic), or external tool evaluation questions.
-5. If the task is a browser audit, check `audit_web` and then `playwright`; keep `chrome-devtools` available for escalation.
-6. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
+5. Check `gitnexus` for shared-code edits, refactors, unfamiliar architecture, or bug tracing that benefits from graph context.
+6. If the task is a browser audit, check `audit_web` and then `playwright`; keep `chrome-devtools` available for escalation.
+7. Check `semantic_code_search` if meaning-based discovery is needed and the server is available.
 
 This keeps Codex and Cursor behavior aligned even when their active MCP surfaces differ.
 
@@ -52,6 +54,7 @@ Default startup policy in this repo:
 
 - **Always available (every task):** `grep`, `read_file_cache`
 - **On-demand (repo-specific tasks only):** `laravel_mysql` — invoke `project_map`, schema, routes, or migrations only when the task requires live repo structure (implement, analyze, audit, log-scan, route/schema/migration work, symbol-impact analysis). Do **not** run `project_map` or `warm_cache` for conceptual questions, tool comparisons, external tool evaluations, or general advice.
+- **Recommended on-demand:** `gitnexus` for shared-code edits, architecture discovery, and pre-commit scope checks
 - **Optional:** `semantic_code_search`
 
 Repo-local startup check:
@@ -60,7 +63,7 @@ Repo-local startup check:
 php scripts/check-mcp-health.php
 ```
 
-The health check uses a **path-scoped** grep probe, confirms `read_file_cache` returns actual file text, and reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`.
+The health check uses a **path-scoped** grep probe, confirms `read_file_cache` returns actual file text, reports `gitnexus` readiness as `READY`, `STALE`, or `MISSING_INDEX`, reports semantic readiness as `READY`, `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`, and warns when `.cursor/mcp.json` drifts from the recommended tool stack.
 
 Availability is not enough; do a quick health check for each server you depend on:
 
@@ -68,7 +71,8 @@ Availability is not enough; do a quick health check for each server you depend o
 2. `audit_web`: run one lightweight public URL audit in headless mode and confirm structured JSON is returned.
 3. `grep`: run a tiny exact search in a known file.
 4. `read_file_cache`: run one small `read_file` and confirm file text is returned.
-5. `semantic_code_search` (optional): run `index_status` before `search_code`.
+5. `gitnexus`: confirm `.gitnexus/meta.json` is present and in sync with current HEAD.
+6. `semantic_code_search` (optional): run `index_status` before `search_code`.
 
 Treat a tool as degraded if it repeatedly times out, returns empty/partial payloads, loops on stale index errors, or returns metadata without the expected content body.
 
@@ -99,23 +103,25 @@ For **deep research**, **GitHub/trending intake**, or **external adaptation** ta
 - **Generic** (e.g. "evaluate a tool", "compare two libraries", "explain a concept", "should I use X?"): skip steps 1–3; answer from reasoning + web sources + ≤2 targeted reads if needed. State in the reply if you skipped repo grounding and offer to add it on request.
 - **Repo-specific** (e.g. "can we adopt X in UPOS?", "map landing files for this pattern", "does this conflict with our dependencies?"): proceed with all steps below.
 
-1. Call `warm_cache` if `read_file_cache` is available and the session is cold.
-2. Read `resource://project/map` (or use `project_map`) to confirm the live checkout shape before naming landing files or modules.
-3. Read `resource://composer` to understand the current dependency surface before suggesting new packages.
-4. Call `index_status` only if the task actually needs behavior-level discovery beyond exact search.
-5. Only then branch into web fetch/search for upstream README, license, manifests, examples, and release notes.
+1. Run `scripts/warm-cache.ps1 -Profile startup` (or the equivalent startup orchestration for the current environment) if the session is cold.
+2. Run `php scripts/check-mcp-health.php` and note `gitnexus` / semantic readiness before deep repo work.
+3. Read `resource://project/map` (or use `project_map`) to confirm the live checkout shape before naming landing files or modules.
+4. Read `resource://composer` to understand the current dependency surface before suggesting new packages.
+5. Call `index_status` only if the task actually needs behavior-level discovery beyond exact search.
+6. Only then branch into web fetch/search for upstream README, license, manifests, examples, and release notes.
 
 This keeps external evaluation grounded in local repo truth instead of drifting toward generic advice.
 
 ### 0.4 Which MCPs use a disk cache or build step?
 
-**semantic_code_search** and **read_file_cache** both support a disk-backed cache and a build/pre-warm step:
+**semantic_code_search**, **read_file_cache**, and **gitnexus** all have a persisted local artifact or build step that should be kept fresh:
 
 | Server | Disk cache / build step? | Why |
 |--------|---------------------------|-----|
 | **semantic_code_search** | Yes. Run `index_codebase` (MCP tool) or `php mcp/semantic-code-search-mcp/bin/index-codebase` (CLI); index is stored at `<repo-root>/.cache/semantic-code-search-mcp/`. | Semantic search needs an embedded index; it is built once (or when stale) and reused. |
 | **grep** | No. No codebase index; runs ripgrep on each call. | By design: exact/pattern search is done live against the filesystem. See `mcp/grep-mcp/README.md`. |
 | **read_file_cache** | **Yes.** Persistent disk cache at `MCP_READ_FILE_CACHE_ROOT`. Pre-build by calling the **`warm_cache`** tool once or run `php mcp/read-file-cache-mcp/bin/warm-cache` from repo root. | Two-tier: in-memory + SQLite on disk. Pre-warm so `read_file` is faster. See `mcp/read-file-cache-mcp/README.md` and §4.3 (Codex). |
+| **gitnexus** | Yes. Run `npx -y gitnexus@1.4.8 analyze` (or `--embeddings`) to refresh `.gitnexus/meta.json` and the local graph. | GitNexus graph context is only trustworthy when its indexed commit matches current HEAD. |
 
 **grep-mcp** never creates a cache. For **read_file_cache-mcp**, call **`warm_cache`** to pre-build the disk cache so `.cache/read-file-cache-mcp/` exists and `read_file` is faster.
 
@@ -358,7 +364,26 @@ Remember:
 - The index is automatically kept fresh by the post-commit git hook (`scripts/warm-cache.ps1` or `.git/hooks/post-commit`). If the hook is not installed, re-run `php mcp/semantic-code-search-mcp/bin/index-codebase` manually after significant code changes.
 - For embedding model upgrade options (better quality, still local) see `mcp/semantic-code-search-mcp/README.md`.
 
-### 3.5 Audit Web MCP Server
+### 3.5 GitNexus MCP
+
+- Location: user-scoped MCP config only; not shipped as a repo server
+- Purpose: symbol impact, caller/callee context, execution-flow discovery, and change-scope analysis
+- Status: **Recommended for shared-code edits and unfamiliar architecture**
+
+Use when:
+
+- you are changing a shared Util/controller/model/function and need blast radius first
+- the task is a refactor, rename, extract, or split
+- the architecture is unfamiliar and execution-flow context is more useful than exact search
+- you want a pre-commit scope check before closing a risky task
+
+Remember:
+
+- GitNexus is only trustworthy when `.gitnexus/meta.json` is in sync with current HEAD
+- pin the MCP server to `gitnexus@1.4.8`; avoid `@latest` drift in project config
+- use `gitnexus_impact` before editing shared symbols and `gitnexus_detect_changes` before commit
+
+### 3.6 Audit Web MCP Server
 
 - Location: `mcp/audit-web-mcp/`
 - Purpose: Playwright-powered single-URL and prefix audits with structured findings, triage metadata, persisted reports, screenshots, traces, and optional storage-state handoff
@@ -381,7 +406,7 @@ Workflow:
 
 Detailed repo workflow: [ai/browser-audit-workflow.md](browser-audit-workflow.md)
 
-### 3.6 Chrome DevTools MCP
+### 3.7 Chrome DevTools MCP
 
 - Location: user-scoped MCP config only; not shipped in this repo
 - Purpose: live inspection of a dedicated Chrome debug browser on `http://127.0.0.1:9222`
@@ -468,6 +493,23 @@ Example project-level config with placeholders:
       "env": {
         "MCP_READ_FILE_WORKSPACE_ROOT": "<repo-root>"
       }
+    },
+    "gitnexus": {
+      "command": "npx",
+      "args": ["-y", "gitnexus@1.4.8", "mcp"]
+    },
+    "semantic_code_search": {
+      "command": "php",
+      "args": ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"],
+      "env": {
+        "MCP_SEMANTIC_WORKSPACE_ROOT": "<repo-root>",
+        "MCP_SEMANTIC_INDEX_ROOT": "<repo-root>/.cache/semantic-code-search-mcp",
+        "MCP_SEMANTIC_EMBED_BACKEND": "huggingface",
+        "MCP_SEMANTIC_EMBED_MODEL": "BAAI/bge-base-en",
+        "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY": "1",
+        "MCP_SEMANTIC_INCLUDE_ROOTS": "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src",
+        "MCP_SEMANTIC_INCLUDE_ROOT_FILES": "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json"
+      }
     }
   }
 }
@@ -481,18 +523,27 @@ Official Cursor docs: [docs.cursor.com/context/model-context-protocol](https://d
 
 If you use the MCP servers in the Codex extension, do the following so the codebase is indexed and cached for faster reads and search:
 
-1. **Config** — In `~/.codex/config.toml`, register at least `grep` and `read_file_cache` with `<repo-root>` set to this project’s absolute path (for example `D:/wamp64/www/upos612`). Add `laravel_mysql` and optionally `semantic_code_search` if you use them.
+1. **Config** — In `~/.codex/config.toml`, register at least `grep` and `read_file_cache` with `<repo-root>` set to this project’s absolute path (for example `D:/wamp64/www/upos612`). Add `laravel_mysql`, `gitnexus`, and `semantic_code_search` if you use them.
 
-2. **Read-file cache (faster file reads)** — Pre-warm the disk cache so `read_file` hits cache instead of the filesystem. Either:
+2. **Startup orchestration (recommended)** — Use the canonical startup entrypoint so read-file cache, semantic indexing, GitNexus refresh, and the health check stay aligned:
+   ```bash
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup
+   ```
+   For shared-code or deep-architecture work, prefer:
+   ```bash
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup -RequireGitNexusReady
+   ```
+
+3. **Read-file cache (faster file reads)** — Pre-warm the disk cache so `read_file` hits cache instead of the filesystem. Either:
    - **CLI (recommended):** From repo root run once (e.g. after clone or before a long Codex session):
      ```bash
      php mcp/read-file-cache-mcp/bin/warm-cache
      ```
-     Optional: `--max-files=10000` or `--path=app` to limit scope.
+     Optional: `--max-files=1000`, `--path=app`, or `--path=.` for whole-workspace warming.
    - **Agent:** The agent can call the `warm_cache` tool at the start of a session when `read_file_cache` is available (see AGENTS.md).
    - **Health check:** After warming the cache, run `php scripts/check-mcp-health.php` to confirm `read_file_cache` returns actual file text and the required MCPs are ready.
 
-3. **Semantic search (optional)** — If you use the semantic_code_search server, build the index once so `search_code` works. From repo root:
+4. **Semantic search (optional)** — If you use the semantic_code_search server, build the index once so `search_code` works. From repo root:
    ```bash
    php mcp/semantic-code-search-mcp/bin/index-codebase
    ```
@@ -500,7 +551,7 @@ If you use the MCP servers in the Codex extension, do the following so the codeb
 
    If the local embedder is unavailable or the index is missing, the health check reports `EMBEDDER_UNAVAILABLE` or `NOT_INDEXED` and the fallback stays `gitnexus` -> `grep` -> `read_file_cache` -> `laravel_mysql`.
 
-4. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works. For startup probes, use a **small path-scoped search** instead of a broad repo scan.
+5. **Grep** — No index; ripgrep runs on each call. Ensure `rg` is on PATH so the grep MCP server works. For startup probes, use a **small path-scoped search** instead of a broad repo scan.
 
 ---
 

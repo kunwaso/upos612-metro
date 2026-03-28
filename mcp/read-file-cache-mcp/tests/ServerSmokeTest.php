@@ -74,6 +74,7 @@ final class ServerSmokeTest extends TestCase
         ]);
         self::assertSame("l2\nl3", $defaultLimitSlice['result']['content'][0]['text']);
         self::assertSame([
+            'text' => "l2\nl3",
             'path' => 'AGENTS.md',
             'requested_offset' => 2,
             'requested_limit' => 2,

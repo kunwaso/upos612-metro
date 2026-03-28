@@ -66,6 +66,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VariationTemplateController;
 use App\Http\Controllers\WarrantyController;
 use Illuminate\Support\Facades\Route;
+use Modules\VasAccounting\Http\Middleware\RedirectLegacyAccountingToVas;
 
 /*
 |--------------------------------------------------------------------------
@@ -463,7 +464,7 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::post('/discount/mass-deactivate', [DiscountController::class, 'massDeactivate']);
     Route::resource('discount', DiscountController::class);
 
-    Route::prefix('account')->group(function () {
+    Route::prefix('account')->middleware(RedirectLegacyAccountingToVas::class)->group(function () {
         Route::resource('/account', AccountController::class);
         Route::get('/fund-transfer/{id}', [AccountController::class, 'getFundTransfer']);
         Route::post('/fund-transfer', [AccountController::class, 'postFundTransfer']);
@@ -483,7 +484,7 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
         Route::get('/cash-flow', [AccountController::class, 'cashFlow']);
     });
 
-    Route::resource('account-types', AccountTypeController::class);
+    Route::resource('account-types', AccountTypeController::class)->middleware(RedirectLegacyAccountingToVas::class);
 
     //Restaurant module
     Route::prefix('modules')->group(function () {

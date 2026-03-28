@@ -1,0 +1,19 @@
+{
+    "name": "VasAccounting",
+    "alias": "vasaccounting",
+    "description": "Vietnam Accounting Standards localization for statutory accounting, reporting, tax, fixed assets, and e-invoice workflows.",
+    "keywords": [
+        "accounting",
+        "vas",
+        "vietnam",
+        "metronic"
+    ],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\VasAccounting\\Providers\\VasAccountingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

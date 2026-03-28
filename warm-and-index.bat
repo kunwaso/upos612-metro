@@ -3,11 +3,14 @@ setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "PROFILE=startup"
-set "WARM_PATH=app"
+set "WARM_PATH="
 set "WARM_MAX_FILES=500"
 set "DRY_RUN=0"
 set "SKIP_SEMANTIC=0"
 set "SKIP_GITNEXUS=0"
+set "DEEP_SEMANTIC_PROBE=0"
+set "REQUIRE_GITNEXUS_READY=0"
+set "REQUIRE_SEMANTIC_READY=0"
 set "REGISTER=0"
 set "UNREGISTER=0"
 set "NO_PAUSE=0"
@@ -60,6 +63,21 @@ if /i "%~1"=="--skip-gitnexus" (
     shift
     goto parse_args
 )
+if /i "%~1"=="--deep-semantic-probe" (
+    set "DEEP_SEMANTIC_PROBE=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--require-gitnexus" (
+    set "REQUIRE_GITNEXUS_READY=1"
+    shift
+    goto parse_args
+)
+if /i "%~1"=="--require-semantic" (
+    set "REQUIRE_SEMANTIC_READY=1"
+    shift
+    goto parse_args
+)
 if /i "%~1"=="--register" (
     set "REGISTER=1"
     shift
@@ -95,11 +113,14 @@ if "%REGISTER%"=="1" (
 if defined WARM_PATH (
     echo Warm path: !WARM_PATH!
 ) else (
-    echo Warm path: [root]
+    echo Warm path: [default source roots]
 )
 echo Max files: !WARM_MAX_FILES!
 if "%SKIP_SEMANTIC%"=="1" echo Semantic : skipped
 if "%SKIP_GITNEXUS%"=="1" echo GitNexus : skipped
+if "%DEEP_SEMANTIC_PROBE%"=="1" echo Semantic probe: deep
+if "%REQUIRE_GITNEXUS_READY%"=="1" echo GitNexus health: required
+if "%REQUIRE_SEMANTIC_READY%"=="1" echo Semantic health: required
 echo.
 
 if "%REGISTER%"=="1" (
@@ -115,8 +136,14 @@ if "%REGISTER%"=="1" (
     if "%SKIP_SEMANTIC%"=="1" set "ARG_SKIP_SEMANTIC=-SkipSemantic"
     set "ARG_SKIP_GITNEXUS="
     if "%SKIP_GITNEXUS%"=="1" set "ARG_SKIP_GITNEXUS=-SkipGitNexus"
+    set "ARG_DEEP_SEMANTIC="
+    if "%DEEP_SEMANTIC_PROBE%"=="1" set "ARG_DEEP_SEMANTIC=-DeepSemanticProbe"
+    set "ARG_REQUIRE_GITNEXUS="
+    if "%REQUIRE_GITNEXUS_READY%"=="1" set "ARG_REQUIRE_GITNEXUS=-RequireGitNexusReady"
+    set "ARG_REQUIRE_SEMANTIC="
+    if "%REQUIRE_SEMANTIC_READY%"=="1" set "ARG_REQUIRE_SEMANTIC=-RequireSemanticReady"
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\warm-cache.ps1" -Profile !PROFILE! -MaxFiles !WARM_MAX_FILES! !ARG_WARM! !ARG_DRY! !ARG_SKIP_SEMANTIC! !ARG_SKIP_GITNEXUS!
+    powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\warm-cache.ps1" -Profile !PROFILE! -MaxFiles !WARM_MAX_FILES! !ARG_WARM! !ARG_DRY! !ARG_SKIP_SEMANTIC! !ARG_SKIP_GITNEXUS! !ARG_DEEP_SEMANTIC! !ARG_REQUIRE_GITNEXUS! !ARG_REQUIRE_SEMANTIC!
 )
 if errorlevel 1 (
     echo [WARN] warm-cache script reported failures. Review the generated log under .cache\mcp-automation.
@@ -144,11 +171,11 @@ goto :eof
 
 :usage
 echo Usage:
-echo   warm-and-index.bat [--profile startup^|nightly-embeddings] [--all] [--path ^<dir^>] [--max-files ^<n^>] [--dry-run] [--skip-semantic] [--skip-gitnexus] [--no-pause]
+echo   warm-and-index.bat [--profile startup^|nightly-embeddings] [--all] [--path ^<dir^>] [--max-files ^<n^>] [--dry-run] [--skip-semantic] [--skip-gitnexus] [--deep-semantic-probe] [--require-gitnexus] [--require-semantic] [--no-pause]
 echo   warm-and-index.bat [--register ^| --unregister]
 echo.
 echo Defaults:
-echo   --profile startup --path app --max-files 500
+echo   --profile startup --all --max-files 500
 echo.
 pause
 endlocal

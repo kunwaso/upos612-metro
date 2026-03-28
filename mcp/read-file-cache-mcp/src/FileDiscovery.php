@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ReadFileCacheMcp;
 
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -29,8 +30,21 @@ final class FileDiscovery
         }
 
         $paths = [];
+        $directoryIterator = new RecursiveDirectoryIterator($start, RecursiveDirectoryIterator::SKIP_DOTS);
+        $filteredIterator = new RecursiveCallbackFilterIterator(
+            $directoryIterator,
+            function ($current): bool {
+                $path = str_replace('\\', '/', $current->getPathname());
+
+                if ($current->isDir()) {
+                    return $this->pathGuard->isDiscoverablePath($path);
+                }
+
+                return $this->pathGuard->isDiscoverablePath($path) && is_readable($path);
+            }
+        );
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($start, RecursiveDirectoryIterator::SKIP_DOTS),
+            $filteredIterator,
             RecursiveIteratorIterator::SELF_FIRST
         );
 
@@ -43,12 +57,6 @@ final class FileDiscovery
             }
             $path = $fileInfo->getPathname();
             $pathNormalized = str_replace('\\', '/', $path);
-            if (!$this->pathGuard->isAllowedPath($pathNormalized)) {
-                continue;
-            }
-            if (!is_readable($path)) {
-                continue;
-            }
             $paths[] = $pathNormalized;
         }
 

@@ -39,6 +39,7 @@ final class ReadFileToolTest extends TestCase
         self::assertFalse($result->isError);
         self::assertSame("two\nthree", $result->content[0]->text);
         self::assertSame([
+            'text' => "two\nthree",
             'path' => 'AGENTS.md',
             'requested_offset' => 2,
             'requested_limit' => 2,
@@ -86,6 +87,7 @@ final class ReadFileToolTest extends TestCase
 
         self::assertSame('', $result->content[0]->text);
         self::assertSame([
+            'text' => '',
             'path' => 'AGENTS.md',
             'requested_offset' => 10,
             'requested_limit' => 5,
@@ -108,6 +110,7 @@ final class ReadFileToolTest extends TestCase
 
         self::assertSame('', $result->content[0]->text);
         self::assertSame([
+            'text' => '',
             'path' => 'empty.txt',
             'requested_offset' => 1,
             'requested_limit' => 5,
@@ -169,6 +172,48 @@ final class ReadFileToolTest extends TestCase
         $result = $tool->read_file('AGENTS.md', 1, 1);
 
         $this->assertErrorResult($result, 'RESPONSE_TOO_LARGE', 'AGENTS.md');
+    }
+
+    public function test_warm_cache_defaults_to_fast_source_roots(): void
+    {
+        $this->writeWorkspaceFile('app/Services/VasWarm.php', "<?php\nreturn true;\n");
+        $this->writeWorkspaceFile('docs/guide.md', "# Guide\n");
+        $tool = $this->makeTool(maxResponseBytes: 128);
+
+        $result = $tool->warm_cache();
+
+        self::assertFalse($result->isError);
+        self::assertSame(1, $result->structuredContent['warmed']);
+        self::assertSame(1, $result->structuredContent['paths_scanned']);
+        self::assertTrue($tool->read_file('app/Services/VasWarm.php', 1, 5)->structuredContent['cache_hit']);
+        self::assertFalse($tool->read_file('docs/guide.md', 1, 5)->structuredContent['cache_hit']);
+    }
+
+    public function test_warm_cache_can_explicitly_scan_workspace_root(): void
+    {
+        $this->writeWorkspaceFile('app/Services/VasWarm.php', "<?php\nreturn true;\n");
+        $this->writeWorkspaceFile('docs/guide.md', "# Guide\n");
+        $tool = $this->makeTool(maxResponseBytes: 128);
+
+        $result = $tool->warm_cache('.', 10);
+
+        self::assertFalse($result->isError);
+        self::assertSame(2, $result->structuredContent['warmed']);
+        self::assertSame(2, $result->structuredContent['paths_scanned']);
+        self::assertTrue($tool->read_file('docs/guide.md', 1, 5)->structuredContent['cache_hit']);
+    }
+
+    public function test_warm_cache_counts_binary_files_as_skipped_not_errors(): void
+    {
+        $this->writeWorkspaceFile('Modules/Vas/Resources/assets/fonts/sample.ttf', "abc\0def");
+        $tool = $this->makeTool(maxResponseBytes: 128);
+
+        $result = $tool->warm_cache('Modules', 10);
+
+        self::assertFalse($result->isError);
+        self::assertSame(0, $result->structuredContent['warmed']);
+        self::assertSame(1, $result->structuredContent['skipped']);
+        self::assertSame(0, $result->structuredContent['errors']);
     }
 
     /**

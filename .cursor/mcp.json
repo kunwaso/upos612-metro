@@ -21,7 +21,20 @@
     },
     "gitnexus": {
       "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "args": ["-y", "gitnexus@1.4.8", "mcp"]
+    },
+    "semantic_code_search": {
+      "command": "php",
+      "args": ["D:/wamp64/www/upos612/mcp/semantic-code-search-mcp/bin/server"],
+      "env": {
+        "MCP_SEMANTIC_WORKSPACE_ROOT": "D:/wamp64/www/upos612",
+        "MCP_SEMANTIC_INDEX_ROOT": "D:/wamp64/www/upos612/.cache/semantic-code-search-mcp",
+        "MCP_SEMANTIC_EMBED_BACKEND": "huggingface",
+        "MCP_SEMANTIC_EMBED_MODEL": "BAAI/bge-base-en",
+        "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY": "1",
+        "MCP_SEMANTIC_INCLUDE_ROOTS": "app,Modules,routes,resources/views,mcp,ai,.cursor,tests,config,src",
+        "MCP_SEMANTIC_INCLUDE_ROOT_FILES": "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json"
+      }
     }
   }
 }
