@@ -15,13 +15,18 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Modules\VasAccounting\Console\ClosePeriodCommand;
+use Modules\VasAccounting\Console\CutoverBackfillCommand;
+use Modules\VasAccounting\Console\CutoverParityCommand;
+use Modules\VasAccounting\Console\ProvidersHealthCommand;
 use Modules\VasAccounting\Console\ReplayPostingsCommand;
 use Modules\VasAccounting\Console\RunDepreciationCommand;
 use Modules\VasAccounting\Console\SeedVnChartCommand;
 use Modules\VasAccounting\Contracts\EInvoiceAdapterInterface;
 use Modules\VasAccounting\Services\BudgetControlService;
 use Modules\VasAccounting\Services\ContractAccountingService;
+use Modules\VasAccounting\Services\CutoverParityService;
 use Modules\VasAccounting\Services\CutoverService;
+use Modules\VasAccounting\Services\LegacyAccountingBackfillService;
 use Modules\VasAccounting\Services\Adapters\SandboxEInvoiceAdapter;
 use Modules\VasAccounting\Services\BankStatementImportAdapterManager;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
@@ -29,6 +34,7 @@ use Modules\VasAccounting\Services\EInvoiceAdapterManager;
 use Modules\VasAccounting\Services\IntegrationHubService;
 use Modules\VasAccounting\Services\LoanAccountingService;
 use Modules\VasAccounting\Services\PayrollBridgeManager;
+use Modules\VasAccounting\Services\ProviderHealthService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
 use Modules\VasAccounting\Services\SourceDocumentAdapterManager;
 use Modules\VasAccounting\Services\TaxExportAdapterManager;
@@ -38,6 +44,7 @@ use Modules\VasAccounting\Services\VasPeriodCloseService;
 use Modules\VasAccounting\Services\VasPostingService;
 use Modules\VasAccounting\Services\VasPayrollBridgeService;
 use Modules\VasAccounting\Services\VasToolAmortizationService;
+use Modules\VasAccounting\Services\VasWarehouseDocumentService;
 use Modules\VasAccounting\Utils\EnterprisePlanningReportUtil;
 use Modules\VasAccounting\Utils\LedgerPostingUtil;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
@@ -130,12 +137,16 @@ class VasAccountingServiceProvider extends ServiceProvider
         $this->app->singleton(ContractAccountingService::class);
         $this->app->singleton(LoanAccountingService::class);
         $this->app->singleton(BudgetControlService::class);
+        $this->app->singleton(CutoverParityService::class);
         $this->app->singleton(CutoverService::class);
+        $this->app->singleton(LegacyAccountingBackfillService::class);
         $this->app->singleton(OperationsAssetReportUtil::class);
+        $this->app->singleton(ProviderHealthService::class);
         $this->app->singleton(EnterprisePlanningReportUtil::class);
         $this->app->singleton(EnterpriseReportingService::class);
         $this->app->singleton(ReportSnapshotService::class);
         $this->app->singleton(IntegrationHubService::class);
+        $this->app->singleton(VasWarehouseDocumentService::class);
         $this->app->bind(EInvoiceAdapterInterface::class, SandboxEInvoiceAdapter::class);
     }
 
@@ -150,6 +161,9 @@ class VasAccountingServiceProvider extends ServiceProvider
             ReplayPostingsCommand::class,
             RunDepreciationCommand::class,
             ClosePeriodCommand::class,
+            CutoverBackfillCommand::class,
+            CutoverParityCommand::class,
+            ProvidersHealthCommand::class,
         ]);
     }
 

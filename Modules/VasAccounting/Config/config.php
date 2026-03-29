@@ -3,6 +3,7 @@
 use Modules\VasAccounting\Services\Adapters\ExpenseDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\EssentialsPayrollBridgeAdapter;
 use Modules\VasAccounting\Services\Adapters\LocalTaxExportAdapter;
+use Modules\VasAccounting\Services\Adapters\InventoryDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\NullBankStatementImportAdapter;
 use Modules\VasAccounting\Services\Adapters\OpeningStockDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\PaymentDocumentAdapter;
@@ -139,6 +140,12 @@ return [
             'route' => 'vasaccounting.reports.bank_book',
             'target_label' => 'VAS Bank Book',
         ],
+        'payment-account' => [
+            'legacy_label' => 'Legacy payment account maintenance',
+            'legacy_paths' => ['payment-account', 'payment-account/*'],
+            'route' => 'vasaccounting.cash_bank.index',
+            'target_label' => 'VAS Cash & Bank',
+        ],
         'link-account' => [
             'legacy_label' => 'Legacy account-linking workflow',
             'legacy_paths' => ['account/link-account/*'],
@@ -161,6 +168,8 @@ return [
     ],
     'module_area_by_source' => [
         'manual' => 'accounting',
+        'legacy_opening_balance' => 'accounting',
+        'legacy_account_transaction' => 'cash_bank',
         'transaction_payment' => 'cash_bank',
         'sell' => 'invoices',
         'sell_return' => 'receivables',
@@ -170,6 +179,7 @@ return [
         'stock_adjustment' => 'inventory',
         'stock_transfer' => 'inventory',
         'opening_stock' => 'inventory',
+        'inventory_document' => 'inventory',
         'payroll' => 'payroll',
     ],
     'enterprise_domains' => [
@@ -440,6 +450,8 @@ return [
     ],
     'voucher_sequences' => [
         ['sequence_key' => 'general_journal', 'prefix' => 'JV', 'padding' => 5],
+        ['sequence_key' => 'opening_balance', 'prefix' => 'OB', 'padding' => 5],
+        ['sequence_key' => 'historical_treasury', 'prefix' => 'HIS', 'padding' => 5],
         ['sequence_key' => 'sales_invoice', 'prefix' => 'SV', 'padding' => 5],
         ['sequence_key' => 'purchase_invoice', 'prefix' => 'PV', 'padding' => 5],
         ['sequence_key' => 'cash_receipt', 'prefix' => 'CR', 'padding' => 5],
@@ -451,6 +463,10 @@ return [
         ['sequence_key' => 'purchase_debit_note', 'prefix' => 'PDN', 'padding' => 5],
         ['sequence_key' => 'depreciation', 'prefix' => 'DEP', 'padding' => 5],
         ['sequence_key' => 'tool_amortization', 'prefix' => 'TAM', 'padding' => 5],
+        ['sequence_key' => 'inventory_receipt', 'prefix' => 'WR', 'padding' => 5],
+        ['sequence_key' => 'inventory_issue', 'prefix' => 'WI', 'padding' => 5],
+        ['sequence_key' => 'inventory_transfer', 'prefix' => 'WT', 'padding' => 5],
+        ['sequence_key' => 'inventory_adjustment', 'prefix' => 'WA', 'padding' => 5],
         ['sequence_key' => 'payroll_accrual', 'prefix' => 'PAY', 'padding' => 5],
         ['sequence_key' => 'payroll_payment', 'prefix' => 'PYP', 'padding' => 5],
         ['sequence_key' => 'contract_accrual', 'prefix' => 'CTR', 'padding' => 5],
@@ -470,6 +486,7 @@ return [
         'stock_adjustment' => StockAdjustmentDocumentAdapter::class,
         'stock_transfer' => StockTransferDocumentAdapter::class,
         'opening_stock' => OpeningStockDocumentAdapter::class,
+        'inventory_document' => InventoryDocumentAdapter::class,
     ],
     'einvoice_adapters' => [
         'sandbox' => SandboxEInvoiceAdapter::class,
@@ -482,6 +499,40 @@ return [
     ],
     'payroll_bridge_adapters' => [
         'essentials' => EssentialsPayrollBridgeAdapter::class,
+    ],
+    'provider_health_profiles' => [
+        'bank_statement_import' => [
+            'manual' => [
+                'label' => 'Manual bank import',
+                'production_ready' => false,
+                'required_config' => [],
+                'notes' => 'Manual queue flow remains available, but a real bank provider is still required before final cutover.',
+            ],
+        ],
+        'tax_export' => [
+            'local' => [
+                'label' => 'Local tax payload',
+                'production_ready' => false,
+                'required_config' => [],
+                'notes' => 'Local export payloads are implemented, but filing-grade provider output is still required.',
+            ],
+        ],
+        'einvoice' => [
+            'sandbox' => [
+                'label' => 'Sandbox e-invoice',
+                'production_ready' => false,
+                'required_config' => [],
+                'notes' => 'Sandbox issuance is enabled for workflow testing only; production provider credentials are still required.',
+            ],
+        ],
+        'payroll_bridge' => [
+            'essentials' => [
+                'label' => 'Essentials payroll bridge',
+                'production_ready' => true,
+                'required_config' => [],
+                'notes' => 'Payroll bridge stays manual and queue-backed inside VAS.',
+            ],
+        ],
     ],
     'tax_codes' => [
         ['code' => 'VAT10_OUT', 'name' => 'VAT Output 10%', 'direction' => 'output', 'rate' => 10.0],

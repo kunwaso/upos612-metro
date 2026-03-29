@@ -58,6 +58,9 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory/warehouses', [InventoryController::class, 'storeWarehouse'])->name('inventory.warehouses.store');
+        Route::post('/inventory/documents', [InventoryController::class, 'storeDocument'])->name('inventory.documents.store');
+        Route::post('/inventory/documents/{document}/post', [InventoryController::class, 'postDocument'])->whereNumber('document')->name('inventory.documents.post');
+        Route::post('/inventory/documents/{document}/reverse', [InventoryController::class, 'reverseDocument'])->whereNumber('document')->name('inventory.documents.reverse');
         Route::get('/tools', [ToolsController::class, 'index'])->name('tools.index');
         Route::post('/tools', [ToolsController::class, 'store'])->name('tools.store');
         Route::post('/tools/amortization/run', [ToolsController::class, 'runAmortization'])->name('tools.amortization.run');

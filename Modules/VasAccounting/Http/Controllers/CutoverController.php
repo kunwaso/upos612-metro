@@ -20,11 +20,20 @@ class CutoverController extends VasBaseController
         $this->authorizePermission('vas_accounting.cutover.manage');
 
         $businessId = $this->businessId($request);
+        $selectedPeriod = $request->query('period') ? (string) $request->query('period') : null;
+        $selectedBranches = collect((array) $request->query('branches', []))
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn (int $value) => $value > 0)
+            ->values()
+            ->all();
+        $parityReport = $this->cutoverService->parityReport($businessId, $selectedPeriod, $selectedBranches);
 
         return view('vasaccounting::cutover.index', [
             'readinessSummary' => $this->cutoverService->readinessSummary($businessId),
             'blockers' => $this->cutoverService->cutoverBlockers($businessId),
             'parity' => $this->cutoverService->paritySnapshot($businessId),
+            'parityReport' => $parityReport,
+            'providerHealth' => $this->cutoverService->providerHealth($businessId),
             'cutoverSettings' => $this->cutoverService->cutoverSettings($businessId),
             'rolloutSettings' => $this->cutoverService->rolloutSettings($businessId),
             'uatPersonas' => $this->cutoverService->uatPersonas($businessId),
@@ -33,6 +42,8 @@ class CutoverController extends VasBaseController
             'parallelRunOptions' => $this->cutoverService->parallelRunOptions(),
             'rolloutStatusOptions' => $this->cutoverService->rolloutStatusOptions(),
             'branchOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedPeriod' => $selectedPeriod ?: data_get($parityReport, 'period.token'),
+            'selectedBranches' => $selectedBranches,
         ]);
     }
 

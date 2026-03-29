@@ -2,13 +2,18 @@
 
 namespace Modules\VasAccounting\Http\Controllers;
 
+use App\Product;
 use App\BusinessLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Modules\VasAccounting\Entities\VasAccount;
 use Modules\VasAccounting\Entities\VasWarehouse;
+use Modules\VasAccounting\Entities\VasInventoryDocument;
+use Modules\VasAccounting\Http\Requests\StoreInventoryDocumentRequest;
 use Modules\VasAccounting\Http\Requests\StoreWarehouseRequest;
 use Modules\VasAccounting\Services\VasInventoryValuationService;
+use Modules\VasAccounting\Services\VasWarehouseDocumentService;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
@@ -17,7 +22,8 @@ class InventoryController extends VasBaseController
     public function __construct(
         protected VasInventoryValuationService $inventoryValuationService,
         protected VasAccountingUtil $vasUtil,
-        protected OperationsAssetReportUtil $operationsAssetReportUtil
+        protected OperationsAssetReportUtil $operationsAssetReportUtil,
+        protected VasWarehouseDocumentService $warehouseDocumentService
     ) {
     }
 
@@ -47,6 +53,22 @@ class InventoryController extends VasBaseController
             'movementRows' => $this->operationsAssetReportUtil->inventoryMovementRows($businessId),
             'reconciliationRows' => $this->operationsAssetReportUtil->warehouseReconciliationRows($businessId),
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'productOptions' => Product::query()
+                ->where('business_id', $businessId)
+                ->where('is_inactive', 0)
+                ->orderBy('name')
+                ->limit(300)
+                ->get(['id', 'name'])
+                ->mapWithKeys(fn ($product) => [(int) $product->id => $product->name]),
+            'offsetAccountOptions' => VasAccount::query()
+                ->where('business_id', $businessId)
+                ->where('is_active', true)
+                ->where('allows_manual_entries', true)
+                ->orderBy('account_code')
+                ->limit(300)
+                ->get(['id', 'account_code', 'account_name'])
+                ->mapWithKeys(fn ($account) => [(int) $account->id => $account->account_code . ' - ' . $account->account_name]),
+            'inventoryDocuments' => $this->warehouseDocumentService->recentDocuments($businessId),
         ]);
     }
 
@@ -63,5 +85,48 @@ class InventoryController extends VasBaseController
         return redirect()
             ->route('vasaccounting.inventory.index')
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.warehouse_saved')]);
+    }
+
+    public function storeDocument(StoreInventoryDocumentRequest $request): RedirectResponse
+    {
+        $document = $this->warehouseDocumentService->createDocument(
+            $this->businessId($request),
+            $request->validated(),
+            (int) $request->user()->id
+        );
+
+        return redirect()
+            ->route('vasaccounting.inventory.index')
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_saved', ['document' => $document->document_no])]);
+    }
+
+    public function postDocument(Request $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.inventory.manage');
+
+        $inventoryDocument = VasInventoryDocument::query()
+            ->where('business_id', $this->businessId($request))
+            ->findOrFail($document);
+
+        $this->warehouseDocumentService->postDocument($inventoryDocument, (int) $request->user()->id);
+
+        return redirect()
+            ->route('vasaccounting.inventory.index')
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_posted')]);
+    }
+
+    public function reverseDocument(Request $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.inventory.manage');
+
+        $inventoryDocument = VasInventoryDocument::query()
+            ->where('business_id', $this->businessId($request))
+            ->findOrFail($document);
+
+        $this->warehouseDocumentService->reverseDocument($inventoryDocument, (int) $request->user()->id);
+
+        return redirect()
+            ->route('vasaccounting.inventory.index')
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_reversed')]);
     }
 }

@@ -6,11 +6,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Entities\VasBusinessSetting;
+use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
 class CutoverService
 {
-    public function __construct(protected VasAccountingUtil $vasUtil)
+    public function __construct(
+        protected VasAccountingUtil $vasUtil,
+        protected ?CutoverParityService $cutoverParityService = null,
+        protected ?ProviderHealthService $providerHealthService = null
+    )
     {
     }
 
@@ -222,12 +227,17 @@ class CutoverService
     public function cutoverBlockers(int $businessId): array
     {
         $remainingPersonas = collect($this->uatPersonas($businessId))->where('completed', false)->count();
+        $providerGaps = collect($this->providerHealth($businessId))->where('ready', false)->count();
+        $warehouseSummary = $this->warehouseSummary($businessId);
 
         return [
             ['label' => 'Draft vouchers', 'count' => $this->countWhere('vas_vouchers', ['business_id' => $businessId, 'status' => 'draft'])],
             ['label' => 'Pending approvals', 'count' => $this->countWhere('vas_vouchers', ['business_id' => $businessId, 'status' => 'pending_approval'])],
             ['label' => 'Posting failures', 'count' => $this->countNull('vas_posting_failures', 'resolved_at', ['business_id' => $businessId])],
             ['label' => 'Unmatched bank lines', 'count' => $this->countWhere('vas_bank_statement_lines', ['business_id' => $businessId, 'match_status' => 'unmatched'])],
+            ['label' => 'Unposted warehouse documents', 'count' => (int) ($warehouseSummary['unposted_documents'] ?? 0)],
+            ['label' => 'Warehouse discrepancies', 'count' => (int) ($warehouseSummary['warehouse_discrepancies'] ?? 0)],
+            ['label' => 'Provider readiness gaps', 'count' => $providerGaps],
             ['label' => 'Queued integrations', 'count' => $this->countIn('vas_integration_runs', 'status', ['queued', 'processing'], ['business_id' => $businessId])],
             ['label' => 'Pending UAT personas', 'count' => $remainingPersonas],
         ];
@@ -235,18 +245,30 @@ class CutoverService
 
     public function paritySnapshot(int $businessId): array
     {
-        $legacyBalance = $this->legacyTreasuryBalance($businessId);
-        $vasBalance = $this->vasTreasuryBalance($businessId);
+        $report = $this->parityReport($businessId);
+        $sections = collect((array) ($report['sections'] ?? []));
+        $glActivity = (array) $sections->firstWhere('key', 'gl_activity');
+        $treasury = (array) $sections->firstWhere('key', 'treasury_balance');
 
         return [
-            'legacy_accounts' => $this->countWhere('accounts', ['business_id' => $businessId]),
-            'legacy_transactions' => $this->legacyAccountTransactionCount($businessId),
-            'legacy_treasury_balance' => round($legacyBalance, 2),
+            'legacy_accounts' => (int) data_get($treasury, 'meta.legacy_accounts', $this->countWhere('accounts', ['business_id' => $businessId])),
+            'legacy_transactions' => (int) data_get($glActivity, 'meta.legacy_transactions', $this->legacyAccountTransactionCount($businessId)),
+            'legacy_treasury_balance' => round((float) data_get($treasury, 'legacy_value', 0), 2),
             'vas_posted_vouchers' => $this->countWhere('vas_vouchers', ['business_id' => $businessId, 'status' => 'posted']),
-            'vas_cash_bank_entries' => $this->vasCashBankEntryCount($businessId),
-            'vas_treasury_balance' => round($vasBalance, 2),
-            'balance_delta' => round($vasBalance - $legacyBalance, 2),
+            'vas_cash_bank_entries' => (int) data_get($treasury, 'meta.vas_cash_bank_entries', $this->vasCashBankEntryCount($businessId)),
+            'vas_treasury_balance' => round((float) data_get($treasury, 'vas_value', 0), 2),
+            'balance_delta' => round((float) data_get($treasury, 'delta', 0), 2),
         ];
+    }
+
+    public function parityReport(int $businessId, ?string $period = null, array $branchIds = []): array
+    {
+        return $this->cutoverParityService()->build($businessId, $period, $branchIds);
+    }
+
+    public function providerHealth(int $businessId): array
+    {
+        return $this->providerHealthService()->healthForBusiness($businessId);
     }
 
     protected function settingsModel(int $businessId): VasBusinessSetting
@@ -264,9 +286,11 @@ class CutoverService
     {
         $map = (array) config('vasaccounting.legacy_accounting_route_map', []);
         $firstSegment = (string) $request->segment(1);
-        $lookupKey = $firstSegment === 'account-types'
-            ? 'account-types'
-            : (string) $request->segment(2);
+        $lookupKey = match ($firstSegment) {
+            'account' => (string) ($request->segment(2) ?: 'account'),
+            'account-types', 'payment-account' => $firstSegment,
+            default => $firstSegment,
+        };
 
         return $map[$lookupKey] ?? null;
     }
@@ -393,5 +417,20 @@ class CutoverService
             })
             ->selectRaw('COALESCE(SUM(je.debit - je.credit), 0) as balance')
             ->value('balance');
+    }
+
+    protected function cutoverParityService(): CutoverParityService
+    {
+        return $this->cutoverParityService ?: app(CutoverParityService::class);
+    }
+
+    protected function providerHealthService(): ProviderHealthService
+    {
+        return $this->providerHealthService ?: app(ProviderHealthService::class);
+    }
+
+    protected function warehouseSummary(int $businessId): array
+    {
+        return app(OperationsAssetReportUtil::class)->warehouseSummary($businessId);
     }
 }

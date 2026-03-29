@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\VasAccounting\Http\Requests\StoreIntegrationWebhookRequest;
 use Modules\VasAccounting\Services\IntegrationHubService;
+use Modules\VasAccounting\Services\ProviderHealthService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
@@ -15,17 +16,21 @@ class EnterpriseApiController extends Controller
     public function __construct(
         protected VasAccountingUtil $vasUtil,
         protected ReportSnapshotService $reportSnapshotService,
-        protected IntegrationHubService $integrationHubService
+        protected IntegrationHubService $integrationHubService,
+        protected ProviderHealthService $providerHealthService
     ) {
     }
 
-    public function health(): JsonResponse
+    public function health(Request $request): JsonResponse
     {
+        $businessId = (int) ($request->user()->business_id ?? 0);
+
         return response()->json([
             'status' => 'ok',
             'guard' => 'api',
             'module' => 'vas-accounting',
             'version' => config('vasaccounting.version'),
+            'provider_health' => $businessId > 0 ? $this->providerHealthService->healthForBusiness($businessId) : [],
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace Modules\VasAccounting\Tests\Feature;
 
+use Modules\VasAccounting\Http\Middleware\RedirectLegacyAccountingToVas;
 use Tests\TestCase;
 
 class VasAccountingRoutesRegistrationTest extends TestCase
@@ -27,6 +28,9 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.invoices.index'));
         $this->assertTrue($router->has('vasaccounting.inventory.index'));
         $this->assertTrue($router->has('vasaccounting.inventory.warehouses.store'));
+        $this->assertTrue($router->has('vasaccounting.inventory.documents.store'));
+        $this->assertTrue($router->has('vasaccounting.inventory.documents.post'));
+        $this->assertTrue($router->has('vasaccounting.inventory.documents.reverse'));
         $this->assertTrue($router->has('vasaccounting.tools.index'));
         $this->assertTrue($router->has('vasaccounting.tools.store'));
         $this->assertTrue($router->has('vasaccounting.tools.amortization.run'));
@@ -143,12 +147,34 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.cutover.settings.update')->uri()
         );
         $this->assertSame(
+            'vas-accounting/inventory/documents/{document}/post',
+            $routes->getByName('vasaccounting.inventory.documents.post')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/reports/operational-health',
             $routes->getByName('vasaccounting.reports.operational_health')->uri()
         );
         $this->assertSame(
             'api/vas-accounting/webhooks/{provider}',
             $routes->getByName('vasaccounting.api.webhooks.store')->uri()
+        );
+    }
+
+    public function test_legacy_account_routes_are_guarded_by_cutover_middleware(): void
+    {
+        $routes = app('router')->getRoutes();
+
+        $this->assertContains(
+            RedirectLegacyAccountingToVas::class,
+            $routes->getByName('account.index')->gatherMiddleware()
+        );
+        $this->assertContains(
+            RedirectLegacyAccountingToVas::class,
+            $routes->getByName('payment-account.index')->gatherMiddleware()
+        );
+        $this->assertContains(
+            RedirectLegacyAccountingToVas::class,
+            $routes->getByName('account-types.index')->gatherMiddleware()
         );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Modules\VasAccounting\Tests\Unit;
 
+use Illuminate\Http\Request;
 use Mockery;
 use Modules\VasAccounting\Services\CutoverService;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
@@ -41,10 +42,12 @@ class CutoverServiceTest extends TestCase
         $mappings = collect($service->legacyRouteMappings());
         $trialBalance = $mappings->firstWhere('legacy_key', 'trial-balance');
         $accountTypes = $mappings->firstWhere('legacy_key', 'account-types');
+        $paymentAccounts = $mappings->firstWhere('legacy_key', 'payment-account');
 
         $this->assertSame('VAS Trial Balance', $trialBalance['target_label']);
         $this->assertStringContainsString('vas-accounting/reports/trial-balance', $trialBalance['route_url']);
         $this->assertSame('VAS Chart of Accounts', $accountTypes['target_label']);
+        $this->assertSame('VAS Cash & Bank', $paymentAccounts['target_label']);
     }
 
     public function test_merge_rollout_settings_normalizes_branch_ids(): void
@@ -67,5 +70,38 @@ class CutoverServiceTest extends TestCase
 
         $this->assertSame('staged', $merged['status']);
         $this->assertSame([1, 4, 9], $merged['enabled_branch_ids']);
+    }
+
+    public function test_legacy_route_action_returns_null_in_observe_mode(): void
+    {
+        $service = Mockery::mock(CutoverService::class, [Mockery::mock(VasAccountingUtil::class)])
+            ->makePartial()
+            ->shouldAllowMockingProtectedMethods();
+
+        $service->shouldReceive('legacyRoutesMode')
+            ->once()
+            ->with(1)
+            ->andReturn('observe');
+
+        $this->assertNull($service->legacyRouteAction(1, Request::create('/account/trial-balance', 'GET')));
+    }
+
+    public function test_legacy_route_action_maps_payment_account_resource_to_vas_cash_bank(): void
+    {
+        $service = Mockery::mock(CutoverService::class, [Mockery::mock(VasAccountingUtil::class)])
+            ->makePartial()
+            ->shouldAllowMockingProtectedMethods();
+
+        $service->shouldReceive('legacyRoutesMode')
+            ->once()
+            ->with(9)
+            ->andReturn('redirect');
+
+        $action = $service->legacyRouteAction(9, Request::create('/payment-account', 'GET'));
+
+        $this->assertIsArray($action);
+        $this->assertSame('redirect', $action['mode']);
+        $this->assertSame('VAS Cash & Bank', $action['target_label']);
+        $this->assertStringContainsString('vas-accounting/cash-bank', $action['target_url']);
     }
 }

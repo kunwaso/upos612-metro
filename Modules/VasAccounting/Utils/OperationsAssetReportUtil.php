@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Entities\VasFixedAsset;
+use Modules\VasAccounting\Entities\VasInventoryDocument;
 use Modules\VasAccounting\Entities\VasTool;
 use Modules\VasAccounting\Entities\VasToolAmortization;
 use Modules\VasAccounting\Entities\VasWarehouse;
@@ -26,7 +27,9 @@ class OperationsAssetReportUtil
         $warehouses = Schema::hasTable('vas_warehouses')
             ? VasWarehouse::query()->where('business_id', $businessId)->get()
             : collect();
-        $valuations = $this->inventoryValuationService->summaries($businessId);
+        $valuations = (Schema::hasTable('variation_location_details') && Schema::hasTable('products') && Schema::hasTable('variations'))
+            ? $this->inventoryValuationService->summaries($businessId)
+            : collect();
         $stockLocations = $valuations->pluck('location_id')->filter()->unique();
 
         return [
@@ -34,6 +37,8 @@ class OperationsAssetReportUtil
             'active_warehouses' => $warehouses->where('status', 'active')->count(),
             'stock_locations' => $stockLocations->count(),
             'uncovered_locations' => $stockLocations->diff($warehouses->pluck('business_location_id')->filter()->unique())->count(),
+            'unposted_documents' => $this->unpostedInventoryDocumentCount($businessId),
+            'warehouse_discrepancies' => $this->warehouseDiscrepancyCount($businessId),
         ];
     }
 
@@ -54,7 +59,9 @@ class OperationsAssetReportUtil
 
     public function warehouseReconciliationRows(int $businessId, int $limit = 30): Collection
     {
-        $valuations = $this->inventoryValuationService->summaries($businessId);
+        $valuations = (Schema::hasTable('variation_location_details') && Schema::hasTable('products') && Schema::hasTable('variations'))
+            ? $this->inventoryValuationService->summaries($businessId)
+            : collect();
         $warehouses = Schema::hasTable('vas_warehouses')
             ? VasWarehouse::query()->with('businessLocation')->where('business_id', $businessId)->orderBy('code')->get()
             : collect();
@@ -106,6 +113,25 @@ class OperationsAssetReportUtil
             ])
             ->values()
             ->take($limit);
+    }
+
+    public function warehouseDiscrepancyCount(int $businessId): int
+    {
+        return $this->warehouseReconciliationRows($businessId, 500)
+            ->filter(fn (array $row) => $row['coverage_status'] !== 'aligned')
+            ->count();
+    }
+
+    public function unpostedInventoryDocumentCount(int $businessId): int
+    {
+        if (! Schema::hasTable('vas_inventory_documents')) {
+            return 0;
+        }
+
+        return VasInventoryDocument::query()
+            ->where('business_id', $businessId)
+            ->whereIn('status', ['draft', 'pending_approval', 'approved'])
+            ->count();
     }
 
     public function toolSummary(int $businessId): array
@@ -257,6 +283,44 @@ class OperationsAssetReportUtil
 
     protected function inventoryMovementQuery(int $businessId)
     {
+        if (Schema::hasTable('vas_inventory_documents') && Schema::hasTable('vas_inventory_document_lines')) {
+            $documentQuery = DB::table('vas_inventory_document_lines as line')
+                ->join('vas_inventory_documents as document', 'document.id', '=', 'line.inventory_document_id')
+                ->join('products as product', 'product.id', '=', 'line.product_id')
+                ->leftJoin('variations as variation', 'variation.id', '=', 'line.variation_id')
+                ->leftJoin('vas_warehouses as warehouse', 'warehouse.id', '=', 'document.warehouse_id')
+                ->leftJoin('business_locations as bl', 'bl.id', '=', 'document.business_location_id')
+                ->where('document.business_id', $businessId)
+                ->selectRaw(
+                    "document.document_type as movement_type, document.id as transaction_id, document.document_date as transaction_date,
+                    COALESCE(NULLIF(document.reference, ''), document.document_no) as reference,
+                    document.business_location_id as location_id, COALESCE(bl.name, CONCAT('Location #', document.business_location_id)) as location_name,
+                    line.product_id, product.name as product_name, line.variation_id,
+                    COALESCE(variation.sub_sku, CONCAT('PROD-', line.product_id)) as sku,
+                    CASE
+                        WHEN document.document_type IN ('receipt', 'transfer') THEN 'in'
+                        WHEN document.document_type = 'adjustment' AND COALESCE(line.direction, 'decrease') = 'increase' THEN 'in'
+                        ELSE 'out'
+                    END as direction,
+                    CASE
+                        WHEN document.document_type IN ('receipt', 'transfer') THEN line.quantity
+                        WHEN document.document_type = 'adjustment' AND COALESCE(line.direction, 'decrease') = 'increase' THEN line.quantity
+                        ELSE (line.quantity * -1)
+                    END as quantity,
+                    line.unit_cost as unit_amount,
+                    CASE
+                        WHEN document.document_type IN ('receipt', 'transfer') THEN line.amount
+                        WHEN document.document_type = 'adjustment' AND COALESCE(line.direction, 'decrease') = 'increase' THEN line.amount
+                        ELSE (line.amount * -1)
+                    END as movement_value"
+                )
+                ->where('document.status', 'posted');
+
+            if ((clone $documentQuery)->count() > 0) {
+                return $documentQuery;
+            }
+        }
+
         if (! Schema::hasTable('transactions')) {
             return null;
         }
