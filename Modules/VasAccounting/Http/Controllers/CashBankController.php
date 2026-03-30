@@ -36,6 +36,7 @@ class CashBankController extends VasBaseController
         $this->authorizePermission('vas_accounting.cash_bank.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -44,21 +45,42 @@ class CashBankController extends VasBaseController
         }
 
         $cashbooks = Schema::hasTable('vas_cashbooks')
-            ? VasCashbook::query()->with(['businessLocation', 'cashAccount'])->where('business_id', $businessId)->orderBy('code')->get()
+            ? VasCashbook::query()
+                ->with(['businessLocation', 'cashAccount'])
+                ->where('business_id', $businessId)
+                ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
+                ->orderBy('code')
+                ->get()
             : collect();
 
         $bankAccounts = Schema::hasTable('vas_bank_accounts')
-            ? VasBankAccount::query()->with(['businessLocation', 'ledgerAccount'])->where('business_id', $businessId)->orderBy('account_code')->get()
+            ? VasBankAccount::query()
+                ->with(['businessLocation', 'ledgerAccount'])
+                ->where('business_id', $businessId)
+                ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
+                ->orderBy('account_code')
+                ->get()
             : collect();
 
         $statementImports = Schema::hasTable('vas_bank_statement_imports')
-            ? VasBankStatementImport::query()->with('bankAccount')->where('business_id', $businessId)->latest()->take(12)->get()
+            ? VasBankStatementImport::query()
+                ->with('bankAccount')
+                ->where('business_id', $businessId)
+                ->when($selectedLocationId, function ($query) use ($selectedLocationId) {
+                    $query->whereHas('bankAccount', fn ($bankAccountQuery) => $bankAccountQuery->where('business_location_id', $selectedLocationId));
+                })
+                ->latest()
+                ->take(12)
+                ->get()
             : collect();
 
         $statementLines = Schema::hasTable('vas_bank_statement_lines')
             ? VasBankStatementLine::query()
                 ->with(['statementImport.bankAccount', 'matchedVoucher'])
                 ->where('business_id', $businessId)
+                ->when($selectedLocationId, function ($query) use ($selectedLocationId) {
+                    $query->whereHas('statementImport.bankAccount', fn ($bankAccountQuery) => $bankAccountQuery->where('business_location_id', $selectedLocationId));
+                })
                 ->orderByDesc('transaction_date')
                 ->orderByDesc('id')
                 ->get()
@@ -70,6 +92,7 @@ class CashBankController extends VasBaseController
         $candidateVouchers = VasVoucher::query()
             ->where('business_id', $businessId)
             ->where('status', 'posted')
+            ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
             ->where(function ($query) {
                 $query->where('module_area', 'cash_bank')
                     ->orWhereIn('voucher_type', ['cash_receipt', 'cash_payment', 'bank_receipt', 'bank_payment', 'fund_transfer', 'payment']);
@@ -79,19 +102,55 @@ class CashBankController extends VasBaseController
             ->take(60)
             ->get();
 
+        $summary = $this->enterpriseReportUtil->cashBankSummary($businessId);
+        if ($selectedLocationId) {
+            $summary = [
+                'cashbooks' => $cashbooks->count(),
+                'bank_accounts' => $bankAccounts->count(),
+                'statement_imports' => $statementImports->count(),
+                'unmatched_lines' => $statementLines->where('match_status', 'unmatched')->count(),
+            ];
+        }
+
+        $cashLedgerRows = $this->enterpriseReportUtil->cashLedgerRows($businessId)
+            ->when($selectedLocationId, fn ($rows) => $rows->filter(function ($row) use ($selectedLocationId) {
+                $locationId = (int) ($row->business_location_id ?? $row->location_id ?? 0);
+
+                return $locationId === $selectedLocationId;
+            }))
+            ->take(10)
+            ->values();
+        $bankLedgerRows = $this->enterpriseReportUtil->bankLedgerRows($businessId)
+            ->when($selectedLocationId, fn ($rows) => $rows->filter(function ($row) use ($selectedLocationId) {
+                $locationId = (int) ($row->business_location_id ?? $row->location_id ?? 0);
+
+                return $locationId === $selectedLocationId;
+            }))
+            ->take(10)
+            ->values();
+        $reconciliationRows = $this->enterpriseReportUtil->reconciliationRows($businessId)
+            ->when($selectedLocationId, fn ($rows) => $rows->filter(function ($row) use ($selectedLocationId) {
+                $locationId = (int) ($row->business_location_id ?? $row->location_id ?? 0);
+
+                return $locationId === $selectedLocationId;
+            }))
+            ->take(10)
+            ->values();
+
         return view('vasaccounting::cash_bank.index', [
-            'summary' => $this->enterpriseReportUtil->cashBankSummary($businessId),
+            'summary' => $summary,
             'cashbooks' => $cashbooks,
             'bankAccounts' => $bankAccounts,
             'statementImports' => $statementImports,
             'statementLines' => $statementLines,
             'candidateVouchers' => $candidateVouchers,
-            'cashLedgerRows' => $this->enterpriseReportUtil->cashLedgerRows($businessId)->take(10),
-            'bankLedgerRows' => $this->enterpriseReportUtil->bankLedgerRows($businessId)->take(10),
-            'reconciliationRows' => $this->enterpriseReportUtil->reconciliationRows($businessId)->take(10),
+            'cashLedgerRows' => $cashLedgerRows,
+            'bankLedgerRows' => $bankLedgerRows,
+            'reconciliationRows' => $reconciliationRows,
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
             'chartOptions' => $this->vasUtil->chartOptions($businessId),
-            'providerOptions' => array_keys((array) config('vasaccounting.bank_statement_import_adapters', [])),
+            'providerOptions' => $this->vasUtil->providerOptions('bank_statement_import_adapters'),
             'defaultProvider' => (string) (((array) $settings->integration_settings)['bank_statement_provider'] ?? 'manual'),
         ]);
     }

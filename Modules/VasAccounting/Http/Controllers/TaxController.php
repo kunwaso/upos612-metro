@@ -33,13 +33,21 @@ class TaxController extends VasBaseController
             ->selectRaw('COALESCE(tc.code, "UNMAPPED") as code, COALESCE(tc.name, "Unmapped") as name, SUM(je.debit) as total_debit, SUM(je.credit) as total_credit')
             ->groupBy('tc.code', 'tc.name')
             ->get();
+        $salesVatBook = $this->enterpriseReportUtil->salesVatBook($businessId);
+        $purchaseVatBook = $this->enterpriseReportUtil->purchaseVatBook($businessId);
 
         return view('vasaccounting::tax.index', [
             'taxCodes' => $taxCodes,
             'summaries' => $summaries,
-            'salesVatBook' => $this->enterpriseReportUtil->salesVatBook($businessId),
-            'purchaseVatBook' => $this->enterpriseReportUtil->purchaseVatBook($businessId),
-            'providerOptions' => array_keys((array) config('vasaccounting.tax_export_adapters', [])),
+            'salesVatBook' => $salesVatBook,
+            'purchaseVatBook' => $purchaseVatBook,
+            'taxStats' => [
+                'tax_codes' => $taxCodes->count(),
+                'summary_rows' => $summaries->count(),
+                'sales_tax_total' => round((float) $salesVatBook->sum('tax_amount'), 2),
+                'purchase_tax_total' => round((float) $purchaseVatBook->sum('tax_amount'), 2),
+            ],
+            'providerOptions' => $this->vasUtil->providerOptions('tax_export_adapters'),
             'defaultProvider' => (string) (((array) $settings->integration_settings)['tax_export_provider'] ?? 'local'),
         ]);
     }

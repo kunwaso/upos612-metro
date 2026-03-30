@@ -41,10 +41,22 @@ class EnterpriseApiController extends Controller
         return response()->json([
             'document_statuses' => $this->vasUtil->documentStatuses(),
             'period_statuses' => $this->vasUtil->periodStatuses(),
+            'provider_labels' => [
+                'bank_statement_import' => $this->vasUtil->providerOptions('bank_statement_import_adapters'),
+                'tax_export' => $this->vasUtil->providerOptions('tax_export_adapters'),
+                'einvoice' => $this->vasUtil->providerOptions('einvoice_adapters'),
+                'payroll_bridge' => $this->vasUtil->providerOptions('payroll_bridge_adapters'),
+            ],
             'domains' => collect($this->vasUtil->enterpriseDomains())
                 ->map(function (array $domainConfig, string $domain) use ($businessId) {
                     return array_merge($domainConfig, [
                         'domain' => $domain,
+                        'display' => [
+                            'title' => $domainConfig['title'] ?? null,
+                            'nav_label' => $domainConfig['nav_label'] ?? null,
+                            'subtitle' => $domainConfig['subtitle'] ?? null,
+                            'record_label' => $domainConfig['record_label'] ?? null,
+                        ],
                         'summary' => $this->vasUtil->enterpriseDomainSummary($businessId, $domain),
                     ]);
                 })

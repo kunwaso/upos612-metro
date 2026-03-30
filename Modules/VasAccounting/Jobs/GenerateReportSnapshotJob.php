@@ -16,10 +16,9 @@ class GenerateReportSnapshotJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public bool $afterCommit = true;
-
     public function __construct(public int $snapshotId)
     {
+        $this->afterCommit();
     }
 
     public function handle(ReportSnapshotService $snapshotService): void

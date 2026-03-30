@@ -21,6 +21,7 @@ class VasBusinessSetting extends BaseVasModel
         'budget_settings' => 'array',
         'cutover_settings' => 'array',
         'rollout_settings' => 'array',
+        'ui_settings' => 'array',
         'is_enabled' => 'boolean',
     ];
 }

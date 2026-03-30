@@ -11,12 +11,14 @@ use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Http\Requests\StoreIntegrationRunRequest;
 use Modules\VasAccounting\Services\IntegrationHubService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
+use Modules\VasAccounting\Utils\VasAccountingUtil;
 
 class IntegrationController extends VasBaseController
 {
     public function __construct(
         protected IntegrationHubService $integrationHubService,
-        protected ReportSnapshotService $reportSnapshotService
+        protected ReportSnapshotService $reportSnapshotService,
+        protected VasAccountingUtil $vasUtil
     ) {
     }
 
@@ -25,20 +27,42 @@ class IntegrationController extends VasBaseController
         $this->authorizePermission('vas_accounting.integrations.manage');
 
         $businessId = $this->businessId($request);
+        $overview = $this->integrationHubService->overview($businessId);
+        $recentRuns = $this->integrationHubService->recentRuns($businessId, 20);
+        $recentWebhooks = $this->integrationHubService->recentWebhooks($businessId, 20);
+        $postingFailures = VasPostingFailure::query()
+            ->where('business_id', $businessId)
+            ->whereNull('resolved_at')
+            ->latest()
+            ->take(20)
+            ->get();
+        $recentSnapshots = $this->reportSnapshotService->recentSnapshots($businessId, 12);
+        $bankAccounts = VasBankAccount::query()->where('business_id', $businessId)->orderBy('account_code')->get();
+        $payrollGroups = PayrollGroup::query()->where('business_id', $businessId)->orderBy('name')->get();
+        $einvoiceDocuments = VasEInvoiceDocument::query()->where('business_id', $businessId)->latest()->take(30)->get();
+        $integrationStats = [
+            'pending_runs' => $recentRuns->where('status', 'pending')->count(),
+            'failed_runs' => $recentRuns->where('status', 'failed')->count(),
+            'webhook_errors' => $recentWebhooks->where('status', 'failed')->count(),
+            'open_failures' => $postingFailures->count(),
+            'snapshot_backlog' => $recentSnapshots->whereIn('status', ['queued', 'processing'])->count(),
+            'sync_candidates' => $einvoiceDocuments->whereIn('status', ['issued', 'pending_sync'])->count(),
+        ];
 
         return view('vasaccounting::integrations.index', [
-            'overview' => $this->integrationHubService->overview($businessId),
-            'recentRuns' => $this->integrationHubService->recentRuns($businessId, 20),
-            'recentWebhooks' => $this->integrationHubService->recentWebhooks($businessId, 20),
-            'postingFailures' => VasPostingFailure::query()->where('business_id', $businessId)->whereNull('resolved_at')->latest()->take(20)->get(),
-            'recentSnapshots' => $this->reportSnapshotService->recentSnapshots($businessId, 12),
-            'bankAccounts' => VasBankAccount::query()->where('business_id', $businessId)->orderBy('account_code')->get(),
-            'payrollGroups' => PayrollGroup::query()->where('business_id', $businessId)->orderBy('name')->get(),
-            'einvoiceDocuments' => VasEInvoiceDocument::query()->where('business_id', $businessId)->latest()->take(30)->get(),
-            'bankProviders' => array_keys((array) config('vasaccounting.bank_statement_import_adapters', [])),
-            'taxProviders' => array_keys((array) config('vasaccounting.tax_export_adapters', [])),
-            'payrollProviders' => array_keys((array) config('vasaccounting.payroll_bridge_adapters', [])),
-            'einvoiceProviders' => array_keys((array) config('vasaccounting.einvoice_adapters', [])),
+            'overview' => $overview,
+            'recentRuns' => $recentRuns,
+            'recentWebhooks' => $recentWebhooks,
+            'postingFailures' => $postingFailures,
+            'recentSnapshots' => $recentSnapshots,
+            'bankAccounts' => $bankAccounts,
+            'payrollGroups' => $payrollGroups,
+            'einvoiceDocuments' => $einvoiceDocuments,
+            'integrationStats' => $integrationStats,
+            'bankProviders' => $this->vasUtil->providerOptions('bank_statement_import_adapters'),
+            'taxProviders' => $this->vasUtil->providerOptions('tax_export_adapters'),
+            'payrollProviders' => $this->vasUtil->providerOptions('payroll_bridge_adapters'),
+            'einvoiceProviders' => $this->vasUtil->providerOptions('einvoice_adapters'),
         ]);
     }
 

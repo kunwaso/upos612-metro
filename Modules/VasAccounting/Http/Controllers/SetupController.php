@@ -30,8 +30,9 @@ class SetupController extends VasBaseController
         $selectedPostingMap = array_replace((array) $settings->posting_map, $oldPostingMap);
         $enterpriseDomains = $this->vasUtil->enterpriseDomains();
         $documentStatuses = $this->vasUtil->documentStatuses();
+        $localeOptions = $this->vasUtil->localeOptions();
 
-        return view('vasaccounting::setup.index', compact('settings', 'accounts', 'metrics', 'bootstrapStatus', 'selectedPostingMap', 'enterpriseDomains', 'documentStatuses') + [
+        return view('vasaccounting::setup.index', compact('settings', 'accounts', 'metrics', 'bootstrapStatus', 'selectedPostingMap', 'enterpriseDomains', 'documentStatuses', 'localeOptions') + [
             'autoBootstrapped' => $bootstrap['bootstrapped'],
         ]);
     }
@@ -60,7 +61,18 @@ class SetupController extends VasBaseController
             'approval_settings' => $approvalSettings,
             'integration_settings' => array_replace((array) $settings->integration_settings, (array) ($validated['integration_settings'] ?? [])),
         ]);
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('vas_business_settings', 'ui_settings')) {
+            $settings->ui_settings = array_replace(
+                ['locale' => $this->vasUtil->businessLocale($businessId)],
+                (array) $settings->ui_settings,
+                (array) ($validated['ui_settings'] ?? [])
+            );
+        }
+
         $settings->save();
+
+        $this->vasUtil->applyVasLocale($businessId, $request);
 
         return redirect()
             ->route('vasaccounting.setup.index')

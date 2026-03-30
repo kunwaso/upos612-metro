@@ -191,17 +191,15 @@ Typical Codex config file:
 Use placeholder paths in repo docs and replace them locally:
 
 ```toml
-[mcp_servers.semantic_code_search]
+[mcp_servers.semantic_code_search_upos612]
 command = "php"
 args = ["<repo-root>/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-base-en", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "<repo-root>", MCP_SEMANTIC_INDEX_ROOT = "<repo-root>/.cache/semantic-code-search-mcp", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-small-en", MCP_SEMANTIC_HF_DEVICE = "cpu", MCP_SEMANTIC_HF_BATCH_SIZE = "12", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_CHUNK_LINES = "80", MCP_SEMANTIC_CHUNK_OVERLAP = "8", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,config,ai,mcp,.cursor", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
 ```
 
 ## Cursor Config
 
-This repo does not check in a default `.cursor/mcp.json`. Add the semantic server locally if you want Cursor agents to use it.
-
-Example project-level config:
+This repo already checks in a project-level `.cursor/mcp.json` with the recommended semantic settings for `upos612`. If you need to mirror that config manually, use:
 
 ```json
 {
@@ -213,8 +211,14 @@ Example project-level config:
         "MCP_SEMANTIC_WORKSPACE_ROOT": "<repo-root>",
         "MCP_SEMANTIC_INDEX_ROOT": "<repo-root>/.cache/semantic-code-search-mcp",
         "MCP_SEMANTIC_EMBED_BACKEND": "huggingface",
-        "MCP_SEMANTIC_EMBED_MODEL": "BAAI/bge-base-en",
-        "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY": "1"
+        "MCP_SEMANTIC_EMBED_MODEL": "BAAI/bge-small-en",
+        "MCP_SEMANTIC_HF_DEVICE": "cpu",
+        "MCP_SEMANTIC_HF_BATCH_SIZE": "12",
+        "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY": "1",
+        "MCP_SEMANTIC_CHUNK_LINES": "80",
+        "MCP_SEMANTIC_CHUNK_OVERLAP": "8",
+        "MCP_SEMANTIC_INCLUDE_ROOTS": "app,Modules,routes,resources/views,config,ai,mcp,.cursor",
+        "MCP_SEMANTIC_INCLUDE_ROOT_FILES": "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json"
       }
     }
   }
@@ -222,4 +226,3 @@ Example project-level config:
 ```
 
 Official Cursor docs: [docs.cursor.com/context/model-context-protocol](https://docs.cursor.com/context/model-context-protocol)
-

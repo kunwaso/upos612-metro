@@ -2,6 +2,7 @@
 
 namespace Modules\VasAccounting\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Modules\VasAccounting\Http\Requests\EInvoiceActionRequest;
@@ -38,12 +39,26 @@ class EInvoiceController extends VasBaseController
             ->latest('posting_date')
             ->take(15)
             ->get();
+        $recentLogs = VasEInvoiceLog::query()->where('business_id', $businessId)->latest()->take(25)->get();
+        $stats = [
+            'documents' => $documents->count(),
+            'ready_to_issue' => $recentVouchers->count(),
+            'failed_or_rejected' => $documents->whereIn('status', ['failed', 'rejected'])->count(),
+            'synced_today' => $documents->filter(function ($document) {
+                if (empty($document->last_synced_at)) {
+                    return false;
+                }
+
+                return Carbon::parse($document->last_synced_at)->toDateString() === now()->toDateString();
+            })->count(),
+        ];
 
         return view('vasaccounting::einvoices.index', [
             'documents' => $documents,
             'recentVouchers' => $recentVouchers,
-            'recentLogs' => VasEInvoiceLog::query()->where('business_id', $businessId)->latest()->take(25)->get(),
-            'providerOptions' => array_keys((array) config('vasaccounting.einvoice_adapters', [])),
+            'recentLogs' => $recentLogs,
+            'stats' => $stats,
+            'providerOptions' => $this->vasUtil->providerOptions('einvoice_adapters'),
             'defaultProvider' => (string) (((array) $settings->einvoice_settings)['provider'] ?? 'sandbox'),
         ]);
     }

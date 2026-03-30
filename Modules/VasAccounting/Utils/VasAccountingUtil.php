@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Modules\VasAccounting\Entities\VasAccount;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
@@ -82,6 +83,10 @@ class VasAccountingUtil
 
         if (Schema::hasColumn('vas_business_settings', 'rollout_settings')) {
             $defaults['rollout_settings'] = $this->defaultRolloutSettings();
+        }
+
+        if (Schema::hasColumn('vas_business_settings', 'ui_settings')) {
+            $defaults['ui_settings'] = ['locale' => $this->defaultVasLocale()];
         }
 
         return VasBusinessSetting::firstOrCreate(
@@ -352,14 +357,322 @@ class VasAccountingUtil
         return $this->createFiscalYearPeriodIfMissing($businessId, $date);
     }
 
+    public function defaultVasLocale(): string
+    {
+        return 'vi';
+    }
+
+    public function supportedLocales(): array
+    {
+        $locales = array_keys((array) config('constants.langs', []));
+
+        return $locales === [] ? ['en', 'vi'] : $locales;
+    }
+
+    public function normalizeLocale(?string $locale): string
+    {
+        $locale = strtolower(trim((string) $locale));
+
+        return in_array($locale, $this->supportedLocales(), true)
+            ? $locale
+            : $this->defaultVasLocale();
+    }
+
+    public function localeOptions(): array
+    {
+        return [
+            'vi' => 'Tiếng Việt',
+            'en' => 'English',
+        ];
+    }
+
+    public function businessLocale(int $businessId): string
+    {
+        if (! Schema::hasColumn('vas_business_settings', 'ui_settings')) {
+            return $this->defaultVasLocale();
+        }
+
+        $settings = $this->getOrCreateBusinessSettings($businessId);
+        $locale = data_get((array) $settings->ui_settings, 'locale');
+
+        return $this->normalizeLocale($locale);
+    }
+
+    public function resolveVasLocale(?int $businessId = null, ?Request $request = null): string
+    {
+        $request = $request ?: request();
+        $queryLocale = $this->normalizeLocale($request?->query('lang'));
+
+        if ($request?->filled('lang')) {
+            return $queryLocale;
+        }
+
+        if (($businessId ?? 0) > 0) {
+            return $this->businessLocale((int) $businessId);
+        }
+
+        $sessionLocale = $this->normalizeLocale((string) session('user.language', config('app.locale')));
+
+        return $sessionLocale ?: $this->defaultVasLocale();
+    }
+
+    public function applyVasLocale(?int $businessId = null, ?Request $request = null): string
+    {
+        $locale = $this->resolveVasLocale($businessId, $request);
+        app()->setLocale($locale);
+
+        return $locale;
+    }
+
+    public function translationSlug(?string $value, string $fallback = 'item'): string
+    {
+        $slug = (string) Str::of($value ?: $fallback)
+            ->snake()
+            ->replace('__', '_')
+            ->trim('_');
+
+        return $slug !== '' ? $slug : $fallback;
+    }
+
+    public function pageTranslationKey(string $routeName): string
+    {
+        return str_replace('.', '_', (string) Str::after($routeName, 'vasaccounting.'));
+    }
+
+    public function translateWithFallback(string $key, ?string $fallback = null): string
+    {
+        $translated = __($key);
+
+        return $translated === $key ? (string) $fallback : $translated;
+    }
+
+    public function fieldLabel(string $key, ?string $fallback = null): string
+    {
+        return $this->translateWithFallback("vasaccounting::lang.field_labels.{$key}", $fallback ?: Str::headline($key));
+    }
+
+    public function actionLabel(string $key, ?string $fallback = null): string
+    {
+        return $this->translateWithFallback("vasaccounting::lang.actions.{$key}", $fallback ?: Str::headline($key));
+    }
+
+    public function metricLabel(string $key, ?string $fallback = null): string
+    {
+        return $this->translateWithFallback("vasaccounting::lang.metrics.{$key}", $fallback ?: Str::headline($key));
+    }
+
+    public function uiLabel(string $key, ?string $fallback = null): string
+    {
+        return $this->translateWithFallback("vasaccounting::lang.ui.{$key}", $fallback ?: Str::headline($key));
+    }
+
+    public function emptyStateLabel(string $key, ?string $fallback = null): string
+    {
+        return $this->translateWithFallback("vasaccounting::lang.empty_states.{$key}", $fallback ?: Str::headline($key));
+    }
+
+    public function documentStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.document_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function periodStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.period_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function normalBalanceLabel(?string $balance): string
+    {
+        $balance = (string) $balance;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.normal_balances.{$balance}",
+            Str::headline($balance)
+        );
+    }
+
+    public function matchStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.match_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function coverageStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.coverage_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function dueStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.due_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function genericStatusLabel(?string $status): string
+    {
+        $status = (string) $status;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.generic_statuses.{$status}",
+            Str::headline(str_replace('_', ' ', $status))
+        );
+    }
+
+    public function moduleAreaLabel(?string $area): string
+    {
+        $area = (string) $area;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.module_areas.{$area}",
+            Str::headline(str_replace('_', ' ', $area))
+        );
+    }
+
+    public function documentTypeLabel(?string $type): string
+    {
+        $type = (string) $type;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.document_types.{$type}",
+            Str::headline(str_replace('_', ' ', $type))
+        );
+    }
+
+    public function voucherTypeLabel(?string $type): string
+    {
+        $type = (string) $type;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.voucher_types.{$type}",
+            Str::headline(str_replace('_', ' ', $type))
+        );
+    }
+
+    public function reportKeyLabel(?string $key): string
+    {
+        $key = (string) $key;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.report_keys.{$key}",
+            Str::headline(str_replace('_', ' ', $key))
+        );
+    }
+
+    public function postingMapLabel(?string $key): string
+    {
+        $key = (string) $key;
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.posting_map_keys.{$key}",
+            Str::headline(str_replace('_', ' ', $key))
+        );
+    }
+
+    public function providerLabel(string $provider, ?string $providerConfigKey = null): string
+    {
+        $provider = (string) $provider;
+        $family = match ($providerConfigKey) {
+            'bank_statement_import_adapters' => 'bank_statement_import',
+            'tax_export_adapters' => 'tax_export',
+            'einvoice_adapters' => 'einvoice',
+            'payroll_bridge_adapters' => 'payroll_bridge',
+            default => null,
+        };
+
+        if ($family) {
+            $translated = $this->translateWithFallback("vasaccounting::lang.providers.{$family}.{$provider}", '');
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $this->translateWithFallback(
+            "vasaccounting::lang.providers.generic.{$provider}",
+            Str::headline(str_replace('_', ' ', $provider))
+        );
+    }
+
+    public function providerOptions(string $providerConfigKey): array
+    {
+        return collect((array) config("vasaccounting.{$providerConfigKey}", []))
+            ->keys()
+            ->mapWithKeys(fn (string $provider) => [$provider => $this->providerLabel($provider, $providerConfigKey)])
+            ->all();
+    }
+
+    protected function translateQuickActions(string $pageKey, array $quickActions): array
+    {
+        return collect($quickActions)
+            ->map(function (array $action) use ($pageKey) {
+                $actionKey = (string) ($action['action_key'] ?? $this->translationSlug($action['label'] ?? data_get($action, 'route', 'action')));
+
+                $action['label'] = $this->translateWithFallback(
+                    "vasaccounting::lang.pages.{$pageKey}.quick_actions.{$actionKey}",
+                    $action['label'] ?? Str::headline($actionKey)
+                );
+
+                return $action;
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function translatePageConfig(string $routeName, array $meta): array
+    {
+        $pageKey = $this->pageTranslationKey($routeName);
+        $meta['title'] = $this->translateWithFallback("vasaccounting::lang.pages.{$pageKey}.title", $meta['title'] ?? Str::headline($routeName));
+        $meta['nav_label'] = $this->translateWithFallback("vasaccounting::lang.pages.{$pageKey}.nav_label", $meta['nav_label'] ?? $meta['title']);
+        $meta['subtitle'] = $this->translateWithFallback("vasaccounting::lang.pages.{$pageKey}.subtitle", $meta['subtitle'] ?? null);
+        $meta['quick_actions'] = $this->translateQuickActions($pageKey, (array) ($meta['quick_actions'] ?? []));
+
+        return $meta;
+    }
+
+    protected function translateDomainConfig(string $domain, array $config): array
+    {
+        $config['title'] = $this->translateWithFallback("vasaccounting::lang.domains.{$domain}.title", $config['title'] ?? Str::headline($domain));
+        $config['nav_label'] = $this->translateWithFallback("vasaccounting::lang.domains.{$domain}.nav_label", $config['nav_label'] ?? $config['title']);
+        $config['subtitle'] = $this->translateWithFallback("vasaccounting::lang.domains.{$domain}.subtitle", $config['subtitle'] ?? null);
+        $config['record_label'] = $this->translateWithFallback("vasaccounting::lang.domains.{$domain}.record_label", $config['record_label'] ?? null);
+
+        return $config;
+    }
+
     public function documentStatuses(): array
     {
-        return (array) config('vasaccounting.document_statuses', []);
+        return collect(array_keys((array) config('vasaccounting.document_statuses', [])))
+            ->mapWithKeys(fn (string $status) => [$status => $this->documentStatusLabel($status)])
+            ->all();
     }
 
     public function periodStatuses(): array
     {
-        return (array) config('vasaccounting.period_statuses', []);
+        return collect(array_keys((array) config('vasaccounting.period_statuses', [])))
+            ->mapWithKeys(fn (string $status) => [$status => $this->periodStatusLabel($status)])
+            ->all();
     }
 
     public function defaultFeatureFlags(): array
@@ -369,7 +682,30 @@ class VasAccountingUtil
 
     public function enterpriseDomains(): array
     {
-        return (array) config('vasaccounting.enterprise_domains', []);
+        return collect((array) config('vasaccounting.enterprise_domains', []))
+            ->mapWithKeys(fn (array $config, string $domain) => [$domain => $this->translateDomainConfig($domain, $config)])
+            ->all();
+    }
+
+    public function pageSections(): array
+    {
+        return collect((array) config('vasaccounting.page_sections', []))
+            ->mapWithKeys(function (array $meta, string $sectionKey) {
+                $meta['label'] = $this->translateWithFallback(
+                    "vasaccounting::lang.sections.{$sectionKey}",
+                    $meta['label'] ?? Str::headline($sectionKey)
+                );
+
+                return [$sectionKey => $meta];
+            })
+            ->all();
+    }
+
+    public function pageRegistry(): array
+    {
+        return collect((array) config('vasaccounting.page_registry', []))
+            ->mapWithKeys(fn (array $meta, string $routeName) => [$routeName => $this->translatePageConfig($routeName, $meta)])
+            ->all();
     }
 
     public function defaultCutoverSettings(): array
@@ -399,37 +735,189 @@ class VasAccountingUtil
         return $config;
     }
 
+    public function businessContext(int $businessId): array
+    {
+        $business = Business::query()
+            ->select(['id', 'name'])
+            ->find($businessId);
+
+        return [
+            'id' => $businessId,
+            'label' => $business?->name ?: (($this->resolveVasLocale($businessId) === 'vi' ? 'Doanh nghiệp #' : 'Business #') . $businessId),
+        ];
+    }
+
+    public function currentPeriodContext(int $businessId): ?array
+    {
+        $today = now()->toDateString();
+        $period = VasAccountingPeriod::query()
+            ->where('business_id', $businessId)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->orderByDesc('start_date')
+            ->first();
+
+        if (! $period) {
+            $period = VasAccountingPeriod::query()
+                ->where('business_id', $businessId)
+                ->orderByDesc('start_date')
+                ->first();
+        }
+
+        if (! $period) {
+            return null;
+        }
+
+        return [
+            'name' => $this->localizedPeriodName($period->name),
+            'status' => $period->status,
+            'status_label' => $this->periodStatusLabel((string) $period->status),
+            'start_date' => $period->start_date,
+            'end_date' => $period->end_date,
+        ];
+    }
+
+    public function localizedPeriodName(?string $name): string
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return '';
+        }
+
+        if (preg_match('/^(?<start>\d{4})-(?<end>\d{4}) Fiscal Year$/', $name, $matches) === 1) {
+            $translated = __('vasaccounting::lang.period_names.fiscal_year_range', [
+                'start' => $matches['start'],
+                'end' => $matches['end'],
+            ]);
+
+            return $translated === 'vasaccounting::lang.period_names.fiscal_year_range'
+                ? $name
+                : $translated;
+        }
+
+        return $name;
+    }
+
+    public function pageMeta(?string $routeName, int $businessId): ?array
+    {
+        if (empty($routeName)) {
+            return null;
+        }
+
+        $registry = $this->pageRegistry();
+        $meta = $registry[$routeName] ?? null;
+        if (! is_array($meta)) {
+            return null;
+        }
+
+        $settings = $this->getOrCreateBusinessSettings($businessId);
+        $featureFlags = array_replace($this->defaultFeatureFlags(), (array) $settings->feature_flags);
+        $featureFlag = (string) ($meta['feature_flag'] ?? '');
+        if ($featureFlag !== '' && ($featureFlags[$featureFlag] ?? true) === false) {
+            return null;
+        }
+
+        $sectionKey = (string) ($meta['section_group'] ?? 'controls');
+        $section = (array) ($this->pageSections()[$sectionKey] ?? []);
+        $quickActions = collect((array) ($meta['quick_actions'] ?? []))
+            ->filter(function (array $action) use ($featureFlags) {
+                $actionFeatureFlag = (string) ($action['feature_flag'] ?? '');
+                if ($actionFeatureFlag !== '' && ($featureFlags[$actionFeatureFlag] ?? true) === false) {
+                    return false;
+                }
+
+                $permission = (string) ($action['permission'] ?? '');
+
+                return $permission === '' || auth()->user()?->can($permission);
+            })
+            ->values()
+            ->all();
+
+        return array_replace([
+            'route' => $routeName,
+            'section_group' => $sectionKey,
+            'section_label' => (string) ($section['label'] ?? Str::headline($sectionKey)),
+            'badge_variant' => (string) ($section['badge_variant'] ?? 'light-primary'),
+            'nav_label' => $meta['title'] ?? Str::headline($routeName),
+            'supports_location_filter' => false,
+            'show_in_nav' => false,
+            'quick_actions' => [],
+            'icon' => 'ki-outline ki-chart-simple-2',
+        ], $meta, [
+            'quick_actions' => $quickActions,
+        ]);
+    }
+
     public function navigationItems(int $businessId): array
     {
         $settings = $this->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->defaultFeatureFlags(), (array) $settings->feature_flags);
+        $sectionOrder = array_values(array_keys($this->pageSections()));
+        $items = collect($this->pageRegistry())
+            ->map(function (array $meta, string $routeName) use ($featureFlags) {
+                if (! ($meta['show_in_nav'] ?? false)) {
+                    return null;
+                }
 
-        $items = [
-            ['route' => 'vasaccounting.setup.index', 'label' => __('vasaccounting::lang.setup'), 'active' => 'vasaccounting.setup.*'],
-            ['route' => 'vasaccounting.dashboard.index', 'label' => __('vasaccounting::lang.dashboard'), 'active' => 'vasaccounting.dashboard.*'],
-            ['route' => 'vasaccounting.chart.index', 'label' => __('vasaccounting::lang.chart_of_accounts'), 'active' => 'vasaccounting.chart.*'],
-            ['route' => 'vasaccounting.periods.index', 'label' => __('vasaccounting::lang.periods'), 'active' => 'vasaccounting.periods.*'],
-            ['route' => 'vasaccounting.vouchers.index', 'label' => __('vasaccounting::lang.vouchers'), 'active' => 'vasaccounting.vouchers.*'],
-        ];
+                $featureFlag = (string) ($meta['feature_flag'] ?? '');
+                if ($featureFlag !== '' && ($featureFlags[$featureFlag] ?? true) === false) {
+                    return null;
+                }
 
-        foreach ($this->enterpriseDomains() as $domain => $config) {
-            if (($featureFlags[$domain] ?? true) === false) {
+                return [
+                    'route' => $routeName,
+                    'label' => (string) ($meta['nav_label'] ?? $meta['title'] ?? Str::headline($routeName)),
+                    'permission' => (string) ($meta['permission'] ?? ''),
+                    'active' => (string) ($meta['active_pattern'] ?? $routeName),
+                    'section_group' => (string) ($meta['section_group'] ?? 'controls'),
+                    'icon' => (string) ($meta['icon'] ?? 'ki-outline ki-chart-simple-2'),
+                    'sort' => (int) ($meta['nav_sort'] ?? 999),
+                ];
+            })
+            ->filter()
+            ->sort(function (array $left, array $right) use ($sectionOrder) {
+                $leftSection = array_search($left['section_group'], $sectionOrder, true);
+                $rightSection = array_search($right['section_group'], $sectionOrder, true);
+
+                return [$leftSection === false ? 999 : $leftSection, $left['sort'], $left['label']]
+                    <=> [$rightSection === false ? 999 : $rightSection, $right['sort'], $right['label']];
+            })
+            ->values()
+            ->map(function (array $item) {
+                unset($item['sort']);
+
+                return $item;
+            })
+            ->all();
+
+        return $items;
+    }
+
+    public function navigationGroups(int $businessId): array
+    {
+        $items = collect($this->navigationItems($businessId));
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $sectionDefinitions = $this->pageSections();
+        $groups = [];
+
+        foreach ($sectionDefinitions as $sectionKey => $sectionMeta) {
+            $sectionItems = $items->where('section_group', $sectionKey)->values()->all();
+            if ($sectionItems === []) {
                 continue;
             }
 
-            $items[] = [
-                'route' => (string) $config['route'],
-                'label' => (string) $config['nav_label'],
-                'permission' => (string) $config['permission'],
-                'active' => str_replace('.index', '.*', (string) $config['route']),
+            $groups[] = [
+                'key' => $sectionKey,
+                'label' => (string) ($sectionMeta['label'] ?? Str::headline($sectionKey)),
+                'badge_variant' => (string) ($sectionMeta['badge_variant'] ?? 'light-primary'),
+                'items' => $sectionItems,
             ];
         }
 
-        $items[] = ['route' => 'vasaccounting.closing.index', 'label' => __('vasaccounting::lang.closing'), 'active' => 'vasaccounting.closing.*'];
-        $items[] = ['route' => 'vasaccounting.cutover.index', 'label' => __('vasaccounting::lang.cutover'), 'permission' => 'vas_accounting.cutover.manage', 'active' => 'vasaccounting.cutover.*'];
-        $items[] = ['route' => 'vasaccounting.reports.index', 'label' => __('vasaccounting::lang.reports'), 'active' => 'vasaccounting.reports.*'];
-
-        return $items;
+        return $groups;
     }
 
     public function enterpriseDomainSummary(int $businessId, string $domain): array

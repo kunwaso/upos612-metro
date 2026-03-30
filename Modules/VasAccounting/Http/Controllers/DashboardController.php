@@ -2,6 +2,7 @@
 
 namespace Modules\VasAccounting\Http\Controllers;
 
+use App\BusinessLocation;
 use Illuminate\Http\Request;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasPostingFailure;
@@ -22,15 +23,23 @@ class DashboardController extends VasBaseController
         $this->authorizePermission('vas_accounting.access');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $bootstrap = $this->vasUtil->ensureBusinessBootstrapped($businessId, (int) auth()->id());
         $metrics = $this->vasUtil->dashboardMetrics($businessId);
         $inventoryTotals = $this->inventoryValuationService->totals($businessId);
-        $recentVouchers = VasVoucher::query()->where('business_id', $businessId)->latest()->take(8)->get();
+        $recentVouchers = VasVoucher::query()
+            ->where('business_id', $businessId)
+            ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
+            ->latest()
+            ->take(8)
+            ->get();
         $periods = VasAccountingPeriod::query()->where('business_id', $businessId)->latest('start_date')->take(6)->get();
         $failures = VasPostingFailure::query()->where('business_id', $businessId)->whereNull('resolved_at')->latest()->take(5)->get();
 
         return view('vasaccounting::dashboard.index', compact('metrics', 'inventoryTotals', 'recentVouchers', 'periods', 'failures') + [
             'autoBootstrapped' => $bootstrap['bootstrapped'],
+            'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
         ]);
     }
 }

@@ -34,6 +34,8 @@ class StoreSetupRequest extends FormRequest
             'integration_settings.bank_statement_provider' => ['nullable', 'string', 'max:50'],
             'integration_settings.tax_export_provider' => ['nullable', 'string', 'max:50'],
             'integration_settings.payroll_bridge_provider' => ['nullable', 'string', 'max:50'],
+            'ui_settings' => ['nullable', 'array'],
+            'ui_settings.locale' => ['nullable', 'string', Rule::in(array_keys((array) config('constants.langs', [])))],
         ];
     }
 }

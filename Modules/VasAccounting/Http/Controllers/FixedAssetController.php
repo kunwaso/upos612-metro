@@ -33,6 +33,7 @@ class FixedAssetController extends VasBaseController
         $this->authorizePermission('vas_accounting.assets.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -40,12 +41,27 @@ class FixedAssetController extends VasBaseController
             abort(404);
         }
 
+        $assetRows = $this->operationsAssetReportUtil->fixedAssetRegisterRows($businessId);
+        if ($selectedLocationId) {
+            $assetRows = collect($assetRows)
+                ->filter(fn (array $row) => (int) data_get($row, 'asset.business_location_id') === $selectedLocationId)
+                ->values();
+        }
+
+        $summary = [
+            'asset_count' => collect($assetRows)->count(),
+            'active_assets' => collect($assetRows)->filter(fn (array $row) => (string) data_get($row, 'asset.status') === 'active')->count(),
+            'disposed_assets' => collect($assetRows)->filter(fn (array $row) => (string) data_get($row, 'asset.status') === 'disposed')->count(),
+            'net_book_value' => round((float) collect($assetRows)->sum(fn (array $row) => (float) ($row['net_book_value'] ?? 0)), 4),
+        ];
+
         return view('vasaccounting::fixed_assets.index', [
-            'summary' => $this->operationsAssetReportUtil->fixedAssetSummary($businessId),
-            'assetRows' => $this->operationsAssetReportUtil->fixedAssetRegisterRows($businessId),
+            'summary' => $summary,
+            'assetRows' => $assetRows,
             'categories' => VasAssetCategory::query()->where('business_id', $businessId)->where('is_active', true)->orderBy('name')->get(),
             'chartOptions' => $this->vasUtil->chartOptions($businessId),
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
             'vendorOptions' => Contact::query()
                 ->where('business_id', $businessId)
                 ->whereIn('type', ['supplier', 'both'])

@@ -63,14 +63,14 @@ Typical Codex config file:
 Use placeholder paths in repo docs and replace them locally:
 
 ```toml
-[mcp_servers.laravel_mysql]
+[mcp_servers.laravel_mysql_upos612]
 command = "php"
 args = ["<repo-root>/mcp/laravel-mysql-mcp/bin/server"]
 ```
 
 Short local example:
 
-- If your clone lives at `D:/path/to/rey`, then `<repo-root>` becomes `D:/path/to/rey`.
+- If your clone lives at `D:/path/to/upos612`, then `<repo-root>` becomes `D:/path/to/upos612`.
 
 ## Resources
 

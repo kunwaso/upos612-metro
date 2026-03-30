@@ -16,10 +16,9 @@ class RunIntegrationTaskJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public bool $afterCommit = true;
-
     public function __construct(public int $runId)
     {
+        $this->afterCommit();
     }
 
     public function handle(IntegrationHubService $integrationHubService): void

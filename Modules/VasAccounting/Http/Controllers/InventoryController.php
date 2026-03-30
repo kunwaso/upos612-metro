@@ -32,6 +32,7 @@ class InventoryController extends VasBaseController
         $this->authorizePermission('vas_accounting.inventory.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -40,19 +41,55 @@ class InventoryController extends VasBaseController
         }
 
         $rows = $this->inventoryValuationService->summaries($businessId);
-        $totals = $this->inventoryValuationService->totals($businessId);
+        if ($selectedLocationId) {
+            $rows = $rows->filter(fn (array $row) => (int) ($row['location_id'] ?? 0) === $selectedLocationId)->values();
+        }
+
+        $totals = [
+            'sku_count' => $rows->count(),
+            'quantity_on_hand' => (float) $rows->sum('qty_available'),
+            'inventory_value' => (float) $rows->sum('inventory_value'),
+        ];
         $warehouses = Schema::hasTable('vas_warehouses')
-            ? VasWarehouse::query()->with('businessLocation')->where('business_id', $businessId)->orderBy('code')->get()
+            ? VasWarehouse::query()
+                ->with('businessLocation')
+                ->where('business_id', $businessId)
+                ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
+                ->orderBy('code')
+                ->get()
             : collect();
+        $warehouseSummary = $this->operationsAssetReportUtil->warehouseSummary($businessId);
+        $movementRows = $this->operationsAssetReportUtil->inventoryMovementRows($businessId);
+        $reconciliationRows = $this->operationsAssetReportUtil->warehouseReconciliationRows($businessId);
+        $inventoryDocuments = $this->warehouseDocumentService->recentDocuments($businessId);
+
+        if ($selectedLocationId) {
+            $movementRows = $movementRows->filter(fn ($row) => (int) ($row->location_id ?? 0) === $selectedLocationId)->values();
+            $reconciliationRows = $reconciliationRows
+                ->filter(fn (array $row) => (int) ($row['location_id'] ?? 0) === $selectedLocationId)
+                ->values();
+            $inventoryDocuments = $inventoryDocuments
+                ->filter(fn ($document) => (int) ($document->business_location_id ?? 0) === $selectedLocationId)
+                ->values();
+            $warehouseSummary = [
+                'warehouse_count' => $warehouses->count(),
+                'active_warehouses' => $warehouses->where('status', 'active')->count(),
+                'stock_locations' => $rows->pluck('location_id')->filter()->unique()->count(),
+                'uncovered_locations' => 0,
+                'unposted_documents' => $inventoryDocuments->whereIn('status', ['draft', 'pending_approval', 'approved'])->count(),
+                'warehouse_discrepancies' => $reconciliationRows->where('coverage_status', '!=', 'aligned')->count(),
+            ];
+        }
 
         return view('vasaccounting::inventory.index', [
             'rows' => $rows,
             'totals' => $totals,
             'warehouses' => $warehouses,
-            'warehouseSummary' => $this->operationsAssetReportUtil->warehouseSummary($businessId),
-            'movementRows' => $this->operationsAssetReportUtil->inventoryMovementRows($businessId),
-            'reconciliationRows' => $this->operationsAssetReportUtil->warehouseReconciliationRows($businessId),
+            'warehouseSummary' => $warehouseSummary,
+            'movementRows' => $movementRows,
+            'reconciliationRows' => $reconciliationRows,
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
             'productOptions' => Product::query()
                 ->where('business_id', $businessId)
                 ->where('is_inactive', 0)
@@ -68,7 +105,7 @@ class InventoryController extends VasBaseController
                 ->limit(300)
                 ->get(['id', 'account_code', 'account_name'])
                 ->mapWithKeys(fn ($account) => [(int) $account->id => $account->account_code . ' - ' . $account->account_name]),
-            'inventoryDocuments' => $this->warehouseDocumentService->recentDocuments($businessId),
+            'inventoryDocuments' => $inventoryDocuments,
         ]);
     }
 

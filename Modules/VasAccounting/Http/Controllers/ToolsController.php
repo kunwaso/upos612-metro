@@ -29,6 +29,7 @@ class ToolsController extends VasBaseController
         $this->authorizePermission('vas_accounting.tools.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -36,12 +37,36 @@ class ToolsController extends VasBaseController
             abort(404);
         }
 
+        $toolRows = $this->operationsAssetReportUtil->toolRegisterRows($businessId);
+        $scheduleRows = $this->operationsAssetReportUtil->toolScheduleRows($businessId);
+        $amortizationHistory = $this->operationsAssetReportUtil->toolAmortizationHistory($businessId);
+
+        if ($selectedLocationId) {
+            $toolRows = collect($toolRows)
+                ->filter(fn (array $row) => (int) data_get($row, 'tool.business_location_id') === $selectedLocationId)
+                ->values();
+            $scheduleRows = collect($scheduleRows)
+                ->filter(fn (array $row) => (int) data_get($row, 'tool.business_location_id') === $selectedLocationId)
+                ->values();
+            $amortizationHistory = collect($amortizationHistory)
+                ->filter(fn ($history) => (int) data_get($history, 'tool.business_location_id') === $selectedLocationId)
+                ->values();
+        }
+
+        $summary = [
+            'tool_count' => collect($toolRows)->count(),
+            'active_tools' => collect($toolRows)->filter(fn (array $row) => in_array((string) data_get($row, 'tool.status'), ['active', 'issued'], true))->count(),
+            'remaining_value' => round((float) collect($toolRows)->sum(fn (array $row) => (float) data_get($row, 'tool.remaining_value', 0)), 4),
+            'due_this_month' => collect($scheduleRows)->filter(fn (array $row) => in_array((string) ($row['due_status'] ?? ''), ['due_now', 'overdue'], true))->count(),
+        ];
+
         return view('vasaccounting::tools.index', [
-            'summary' => $this->operationsAssetReportUtil->toolSummary($businessId),
-            'toolRows' => $this->operationsAssetReportUtil->toolRegisterRows($businessId),
-            'scheduleRows' => $this->operationsAssetReportUtil->toolScheduleRows($businessId),
-            'amortizationHistory' => $this->operationsAssetReportUtil->toolAmortizationHistory($businessId),
+            'summary' => $summary,
+            'toolRows' => $toolRows,
+            'scheduleRows' => $scheduleRows,
+            'amortizationHistory' => $amortizationHistory,
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
             'chartOptions' => $this->vasUtil->chartOptions($businessId),
             'departmentOptions' => Schema::hasTable('vas_departments')
                 ? VasDepartment::query()->where('business_id', $businessId)->where('is_active', true)->orderBy('name')->pluck('name', 'id')

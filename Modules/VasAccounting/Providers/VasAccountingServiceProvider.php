@@ -14,6 +14,7 @@ use App\Transaction;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Modules\VasAccounting\Console\ClosePeriodCommand;
 use Modules\VasAccounting\Console\CutoverBackfillCommand;
 use Modules\VasAccounting\Console\CutoverParityCommand;
@@ -229,9 +230,45 @@ class VasAccountingServiceProvider extends ServiceProvider
 
     protected function registerViewComposer(): void
     {
+        View::composer('vasaccounting::*', function ($view) {
+            $vasUtil = $this->app->make(VasAccountingUtil::class);
+            $routeName = (string) optional(request()->route())->getName();
+            $locale = app()->getLocale();
+
+            if (Str::startsWith($routeName, 'vasaccounting.')) {
+                $businessId = (int) request()->session()->get('user.business_id');
+                $locale = $vasUtil->applyVasLocale($businessId > 0 ? $businessId : null, request());
+            }
+
+            $view->with('vasAccountingUtil', $vasUtil);
+            $view->with('vasAccountingLocale', $locale);
+        });
+
         View::composer('layouts.app', function ($view) {
+            $routeName = (string) optional(request()->route())->getName();
+
+            if (Str::startsWith($routeName, 'vasaccounting.')) {
+                $businessId = (int) request()->session()->get('user.business_id');
+                if ($businessId > 0) {
+                    $locale = $this->app->make(VasAccountingUtil::class)->applyVasLocale($businessId, request());
+                    $view->with('vasAccountingLocale', $locale);
+                }
+            }
+
             if (! auth()->check() || ! auth()->user()->can('vas_accounting.access')) {
                 $view->with('vasAccountingNavConfig', null);
+                $view->with('vasAccountingPageMeta', null);
+                $view->with('vasAccountingBusinessContext', null);
+                $view->with('vasAccountingCurrentPeriod', null);
+
+                return;
+            }
+
+            if (! Str::startsWith($routeName, 'vasaccounting.')) {
+                $view->with('vasAccountingNavConfig', null);
+                $view->with('vasAccountingPageMeta', null);
+                $view->with('vasAccountingBusinessContext', null);
+                $view->with('vasAccountingCurrentPeriod', null);
 
                 return;
             }
@@ -239,16 +276,25 @@ class VasAccountingServiceProvider extends ServiceProvider
             $businessId = (int) request()->session()->get('user.business_id');
             if ($businessId <= 0) {
                 $view->with('vasAccountingNavConfig', null);
+                $view->with('vasAccountingPageMeta', null);
+                $view->with('vasAccountingBusinessContext', null);
+                $view->with('vasAccountingCurrentPeriod', null);
 
                 return;
             }
 
+            $vasUtil = $this->app->make(VasAccountingUtil::class);
+            $settings = $vasUtil->getOrCreateBusinessSettings($businessId);
             $view->with('vasAccountingNavConfig', [
                 'business_id' => $businessId,
                 'report_route_prefix' => (string) config('vasaccounting.report_route_prefix'),
-                'feature_flags' => (array) $this->app->make(VasAccountingUtil::class)->getOrCreateBusinessSettings($businessId)->feature_flags,
-                'navigation_items' => $this->app->make(VasAccountingUtil::class)->navigationItems($businessId),
+                'feature_flags' => array_replace($vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags),
+                'navigation_items' => $vasUtil->navigationItems($businessId),
+                'navigation_groups' => $vasUtil->navigationGroups($businessId),
             ]);
+            $view->with('vasAccountingPageMeta', $vasUtil->pageMeta($routeName, $businessId));
+            $view->with('vasAccountingBusinessContext', $vasUtil->businessContext($businessId));
+            $view->with('vasAccountingCurrentPeriod', $vasUtil->currentPeriodContext($businessId));
         });
     }
 }

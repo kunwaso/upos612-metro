@@ -15,6 +15,18 @@ set "REGISTER=0"
 set "UNREGISTER=0"
 set "NO_PAUSE=0"
 
+rem Semantic defaults for this repo. PowerShell reuses these if already set.
+set "MCP_SEMANTIC_EMBED_BACKEND=huggingface"
+set "MCP_SEMANTIC_EMBED_MODEL=BAAI/bge-small-en"
+set "MCP_SEMANTIC_HF_DEVICE=cpu"
+set "MCP_SEMANTIC_HF_BATCH_SIZE=12"
+set "MCP_SEMANTIC_HF_LOCAL_FILES_ONLY=1"
+set "MCP_SEMANTIC_CHUNK_LINES=80"
+set "MCP_SEMANTIC_CHUNK_OVERLAP=8"
+set "MCP_SEMANTIC_INCLUDE_ROOTS=app,Modules,routes,resources/views,config,ai,mcp,.cursor"
+set "MCP_SEMANTIC_INCLUDE_ROOT_FILES=AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json"
+set "MCP_SEMANTIC_MAX_FILE_BYTES=524288"
+
 :parse_args
 if "%~1"=="" goto args_done
 if /i "%~1"=="--profile" (
@@ -121,6 +133,7 @@ if "%SKIP_GITNEXUS%"=="1" echo GitNexus : skipped
 if "%DEEP_SEMANTIC_PROBE%"=="1" echo Semantic probe: deep
 if "%REQUIRE_GITNEXUS_READY%"=="1" echo GitNexus health: required
 if "%REQUIRE_SEMANTIC_READY%"=="1" echo Semantic health: required
+echo Semantic model: !MCP_SEMANTIC_EMBED_MODEL!
 echo.
 
 if "%REGISTER%"=="1" (

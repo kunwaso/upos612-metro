@@ -16,13 +16,12 @@ class ProcessSourceDocumentPostingJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public bool $afterCommit = true;
-
     public function __construct(
         public string $sourceType,
         public int $sourceId,
         public array $context = []
     ) {
+        $this->afterCommit();
     }
 
     public function handle(VasPostingService $postingService): void

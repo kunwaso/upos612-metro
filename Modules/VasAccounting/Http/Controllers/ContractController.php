@@ -31,6 +31,7 @@ class ContractController extends VasBaseController
         $this->authorizePermission('vas_accounting.contracts.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -38,10 +39,42 @@ class ContractController extends VasBaseController
             abort(404);
         }
 
+        $contractRows = $this->planningReportUtil->contractRows($businessId);
+        $milestoneRows = $this->planningReportUtil->contractMilestoneRows($businessId);
+        $summary = $this->planningReportUtil->contractSummary($businessId);
+
+        if ($selectedLocationId) {
+            $contractRows = collect($contractRows)
+                ->filter(fn (array $row) => (int) data_get($row, 'contract.business_location_id') === $selectedLocationId)
+                ->values();
+
+            $milestoneRows = collect($milestoneRows)
+                ->filter(fn ($milestone) => (int) data_get($milestone, 'contract.business_location_id') === $selectedLocationId)
+                ->values();
+
+            $summary = [
+                'contract_count' => $contractRows->count(),
+                'active_contracts' => $contractRows->filter(fn (array $row) => (string) data_get($row, 'contract.status') === 'active')->count(),
+                'due_milestones' => $milestoneRows->filter(function ($milestone) {
+                    if (! in_array((string) data_get($milestone, 'status'), ['planned', 'ready_to_bill'], true)) {
+                        return false;
+                    }
+
+                    $date = data_get($milestone, 'milestone_date');
+                    if (empty($date)) {
+                        return false;
+                    }
+
+                    return now()->startOfDay()->gte(\Illuminate\Support\Carbon::parse((string) $date)->startOfDay());
+                })->count(),
+                'recognized_revenue' => round((float) $contractRows->sum(fn (array $row) => (float) ($row['recognized_total'] ?? 0)), 4),
+            ];
+        }
+
         return view('vasaccounting::contracts.index', [
-            'summary' => $this->planningReportUtil->contractSummary($businessId),
-            'contractRows' => $this->planningReportUtil->contractRows($businessId),
-            'milestoneRows' => $this->planningReportUtil->contractMilestoneRows($businessId),
+            'summary' => $summary,
+            'contractRows' => $contractRows,
+            'milestoneRows' => $milestoneRows,
             'contactOptions' => $this->planningReportUtil->contactOptions($businessId),
             'projectOptions' => Schema::hasTable('vas_projects')
                 ? VasProject::query()->where('business_id', $businessId)->orderBy('name')->pluck('name', 'id')
@@ -50,6 +83,7 @@ class ContractController extends VasBaseController
                 ? VasCostCenter::query()->where('business_id', $businessId)->orderBy('name')->pluck('name', 'id')
                 : collect(),
             'locationOptions' => BusinessLocation::forDropdown($businessId),
+            'selectedLocationId' => $selectedLocationId,
             'contractOptions' => Schema::hasTable('vas_contracts')
                 ? VasContract::query()->where('business_id', $businessId)->orderBy('contract_no')->pluck('contract_no', 'id')
                 : collect(),

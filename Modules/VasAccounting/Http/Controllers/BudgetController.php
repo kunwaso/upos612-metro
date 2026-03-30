@@ -37,10 +37,18 @@ class BudgetController extends VasBaseController
             abort(404);
         }
 
+        $budgetRows = $this->planningReportUtil->budgetRows($businessId);
+        $varianceRows = $this->planningReportUtil->budgetVarianceRows($businessId);
+
         return view('vasaccounting::budgets.index', [
             'summary' => $this->planningReportUtil->budgetSummary($businessId),
-            'budgetRows' => $this->planningReportUtil->budgetRows($businessId),
-            'varianceRows' => $this->planningReportUtil->budgetVarianceRows($businessId),
+            'budgetRows' => $budgetRows,
+            'varianceRows' => $varianceRows,
+            'varianceTotals' => [
+                'committed_total' => round((float) $varianceRows->sum('committed_amount'), 4),
+                'remaining_total' => round((float) $varianceRows->sum('remaining_amount'), 4),
+                'within_budget_lines' => $varianceRows->where('is_over_budget', false)->count(),
+            ],
             'budgetOptions' => Schema::hasTable('vas_budgets')
                 ? VasBudget::query()->where('business_id', $businessId)->orderBy('budget_code')->pluck('budget_code', 'id')
                 : collect(),

@@ -40,7 +40,7 @@ class PeriodController extends VasBaseController
 
         return redirect()
             ->route('vasaccounting.periods.index')
-            ->with('status', ['success' => true, 'msg' => __('messages.success')]);
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.period_saved')]);
     }
 
     public function close(Request $request, int $period): RedirectResponse

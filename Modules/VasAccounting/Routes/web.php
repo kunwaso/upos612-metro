@@ -23,8 +23,9 @@ use Modules\VasAccounting\Http\Controllers\SetupController;
 use Modules\VasAccounting\Http\Controllers\TaxController;
 use Modules\VasAccounting\Http\Controllers\ToolsController;
 use Modules\VasAccounting\Http\Controllers\VoucherController;
+use Modules\VasAccounting\Http\Middleware\ApplyVasLocale;
 
-Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu'])->group(function () {
+Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::class, 'timezone', 'AdminSidebarMenu'])->group(function () {
     Route::prefix('vas-accounting')->name('vasaccounting.')->group(function () {
         Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');
         Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');

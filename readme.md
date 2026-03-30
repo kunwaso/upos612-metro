@@ -55,7 +55,7 @@ For each phase include:
 Make sure the plan is decision-complete so the agent can code correctly.
 ```
 
-Build me a detailed implementation plan phase by phase, task by task, with a todo list. Make sure to use with metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
+Build me a detailed implementation plan phase by phase, task by task, with a todo list. Make sure to use worker agent to coding faster if needed. use metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
 ask me any question if need to clarify the plan is decision-complete so the agent can code correctly.
 
 ## Common Repo Shortcuts

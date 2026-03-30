@@ -7,22 +7,57 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.tools'),
-        'subtitle' => 'Register tools and instruments, assign usage dimensions, and run periodic amortization from the VAS ledger.',
-        'actions' => '<form method="POST" action="' . route('vasaccounting.tools.amortization.run') . '">' . csrf_field() . '<button type="submit" class="btn btn-light-primary btn-sm">Run Amortization</button></form>',
+        'subtitle' => 'Register tools and instruments, assign ownership dimensions, and run amortization with full ledger traceability.',
+        'actions' => '<form method="POST" action="' . route('vasaccounting.tools.amortization.run') . '">' . csrf_field() . '<button type="submit" class="btn btn-primary btn-sm">Run Amortization</button></form>',
     ])
 
-    <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Registered tools</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['tool_count'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Active tools</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['active_tools'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Remaining value</div><div class="text-gray-900 fw-bold fs-2">{{ number_format($summary['remaining_value'], 2) }} {{ $currency }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Due this month</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['due_this_month'] }}</div></div></div></div>
+    <div class="row g-5 g-xl-8 mb-8">
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Tool Register</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['tool_count']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Tracked assets in active scope</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Active / Issued</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['active_tools']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Operational tools with ownership</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Remaining Value</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((float) $summary['remaining_value'], 2) }}</div>
+                    <div class="text-muted fs-8 mt-1">{{ $currency }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Due This Cycle</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['due_this_month']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Schedules requiring action</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="row g-5 g-xl-10 mb-8">
+    <div class="row g-5 g-xl-8 mb-8">
         <div class="col-xl-5">
             <div class="card card-flush h-100">
                 <div class="card-header">
-                    <div class="card-title">Register tool</div>
+                    <div class="card-title d-flex flex-column">
+                        <span class="fw-bold text-gray-900">New Tool Registration</span>
+                        <span class="text-muted fs-7">Create a tool profile and bind accounting dimensions.</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.tools.store') }}">
@@ -38,7 +73,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Branch</label>
-                                <select name="business_location_id" class="form-select">
+                                <select name="business_location_id" class="form-select" data-control="select2">
                                     <option value="">Select branch</option>
                                     @foreach ($locationOptions as $locationId => $locationLabel)
                                         <option value="{{ $locationId }}">{{ $locationLabel }}</option>
@@ -56,7 +91,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Expense account</label>
-                                <select name="expense_account_id" class="form-select" required>
+                                <select name="expense_account_id" class="form-select" required data-control="select2">
                                     <option value="">Select account</option>
                                     @foreach ($chartOptions as $account)
                                         <option value="{{ $account->id }}">{{ $account->account_code }} - {{ $account->account_name }}</option>
@@ -65,7 +100,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Asset account</label>
-                                <select name="asset_account_id" class="form-select" required>
+                                <select name="asset_account_id" class="form-select" required data-control="select2">
                                     <option value="">Select account</option>
                                     @foreach ($chartOptions as $account)
                                         <option value="{{ $account->id }}">{{ $account->account_code }} - {{ $account->account_name }}</option>
@@ -78,7 +113,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Remaining value</label>
-                                <input type="number" step="0.0001" min="0" name="remaining_value" class="form-control" placeholder="Leave blank to use original cost">
+                                <input type="number" step="0.0001" min="0" name="remaining_value" class="form-control" placeholder="Auto from original">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Amortization months</label>
@@ -90,7 +125,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Department</label>
-                                <select name="department_id" class="form-select">
+                                <select name="department_id" class="form-select" data-control="select2">
                                     <option value="">Select department</option>
                                     @foreach ($departmentOptions as $departmentId => $departmentName)
                                         <option value="{{ $departmentId }}">{{ $departmentName }}</option>
@@ -99,7 +134,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Cost center</label>
-                                <select name="cost_center_id" class="form-select">
+                                <select name="cost_center_id" class="form-select" data-control="select2">
                                     <option value="">Select cost center</option>
                                     @foreach ($costCenterOptions as $costCenterId => $costCenterName)
                                         <option value="{{ $costCenterId }}">{{ $costCenterName }}</option>
@@ -108,7 +143,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Project</label>
-                                <select name="project_id" class="form-select">
+                                <select name="project_id" class="form-select" data-control="select2">
                                     <option value="">Select project</option>
                                     @foreach ($projectOptions as $projectId => $projectName)
                                         <option value="{{ $projectId }}">{{ $projectName }}</option>
@@ -116,7 +151,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-6">
+                        <div class="d-flex justify-content-end mt-7">
                             <button type="submit" class="btn btn-primary btn-sm">Save tool</button>
                         </div>
                     </form>
@@ -124,33 +159,42 @@
             </div>
         </div>
         <div class="col-xl-7">
-            <div class="card card-flush mb-5">
+            <div class="card card-flush mb-8">
                 <div class="card-header">
-                    <div class="card-title">Upcoming amortization schedule</div>
+                    <div class="card-title d-flex flex-column">
+                        <span class="fw-bold text-gray-900">Amortization Queue</span>
+                        <span class="text-muted fs-7">Upcoming runs and due-state control.</span>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-0">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
-                                <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>Tool</th>
-                                    <th>Next run date</th>
+                                    <th>Next run</th>
                                     <th>Next amount</th>
-                                    <th>Posted periods</th>
+                                    <th>Periods posted</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($scheduleRows as $row)
                                     <tr>
-                                        <td>{{ $row['tool']->tool_code }} - {{ $row['tool']->name }}</td>
+                                        <td class="fw-semibold text-gray-900">{{ data_get($row, 'tool.tool_code') }} - {{ data_get($row, 'tool.name') }}</td>
                                         <td>{{ $row['next_run_date'] ?: '-' }}</td>
-                                        <td>{{ number_format($row['next_amount'], 2) }} {{ $currency }}</td>
-                                        <td>{{ $row['periods_posted'] }}</td>
-                                        <td><span class="badge {{ $row['due_status'] === 'completed' ? 'badge-light-success' : ($row['due_status'] === 'overdue' ? 'badge-light-danger' : ($row['due_status'] === 'due_now' ? 'badge-light-warning' : 'badge-light-primary')) }}">{{ ucfirst(str_replace('_', ' ', $row['due_status'])) }}</span></td>
+                                        <td>{{ number_format((float) $row['next_amount'], 2) }} {{ $currency }}</td>
+                                        <td>{{ number_format((int) $row['periods_posted']) }}</td>
+                                        <td>
+                                            <span class="badge {{ $row['due_status'] === 'completed' ? 'badge-light-success' : ($row['due_status'] === 'overdue' ? 'badge-light-danger' : ($row['due_status'] === 'due_now' ? 'badge-light-warning' : 'badge-light-primary')) }}">
+                                                {{ $vasAccountingUtil->dueStatusLabel((string) $row['due_status']) }}
+                                            </span>
+                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-muted">No tool schedule is available yet.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-muted">No amortization schedule is available for this scope.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -160,13 +204,16 @@
 
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Latest amortization history</div>
+                    <div class="card-title d-flex flex-column">
+                        <span class="fw-bold text-gray-900">Recent Amortization History</span>
+                        <span class="text-muted fs-7">Latest posted rows from the tool amortization cycle.</span>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-0">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
-                                <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>Date</th>
                                     <th>Tool</th>
                                     <th>Voucher</th>
@@ -178,13 +225,15 @@
                                 @forelse ($amortizationHistory as $history)
                                     <tr>
                                         <td>{{ optional($history->amortization_date)->format('Y-m-d') }}</td>
-                                        <td>{{ optional($history->tool)->tool_code }} - {{ optional($history->tool)->name }}</td>
-                                        <td>{{ optional($history->voucher)->voucher_no ?: '-' }}</td>
+                                        <td>{{ data_get($history, 'tool.tool_code', '-') }} - {{ data_get($history, 'tool.name', '-') }}</td>
+                                        <td>{{ data_get($history, 'voucher.voucher_no', '-') }}</td>
                                         <td>{{ number_format((float) $history->amount, 2) }} {{ $currency }}</td>
-                                        <td><span class="badge badge-light-primary">{{ ucfirst($history->status) }}</span></td>
+                                        <td><span class="badge badge-light-primary">{{ $vasAccountingUtil->genericStatusLabel((string) $history->status) }}</span></td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-muted">No amortization runs posted yet.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-muted">No amortization runs have been posted yet.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -196,40 +245,48 @@
 
     <div class="card card-flush">
         <div class="card-header">
-            <div class="card-title">Tool register</div>
+            <div class="card-title d-flex flex-column">
+                <span class="fw-bold text-gray-900">Tool Lifecycle Register</span>
+                <span class="text-muted fs-7">Inventory of tools with accounting and operational dimensions.</span>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-0">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
-                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                        <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Tool</th>
                             <th>Branch</th>
                             <th>Dimensions</th>
-                            <th>Original cost</th>
+                            <th>Original</th>
                             <th>Amortized</th>
                             <th>Remaining</th>
-                            <th>Monthly amount</th>
+                            <th>Monthly</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($toolRows as $row)
                             <tr>
-                                <td class="text-gray-900 fw-semibold">{{ $row['tool']->tool_code }} - {{ $row['tool']->name }}</td>
-                                <td>{{ optional($row['tool']->businessLocation)->name ?: '-' }}</td>
+                                <td class="fw-semibold text-gray-900">{{ data_get($row, 'tool.tool_code') }} - {{ data_get($row, 'tool.name') }}</td>
+                                <td>{{ data_get($row, 'tool.businessLocation.name', '-') }}</td>
                                 <td>
-                                    <div>{{ optional($row['tool']->department)->name ?: 'No department' }}</div>
-                                    <div class="text-muted fs-8">{{ optional($row['tool']->costCenter)->name ?: 'No cost center' }} | {{ optional($row['tool']->project)->name ?: 'No project' }}</div>
+                                    <div>{{ data_get($row, 'tool.department.name', 'No department') }}</div>
+                                    <div class="text-muted fs-8">
+                                        {{ data_get($row, 'tool.costCenter.name', 'No cost center') }} |
+                                        {{ data_get($row, 'tool.project.name', 'No project') }}
+                                    </div>
                                 </td>
-                                <td>{{ number_format((float) $row['tool']->original_cost, 2) }}</td>
-                                <td>{{ number_format((float) $row['amortized_amount'], 2) }}</td>
-                                <td>{{ number_format((float) $row['tool']->remaining_value, 2) }}</td>
-                                <td>{{ number_format((float) $row['monthly_amount'], 2) }}</td>
-                                <td><span class="badge badge-light-primary">{{ ucfirst($row['tool']->status) }}</span></td>
+                                <td>{{ number_format((float) data_get($row, 'tool.original_cost', 0), 2) }}</td>
+                                <td>{{ number_format((float) ($row['amortized_amount'] ?? 0), 2) }}</td>
+                                <td>{{ number_format((float) data_get($row, 'tool.remaining_value', 0), 2) }}</td>
+                                <td>{{ number_format((float) ($row['monthly_amount'] ?? 0), 2) }}</td>
+                                <td><span class="badge badge-light-primary">{{ $vasAccountingUtil->genericStatusLabel((string) data_get($row, 'tool.status', 'draft')) }}</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-muted">No tools or instruments have been registered yet.</td></tr>
+                            <tr>
+                                <td colspan="8" class="text-muted">No tools are available for the selected scope.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>

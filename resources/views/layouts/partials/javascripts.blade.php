@@ -17,6 +17,10 @@
     @endauth
 </script>
 
+@php
+    $active_locale = $vasAccountingLocale ?? app()->getLocale();
+@endphp
+
 <!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js?v=$asset_v"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js?v=$asset_v"></script>
@@ -24,8 +28,8 @@
 
 <script src="{{ asset('assets/app/js/vendor.js?v=' . $asset_v) }}"></script>
 
-@if (file_exists(public_path('assets/app/js/lang/' . session()->get('user.language', config('app.locale')) . '.js')))
-    <script src="{{ asset('assets/app/js/lang/' . session()->get('user.language', config('app.locale')) . '.js?v=' . $asset_v) }}">
+@if (file_exists(public_path('assets/app/js/lang/' . $active_locale . '.js')))
+    <script src="{{ asset('assets/app/js/lang/' . $active_locale . '.js?v=' . $asset_v) }}">
     </script>
 @else
     <script src="{{ asset('assets/app/js/lang/en.js?v=' . $asset_v) }}"></script>
@@ -72,16 +76,16 @@
         start: moment('{{ Session::get('financial_year.start') }}'),
         end: moment('{{ Session::get('financial_year.end') }}'),
     }
-    @if (file_exists(public_path('AdminLTE/plugins/select2/lang/' . session()->get('user.language', config('app.locale')) . '.js')))
+    @if (file_exists(public_path('AdminLTE/plugins/select2/lang/' . $active_locale . '.js')))
         //Default setting for select2
-        $.fn.select2.defaults.set("language", "{{ session()->get('user.language', config('app.locale')) }}");
+        $.fn.select2.defaults.set("language", "{{ $active_locale }}");
     @endif
 
     var datepicker_date_format = "{{ $datepicker_date_format }}";
     var moment_date_format = "{{ $moment_date_format }}";
     var moment_time_format = "{{ $moment_time_format }}";
 
-    var app_locale = "{{ session()->get('user.language', config('app.locale')) }}";
+    var app_locale = "{{ $active_locale }}";
 
     var non_utf8_languages = [
         @foreach (config('constants.non_utf8_languages') as $const)
@@ -94,8 +98,8 @@
     var __new_notification_count_interval = "{{ config('constants.new_notification_count_interval', 60) }}000";
 </script>
 
-@if (file_exists(public_path('assets/app/js/lang/' . session()->get('user.language', config('app.locale')) . '.js')))
-    <script src="{{ asset('assets/app/js/lang/' . session()->get('user.language', config('app.locale')) . '.js?v=' . $asset_v) }}">
+@if (file_exists(public_path('assets/app/js/lang/' . $active_locale . '.js')))
+    <script src="{{ asset('assets/app/js/lang/' . $active_locale . '.js?v=' . $asset_v) }}">
     </script>
 @else
     <script src="{{ asset('assets/app/js/lang/en.js?v=' . $asset_v) }}"></script>
@@ -108,13 +112,13 @@
 <script src="{{ asset('assets/app/js/documents_and_note.js?v=' . $asset_v) }}"></script>
 
 <!-- TODO -->
-@if (file_exists(public_path('AdminLTE/plugins/select2/lang/' . session()->get('user.language', config('app.locale')) . '.js')))
+@if (file_exists(public_path('AdminLTE/plugins/select2/lang/' . $active_locale . '.js')))
     <script
-        src="{{ asset('AdminLTE/plugins/select2/lang/' . session()->get('user.language', config('app.locale')) . '.js?v=' . $asset_v) }}">
+        src="{{ asset('AdminLTE/plugins/select2/lang/' . $active_locale . '.js?v=' . $asset_v) }}">
     </script>
 @endif
 @php
-    $validation_lang_file = 'messages_' . session()->get('user.language', config('app.locale')) . '.js';
+    $validation_lang_file = 'messages_' . $active_locale . '.js';
 @endphp
 @if (file_exists(public_path() . '/assets/app/js/jquery-validation-1.16.0/src/localization/' . $validation_lang_file))
     <script src="{{ asset('assets/app/js/jquery-validation-1.16.0/src/localization/' . $validation_lang_file . '?v=' . $asset_v) }}">
@@ -161,9 +165,9 @@
 
 <script type="text/javascript">
     $(document).ready(function() {
-        var locale = "{{ session()->get('user.language', config('app.locale')) }}";
+        var locale = "{{ $active_locale }}";
         var isRTL =
-            @if (in_array(session()->get('user.language', config('app.locale')), config('constants.langs_rtl')))
+            @if (in_array($active_locale, config('constants.langs_rtl')))
                 true;
             @else
                 false;

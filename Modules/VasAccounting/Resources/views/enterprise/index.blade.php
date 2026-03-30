@@ -86,7 +86,7 @@
                                                 {{ $voucher->voucher_no }}
                                             </a>
                                         </td>
-                                        <td><span class="badge badge-light-primary">{{ ucfirst($voucher->status) }}</span></td>
+                                        <td><span class="badge badge-light-primary">{{ $vasAccountingUtil->documentStatusLabel((string) $voucher->status) }}</span></td>
                                         <td>{{ optional($voucher->posting_date)->format('Y-m-d') }}</td>
                                     </tr>
                                 @empty

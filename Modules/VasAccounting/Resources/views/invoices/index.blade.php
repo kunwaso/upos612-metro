@@ -7,20 +7,20 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.invoices'),
-        'subtitle' => 'Sales invoices, purchase invoices, credit notes, debit notes, and e-invoice readiness from the VAS ledger.',
+        'subtitle' => 'Sales and purchase invoice activity with note tracking and e-invoice readiness.',
     ])
 
     <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fw-semibold fs-7 mb-2">Sales invoices</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['sales_count'] }}</div><div class="text-muted fs-8">{{ number_format((float) $summary['sales_amount'], 2) }} {{ $currency }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fw-semibold fs-7 mb-2">Purchase invoices</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['purchase_count'] }}</div><div class="text-muted fs-8">{{ number_format((float) $summary['purchase_amount'], 2) }} {{ $currency }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fw-semibold fs-7 mb-2">Credit / debit notes</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['note_count'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fw-semibold fs-7 mb-2">Issued e-invoices</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['issued_einvoices'] }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fw-semibold fs-7 mb-2">Sales Invoices</div><div class="text-gray-900 fw-bold fs-1">{{ $summary['sales_count'] }}</div><div class="text-muted fs-8">{{ number_format((float) $summary['sales_amount'], 2) }} {{ $currency }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fw-semibold fs-7 mb-2">Purchase Invoices</div><div class="text-gray-900 fw-bold fs-1">{{ $summary['purchase_count'] }}</div><div class="text-muted fs-8">{{ number_format((float) $summary['purchase_amount'], 2) }} {{ $currency }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fw-semibold fs-7 mb-2">Credit / Debit Notes</div><div class="text-gray-900 fw-bold fs-1">{{ $summary['note_count'] }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fw-semibold fs-7 mb-2">Issued E-Invoices</div><div class="text-gray-900 fw-bold fs-1">{{ $summary['issued_einvoices'] }}</div></div></div></div>
     </div>
 
     <div class="row g-5 g-xl-10">
         <div class="col-xl-6">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Sales documents</div></div>
+                <div class="card-header"><div class="card-title">Sales Documents Queue</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
@@ -30,15 +30,15 @@
                                     <th>Customer</th>
                                     <th>Type</th>
                                     <th>Amount</th>
-                                    <th>E-invoice</th>
+                                    <th>E-Invoice</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($salesInvoices as $invoice)
                                     <tr>
-                                        <td>{{ $invoice->voucher_no }}</td>
+                                        <td class="fw-semibold text-gray-900">{{ $invoice->voucher_no }}</td>
                                         <td>{{ $invoice->contact_name }}</td>
-                                        <td>{{ str_replace('_', ' ', $invoice->voucher_type) }}</td>
+                                        <td><span class="badge badge-light-primary">{{ $vasAccountingUtil->voucherTypeLabel((string) $invoice->voucher_type) }}</span></td>
                                         <td>{{ number_format((float) $invoice->amount, 2) }} {{ $currency }}</td>
                                         <td>{{ $invoice->einvoice_document_no ?: '-' }}</td>
                                     </tr>
@@ -53,7 +53,7 @@
         </div>
         <div class="col-xl-6">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Purchase documents</div></div>
+                <div class="card-header"><div class="card-title">Purchase Documents Queue</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
@@ -69,11 +69,11 @@
                             <tbody>
                                 @forelse ($purchaseInvoices as $invoice)
                                     <tr>
-                                        <td>{{ $invoice->voucher_no }}</td>
+                                        <td class="fw-semibold text-gray-900">{{ $invoice->voucher_no }}</td>
                                         <td>{{ $invoice->contact_name }}</td>
-                                        <td>{{ str_replace('_', ' ', $invoice->voucher_type) }}</td>
+                                        <td><span class="badge badge-light-info">{{ $vasAccountingUtil->voucherTypeLabel((string) $invoice->voucher_type) }}</span></td>
                                         <td>{{ number_format((float) $invoice->amount, 2) }} {{ $currency }}</td>
-                                        <td><span class="badge badge-light-primary">{{ ucfirst($invoice->status) }}</span></td>
+                                        <td><span class="badge badge-light-warning">{{ $vasAccountingUtil->documentStatusLabel((string) $invoice->status) }}</span></td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="5" class="text-muted">No purchase invoices posted yet.</td></tr>

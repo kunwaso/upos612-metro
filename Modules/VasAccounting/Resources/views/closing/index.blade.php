@@ -3,10 +3,55 @@
 @section('title', __('vasaccounting::lang.closing'))
 
 @section('content')
+    @php
+        $periodCollection = collect($periods);
+        $closingSummary = [
+            'open' => $periodCollection->where('status', 'open')->count(),
+            'soft_locked' => $periodCollection->where('status', 'soft_locked')->count(),
+            'closed' => $periodCollection->where('status', 'closed')->count(),
+            'packets' => $recentPackets->count(),
+        ];
+    @endphp
+
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.closing'),
         'subtitle' => 'Month-end controls for soft lock, close blockers, reopen approval, and close-packet generation.',
     ])
+
+    <div class="row g-5 g-xl-10 mb-8">
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ $vasAccountingUtil->metricLabel('open_periods') }}</div>
+                    <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['open'] }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Soft locked</div>
+                    <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['soft_locked'] }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Closed periods</div>
+                    <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['closed'] }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Queued packets</div>
+                    <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['packets'] }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="card card-flush mb-8">
         <div class="card-header">
@@ -20,18 +65,20 @@
                             <th>Snapshot</th>
                             <th>Status</th>
                             <th>Generated</th>
-                            <th class="text-end"></th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($recentPackets as $packet)
                             <tr>
                                 <td>{{ $packet->snapshot_name ?: $packet->report_key }}</td>
-                                <td>{{ ucfirst($packet->status) }}</td>
+                                <td>{{ $vasAccountingUtil->genericStatusLabel((string) $packet->status) }}</td>
                                 <td>{{ optional($packet->generated_at)->format('Y-m-d H:i') ?: '-' }}</td>
                                 <td class="text-end">
                                     @if ($packet->status === 'ready')
                                         <a href="{{ route('vasaccounting.reports.snapshots.show', $packet->id) }}" class="btn btn-light-primary btn-sm">Open</a>
+                                    @else
+                                        <span class="text-muted fs-8">Waiting</span>
                                     @endif
                                 </td>
                             </tr>
@@ -47,6 +94,12 @@
     </div>
 
     <div class="card card-flush">
+        <div class="card-header">
+            <div class="card-title d-flex flex-column">
+                <span>Close Control Board</span>
+                <span class="text-muted fw-semibold fs-8 mt-1">Review blockers and run period-level close actions.</span>
+            </div>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-5">
@@ -54,7 +107,7 @@
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Period</th>
                             <th>Status</th>
-                            <th>Draft vouchers</th>
+                            <th>{{ $vasAccountingUtil->metricLabel('draft_vouchers') }}</th>
                             <th>Failures</th>
                             <th>Pending depreciation</th>
                             <th>Unreconciled bank</th>
@@ -70,10 +123,10 @@
                                 $completedChecklistCount = $periodChecklists->where('status', 'completed')->count();
                             @endphp
                             <tr>
-                                <td>{{ $period->name }}</td>
+                                <td>{{ $vasAccountingUtil->localizedPeriodName($period->name) }}</td>
                                 <td>
                                     <span class="badge {{ $period->status === 'closed' ? 'badge-light-danger' : ($period->status === 'soft_locked' ? 'badge-light-warning' : 'badge-light-success') }}">
-                                        {{ ucfirst(str_replace('_', ' ', $period->status)) }}
+                                        {{ $vasAccountingUtil->periodStatusLabel((string) $period->status) }}
                                     </span>
                                 </td>
                                 <td>{{ $blockers[$period->id]['draft_vouchers'] }}</td>

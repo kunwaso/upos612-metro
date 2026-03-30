@@ -32,6 +32,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.statutory_accounts') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ data_get($bootstrapStatus, 'system_account_count', 0) }}</div>
+                    <div class="text-muted fs-8 mt-1">Standard VAS base accounts</div>
                 </div>
             </div>
         </div>
@@ -40,6 +41,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.manual_accounts') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ data_get($bootstrapStatus, 'manual_account_count', 0) }}</div>
+                    <div class="text-muted fs-8 mt-1">Business-defined extensions</div>
                 </div>
             </div>
         </div>
@@ -48,6 +50,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.bootstrap_status') }}</div>
                     <div class="text-gray-900 fw-bold fs-6">{{ data_get($bootstrapStatus, 'needs_bootstrap') ? __('vasaccounting::lang.bootstrap_needed') : __('vasaccounting::lang.bootstrap_ready') }}</div>
+                    <div class="text-muted fs-8 mt-1">Current chart initialization state</div>
                 </div>
             </div>
         </div>
@@ -57,7 +60,10 @@
         <div class="col-xl-8">
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Accounts</div>
+                    <div class="card-title d-flex flex-column">
+                        <span>Account Register</span>
+                        <span class="text-muted fw-semibold fs-8 mt-1">All accounts available for posting and reporting.</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -80,7 +86,7 @@
                                         <td>{{ $account->account_name }}</td>
                                         <td>{{ $account->account_type }}</td>
                                         <td>{{ $account->level }}</td>
-                                        <td>{{ ucfirst($account->normal_balance) }}</td>
+                                        <td>{{ $vasAccountingUtil->normalBalanceLabel((string) $account->normal_balance) }}</td>
                                         <td>
                                             <span class="badge {{ $account->is_system ? 'badge-light-primary' : 'badge-light-secondary' }}">
                                                 {{ $account->is_system ? __('vasaccounting::lang.origin_statutory') : __('vasaccounting::lang.origin_manual') }}
@@ -95,10 +101,11 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-4">
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Add account</div>
+                    <div class="card-title">Add Account</div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.chart.store') }}">

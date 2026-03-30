@@ -76,6 +76,6 @@ class ChartOfAccountsController extends VasBaseController
 
         return redirect()
             ->route('vasaccounting.chart.index')
-            ->with('status', ['success' => true, 'msg' => __('messages.success')]);
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.account_saved')]);
     }
 }

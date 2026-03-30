@@ -291,27 +291,18 @@ if ($SkipSemantic) {
     } else {
         Write-Log 'Python runtime not found; semantic embedding may fail.' 'WARN'
     }
-    if (-not $env:MCP_SEMANTIC_EMBED_BACKEND) {
-        $env:MCP_SEMANTIC_EMBED_BACKEND = 'huggingface'
-    }
-    if (-not $env:MCP_SEMANTIC_EMBED_MODEL) {
-        $env:MCP_SEMANTIC_EMBED_MODEL = 'BAAI/bge-base-en'
-    }
-
-    # Startup keeps the semantic pass fast but useful; nightly keeps broader coverage.
-    if ($Profile -eq 'startup') {
-        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,resources/views,ai,tests,config,mcp'
-        $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
-        $env:MCP_SEMANTIC_CHUNK_LINES = '80'
-        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '12'
-        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '393216'
-    } else {
-        $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,mcp,ai,tests,config,src'
-        $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
-        $env:MCP_SEMANTIC_CHUNK_LINES = '120'
-        $env:MCP_SEMANTIC_CHUNK_OVERLAP = '20'
-        $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
-    }
+    $env:MCP_SEMANTIC_EMBED_BACKEND = 'huggingface'
+    $env:MCP_SEMANTIC_EMBED_MODEL = 'BAAI/bge-small-en'
+    $env:MCP_SEMANTIC_HF_DEVICE = 'cpu'
+    $env:MCP_SEMANTIC_HF_BATCH_SIZE = '12'
+    $env:MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = '1'
+    $env:MCP_SEMANTIC_INCLUDE_ROOTS = 'app,Modules,routes,resources/views,config,ai,mcp,.cursor'
+    $env:MCP_SEMANTIC_INCLUDE_ROOT_FILES = 'AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json'
+    $env:MCP_SEMANTIC_CHUNK_LINES = '80'
+    $env:MCP_SEMANTIC_CHUNK_OVERLAP = '8'
+    $env:MCP_SEMANTIC_MAX_FILE_BYTES = '524288'
+    Write-Log "Semantic model: $($env:MCP_SEMANTIC_EMBED_MODEL)"
+    Write-Log "Semantic roots: $($env:MCP_SEMANTIC_INCLUDE_ROOTS)"
 
     $semanticArgs = @()
     $semanticMode = 'incremental'
@@ -336,13 +327,17 @@ if ($SkipGitNexus) {
     $npxArgs = @('-y', "gitnexus@$GitNexusVersion") + $gitnexusArgs
 
     $ok = $false
-    if ($Npx) {
+    if ($GitNexusCli) {
+        Write-Log 'Using local gitnexus CLI as primary launcher.'
+        $ok = Invoke-CommandSafe -Label "GitNexus analyze via local CLI ($Profile)" -Action { & $GitNexusCli @gitnexusArgs }
+    } elseif ($Npx) {
+        Write-Log 'Local gitnexus CLI not found; falling back to npx.' 'WARN'
         $ok = Invoke-CommandSafe -Label "GitNexus analyze via npx ($Profile)" -Action { & $Npx @npxArgs }
     } else {
-        Write-Log 'npx not found; trying local gitnexus CLI fallback.' 'WARN'
+        Write-Log 'Neither local gitnexus CLI nor npx were found.' 'WARN'
     }
 
-    if (-not $ok -and $Npx -and $Npm) {
+    if (-not $ok -and -not $GitNexusCli -and $Npx -and $Npm) {
         Write-Log 'Attempting npm cache verify before one npx retry.' 'WARN'
         $cacheOk = Invoke-CommandSafe -Label 'npm cache verify' -Action { & $Npm cache verify }
         if ($cacheOk) {
@@ -350,9 +345,8 @@ if ($SkipGitNexus) {
         }
     }
 
-    if (-not $ok -and $GitNexusCli) {
-        Write-Log 'Falling back to local gitnexus CLI.' 'WARN'
-        $ok = Invoke-CommandSafe -Label "GitNexus analyze via local CLI ($Profile)" -Action { & $GitNexusCli @gitnexusArgs }
+    if (-not $ok -and -not $GitNexusCli -and $Npx) {
+        Write-Log 'GitNexus npx path failed and no local CLI is available.' 'WARN'
     }
 
     if (-not $ok) {

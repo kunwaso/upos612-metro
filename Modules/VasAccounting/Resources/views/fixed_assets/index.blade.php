@@ -7,22 +7,57 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.fixed_assets'),
-        'subtitle' => 'Asset categories, capitalization, depreciation, transfer, and disposal workflows for VAS fixed assets.',
-        'actions' => '<form method="POST" action="' . route('vasaccounting.assets.depreciation.run') . '">' . csrf_field() . '<button type="submit" class="btn btn-light-primary btn-sm">Run Depreciation</button></form>',
+        'subtitle' => 'Category governance, capitalization, depreciation, transfer, and disposal control in one lifecycle workspace.',
+        'actions' => '<form method="POST" action="' . route('vasaccounting.assets.depreciation.run') . '">' . csrf_field() . '<button type="submit" class="btn btn-primary btn-sm">Run Depreciation</button></form>',
     ])
 
-    <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Assets</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['asset_count'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Active assets</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['active_assets'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Disposed assets</div><div class="text-gray-900 fw-bold fs-2">{{ $summary['disposed_assets'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-700 fs-7">Net book value</div><div class="text-gray-900 fw-bold fs-2">{{ number_format($summary['net_book_value'], 2) }} {{ $currency }}</div></div></div></div>
+    <div class="row g-5 g-xl-8 mb-8">
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Asset Register</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['asset_count']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Assets in current scope</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Active Assets</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['active_assets']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Ready for depreciation and transfer</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Disposed</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['disposed_assets']) }}</div>
+                    <div class="text-muted fs-8 mt-1">Lifecycle closed records</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">Net Book Value</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((float) $summary['net_book_value'], 2) }}</div>
+                    <div class="text-muted fs-8 mt-1">{{ $currency }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="row g-5 g-xl-10 mb-8">
+    <div class="row g-5 g-xl-8 mb-8">
         <div class="col-xl-4">
             <div class="card card-flush h-100">
                 <div class="card-header">
-                    <div class="card-title">Create asset category</div>
+                    <div class="card-title d-flex flex-column">
+                        <span class="fw-bold text-gray-900">Asset Category Setup</span>
+                        <span class="text-muted fs-7">Define defaults for capitalization and depreciation ledgers.</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.assets.categories.store') }}">
@@ -33,7 +68,7 @@
                         </div>
                         <div class="mb-5">
                             <label class="form-label">Asset account</label>
-                            <select name="asset_account_id" class="form-select" required>
+                            <select name="asset_account_id" class="form-select" required data-control="select2">
                                 <option value="">Select account</option>
                                 @foreach ($chartOptions as $account)
                                     <option value="{{ $account->id }}">{{ $account->account_code }} - {{ $account->account_name }}</option>
@@ -42,7 +77,7 @@
                         </div>
                         <div class="mb-5">
                             <label class="form-label">Accumulated depreciation account</label>
-                            <select name="accumulated_depreciation_account_id" class="form-select" required>
+                            <select name="accumulated_depreciation_account_id" class="form-select" required data-control="select2">
                                 <option value="">Select account</option>
                                 @foreach ($chartOptions as $account)
                                     <option value="{{ $account->id }}">{{ $account->account_code }} - {{ $account->account_name }}</option>
@@ -51,7 +86,7 @@
                         </div>
                         <div class="mb-5">
                             <label class="form-label">Depreciation expense account</label>
-                            <select name="depreciation_expense_account_id" class="form-select" required>
+                            <select name="depreciation_expense_account_id" class="form-select" required data-control="select2">
                                 <option value="">Select account</option>
                                 @foreach ($chartOptions as $account)
                                     <option value="{{ $account->id }}">{{ $account->account_code }} - {{ $account->account_name }}</option>
@@ -70,7 +105,10 @@
         <div class="col-xl-8">
             <div class="card card-flush h-100">
                 <div class="card-header">
-                    <div class="card-title">Register fixed asset</div>
+                    <div class="card-title d-flex flex-column">
+                        <span class="fw-bold text-gray-900">Register Fixed Asset</span>
+                        <span class="text-muted fs-7">Create lifecycle-ready records with branch and vendor ownership.</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.assets.store') }}">
@@ -86,7 +124,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Category</label>
-                                <select name="asset_category_id" class="form-select" required>
+                                <select name="asset_category_id" class="form-select" required data-control="select2">
                                     <option value="">Select category</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -103,7 +141,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Branch</label>
-                                <select name="business_location_id" class="form-select">
+                                <select name="business_location_id" class="form-select" data-control="select2">
                                     <option value="">Select branch</option>
                                     @foreach ($locationOptions as $locationId => $locationLabel)
                                         <option value="{{ $locationId }}">{{ $locationLabel }}</option>
@@ -112,7 +150,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Vendor</label>
-                                <select name="vendor_contact_id" class="form-select">
+                                <select name="vendor_contact_id" class="form-select" data-control="select2">
                                     @foreach ($vendorOptions as $vendorId => $vendorLabel)
                                         <option value="{{ $vendorId }}">{{ $vendorLabel }}</option>
                                     @endforeach
@@ -135,14 +173,14 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Useful life (months)</label>
-                                <input type="number" min="1" name="useful_life_months" class="form-control" placeholder="Leave blank to use category">
+                                <input type="number" min="1" name="useful_life_months" class="form-control" placeholder="Use category default">
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label">Notes</label>
-                                <textarea name="notes" rows="2" class="form-control" placeholder="Acquisition note, serial number, or ownership details"></textarea>
+                                <textarea name="notes" rows="2" class="form-control" placeholder="Acquisition memo, serial number, or ownership details"></textarea>
                             </div>
                         </div>
-                        <div class="mt-6">
+                        <div class="d-flex justify-content-end mt-7">
                             <button type="submit" class="btn btn-primary btn-sm">Register asset</button>
                         </div>
                     </form>
@@ -153,18 +191,21 @@
 
     <div class="card card-flush">
         <div class="card-header">
-            <div class="card-title">Asset register and lifecycle</div>
+            <div class="card-title d-flex flex-column">
+                <span class="fw-bold text-gray-900">Asset Lifecycle Register</span>
+                <span class="text-muted fs-7">Transfer and disposal controls with valuation and depreciation context.</span>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-0">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
-                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                        <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Asset</th>
                             <th>Category / Branch</th>
-                            <th>Original cost</th>
-                            <th>Accumulated depreciation</th>
-                            <th>Net book value</th>
+                            <th>Original</th>
+                            <th>Accumulated</th>
+                            <th>NBV</th>
                             <th>Last depreciation</th>
                             <th>Status</th>
                             <th>Transfer</th>
@@ -187,7 +228,11 @@
                                 <td>{{ number_format((float) $row['accumulated_depreciation'], 2) }}</td>
                                 <td>{{ number_format((float) $row['net_book_value'], 2) }}</td>
                                 <td>{{ $row['last_depreciated_at'] ? \Illuminate\Support\Carbon::parse($row['last_depreciated_at'])->format('Y-m-d') : '-' }}</td>
-                                <td><span class="badge {{ $asset->status === 'disposed' ? 'badge-light-danger' : 'badge-light-primary' }}">{{ ucfirst($asset->status) }}</span></td>
+                                <td>
+                                    <span class="badge {{ $asset->status === 'disposed' ? 'badge-light-danger' : 'badge-light-primary' }}">
+                                        {{ $vasAccountingUtil->genericStatusLabel((string) $asset->status) }}
+                                    </span>
+                                </td>
                                 <td>
                                     @if ($asset->status !== 'disposed')
                                         <form method="POST" action="{{ route('vasaccounting.assets.transfer', $asset->id) }}" class="d-flex flex-column gap-2">
@@ -219,7 +264,9 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="text-muted">No fixed assets have been registered yet.</td></tr>
+                            <tr>
+                                <td colspan="9" class="text-muted">No assets available for the selected scope.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>

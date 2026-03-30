@@ -20,19 +20,49 @@ class CutoverController extends VasBaseController
         $this->authorizePermission('vas_accounting.cutover.manage');
 
         $businessId = $this->businessId($request);
+        $selectedLocationId = $this->selectedLocationId($request);
         $selectedPeriod = $request->query('period') ? (string) $request->query('period') : null;
         $selectedBranches = collect((array) $request->query('branches', []))
             ->map(fn ($value) => (int) $value)
             ->filter(fn (int $value) => $value > 0)
             ->values()
             ->all();
+        if ($selectedLocationId && $selectedBranches === []) {
+            $selectedBranches = [$selectedLocationId];
+        }
         $parityReport = $this->cutoverService->parityReport($businessId, $selectedPeriod, $selectedBranches);
+        $branchOptions = BusinessLocation::forDropdown($businessId);
+        $branchRows = collect((array) data_get($parityReport, 'branches', []))
+            ->when($selectedLocationId, function ($rows) use ($selectedLocationId) {
+                return $rows->filter(function (array $row) use ($selectedLocationId) {
+                    $branchId = (int) ($row['branch_id'] ?? $row['location_id'] ?? 0);
+
+                    return $branchId === $selectedLocationId;
+                });
+            })
+            ->values()
+            ->all();
+        $parityStats = [
+            'total_sections' => count((array) data_get($parityReport, 'sections', [])),
+            'aligned_sections' => collect((array) data_get($parityReport, 'sections', []))
+                ->where('status', 'aligned')
+                ->count(),
+            'misaligned_sections' => collect((array) data_get($parityReport, 'sections', []))
+                ->where('status', '!=', 'aligned')
+                ->count(),
+            'scoped_branch_rows' => count($branchRows),
+        ];
+        $activeScopeLabel = $selectedLocationId && isset($branchOptions[$selectedLocationId])
+            ? (string) $branchOptions[$selectedLocationId]
+            : 'All branches';
 
         return view('vasaccounting::cutover.index', [
             'readinessSummary' => $this->cutoverService->readinessSummary($businessId),
             'blockers' => $this->cutoverService->cutoverBlockers($businessId),
             'parity' => $this->cutoverService->paritySnapshot($businessId),
             'parityReport' => $parityReport,
+            'parityBranchRows' => $branchRows,
+            'parityStats' => $parityStats,
             'providerHealth' => $this->cutoverService->providerHealth($businessId),
             'cutoverSettings' => $this->cutoverService->cutoverSettings($businessId),
             'rolloutSettings' => $this->cutoverService->rolloutSettings($businessId),
@@ -41,7 +71,10 @@ class CutoverController extends VasBaseController
             'legacyModeOptions' => $this->cutoverService->legacyModeOptions(),
             'parallelRunOptions' => $this->cutoverService->parallelRunOptions(),
             'rolloutStatusOptions' => $this->cutoverService->rolloutStatusOptions(),
-            'branchOptions' => BusinessLocation::forDropdown($businessId),
+            'branchOptions' => $branchOptions,
+            'locationOptions' => $branchOptions,
+            'selectedLocationId' => $selectedLocationId,
+            'activeScopeLabel' => $activeScopeLabel,
             'selectedPeriod' => $selectedPeriod ?: data_get($parityReport, 'period.token'),
             'selectedBranches' => $selectedBranches,
         ]);
