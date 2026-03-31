@@ -24,6 +24,7 @@ class ProductActivityLog extends Model
     const ACTION_COMPOSITION_UPDATED = 'composition_updated';
     const ACTION_PANTONE_UPDATED = 'pantone_updated';
     const ACTION_SALE_ADDED = 'sale_added';
+    const ACTION_STOCK_ADJUSTED = 'stock_adjusted';
     const ACTION_SUBMITTED_FOR_APPROVAL = 'submitted_for_approval';
     const ACTION_APPROVED = 'approved';
     const ACTION_REJECTED = 'rejected';

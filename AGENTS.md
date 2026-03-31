@@ -239,7 +239,7 @@ When you reason again and need more information or another step, choose from the
 
 **Search and discovery**
 - **Semantic search** - Find code by meaning (e.g. "Where is the system prompt built?"). When the semantic code search MCP is enabled in Codex or Cursor, use its `search_code` tool for semantic/contextual codebase queries in preference to the built-in codebase index. If semantic MCP is not available, use the host's codebase or semantic search (e.g. Cursor's codebase indexing). Use it for: how something works, where something is done, and "where is X done?" queries when the exact symbol is unknown.
-- **Grep** - Exact text or regex search in files. Use for: symbol names, strings, file paths, file types. Use the **grep tool** (the tool call) for pattern search; in MCP-aware clients for this repo, prefer the configured `grep` MCP server for exact/pattern search, while Cursor Chat uses its built-in Grep (may appear as "instant Grep" or "Grep (beta)"). Grep does not require codebase indexing; only semantic search uses an index. Do not run `rg`, `grep`, or similar commands in the shell — the tool avoids shell startup.
+- **Grep** - Exact text or regex search in files. Use for: symbol names, strings, file paths, file types. Use the **grep tool** (the tool call) for pattern search; in MCP-aware clients for this repo, prefer the configured `grep` MCP server for exact/pattern search, while Cursor Chat uses its built-in Grep (may appear as "instant Grep" or "Grep (beta)"). Grep does not require codebase indexing; only semantic search uses an index. Do not run `rg`, `grep`, or similar commands in the shell unless no repo-aware grep/search tool exists in the current environment.
 - **Glob / file find** - Find files by name or pattern (e.g. `**/*.php`, `**/ChatUtil.php`).
 
 **Read**
@@ -298,6 +298,17 @@ Fallback rule:
 4. State the fallback briefly when it materially affects speed or confidence.
 
 If semantic tooling is `EMBEDDER_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately and continue with `grep` → `read_file` → `laravel_mysql` only when repo-aware structure or schema truth is still required.
+
+### 0.4d.1 Hard routing for `grep` vs semantic search
+
+Use this guardrail when agents choose tools in Codex/Cursor:
+
+1. If the query is exact (ID, selector, class/function name, route, translation key, literal string, or regex), start with **`grep`**.
+2. Use semantic search only for behavior-level discovery ("where/how is this done?") when the exact symbol is unknown.
+3. Before semantic search, verify readiness (`index_status` or startup health). If status is `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`, skip semantic immediately.
+4. If semantic is skipped or degraded, fall back to `grep` + `read_file_cache` without retry loops.
+5. If `grep` MCP is unavailable in the host client, use that client's native repo search (e.g. Cursor Grep). Use shell `rg` only as last fallback when no repo-aware grep/search tool is exposed.
+6. For mixed discovery tasks, semantic may find candidates first, but confirm edit locations with `grep` before changing files.
 
 ### 0.4e Scan Laravel log and autofix
 
@@ -1018,7 +1029,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (12614 symbols, 27759 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (13989 symbols, 35907 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

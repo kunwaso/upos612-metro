@@ -5,14 +5,14 @@
 @section('content')
     @include('vasaccounting::partials.header', [
         'title' => $snapshot->snapshot_name ?: $snapshot->report_key,
-        'subtitle' => 'Ảnh chụp báo cáo được lưu lại từ hàng đợi báo cáo VAS.',
+        'subtitle' => __('vasaccounting::lang.views.report_snapshot.page_subtitle'),
     ])
 
     <div class="row g-5 g-xl-10 mb-8">
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fs-7 fw-semibold mb-2">Khóa báo cáo</div>
+                    <div class="text-muted fs-7 fw-semibold mb-2">{{ __('vasaccounting::lang.views.report_snapshot.cards.report_key') }}</div>
                     <div class="text-gray-900 fw-bold fs-4">{{ $vasAccountingUtil->reportKeyLabel((string) $snapshot->report_key) }}</div>
                 </div>
             </div>
@@ -20,7 +20,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fs-7 fw-semibold mb-2">Trạng thái</div>
+                    <div class="text-muted fs-7 fw-semibold mb-2">{{ __('vasaccounting::lang.views.report_snapshot.cards.status') }}</div>
                     <div class="text-gray-900 fw-bold fs-4">{{ $vasAccountingUtil->genericStatusLabel((string) $snapshot->status) }}</div>
                 </div>
             </div>
@@ -28,7 +28,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fs-7 fw-semibold mb-2">Thời điểm tạo</div>
+                    <div class="text-muted fs-7 fw-semibold mb-2">{{ __('vasaccounting::lang.views.report_snapshot.cards.generated_at') }}</div>
                     <div class="text-gray-900 fw-bold fs-4">{{ optional($snapshot->generated_at)->format('Y-m-d H:i') ?: '-' }}</div>
                 </div>
             </div>
@@ -36,7 +36,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fs-7 fw-semibold mb-2">Số dòng đã lưu</div>
+                    <div class="text-muted fs-7 fw-semibold mb-2">{{ __('vasaccounting::lang.views.report_snapshot.cards.row_count') }}</div>
                     <div class="text-gray-900 fw-bold fs-4">{{ count($payload['rows'] ?? []) }}</div>
                 </div>
             </div>
@@ -47,8 +47,8 @@
         <div class="alert alert-warning d-flex align-items-start gap-3 mb-8">
             <i class="ki-outline ki-information-4 fs-2 text-warning mt-1"></i>
             <div>
-                <div class="fw-bold">Ảnh chụp chưa sẵn sàng</div>
-                <div class="text-muted">{{ $snapshot->error_message ?: 'Ảnh chụp này vẫn đang chờ hàng đợi xử lý.' }}</div>
+                <div class="fw-bold">{{ __('vasaccounting::lang.views.report_snapshot.not_ready.title') }}</div>
+                <div class="text-muted">{{ $snapshot->error_message ?: __('vasaccounting::lang.views.report_snapshot.not_ready.body') }}</div>
             </div>
         </div>
     @else
@@ -70,7 +70,7 @@
         <div class="card card-flush">
             <div class="card-header align-items-center py-5 gap-2 gap-md-5">
                 <div class="card-title">
-                    <h3 class="fw-bold m-0">Bộ dữ liệu ảnh chụp</h3>
+                    <h3 class="fw-bold m-0">{{ __('vasaccounting::lang.views.report_snapshot.dataset_title') }}</h3>
                 </div>
                 <div class="card-toolbar">
                     <a href="{{ route('vasaccounting.reports.index') }}" class="btn btn-sm btn-light-primary">{{ $vasAccountingUtil->actionLabel('back_to_reports') }}</a>
@@ -95,7 +95,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($payload['columns'] ?? []) ?: 1 }}" class="text-muted">Không có dòng dữ liệu nào được lưu trong ảnh chụp này.</td>
+                                    <td colspan="{{ count($payload['columns'] ?? []) ?: 1 }}" class="text-muted">{{ __('vasaccounting::lang.views.report_snapshot.empty') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

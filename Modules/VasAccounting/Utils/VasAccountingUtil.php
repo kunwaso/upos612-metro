@@ -57,10 +57,7 @@ class VasAccountingUtil
                 'show_zero_balances' => false,
             ],
             'feature_flags' => $this->defaultFeatureFlags(),
-            'approval_settings' => [
-                'default_manual_voucher_status' => 'draft',
-                'require_manual_voucher_approval' => false,
-            ],
+            'approval_settings' => $this->defaultApprovalSettings(),
             'branch_settings' => [
                 'dimension_key' => 'business_location_id',
                 'use_business_locations_as_branches' => true,
@@ -680,6 +677,11 @@ class VasAccountingUtil
         return (array) config('vasaccounting.feature_flags', []);
     }
 
+    public function defaultApprovalSettings(): array
+    {
+        return (array) config('vasaccounting.approval_defaults', []);
+    }
+
     public function enterpriseDomains(): array
     {
         return collect((array) config('vasaccounting.enterprise_domains', []))
@@ -722,7 +724,32 @@ class VasAccountingUtil
 
     public function defaultRolloutSettings(): array
     {
-        return (array) config('vasaccounting.rollout_defaults', []);
+        $defaults = (array) config('vasaccounting.rollout_defaults', []);
+        $defaults['enabled_branch_ids'] = array_values(array_filter(
+            array_map('intval', (array) ($defaults['enabled_branch_ids'] ?? [])),
+            fn (int $value) => $value > 0
+        ));
+        $defaults['enabled_document_families'] = array_values(array_filter(
+            array_map('strval', (array) ($defaults['enabled_document_families'] ?? [])),
+            fn (string $value) => $value !== ''
+        ));
+
+        return $defaults;
+    }
+
+    public function familyModeOptions(): array
+    {
+        return (array) config('vasaccounting.family_mode_options', []);
+    }
+
+    public function nativeDocumentFamilies(): array
+    {
+        return (array) config('vasaccounting.native_document_families', []);
+    }
+
+    public function documentFamilyBySource(string $sourceType): string
+    {
+        return (string) config("vasaccounting.document_family_by_source.{$sourceType}", 'manual');
     }
 
     public function enterpriseDomainConfig(string $domain): array

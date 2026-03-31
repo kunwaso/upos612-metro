@@ -5,7 +5,7 @@
 @section('content')
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.cutover'),
-        'subtitle' => 'Cutover governance board for parity checks, rollout controls, UAT completion, and provider readiness.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     @if (session('status.msg'))
@@ -32,36 +32,36 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Scope</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.cutover.cards.scope') }}</div>
                     <div class="text-gray-900 fw-bold fs-4">{{ $activeScopeLabel }}</div>
-                    <div class="text-muted fs-8 mt-1">Active parity and branch view scope</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.cutover.cards.scope_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Aligned Sections</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.cutover.cards.aligned_sections') }}</div>
                     <div class="text-success fw-bold fs-2">{{ $parityStats['aligned_sections'] }}</div>
-                    <div class="text-muted fs-8 mt-1">Matched legacy and VAS totals</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.cutover.cards.aligned_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Mismatches</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.cutover.cards.mismatches') }}</div>
                     <div class="text-danger fw-bold fs-2">{{ $parityStats['misaligned_sections'] }}</div>
-                    <div class="text-muted fs-8 mt-1">Sections still requiring reconciliation</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.cutover.cards.mismatches_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Branch Rows</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.cutover.cards.branch_rows') }}</div>
                     <div class="text-info fw-bold fs-2">{{ $parityStats['scoped_branch_rows'] }}</div>
-                    <div class="text-muted fs-8 mt-1">Rows after scope and branch filters</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.cutover.cards.branch_rows_help') }}</div>
                 </div>
             </div>
         </div>
@@ -72,8 +72,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Cutover Blockers</span>
-                        <span class="text-muted fs-7">Critical controls that must be cleared before go-live.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.blockers.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.blockers.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -81,9 +81,9 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Control</th>
-                                    <th>Count</th>
-                                    <th>Status</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.control') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.count') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -93,7 +93,7 @@
                                         <td>{{ $blocker['count'] }}</td>
                                         <td>
                                             <span class="badge {{ $blocker['count'] > 0 ? 'badge-light-danger' : 'badge-light-success' }}">
-                                                {{ $blocker['count'] > 0 ? 'Attention' : 'Ready' }}
+                                                {{ $blocker['count'] > 0 ? __('vasaccounting::lang.views.cutover.blockers.attention') : __('vasaccounting::lang.views.shared.ready') }}
                                             </span>
                                         </td>
                                     </tr>
@@ -108,46 +108,46 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Treasury Parity Snapshot</span>
-                        <span class="text-muted fs-7">Legacy versus VAS balance and provider readiness checks.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.treasury.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.treasury.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
                     <div class="d-flex flex-column gap-4">
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">Legacy accounts</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.legacy_accounts') }}</span>
                             <span class="fw-bold">{{ $parity['legacy_accounts'] }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">Legacy transactions</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.legacy_transactions') }}</span>
                             <span class="fw-bold">{{ $parity['legacy_transactions'] }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">Legacy treasury balance</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.legacy_treasury_balance') }}</span>
                             <span class="fw-bold">{{ number_format($parity['legacy_treasury_balance'], 2) }}</span>
                         </div>
                         <div class="separator"></div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">VAS posted vouchers</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.vas_posted_vouchers') }}</span>
                             <span class="fw-bold">{{ $parity['vas_posted_vouchers'] }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">VAS cash/bank entries</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.vas_cash_bank_entries') }}</span>
                             <span class="fw-bold">{{ $parity['vas_cash_bank_entries'] }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">VAS treasury balance</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.vas_treasury_balance') }}</span>
                             <span class="fw-bold">{{ number_format($parity['vas_treasury_balance'], 2) }}</span>
                         </div>
                         <div class="separator"></div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">Balance delta</span>
+                            <span class="text-muted">{{ __('vasaccounting::lang.views.cutover.treasury.balance_delta') }}</span>
                             <span class="fw-bold {{ abs($parity['balance_delta']) > 0.009 ? 'text-danger' : 'text-success' }}">
                                 {{ number_format($parity['balance_delta'], 2) }}
                             </span>
                         </div>
                         <div class="separator"></div>
-                        <div class="text-gray-900 fw-bold">Provider Readiness</div>
+                        <div class="text-gray-900 fw-bold">{{ __('vasaccounting::lang.views.cutover.treasury.provider_readiness') }}</div>
                         @foreach ($providerHealth as $provider)
                             <div>
                                 <div class="d-flex justify-content-between align-items-start gap-3">
@@ -156,14 +156,14 @@
                                         <div class="text-muted fs-8">{{ $provider['label'] }}</div>
                                     </div>
                                     <span class="badge {{ $provider['ready'] ? 'badge-light-success' : 'badge-light-danger' }}">
-                                        {{ $provider['ready'] ? 'Ready' : 'Gap' }}
+                                        {{ $provider['ready'] ? __('vasaccounting::lang.views.shared.ready') : __('vasaccounting::lang.views.cutover.treasury.gap') }}
                                     </span>
                                 </div>
                                 @if (!empty($provider['notes']))
                                     <div class="text-muted fs-8">{{ $provider['notes'] }}</div>
                                 @endif
                                 @if (!empty($provider['missing_config']))
-                                    <div class="text-warning fs-8">Missing config: {{ implode(', ', $provider['missing_config']) }}</div>
+                                    <div class="text-warning fs-8">{{ __('vasaccounting::lang.views.cutover.treasury.missing_config') }} {{ implode(', ', $provider['missing_config']) }}</div>
                                 @endif
                             </div>
                         @endforeach
@@ -176,8 +176,8 @@
     <div class="card card-flush mb-8">
         <div class="card-header align-items-center">
             <div class="card-title d-flex flex-column">
-                <span class="fw-bold text-gray-900">Parity Matrix</span>
-                <span class="text-muted fs-7">Use period and branch controls to validate reconciliation progress.</span>
+                <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.parity.title') }}</span>
+                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.parity.subtitle') }}</span>
             </div>
             <div class="card-toolbar">
                 <form method="GET" action="{{ route('vasaccounting.cutover.index') }}" class="d-flex align-items-end gap-4">
@@ -185,34 +185,34 @@
                         <input type="hidden" name="location_id" value="{{ $selectedLocationId }}">
                     @endif
                     <div>
-                        <label class="form-label fs-8 text-muted mb-1">Month</label>
+                        <label class="form-label fs-8 text-muted mb-1">{{ __('vasaccounting::lang.views.shared.month') }}</label>
                         <input type="month" name="period" class="form-control form-control-solid" value="{{ $selectedPeriod }}">
                     </div>
                     <div>
-                        <label class="form-label fs-8 text-muted mb-1">Branches</label>
-                        <select class="form-select form-select-solid" name="branches[]" multiple data-control="select2" data-placeholder="All branches">
+                        <label class="form-label fs-8 text-muted mb-1">{{ __('vasaccounting::lang.views.shared.branches') }}</label>
+                        <select class="form-select form-select-solid" name="branches[]" multiple data-control="select2" data-placeholder="{{ $vasAccountingUtil->uiLabel('all_locations') }}">
                             @foreach ($branchOptions as $branchId => $branchName)
                                 <option value="{{ $branchId }}" {{ in_array((int) $branchId, $selectedBranches, true) ? 'selected' : '' }}>{{ $branchName }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-light-primary">Refresh</button>
+                    <button type="submit" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.cutover.parity.refresh') }}</button>
                 </form>
             </div>
         </div>
         <div class="card-body">
             <div class="text-muted fs-7 mb-5">
-                Window: {{ $parityReport['period']['label'] }} ({{ $parityReport['period']['start_date'] }} to {{ $parityReport['period']['end_date'] }})
+                {{ __('vasaccounting::lang.views.cutover.parity.window_label') }} {{ $parityReport['period']['label'] }} ({{ $parityReport['period']['start_date'] }} {{ __('vasaccounting::lang.views.cutover.parity.to') }} {{ $parityReport['period']['end_date'] }})
             </div>
             <div class="table-responsive mb-8">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Section</th>
-                            <th>Legacy</th>
-                            <th>VAS</th>
-                            <th>Delta</th>
-                            <th>Status</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.section') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.legacy') }}</th>
+                            <th>{{ __('vasaccounting::lang.module_name') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.delta') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -222,7 +222,7 @@
                                     <div class="fw-bold text-gray-900">{{ $section['label'] }}</div>
                                     @if (!empty($section['meta']))
                                         <div class="text-muted fs-8">
-                                            {{ collect($section['meta'])->map(fn ($value, $key) => ucfirst(str_replace('_', ' ', $key)) . ': ' . $value)->implode(' | ') }}
+                                            {{ collect($section['meta'])->values()->implode(' | ') }}
                                         </div>
                                     @endif
                                 </td>
@@ -240,17 +240,17 @@
                 </table>
             </div>
 
-            <div class="fw-bold text-gray-900 mb-4">Branch Parity</div>
+            <div class="fw-bold text-gray-900 mb-4">{{ __('vasaccounting::lang.views.cutover.parity.branch_parity') }}</div>
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Branch</th>
-                            <th>Treasury delta</th>
-                            <th>AR delta</th>
-                            <th>AP delta</th>
-                            <th>Inventory delta</th>
-                            <th>Status</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.branch') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.cutover.parity.treasury_delta') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.cutover.parity.ar_delta') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.cutover.parity.ap_delta') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.cutover.parity.inventory_delta') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -269,7 +269,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-muted">No branch rows are available for the selected scope.</td>
+                                <td colspan="6" class="text-muted">{{ __('vasaccounting::lang.views.cutover.parity.empty_branch_rows') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -283,8 +283,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">UAT Personas</span>
-                        <span class="text-muted fs-7">Track readiness by persona and mark completion status.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.uat.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.uat.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -292,10 +292,10 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Persona</th>
-                                    <th>Focus</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Action</th>
+                                    <th>{{ __('vasaccounting::lang.views.cutover.uat.persona') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.focus') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
+                                    <th class="text-end">{{ __('vasaccounting::lang.views.shared.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -316,7 +316,7 @@
                                                 @csrf
                                                 <input type="hidden" name="completed" value="{{ $persona['completed'] ? 0 : 1 }}">
                                                 <button type="submit" class="btn btn-sm {{ $persona['completed'] ? 'btn-light-danger' : 'btn-light-primary' }}">
-                                                    {{ $persona['completed'] ? 'Reopen' : 'Mark complete' }}
+                                                    {{ $persona['completed'] ? __('vasaccounting::lang.views.cutover.uat.reopen') : __('vasaccounting::lang.views.cutover.uat.mark_complete') }}
                                                 </button>
                                             </form>
                                         </td>
@@ -332,8 +332,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Legacy Route Replacement</span>
-                        <span class="text-muted fs-7">Legacy paths mapped to VAS cutover-safe destinations.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.legacy_routes.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.legacy_routes.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -354,8 +354,8 @@
     <div class="card card-flush">
         <div class="card-header">
             <div class="card-title d-flex flex-column">
-                <span class="fw-bold text-gray-900">Rollout Controls</span>
-                <span class="text-muted fs-7">Configure legacy redirect mode, rollout status, branch rollout set, and notes.</span>
+                <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cutover.rollout.title') }}</span>
+                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.cutover.rollout.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body">
@@ -363,7 +363,7 @@
                 @csrf
                 <div class="row g-5">
                     <div class="col-md-4">
-                        <label class="form-label">Legacy route mode</label>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.legacy_route_mode') }}</label>
                         <select class="form-select form-select-solid" name="cutover_settings[legacy_routes_mode]">
                             @foreach ($legacyModeOptions as $value => $label)
                                 <option value="{{ $value }}" {{ $cutoverSettings['legacy_routes_mode'] === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -371,7 +371,7 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Parallel run status</label>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.parallel_run_status') }}</label>
                         <select class="form-select form-select-solid" name="cutover_settings[parallel_run_status]">
                             @foreach ($parallelRunOptions as $value => $label)
                                 <option value="{{ $value }}" {{ $cutoverSettings['parallel_run_status'] === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -379,7 +379,7 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Rollout status</label>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.rollout_status') }}</label>
                         <select class="form-select form-select-solid" name="rollout_settings[status]">
                             @foreach ($rolloutStatusOptions as $value => $label)
                                 <option value="{{ $value }}" {{ $rolloutSettings['status'] === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -387,39 +387,39 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Target go-live date</label>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.target_go_live_date') }}</label>
                         <input type="date" class="form-control form-control-solid" name="rollout_settings[target_go_live_date]" value="{{ $rolloutSettings['target_go_live_date'] }}">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Support owner</label>
-                        <input type="text" class="form-control form-control-solid" name="rollout_settings[support_owner]" value="{{ $rolloutSettings['support_owner'] }}" placeholder="Finance owner">
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.support_owner') }}</label>
+                        <input type="text" class="form-control form-control-solid" name="rollout_settings[support_owner]" value="{{ $rolloutSettings['support_owner'] }}" placeholder="{{ __('vasaccounting::lang.views.cutover.rollout.support_owner_placeholder') }}">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Legacy menu</label>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.legacy_menu') }}</label>
                         <div class="form-check form-switch form-check-custom form-check-solid mt-3">
                             <input class="form-check-input" type="checkbox" value="1" name="cutover_settings[hide_legacy_accounting_menu]" {{ !empty($cutoverSettings['hide_legacy_accounting_menu']) ? 'checked' : '' }}>
-                            <label class="form-check-label">Hide legacy payment-account menu</label>
+                            <label class="form-check-label">{{ __('vasaccounting::lang.views.cutover.rollout.hide_legacy_menu') }}</label>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Enabled rollout branches</label>
-                        <select class="form-select form-select-solid" name="rollout_settings[enabled_branch_ids][]" multiple data-control="select2" data-placeholder="Choose branches">
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.enabled_rollout_branches') }}</label>
+                        <select class="form-select form-select-solid" name="rollout_settings[enabled_branch_ids][]" multiple data-control="select2" data-placeholder="{{ __('vasaccounting::lang.views.cutover.rollout.enabled_branches_placeholder') }}">
                             @foreach ($branchOptions as $branchId => $branchName)
                                 <option value="{{ $branchId }}" {{ in_array((int) $branchId, $rolloutSettings['enabled_branch_ids'], true) ? 'selected' : '' }}>{{ $branchName }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Parallel run notes</label>
-                        <textarea class="form-control form-control-solid" rows="4" name="cutover_settings[parallel_run_notes]" placeholder="Describe parity checks, gaps, or follow-up items">{{ $cutoverSettings['parallel_run_notes'] }}</textarea>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.parallel_run_notes') }}</label>
+                        <textarea class="form-control form-control-solid" rows="4" name="cutover_settings[parallel_run_notes]" placeholder="{{ __('vasaccounting::lang.views.cutover.rollout.parallel_run_placeholder') }}">{{ $cutoverSettings['parallel_run_notes'] }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Training notes</label>
-                        <textarea class="form-control form-control-solid" rows="4" name="rollout_settings[training_notes]" placeholder="Training or enablement details">{{ $rolloutSettings['training_notes'] }}</textarea>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.training_notes') }}</label>
+                        <textarea class="form-control form-control-solid" rows="4" name="rollout_settings[training_notes]" placeholder="{{ __('vasaccounting::lang.views.cutover.rollout.training_notes_placeholder') }}">{{ $rolloutSettings['training_notes'] }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Rollout notes</label>
-                        <textarea class="form-control form-control-solid" rows="4" name="rollout_settings[rollout_notes]" placeholder="Branch-by-branch rollout notes">{{ $rolloutSettings['rollout_notes'] }}</textarea>
+                        <label class="form-label">{{ __('vasaccounting::lang.views.cutover.rollout.rollout_notes') }}</label>
+                        <textarea class="form-control form-control-solid" rows="4" name="rollout_settings[rollout_notes]" placeholder="{{ __('vasaccounting::lang.views.cutover.rollout.rollout_notes_placeholder') }}">{{ $rolloutSettings['rollout_notes'] }}</textarea>
                     </div>
                 </div>
 

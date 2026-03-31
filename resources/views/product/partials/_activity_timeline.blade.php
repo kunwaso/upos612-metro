@@ -8,6 +8,7 @@
         'composition_updated' => 'ki-pencil',
         'pantone_updated' => 'ki-flag',
         'sale_added' => 'ki-flag',
+        'stock_adjusted' => 'ki-pencil',
     ];
 @endphp
 

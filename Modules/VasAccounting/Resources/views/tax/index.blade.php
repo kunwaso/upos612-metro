@@ -5,43 +5,43 @@
 @section('content')
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.tax'),
-        'subtitle' => 'VAT books, tax-code activity, and declaration payload controls generated from posted journals.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     <div class="row g-5 g-xl-8 mb-8">
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <span class="text-muted fw-semibold fs-7">Tax Codes</span>
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.tax.cards.tax_codes') }}</span>
                     <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $taxStats['tax_codes']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Configured in current business scope</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.tax.cards.tax_codes_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <span class="text-muted fw-semibold fs-7">Summary Rows</span>
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.tax.cards.summary_rows') }}</span>
                     <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $taxStats['summary_rows']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Journal rollups by tax code</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.tax.cards.summary_rows_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <span class="text-muted fw-semibold fs-7">Sales VAT</span>
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.tax.cards.sales_vat') }}</span>
                     <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((float) $taxStats['sales_tax_total'], 2) }}</div>
-                    <div class="text-muted fs-8 mt-1">Output VAT total</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.tax.cards.sales_vat_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <span class="text-muted fw-semibold fs-7">Purchase VAT</span>
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.tax.cards.purchase_vat') }}</span>
                     <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((float) $taxStats['purchase_tax_total'], 2) }}</div>
-                    <div class="text-muted fs-8 mt-1">Input VAT total</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.tax.cards.purchase_vat_help') }}</div>
                 </div>
             </div>
         </div>
@@ -52,8 +52,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">VAT Summary</span>
-                        <span class="text-muted fs-7">Debit and credit totals grouped by mapped tax code.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tax.summary.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.summary.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -61,10 +61,10 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Tax code</th>
-                                    <th>Description</th>
-                                    <th>Debit</th>
-                                    <th>Credit</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.summary.table.tax_code') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.summary.table.description') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.summary.table.debit') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.summary.table.credit') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -77,7 +77,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-muted">No VAT journal rows found.</td>
+                                        <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.tax.summary.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -90,8 +90,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Xuất dữ liệu kê khai</span>
-                        <span class="text-muted fs-7">Tạo dữ liệu đầu ra theo nhà cung cấp để nộp tờ khai hoặc bàn giao sang hệ thống ngoài.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tax.export.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.export.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -106,22 +106,22 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Loại dữ liệu xuất</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.tax.export.export_type') }}</label>
                             <select name="export_type" class="form-select">
-                                <option value="vat_declaration">Tờ khai thuế GTGT</option>
-                                <option value="sales_book">Sổ thuế GTGT đầu ra</option>
-                                <option value="purchase_book">Sổ thuế GTGT đầu vào</option>
+                                <option value="vat_declaration">{{ __('vasaccounting::lang.views.tax.export.vat_declaration') }}</option>
+                                <option value="sales_book">{{ __('vasaccounting::lang.views.tax.export.sales_book') }}</option>
+                                <option value="purchase_book">{{ __('vasaccounting::lang.views.tax.purchase_book.title') }}</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100">Tạo dữ liệu xuất</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">{{ __('vasaccounting::lang.views.tax.export.submit') }}</button>
                     </form>
 
                     @if (session('tax_export_result'))
                         <div class="separator separator-dashed my-6"></div>
-                        <div class="fw-bold text-gray-900 mb-2">Bản xem trước lần xuất gần nhất</div>
-                        <div class="text-muted fs-7">Nhà cung cấp: {{ $vasAccountingUtil->providerLabel((string) session('tax_export_result.provider'), 'tax_export_adapters') }}</div>
-                        <div class="text-muted fs-7">Loại dữ liệu: {{ session('tax_export_result.export_type') }}</div>
-                        <div class="text-muted fs-7">Thời điểm tạo: {{ session('tax_export_result.generated_at') }}</div>
+                        <div class="fw-bold text-gray-900 mb-2">{{ __('vasaccounting::lang.views.tax.export.preview_title') }}</div>
+                        <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.export.provider_label', ['provider' => $vasAccountingUtil->providerLabel((string) session('tax_export_result.provider'), 'tax_export_adapters')]) }}</div>
+                        <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.export.export_type_label', ['type' => session('tax_export_result.export_type')]) }}</div>
+                        <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.export.generated_at_label', ['time' => session('tax_export_result.generated_at')]) }}</div>
                     @endif
                 </div>
             </div>
@@ -133,8 +133,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Sổ thuế GTGT đầu ra</span>
-                        <span class="text-muted fs-7">Dữ liệu thuế GTGT đầu ra được lấy từ chứng từ hóa đơn đã ghi sổ.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tax.sales_book.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.sales_book.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -142,10 +142,10 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Chứng từ</th>
-                                    <th>Khách hàng</th>
-                                    <th>Mã thuế</th>
-                                    <th>Số thuế</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.sales_book.table.document') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.customer') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.tax_code_label') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.sales_book.table.tax_amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -158,7 +158,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-muted">Chưa có phát sinh thuế GTGT đầu ra.</td>
+                                        <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.tax.sales_book.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -171,8 +171,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Sổ thuế GTGT đầu vào</span>
-                        <span class="text-muted fs-7">Dữ liệu thuế GTGT đầu vào gắn với chứng từ mua hàng và chi phí.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tax.purchase_book.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.purchase_book.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -180,10 +180,10 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Chứng từ</th>
-                                    <th>Nhà cung cấp</th>
-                                    <th>Mã thuế</th>
-                                    <th>Số thuế</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.purchase_book.table.document') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.vendor') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.tax_code_label') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.tax.purchase_book.table.tax_amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -196,7 +196,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-muted">Chưa có phát sinh thuế GTGT đầu vào.</td>
+                                        <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.tax.purchase_book.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -210,8 +210,8 @@
     <div class="card card-flush">
         <div class="card-header">
             <div class="card-title d-flex flex-column">
-                <span class="fw-bold text-gray-900">Danh mục mã thuế</span>
-                <span class="text-muted fs-7">Các mã thuế GTGT, thuế suất và chiều hạch toán đang được cấu hình.</span>
+                <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tax.tax_code_register.title') }}</span>
+                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tax.tax_code_register.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body pt-0">
@@ -219,10 +219,10 @@
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Mã</th>
-                            <th>Tên</th>
-                            <th>Thuế suất</th>
-                            <th>Chiều hạch toán</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.code') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.name') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.tax.tax_code_register.rate') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.tax.tax_code_register.direction') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -235,7 +235,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-muted">Chưa cấu hình mã thuế nào.</td>
+                                <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.tax.tax_code_register.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

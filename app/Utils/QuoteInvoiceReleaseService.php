@@ -42,6 +42,15 @@ class QuoteInvoiceReleaseService
             throw new \InvalidArgumentException(__('product.quote_lines_required'));
         }
 
+        $nativeBridgeEnabled = (bool) config('vasaccounting.native_document_families.invoice.bridges.quote_release.enabled', false);
+        if ($nativeBridgeEnabled) {
+            \Log::info('VAS native quote-release bridge is enabled; legacy transaction draft remains active until cutover.', [
+                'business_id' => $business_id,
+                'quote_id' => $quote->id,
+                'strategy' => (string) config('vasaccounting.native_document_families.invoice.bridges.quote_release.strategy', 'legacy_default'),
+            ]);
+        }
+
         return DB::transaction(function () use ($business_id, $quote, $user_id) {
             $sellLines = [];
 
@@ -65,6 +74,9 @@ class QuoteInvoiceReleaseService
                 'discount_amount' => 0,
                 'tax_rate_id' => null,
                 'is_direct_sale' => 1,
+                'additional_notes' => (bool) config('vasaccounting.native_document_families.invoice.bridges.quote_release.enabled', false)
+                    ? 'VAS_NATIVE_BRIDGE_PENDING'
+                    : null,
             ];
 
             $transaction = $this->transactionUtil->createSellTransaction(

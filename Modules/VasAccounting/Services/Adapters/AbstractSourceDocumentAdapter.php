@@ -9,11 +9,15 @@ use Modules\VasAccounting\Contracts\SourceDocumentAdapterInterface;
 use Modules\VasAccounting\Entities\VasAccount;
 use Modules\VasAccounting\Entities\VasBusinessSetting;
 use Modules\VasAccounting\Entities\VasTaxCode;
+use Modules\VasAccounting\Services\NativeDocumentMetaBuilder;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
 abstract class AbstractSourceDocumentAdapter implements SourceDocumentAdapterInterface
 {
-    public function __construct(protected VasAccountingUtil $vasUtil)
+    public function __construct(
+        protected VasAccountingUtil $vasUtil,
+        protected ?NativeDocumentMetaBuilder $nativeDocumentMetaBuilder = null
+    )
     {
     }
 
@@ -99,5 +103,10 @@ abstract class AbstractSourceDocumentAdapter implements SourceDocumentAdapterInt
             ->value('total_value');
 
         return $this->money($value);
+    }
+
+    protected function metaBuilder(): NativeDocumentMetaBuilder
+    {
+        return $this->nativeDocumentMetaBuilder ?: app(NativeDocumentMetaBuilder::class);
     }
 }

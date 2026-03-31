@@ -592,6 +592,7 @@ return [
     'activity_composition_updated' => 'Product composition updated.',
     'activity_pantone_updated' => 'Pantone list updated.',
     'activity_sale_added' => 'Product sale added.',
+    'activity_stock_adjusted' => 'Stock adjusted.',
     'activity_submitted_for_approval' => 'Product submitted for approval.',
     'activity_approved' => 'Product approved.',
     'activity_rejected' => 'Product rejected.',

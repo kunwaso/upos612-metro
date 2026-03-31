@@ -63,6 +63,12 @@ return [
         'uat_statuses' => [],
         'last_parity_check_at' => null,
         'last_legacy_redirect_at' => null,
+        'family_modes' => [
+            'payments' => 'legacy',
+            'purchase_ap' => 'legacy',
+            'sales_ar' => 'legacy',
+            'payroll' => 'bridge',
+        ],
     ],
     'rollout_defaults' => [
         'status' => 'pilot',
@@ -70,7 +76,40 @@ return [
         'support_owner' => null,
         'training_notes' => null,
         'enabled_branch_ids' => [],
+        'enabled_document_families' => [],
         'rollout_notes' => null,
+    ],
+    'approval_defaults' => [
+        'default_manual_voucher_status' => 'draft',
+        'require_manual_voucher_approval' => false,
+        'native_document_defaults' => [
+            'invoice' => [
+                'default_status' => 'draft',
+                'requires_approval' => true,
+                'requires_rule' => true,
+            ],
+            'payment' => [
+                'default_status' => 'draft',
+                'requires_approval' => true,
+                'requires_rule' => true,
+            ],
+            'payroll' => [
+                'default_status' => 'draft',
+                'requires_approval' => true,
+                'requires_rule' => true,
+            ],
+            'manual' => [
+                'default_status' => 'draft',
+                'requires_approval' => false,
+                'requires_rule' => false,
+            ],
+        ],
+    ],
+    'family_mode_options' => [
+        'legacy' => 'Legacy owned',
+        'pilot' => 'Pilot in VAS',
+        'native' => 'VAS owned',
+        'bridge' => 'Bridge mode',
     ],
     'cutover_uat_personas' => [
         'accountant' => [
@@ -166,6 +205,25 @@ return [
             'target_label' => 'VAS Chart of Accounts',
         ],
     ],
+    'document_family_by_source' => [
+        'manual' => 'manual',
+        'legacy_opening_balance' => 'manual',
+        'legacy_account_transaction' => 'payment',
+        'transaction_payment' => 'payment',
+        'sell' => 'invoice',
+        'sell_return' => 'invoice',
+        'purchase' => 'invoice',
+        'purchase_return' => 'invoice',
+        'expense' => 'invoice',
+        'stock_adjustment' => 'inventory',
+        'stock_transfer' => 'inventory',
+        'opening_stock' => 'inventory',
+        'inventory_document' => 'inventory',
+        'payroll' => 'payroll',
+        'native_invoice' => 'invoice',
+        'native_payment' => 'payment',
+        'native_payroll' => 'payroll',
+    ],
     'module_area_by_source' => [
         'manual' => 'accounting',
         'legacy_opening_balance' => 'accounting',
@@ -181,6 +239,65 @@ return [
         'opening_stock' => 'inventory',
         'inventory_document' => 'inventory',
         'payroll' => 'payroll',
+        'native_invoice' => 'invoices',
+        'native_payment' => 'cash_bank',
+        'native_payroll' => 'payroll',
+    ],
+    'native_document_families' => [
+        'invoice' => [
+            'source_type' => 'native_invoice',
+            'module_area' => 'invoices',
+            'route_prefix' => 'vas-accounting/invoices',
+            'default_status' => 'draft',
+            'cutover_mode_key' => 'sales_ar',
+            'coexistence_mode' => 'parallel',
+            'sales_guardrails' => [
+                'block_inventory_impact' => true,
+                'mode' => 'financial_only',
+            ],
+            'bridges' => [
+                'quote_release' => [
+                    'enabled' => false,
+                    'strategy' => 'legacy_default',
+                ],
+                'subscription_release' => [
+                    'enabled' => false,
+                    'strategy' => 'legacy_default',
+                ],
+            ],
+            'sequence_keys' => [
+                'sales_invoice' => 'sales_invoice',
+                'purchase_invoice' => 'purchase_invoice',
+                'sales_credit_note' => 'sales_credit_note',
+                'purchase_debit_note' => 'purchase_debit_note',
+            ],
+        ],
+        'payment' => [
+            'source_type' => 'native_payment',
+            'module_area' => 'cash_bank',
+            'route_prefix' => 'vas-accounting/payment-documents',
+            'default_status' => 'draft',
+            'cutover_mode_key' => 'payments',
+            'coexistence_mode' => 'parallel',
+            'sequence_keys' => [
+                'cash_receipt' => 'cash_receipt',
+                'cash_payment' => 'cash_payment',
+                'bank_receipt' => 'bank_receipt',
+                'bank_payment' => 'bank_payment',
+            ],
+        ],
+        'payroll' => [
+            'source_type' => 'native_payroll',
+            'module_area' => 'payroll',
+            'route_prefix' => 'vas-accounting/payroll',
+            'default_status' => 'draft',
+            'cutover_mode_key' => 'payroll',
+            'coexistence_mode' => 'parallel',
+            'sequence_keys' => [
+                'payroll_accrual' => 'payroll_accrual',
+                'payroll_payment' => 'payroll_payment',
+            ],
+        ],
     ],
     'enterprise_domains' => [
         'cash_bank' => [
@@ -667,6 +784,44 @@ return [
                 ['route' => 'vasaccounting.reports.bank_reconciliation', 'label' => 'Reconciliation', 'style' => 'light-warning'],
             ],
         ],
+        'vasaccounting.payment_documents.index' => [
+            'title' => 'Payment Documents',
+            'subtitle' => 'Native receipts and payments with draft, approval, posting, and allocation-ready status tracking.',
+            'icon' => 'ki-outline ki-wallet',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.cash_bank.manage',
+            'active_pattern' => 'vasaccounting.payment_documents.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.payment_documents.create', 'label' => 'Create payment', 'style' => 'primary'],
+                ['route' => 'vasaccounting.cash_bank.index', 'label' => 'Cash & bank', 'style' => 'light-primary'],
+            ],
+        ],
+        'vasaccounting.payment_documents.create' => [
+            'title' => 'Create Payment Document',
+            'subtitle' => 'Capture a native receipt or payment draft with liquidity source and settlement targets.',
+            'icon' => 'ki-outline ki-notepad-edit',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.cash_bank.manage',
+            'active_pattern' => 'vasaccounting.payment_documents.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.payment_documents.index', 'label' => 'Back to payments', 'style' => 'light-primary'],
+            ],
+        ],
+        'vasaccounting.payment_documents.show' => [
+            'title' => 'Payment Document Detail',
+            'subtitle' => 'Review settlement targets, approval state, journal lines, and posting actions for a native payment document.',
+            'icon' => 'ki-outline ki-file-sheet',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.cash_bank.manage',
+            'active_pattern' => 'vasaccounting.payment_documents.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.payment_documents.index', 'label' => 'Back to payments', 'style' => 'light-primary'],
+                ['route' => 'vasaccounting.cash_bank.index', 'label' => 'Cash & bank', 'style' => 'light-warning'],
+            ],
+        ],
         'vasaccounting.receivables.index' => [
             'title' => 'Receivables',
             'nav_label' => 'Receivables',
@@ -709,8 +864,34 @@ return [
             'nav_sort' => 40,
             'active_pattern' => 'vasaccounting.invoices.*',
             'quick_actions' => [
+                ['route' => 'vasaccounting.invoices.create', 'label' => 'Create purchase invoice', 'style' => 'primary'],
                 ['route' => 'vasaccounting.einvoices.index', 'label' => 'E-invoices', 'style' => 'light-primary', 'feature_flag' => 'einvoices'],
                 ['route' => 'vasaccounting.tax.index', 'label' => 'Tax center', 'style' => 'light-warning', 'feature_flag' => 'tax'],
+            ],
+        ],
+        'vasaccounting.invoices.create' => [
+            'title' => 'Create Purchase Invoice',
+            'subtitle' => 'Capture a native AP invoice or debit note draft with line-level account distribution and VAT handling.',
+            'icon' => 'ki-outline ki-notepad-edit',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.invoices.manage',
+            'active_pattern' => 'vasaccounting.invoices.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.invoices.index', 'label' => 'Back to invoice register', 'style' => 'light-primary'],
+            ],
+        ],
+        'vasaccounting.invoices.show' => [
+            'title' => 'Invoice Detail',
+            'subtitle' => 'Review native AP draft, approval progress, and posting readiness before settlement.',
+            'icon' => 'ki-outline ki-file-sheet',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.invoices.manage',
+            'active_pattern' => 'vasaccounting.invoices.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.invoices.index', 'label' => 'Back to invoice register', 'style' => 'light-primary'],
+                ['route' => 'vasaccounting.payment_documents.create', 'label' => 'Create payment', 'style' => 'light-warning'],
             ],
         ],
         'vasaccounting.inventory.index' => [

@@ -1964,6 +1964,11 @@ class SellPosController extends Controller
      */
     public function showInvoice($token)
     {
+        $nativeInvoice = $this->findNativeSalesInvoiceByToken($token);
+        if (! empty($nativeInvoice)) {
+            return $this->renderNativePublicInvoice($nativeInvoice, $token);
+        }
+
         $transaction = Transaction::where('invoice_token', $token)->with(['business', 'location'])->first();
 
         if (!empty($transaction)) {
@@ -1993,6 +1998,11 @@ class SellPosController extends Controller
      */
     public function invoicePayment($token)
     {
+        $nativeInvoice = $this->findNativeSalesInvoiceByToken($token);
+        if (! empty($nativeInvoice)) {
+            return $this->renderNativeInvoicePaymentForm($nativeInvoice, $token);
+        }
+
         $transaction = Transaction::where('invoice_token', $token)->with(['business', 'contact', 'location'])->first();
         $business = $transaction->business;
         $business_details = $this->businessUtil->getDetails($business->id);
@@ -2055,6 +2065,10 @@ class SellPosController extends Controller
 
     public function confirmPayment($id, Request $request)
     {
+        if (Str::startsWith((string) $id, 'vas-')) {
+            return $this->confirmNativeInvoicePayment((string) $id, $request);
+        }
+
         try {
             $transaction = Transaction::with(['business'])->find($id);
 
@@ -2115,6 +2129,177 @@ class SellPosController extends Controller
         }
 
         return redirect($payment_link)->with('status', $output);
+    }
+
+    protected function findNativeSalesInvoiceByToken(string $token): ?\Modules\VasAccounting\Entities\VasVoucher
+    {
+        if (! class_exists(\Modules\VasAccounting\Services\NativeInvoiceService::class)) {
+            return null;
+        }
+
+        /** @var \Modules\VasAccounting\Services\NativeInvoiceService $service */
+        $service = app(\Modules\VasAccounting\Services\NativeInvoiceService::class);
+
+        return $service->findNativeSalesInvoiceByPublicToken($token);
+    }
+
+    protected function renderNativePublicInvoice(\Modules\VasAccounting\Entities\VasVoucher $invoice, string $token)
+    {
+        $business = Business::find($invoice->business_id);
+        if (empty($business)) {
+            exit(__('messages.something_went_wrong'));
+        }
+
+        /** @var \Modules\VasAccounting\Services\NativeInvoiceService $nativeInvoiceService */
+        $nativeInvoiceService = app(\Modules\VasAccounting\Services\NativeInvoiceService::class);
+        $outstandingAmount = $nativeInvoiceService->outstandingReceivableAmount($invoice);
+        $business_details = $this->businessUtil->getDetails($business->id);
+        $location = ! empty($invoice->business_location_id) ? BusinessLocation::find($invoice->business_location_id) : null;
+        $pos_settings = empty($business->pos_settings) ? $this->businessUtil->defaultPosSettings() : json_decode($business->pos_settings, true);
+        $payment_link = '';
+        if (! empty($pos_settings['enable_payment_link']) && $invoice->status === 'posted' && $outstandingAmount > 0.0001) {
+            $payment_link = route('invoice_payment', ['token' => $token]);
+        }
+
+        $title = $business->name . ' | ' . ($invoice->reference ?: $invoice->voucher_no);
+
+        return view('vasaccounting::public.show_invoice')
+            ->with(compact('invoice', 'business', 'location', 'title', 'payment_link', 'outstandingAmount', 'business_details'));
+    }
+
+    protected function renderNativeInvoicePaymentForm(\Modules\VasAccounting\Entities\VasVoucher $invoice, string $token)
+    {
+        $business = Business::find($invoice->business_id);
+        $contact = ! empty($invoice->contact_id) ? Contact::find($invoice->contact_id) : null;
+        $location = ! empty($invoice->business_location_id) ? BusinessLocation::find($invoice->business_location_id) : null;
+
+        if (empty($business)) {
+            exit(__('messages.something_went_wrong'));
+        }
+
+        $pos_settings = empty($business->pos_settings) ? $this->businessUtil->defaultPosSettings() : json_decode($business->pos_settings, true);
+        $business_details = $this->businessUtil->getDetails($business->id);
+
+        /** @var \Modules\VasAccounting\Services\NativeInvoiceService $nativeInvoiceService */
+        $nativeInvoiceService = app(\Modules\VasAccounting\Services\NativeInvoiceService::class);
+        $total_payable = $nativeInvoiceService->outstandingReceivableAmount($invoice);
+        $total_amount_raw = round((float) max($invoice->total_debit, $invoice->total_credit), 4);
+        $total_paid_raw = max(round($total_amount_raw - $total_payable, 4), 0);
+        $total_payable_formatted = $this->transactionUtil->num_f($total_payable, true, $business_details);
+        $date_formatted = $this->transactionUtil->format_date($invoice->document_date ?? $invoice->posting_date, true, $business_details);
+        $total_amount = $this->transactionUtil->num_f($total_amount_raw, true, $business_details);
+        $total_paid = $this->transactionUtil->num_f($total_paid_raw, true, $business_details);
+        $title = $business->name . ' | ' . ($invoice->reference ?: $invoice->voucher_no);
+
+        if ($invoice->status !== 'posted' || empty($pos_settings['enable_payment_link'])) {
+            exit(__('messages.something_went_wrong'));
+        }
+
+        return view('vasaccounting::public.guest_payment_form')
+            ->with(compact(
+                'invoice',
+                'business',
+                'contact',
+                'location',
+                'title',
+                'pos_settings',
+                'total_payable',
+                'total_payable_formatted',
+                'date_formatted',
+                'total_amount',
+                'total_paid',
+                'business_details',
+                'token'
+            ));
+    }
+
+    protected function confirmNativeInvoicePayment(string $id, Request $request)
+    {
+        $voucherId = (int) Str::after($id, 'vas-');
+
+        try {
+            /** @var \Modules\VasAccounting\Services\NativeInvoiceService $nativeInvoiceService */
+            $nativeInvoiceService = app(\Modules\VasAccounting\Services\NativeInvoiceService::class);
+            /** @var \Modules\VasAccounting\Services\PaymentDocumentService $paymentDocumentService */
+            $paymentDocumentService = app(\Modules\VasAccounting\Services\PaymentDocumentService::class);
+
+            $invoice = \Modules\VasAccounting\Entities\VasVoucher::query()
+                ->where('id', $voucherId)
+                ->where('source_type', 'native_invoice')
+                ->whereIn('voucher_type', ['sales_invoice'])
+                ->firstOrFail();
+
+            $business = Business::findOrFail($invoice->business_id);
+            $publicToken = $nativeInvoiceService->resolvePublicToken($invoice);
+            $paymentLink = $publicToken ? route('invoice_payment', ['token' => $publicToken]) : route('show_invoice', ['token' => $request->input('token')]);
+            $totalPayable = $nativeInvoiceService->outstandingReceivableAmount($invoice);
+
+            if ($totalPayable <= 0.0001) {
+                return redirect($paymentLink)->with('status', [
+                    'success' => 1,
+                    'msg' => __('lang_v1.paid'),
+                ]);
+            }
+
+            $payFunction = 'pay_' . $request->gateway;
+            if (! method_exists($this, $payFunction)) {
+                throw new \RuntimeException('Unsupported payment gateway.');
+            }
+
+            $paymentCarrier = new \stdClass();
+            $paymentCarrier->business = $business;
+            $paymentId = $this->$payFunction($paymentCarrier, $totalPayable, $request);
+
+            if (empty($paymentId)) {
+                throw new \RuntimeException('Guest payment authorization failed.');
+            }
+
+            DB::beginTransaction();
+
+            $ownerId = (int) ($business->owner_id ?? 0);
+            if ($ownerId <= 0) {
+                $ownerId = (int) User::query()->where('business_id', (int) $business->id)->value('id');
+            }
+            if ($ownerId <= 0) {
+                throw new \RuntimeException('Unable to resolve a system user for guest settlement posting.');
+            }
+            $receipt = $paymentDocumentService->createDraft((int) $invoice->business_id, [
+                'payment_kind' => 'bank_receipt',
+                'contact_id' => $invoice->contact_id,
+                'business_location_id' => $invoice->business_location_id,
+                'document_date' => now()->toDateString(),
+                'posting_date' => now()->toDateString(),
+                'currency_code' => $invoice->currency_code,
+                'exchange_rate' => $invoice->exchange_rate,
+                'amount' => $totalPayable,
+                'payment_instrument' => (string) $request->gateway,
+                'external_reference' => (string) $paymentId,
+                'description' => 'Guest payment for ' . ($invoice->reference ?: $invoice->voucher_no),
+                'notes' => 'Guest payment link settlement',
+                'settlement_targets' => [[
+                    'target_voucher_id' => (int) $invoice->id,
+                    'amount' => $totalPayable,
+                ]],
+            ], $ownerId);
+
+            $paymentDocumentService->post($receipt, $ownerId);
+            DB::commit();
+
+            $output = [
+                'success' => 1,
+                'msg' => __('purchase.payment_added_success'),
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::emergency('File:' . $e->getFile() . 'Line:' . $e->getLine() . 'Message:' . $e->getMessage());
+            $output = [
+                'success' => 0,
+                'msg' => __('messages.something_went_wrong'),
+            ];
+            $paymentLink = route('show_invoice', ['token' => $request->input('token', '')]);
+        }
+
+        return redirect($paymentLink)->with('status', $output);
     }
 
     /**

@@ -211,6 +211,7 @@ Route::middleware(['setData', 'auth', 'SetSessionData', 'language', 'timezone', 
     Route::post('/products/toggle-woocommerce-sync', [ProductController::class, 'toggleWooCommerceSync']);
     Route::get('/products/detail/{id}', [ProductController::class, 'detail'])->name('product.detail');
     Route::post('/products/{product_id}/quotes', [ProductQuoteController::class, 'storeFromProduct'])->name('product.quotes.store_from_product');
+    Route::post('/products/detail/{id}/stock-adjust', [ProductController::class, 'adjustDetailStock'])->name('product.detail.stock.adjust');
     Route::post('/products/detail/{id}/files', [ProductController::class, 'uploadDetailFile'])->name('product.detail.files.upload');
     Route::get('/products/detail/{id}/files/{media_id}/download', [ProductController::class, 'downloadDetailFile'])->name('product.detail.files.download');
     Route::delete('/products/detail/{id}/files/{media_id}', [ProductController::class, 'deleteDetailFile'])->name('product.detail.files.delete');

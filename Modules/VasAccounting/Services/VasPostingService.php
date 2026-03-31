@@ -19,7 +19,9 @@ class VasPostingService
     public function __construct(
         protected SourceDocumentAdapterManager $adapterManager,
         protected VasAccountingUtil $vasUtil,
-        protected LedgerPostingUtil $ledgerPostingUtil
+        protected LedgerPostingUtil $ledgerPostingUtil,
+        protected ?DocumentApprovalService $documentApprovalService = null,
+        protected ?ExchangeRateService $exchangeRateService = null
     ) {
     }
 
@@ -62,6 +64,11 @@ class VasPostingService
             throw new RuntimeException(__('vasaccounting::lang.posting_map_incomplete'));
         }
 
+        $payload['currency_code'] = strtoupper((string) ($payload['currency_code'] ?? $settings->book_currency ?? config('vasaccounting.book_currency', 'VND')));
+        $payload['status'] = $this->ledgerPostingUtil->validateVoucherStatus((string) ($payload['status'] ?? 'posted'));
+        $payload['exchange_rate'] = $this->resolvePayloadExchangeRate($settings, $payload);
+        $this->ensureImmediatePostingAllowed($payload);
+
         $lines = $this->ledgerPostingUtil->normalizeLines((array) ($payload['lines'] ?? []));
         if ($lines->isEmpty()) {
             throw new RuntimeException('VAS voucher payload has no postable lines.');
@@ -77,7 +84,6 @@ class VasPostingService
 
         $payload['module_area'] = $this->ledgerPostingUtil->moduleAreaForPayload($payload);
         $payload['document_type'] = $this->ledgerPostingUtil->documentTypeForPayload($payload);
-        $payload['status'] = $this->ledgerPostingUtil->validateVoucherStatus((string) ($payload['status'] ?? 'posted'));
         $payload['source_hash'] = $this->ledgerPostingUtil->buildSourceHash($payload, $lines);
 
         return DB::transaction(function () use ($payload, $lines, $period, $postingDate) {
@@ -89,6 +95,11 @@ class VasPostingService
 
             if ($latest && $latest->status === 'posted' && $latest->source_hash !== $payload['source_hash']) {
                 $this->createReversalVoucher($latest, (int) ($payload['created_by'] ?? 0));
+            }
+
+            $coexistenceDuplicate = $this->coexistenceDuplicateVoucher($payload);
+            if ($coexistenceDuplicate) {
+                return $coexistenceDuplicate->load('lines');
             }
 
             $sequenceNo = $this->nextVoucherNumber((int) $payload['business_id'], (string) ($payload['sequence_key'] ?? 'general_journal'));
@@ -186,6 +197,10 @@ class VasPostingService
 
         if (in_array($voucher->status, ['cancelled', 'reversed'], true)) {
             throw new RuntimeException("Voucher [{$voucher->voucher_no}] cannot be posted from status [{$voucher->status}].");
+        }
+
+        if (! $this->approvalService()->canPostVoucher($voucher)) {
+            throw new RuntimeException("Voucher [{$voucher->voucher_no}] must be approved before posting.");
         }
 
         return DB::transaction(function () use ($voucher, $userId) {
@@ -348,5 +363,95 @@ class VasPostingService
         $failure->failed_at = now();
         $failure->retry_count = (int) $failure->retry_count + 1;
         $failure->save();
+    }
+
+    protected function resolvePayloadExchangeRate($settings, array $payload): float
+    {
+        $bookCurrency = strtoupper((string) ($settings->book_currency ?? config('vasaccounting.book_currency', 'VND')));
+        $currencyCode = strtoupper((string) ($payload['currency_code'] ?? $bookCurrency));
+        $providedRate = round((float) ($payload['exchange_rate'] ?? 0), 8);
+
+        if ($currencyCode === '' || $currencyCode === $bookCurrency) {
+            return 1.0;
+        }
+
+        if ($providedRate > 0) {
+            return $providedRate;
+        }
+
+        return $this->exchangeRateService()->resolveRate(
+            (int) ($payload['business_id'] ?? 0),
+            $currencyCode,
+            $bookCurrency,
+            $payload['document_date'] ?? $payload['posting_date'] ?? null
+        );
+    }
+
+    protected function ensureImmediatePostingAllowed(array $payload): void
+    {
+        if ((string) ($payload['status'] ?? 'draft') !== 'posted') {
+            return;
+        }
+
+        $meta = (array) ($payload['meta'] ?? []);
+        $context = [
+            'document_family' => data_get($meta, 'document_family'),
+            'source_type' => $payload['source_type'] ?? null,
+            'module_area' => $payload['module_area'] ?? null,
+            'document_type' => $payload['document_type'] ?? ($payload['voucher_type'] ?? null),
+            'business_location_id' => $payload['business_location_id'] ?? null,
+            'currency_code' => $payload['currency_code'] ?? null,
+            'amount' => max(
+                round((float) collect((array) ($payload['lines'] ?? []))->sum('debit'), 4),
+                round((float) collect((array) ($payload['lines'] ?? []))->sum('credit'), 4)
+            ),
+            'requires_approval' => data_get($meta, 'lifecycle.requires_approval', data_get($meta, 'approval.requires_approval')),
+        ];
+        $documentFamily = $this->approvalRuleService()->documentFamilyForContext($context);
+
+        if ($this->approvalRuleService()->requiresApproval((int) ($payload['business_id'] ?? 0), $documentFamily, $context)) {
+            throw new RuntimeException('VAS voucher payload cannot be posted immediately while approval is required.');
+        }
+    }
+
+    protected function coexistenceDuplicateVoucher(array $payload): ?VasVoucher
+    {
+        $businessEventUid = trim((string) data_get((array) ($payload['meta'] ?? []), 'coexistence.business_event_uid', ''));
+        if ($businessEventUid === '') {
+            return null;
+        }
+
+        $driver = DB::connection()->getDriverName();
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            return null;
+        }
+
+        return VasVoucher::query()
+            ->where('business_id', (int) ($payload['business_id'] ?? 0))
+            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(meta, '$.coexistence.business_event_uid')) = ?", [$businessEventUid])
+            ->when(! empty($payload['source_type']) && ! empty($payload['source_id']), function ($query) use ($payload) {
+                $query->where(function ($nested) use ($payload) {
+                    $nested->where('source_type', '!=', (string) $payload['source_type'])
+                        ->orWhere('source_id', '!=', (int) $payload['source_id'])
+                        ->orWhereNull('source_id');
+                });
+            })
+            ->orderByDesc('version_no')
+            ->first();
+    }
+
+    protected function approvalService(): DocumentApprovalService
+    {
+        return $this->documentApprovalService ?: app(DocumentApprovalService::class);
+    }
+
+    protected function approvalRuleService(): ApprovalRuleService
+    {
+        return app(ApprovalRuleService::class);
+    }
+
+    protected function exchangeRateService(): ExchangeRateService
+    {
+        return $this->exchangeRateService ?: app(ExchangeRateService::class);
     }
 }

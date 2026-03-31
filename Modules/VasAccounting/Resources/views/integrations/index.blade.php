@@ -5,7 +5,7 @@
 @section('content')
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.integrations'),
-        'subtitle' => 'Integration governance hub for provider queues, webhook health, replay actions, and compliance handoffs.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     <div class="row g-5 g-xl-8 mb-8">
@@ -25,7 +25,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Pending Runs</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.pending_runs') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ $integrationStats['pending_runs'] }}</div>
                 </div>
             </div>
@@ -33,7 +33,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Run Failures</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.run_failures') }}</div>
                     <div class="text-danger fw-bold fs-2">{{ $integrationStats['failed_runs'] }}</div>
                 </div>
             </div>
@@ -41,7 +41,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Webhook Errors</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.webhook_errors') }}</div>
                     <div class="text-warning fw-bold fs-2">{{ $integrationStats['webhook_errors'] }}</div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Open Failures</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.open_failures') }}</div>
                     <div class="text-danger fw-bold fs-2">{{ $integrationStats['open_failures'] }}</div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Snapshot Backlog</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.snapshot_backlog') }}</div>
                     <div class="text-info fw-bold fs-2">{{ $integrationStats['snapshot_backlog'] }}</div>
                 </div>
             </div>
@@ -65,7 +65,7 @@
         <div class="col-md-2">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">Sync Candidates</div>
+                    <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.views.integrations.cards.sync_candidates') }}</div>
                     <div class="text-success fw-bold fs-2">{{ $integrationStats['sync_candidates'] }}</div>
                 </div>
             </div>
@@ -78,8 +78,8 @@
                 <div class="card card-flush h-100">
                     <div class="card-body">
                         <div class="text-gray-900 fw-bold fs-5 mb-1">{{ $group['label'] }}</div>
-                        <div class="text-muted fs-7 mb-3">Adapters: {{ $group['count'] }}</div>
-                        <span class="badge badge-light-primary">Default: {{ $group['default'] }}</span>
+                        <div class="text-muted fs-7 mb-3">{{ __('vasaccounting::lang.views.integrations.provider_groups.adapters', ['count' => $group['count']]) }}</div>
+                        <span class="badge badge-light-primary">{{ __('vasaccounting::lang.views.integrations.provider_groups.default', ['provider' => $group['default']]) }}</span>
                     </div>
                 </div>
             </div>
@@ -91,8 +91,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Nhập sao kê ngân hàng</span>
-                        <span class="text-muted fs-7">Đưa tác vụ nhập sao kê theo nhà cung cấp và tài khoản ngân hàng vào hàng đợi.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.statement_import.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.statement_import.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -109,7 +109,7 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Tài khoản ngân hàng</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.statement_import.bank_account') }}</label>
                             <select name="bank_account_id" class="form-select form-select-solid" data-control="select2">
                                 @foreach ($bankAccounts as $bankAccount)
                                     <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_code }} - {{ $bankAccount->bank_name }}</option>
@@ -117,15 +117,15 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Tham chiếu</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.statement_import.reference') }}</label>
                             <input type="text" name="reference_no" class="form-control form-control-solid" placeholder="STM-20260328">
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Dòng sao kê</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.statement_import.statement_lines') }}</label>
                             <textarea name="statement_lines" rows="5" class="form-control form-control-solid" placeholder="2026-03-28|Incoming transfer|1500|4500"></textarea>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-light-primary">Đưa vào hàng đợi nhập</button>
+                            <button type="submit" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.integrations.statement_import.submit') }}</button>
                         </div>
                     </form>
                 </div>
@@ -136,8 +136,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Xuất dữ liệu thuế</span>
-                        <span class="text-muted fs-7">Đưa tác vụ xuất dữ liệu tuân thủ qua các adapter đã cấu hình vào hàng đợi.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.tax_export.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.tax_export.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -154,11 +154,11 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Loại dữ liệu xuất</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.tax_export.export_type') }}</label>
                             <input type="text" name="export_type" class="form-control form-control-solid" value="vat_declaration">
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-light-primary">Đưa vào hàng đợi xuất thuế</button>
+                            <button type="submit" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.integrations.tax_export.submit') }}</button>
                         </div>
                     </form>
 
@@ -176,14 +176,14 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Chế độ</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.payroll_bridge.mode') }}</label>
                             <select name="action" class="form-select form-select-solid">
-                                <option value="bridge_group">Cầu nối trích lương</option>
-                                <option value="bridge_payments">Cầu nối thanh toán</option>
+                                <option value="bridge_group">{{ __('vasaccounting::lang.generic_statuses.bridge_group') }}</option>
+                                <option value="bridge_payments">{{ __('vasaccounting::lang.generic_statuses.bridge_payments') }}</option>
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Nhóm bảng lương</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.payroll_bridge.payroll_group') }}</label>
                             <select name="payroll_group_id" class="form-select form-select-solid">
                                 @foreach ($payrollGroups as $group)
                                     <option value="{{ $group->id }}">{{ $group->name }}</option>
@@ -191,7 +191,7 @@
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-light-primary">Đưa vào hàng đợi cầu nối lương</button>
+                            <button type="submit" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.integrations.payroll_bridge.submit') }}</button>
                         </div>
                     </form>
                 </div>
@@ -202,8 +202,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Đồng bộ hóa đơn điện tử</span>
-                        <span class="text-muted fs-7">Kích hoạt đồng bộ trạng thái cho các chứng từ đã phát hành hoặc đang chờ đồng bộ.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.einvoice_sync.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.einvoice_sync.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -220,15 +220,15 @@
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Chứng từ</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.integrations.einvoice_sync.document') }}</label>
                             <select name="einvoice_document_id" class="form-select form-select-solid" data-control="select2">
                                 @foreach ($einvoiceDocuments as $document)
-                                    <option value="{{ $document->id }}">{{ $document->document_no ?: ('Chứng từ #' . $document->id) }} - {{ $vasAccountingUtil->genericStatusLabel((string) $document->status) }}</option>
+                                    <option value="{{ $document->id }}">{{ $document->document_no ?: __('vasaccounting::lang.views.integrations.einvoice_sync.document_fallback', ['id' => $document->id]) }} - {{ $vasAccountingUtil->genericStatusLabel((string) $document->status) }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-light-primary">Đưa vào hàng đợi đồng bộ</button>
+                            <button type="submit" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.integrations.einvoice_sync.submit') }}</button>
                         </div>
                     </form>
                 </div>
@@ -241,8 +241,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Integration Run Queue</span>
-                        <span class="text-muted fs-7">Latest run history across bank, tax, payroll, and e-invoice adapters.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.run_queue.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.run_queue.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -250,13 +250,13 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Type</th>
-                                    <th>Provider</th>
-                                    <th>Action</th>
-                                    <th>Status</th>
-                                    <th>Requested</th>
-                                    <th>Completed</th>
-                                    <th>Error</th>
+                                    <th>{{ __('vasaccounting::lang.views.integrations.run_queue.table.type') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.provider') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.action') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.requested') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.completed') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.error') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -276,7 +276,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-muted">Chưa có tác vụ tích hợp nào được đưa vào hàng đợi.</td>
+                                        <td colspan="7" class="text-muted">{{ __('vasaccounting::lang.views.integrations.run_queue.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -289,8 +289,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Recent Report Snapshots</span>
-                        <span class="text-muted fs-7">Snapshot queue health from downstream reporting pipelines.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.snapshots.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.snapshots.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -298,9 +298,9 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Snapshot</th>
-                                    <th>Status</th>
-                                    <th>Generated</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.snapshot') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.generated') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -316,7 +316,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-muted">Chưa có ảnh chụp báo cáo nào trong hàng đợi.</td>
+                                        <td colspan="3" class="text-muted">{{ __('vasaccounting::lang.views.integrations.snapshots.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -332,8 +332,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Posting Failures</span>
-                        <span class="text-muted fs-7">Unresolved failures with replay actions for recovery.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.failures.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.failures.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -341,9 +341,9 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Source</th>
-                                    <th>Failed at</th>
-                                    <th>Message</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.source') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.integrations.failures.table.failed_at') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.integrations.failures.table.message') }}</th>
                                     <th class="text-end"></th>
                                 </tr>
                             </thead>
@@ -356,13 +356,13 @@
                                         <td class="text-end">
                                             <form method="POST" action="{{ route('vasaccounting.integrations.failures.retry', $failure->id) }}">
                                                 @csrf
-                                                <button type="submit" class="btn btn-light-primary btn-sm">Đưa vào hàng đợi chạy lại</button>
+                                                <button type="submit" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.integrations.failures.retry') }}</button>
                                             </form>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-muted">Không còn lỗi ghi sổ tồn đọng nào.</td>
+                                        <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.integrations.failures.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -375,8 +375,8 @@
             <div class="card card-flush h-100">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">Webhook Log</span>
-                        <span class="text-muted fs-7">Inbound provider events and processing status.</span>
+                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.integrations.webhooks.title') }}</span>
+                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.integrations.webhooks.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -384,10 +384,10 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Provider</th>
-                                    <th>Event</th>
-                                    <th>Status</th>
-                                    <th>Received</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.provider') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.event') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.received') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -404,7 +404,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-muted">Chưa nhận webhook nào.</td>
+                                        <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.integrations.webhooks.empty') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>

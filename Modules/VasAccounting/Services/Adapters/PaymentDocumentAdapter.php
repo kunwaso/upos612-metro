@@ -69,10 +69,37 @@ class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
             'created_by' => (int) ($payment->created_by ?? $transaction->created_by ?? 0),
             'module_area' => $isPayrollPayment ? 'payroll' : null,
             'document_type' => $isPayrollPayment ? 'payroll_payment' : null,
-            'meta' => [
-                'payment_method' => $payment->method,
-                'transaction_type' => $transaction->type,
-            ],
+            'meta' => array_replace(
+                $this->metaBuilder()->buildPaymentMeta([
+                    'direction' => $isPayableType ? 'payment' : 'receipt',
+                    'payment_kind' => $sequenceKey,
+                    'contact_id' => (int) ($transaction->contact_id ?? 0) ?: null,
+                    'document_date' => $payment->paid_on ?: $transaction->transaction_date,
+                    'reference' => $payment->payment_ref_no ?: $payment->transaction_no ?: $payment->id,
+                    'requires_approval' => false,
+                    'legacy_source_type' => 'transaction_payment',
+                    'legacy_source_id' => (int) $payment->id,
+                    'business_event_uid' => 'legacy:transaction_payment:' . (int) $payment->id,
+                    'coexistence_mode' => 'parallel',
+                    'external_reference' => $payment->payment_ref_no ?: $payment->transaction_no,
+                    'payment_instrument' => $payment->method,
+                    'legacy_links' => [
+                        'transaction_id' => (int) $transaction->id,
+                        'transaction_payment_id' => (int) $payment->id,
+                        'payment_ref_no' => $payment->payment_ref_no,
+                        'transaction_no' => $payment->transaction_no,
+                    ],
+                    'settlement_targets' => [[
+                        'transaction_id' => (int) $transaction->id,
+                        'transaction_type' => $transaction->type,
+                    ]],
+                    'lines' => $lines,
+                ]),
+                [
+                    'payment_method' => $payment->method,
+                    'transaction_type' => $transaction->type,
+                ]
+            ),
         ], $lines);
     }
 

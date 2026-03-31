@@ -69,6 +69,7 @@ class CutoverController extends VasBaseController
             'uatPersonas' => $this->cutoverService->uatPersonas($businessId),
             'legacyRoutes' => $this->cutoverService->legacyRouteMappings(),
             'legacyModeOptions' => $this->cutoverService->legacyModeOptions(),
+            'familyModeOptions' => $this->cutoverService->familyModeOptions(),
             'parallelRunOptions' => $this->cutoverService->parallelRunOptions(),
             'rolloutStatusOptions' => $this->cutoverService->rolloutStatusOptions(),
             'branchOptions' => $branchOptions,
@@ -86,9 +87,14 @@ class CutoverController extends VasBaseController
 
         $cutoverSettings = (array) $request->input('cutover_settings', []);
         $cutoverSettings['hide_legacy_accounting_menu'] = $request->boolean('cutover_settings.hide_legacy_accounting_menu');
+        $cutoverSettings['family_modes'] = collect((array) ($cutoverSettings['family_modes'] ?? []))
+            ->map(fn ($value) => (string) $value)
+            ->filter(fn (string $value) => $value !== '')
+            ->all();
 
         $rolloutSettings = (array) $request->input('rollout_settings', []);
         $rolloutSettings['enabled_branch_ids'] = array_values(array_map('intval', (array) ($rolloutSettings['enabled_branch_ids'] ?? [])));
+        $rolloutSettings['enabled_document_families'] = array_values(array_map('strval', (array) ($rolloutSettings['enabled_document_families'] ?? [])));
 
         $this->cutoverService->updateSettings(
             $this->businessId($request),

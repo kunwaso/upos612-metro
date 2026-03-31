@@ -26,7 +26,7 @@
             <div class="card-header">
                 <div class="card-title d-flex flex-column">
                     <span>{{ $group }}</span>
-                    <span class="text-muted fw-semibold fs-8 mt-1">Báo cáo trực tiếp và ảnh chụp báo cáo phục vụ kiểm soát nhóm {{ mb_strtolower($group) }}.</span>
+                    <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.reports.group_subtitle', ['group' => mb_strtolower($group)]) }}</span>
                 </div>
             </div>
             <div class="card-body">
@@ -57,8 +57,8 @@
     <div class="card card-flush">
         <div class="card-header">
             <div class="card-title d-flex flex-column">
-                <span>Ảnh chụp báo cáo gần đây</span>
-                <span class="text-muted fw-semibold fs-8 mt-1">Theo dõi trạng thái tạo báo cáo và mở các kết quả đã sẵn sàng.</span>
+                    <span>{{ __('vasaccounting::lang.views.reports.recent_snapshots.title') }}</span>
+                    <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.reports.recent_snapshots.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body">
@@ -66,11 +66,11 @@
                 <table class="table align-middle table-row-dashed fs-6 gy-5">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Ảnh chụp</th>
-                            <th>Báo cáo</th>
-                            <th>Trạng thái</th>
-                            <th>Thời điểm tạo</th>
-                            <th class="text-end">Thao tác</th>
+                            <th>{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.snapshot') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.report') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.status') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.generated_at') }}</th>
+                            <th class="text-end">{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -88,13 +88,13 @@
                                     @if ($snapshot->status === 'ready')
                                         <a href="{{ route('vasaccounting.reports.snapshots.show', $snapshot->id) }}" class="btn btn-light-primary btn-sm">{{ $vasAccountingUtil->actionLabel('open') }}</a>
                                     @else
-                                        <span class="text-muted fs-8">{{ $snapshot->error_message ?: 'Đang chờ hàng đợi xử lý.' }}</span>
+                                        <span class="text-muted fs-8">{{ $snapshot->error_message ?: __('vasaccounting::lang.views.reports.recent_snapshots.waiting') }}</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-muted">Chưa có ảnh chụp báo cáo nào được đưa vào hàng đợi.</td>
+                                <td colspan="5" class="text-muted">{{ __('vasaccounting::lang.views.reports.recent_snapshots.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -21,6 +21,12 @@ class CutoverServiceTest extends TestCase
             'uat_statuses' => [],
             'last_parity_check_at' => null,
             'last_legacy_redirect_at' => null,
+            'family_modes' => [
+                'payments' => 'legacy',
+                'purchase_ap' => 'legacy',
+                'sales_ar' => 'legacy',
+                'payroll' => 'bridge',
+            ],
         ]);
 
         $service = new CutoverService($util);
@@ -30,9 +36,12 @@ class CutoverServiceTest extends TestCase
         ]);
 
         $this->assertSame('redirect', $merged['legacy_routes_mode']);
+        $this->assertFalse($merged['hide_legacy_accounting_menu']);
         $this->assertTrue($merged['uat_statuses']['accountant']);
         $this->assertFalse($merged['uat_statuses']['cashier']);
         $this->assertArrayHasKey('finance_manager', $merged['uat_statuses']);
+        $this->assertSame('legacy', $merged['family_modes']['payments']);
+        $this->assertSame('bridge', $merged['family_modes']['payroll']);
     }
 
     public function test_legacy_route_mappings_expose_replacement_destinations(): void
@@ -59,6 +68,7 @@ class CutoverServiceTest extends TestCase
             'support_owner' => null,
             'training_notes' => null,
             'enabled_branch_ids' => [],
+            'enabled_document_families' => [],
             'rollout_notes' => null,
         ]);
 
@@ -66,10 +76,12 @@ class CutoverServiceTest extends TestCase
         $merged = $service->mergeRolloutSettings([
             'status' => 'staged',
             'enabled_branch_ids' => ['1', '', 4, 0, '9'],
+            'enabled_document_families' => ['invoice', '', 'payment'],
         ]);
 
         $this->assertSame('staged', $merged['status']);
         $this->assertSame([1, 4, 9], $merged['enabled_branch_ids']);
+        $this->assertSame(['invoice', 'payment'], $merged['enabled_document_families']);
     }
 
     public function test_legacy_route_action_returns_null_in_observe_mode(): void

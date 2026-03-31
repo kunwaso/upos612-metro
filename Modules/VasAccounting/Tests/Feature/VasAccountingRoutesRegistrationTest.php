@@ -21,11 +21,34 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.cash_bank.bank_accounts.store'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.statements.import'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.statements.reconcile'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.index'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.create'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.store'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.show'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.edit'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.update'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.submit'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.approve'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.reject'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.cancel'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.post'));
+        $this->assertTrue($router->has('vasaccounting.payment_documents.reverse'));
         $this->assertTrue($router->has('vasaccounting.receivables.index'));
         $this->assertTrue($router->has('vasaccounting.receivables.allocations.store'));
         $this->assertTrue($router->has('vasaccounting.payables.index'));
         $this->assertTrue($router->has('vasaccounting.payables.allocations.store'));
         $this->assertTrue($router->has('vasaccounting.invoices.index'));
+        $this->assertTrue($router->has('vasaccounting.invoices.create'));
+        $this->assertTrue($router->has('vasaccounting.invoices.store'));
+        $this->assertTrue($router->has('vasaccounting.invoices.show'));
+        $this->assertTrue($router->has('vasaccounting.invoices.edit'));
+        $this->assertTrue($router->has('vasaccounting.invoices.update'));
+        $this->assertTrue($router->has('vasaccounting.invoices.submit'));
+        $this->assertTrue($router->has('vasaccounting.invoices.approve'));
+        $this->assertTrue($router->has('vasaccounting.invoices.reject'));
+        $this->assertTrue($router->has('vasaccounting.invoices.cancel'));
+        $this->assertTrue($router->has('vasaccounting.invoices.post'));
+        $this->assertTrue($router->has('vasaccounting.invoices.reverse'));
         $this->assertTrue($router->has('vasaccounting.inventory.index'));
         $this->assertTrue($router->has('vasaccounting.inventory.warehouses.store'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.store'));
@@ -115,8 +138,20 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.cash_bank.index')->uri()
         );
         $this->assertSame(
+            'vas-accounting/payment-documents',
+            $routes->getByName('vasaccounting.payment_documents.index')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/payment-documents/{voucher}/post',
+            $routes->getByName('vasaccounting.payment_documents.post')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/reports/bank-reconciliation',
             $routes->getByName('vasaccounting.reports.bank_reconciliation')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/invoices/{voucher}/approve',
+            $routes->getByName('vasaccounting.invoices.approve')->uri()
         );
         $this->assertSame(
             'api/vas-accounting/domains',

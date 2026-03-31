@@ -15,7 +15,7 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.closing'),
-        'subtitle' => 'Month-end controls for soft lock, close blockers, reopen approval, and close-packet generation.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     <div class="row g-5 g-xl-10 mb-8">
@@ -30,7 +30,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Soft locked</div>
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.closing.cards.soft_locked') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['soft_locked'] }}</div>
                 </div>
             </div>
@@ -38,7 +38,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Closed periods</div>
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.closing.cards.closed_periods') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['closed'] }}</div>
                 </div>
             </div>
@@ -46,7 +46,7 @@
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">Queued packets</div>
+                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.closing.cards.queued_packets') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ $closingSummary['packets'] }}</div>
                 </div>
             </div>
@@ -55,17 +55,17 @@
 
     <div class="card card-flush mb-8">
         <div class="card-header">
-            <div class="card-title">Close packets</div>
+            <div class="card-title">{{ __('vasaccounting::lang.views.closing.packets.title') }}</div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-5">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Snapshot</th>
-                            <th>Status</th>
-                            <th>Generated</th>
-                            <th class="text-end">Action</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.packets.table.snapshot') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.packets.table.status') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.packets.table.generated') }}</th>
+                            <th class="text-end">{{ __('vasaccounting::lang.views.closing.packets.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,15 +76,15 @@
                                 <td>{{ optional($packet->generated_at)->format('Y-m-d H:i') ?: '-' }}</td>
                                 <td class="text-end">
                                     @if ($packet->status === 'ready')
-                                        <a href="{{ route('vasaccounting.reports.snapshots.show', $packet->id) }}" class="btn btn-light-primary btn-sm">Open</a>
+                                        <a href="{{ route('vasaccounting.reports.snapshots.show', $packet->id) }}" class="btn btn-light-primary btn-sm">{{ $vasAccountingUtil->actionLabel('open') }}</a>
                                     @else
-                                        <span class="text-muted fs-8">Waiting</span>
+                                        <span class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.packets.waiting') }}</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-muted">No close packets have been queued yet.</td>
+                                <td colspan="4" class="text-muted">{{ __('vasaccounting::lang.views.closing.packets.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -96,8 +96,8 @@
     <div class="card card-flush">
         <div class="card-header">
             <div class="card-title d-flex flex-column">
-                <span>Close Control Board</span>
-                <span class="text-muted fw-semibold fs-8 mt-1">Review blockers and run period-level close actions.</span>
+                <span>{{ __('vasaccounting::lang.views.closing.control_board.title') }}</span>
+                <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.closing.control_board.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body">
@@ -105,15 +105,15 @@
                 <table class="table align-middle table-row-dashed fs-6 gy-5">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Period</th>
-                            <th>Status</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.period') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.status') }}</th>
                             <th>{{ $vasAccountingUtil->metricLabel('draft_vouchers') }}</th>
-                            <th>Failures</th>
-                            <th>Pending depreciation</th>
-                            <th>Unreconciled bank</th>
-                            <th>Pending approvals</th>
-                            <th>Checklist</th>
-                            <th class="text-end">Actions</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.failures') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_depreciation') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.unreconciled_bank') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_approvals') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.checklist') }}</th>
+                            <th class="text-end">{{ __('vasaccounting::lang.views.closing.control_board.table.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -140,28 +140,28 @@
                                         @if ($period->status === 'open')
                                             <form method="POST" action="{{ route('vasaccounting.closing.soft_lock', $period->id) }}">
                                                 @csrf
-                                                <button type="submit" class="btn btn-light-warning btn-sm">Soft lock</button>
+                                                <button type="submit" class="btn btn-light-warning btn-sm">{{ $vasAccountingUtil->actionLabel('soft_lock') }}</button>
                                             </form>
                                         @endif
 
                                         @if ($period->status !== 'closed')
                                             <form method="POST" action="{{ route('vasaccounting.closing.close', $period->id) }}">
                                                 @csrf
-                                                <button type="submit" class="btn btn-light-primary btn-sm" {{ $completedChecklistCount !== $periodChecklists->count() ? 'disabled' : '' }}>Close period</button>
+                                                <button type="submit" class="btn btn-light-primary btn-sm" {{ $completedChecklistCount !== $periodChecklists->count() ? 'disabled' : '' }}>{{ __('vasaccounting::lang.views.closing.control_board.actions.close_period') }}</button>
                                             </form>
                                         @endif
 
                                         <form method="POST" action="{{ route('vasaccounting.closing.packet', $period->id) }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-light btn-sm">Queue packet</button>
+                                            <button type="submit" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.actions.queue_packet') }}</button>
                                         </form>
                                     </div>
 
                                     <form method="POST" action="{{ route('vasaccounting.closing.reopen', $period->id) }}" class="mt-3">
                                         @csrf
                                         <div class="input-group input-group-sm">
-                                            <input type="text" name="reason" class="form-control" placeholder="Reason to reopen">
-                                            <button type="submit" class="btn btn-light-danger">Reopen</button>
+                                            <input type="text" name="reason" class="form-control" placeholder="{{ __('vasaccounting::lang.views.closing.control_board.actions.reopen_reason') }}">
+                                            <button type="submit" class="btn btn-light-danger">{{ $vasAccountingUtil->actionLabel('reopen') }}</button>
                                         </div>
                                     </form>
                                 </td>

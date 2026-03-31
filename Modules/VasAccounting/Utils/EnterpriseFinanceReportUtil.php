@@ -137,7 +137,7 @@ class EnterpriseFinanceReportUtil
             ->leftJoin('contacts', 'contacts.id', '=', 'voucher.contact_id')
             ->leftJoin('vas_einvoice_documents as einvoice', 'einvoice.voucher_id', '=', 'voucher.id')
             ->where('voucher.business_id', $businessId)
-            ->whereIn('voucher.voucher_type', ['sales_invoice', 'sales_return', 'purchase_invoice', 'purchase_return', 'expense'])
+            ->whereIn('voucher.voucher_type', ['sales_invoice', 'sales_return', 'sales_credit_note', 'purchase_invoice', 'purchase_return', 'purchase_debit_note', 'expense'])
             ->select(
                 'voucher.id',
                 'voucher.voucher_no',

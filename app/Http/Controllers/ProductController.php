@@ -15,7 +15,10 @@ use App\ProductQuote;
 use App\ProductVariation;
 use App\PurchaseLine;
 use App\SellingPriceGroup;
+use App\StockAdjustmentLine;
 use App\TaxRate;
+use App\Transaction;
+use App\TransactionSellLinesPurchaseLines;
 use App\Unit;
 use App\Utils\ModuleUtil;
 use App\Utils\NumberFormatUtil;
@@ -23,6 +26,7 @@ use App\Utils\ProductActivityLogUtil;
 use App\Utils\ProductCostingUtil;
 use App\Utils\ProductUtil;
 use App\Utils\QuoteDisplayPresenter;
+use App\Utils\TransactionUtil;
 use App\Variation;
 use App\VariationGroupPrice;
 use App\VariationLocationDetails;
@@ -2914,6 +2918,461 @@ class ProductController extends Controller
         return redirect()
             ->route('product.detail', ['id' => $id, 'tab' => 'files'])
             ->with('status', ['success' => 1, 'msg' => __('lang_v1.success')]);
+    }
+
+    public function adjustDetailStock(Request $request, int $id)
+    {
+        if (! auth()->user()->can('product.update')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'location_id' => 'required|integer',
+            'variation_id' => 'required|integer',
+            'target_stock' => 'required|numeric|min:0',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $business_id = (int) $request->session()->get('user.business_id');
+        $user_id = (int) $request->session()->get('user.id');
+
+        $location_id = (int) $validated['location_id'];
+        $variation_id = (int) $validated['variation_id'];
+        $target_stock = (float) $this->productUtil->num_uf($validated['target_stock']);
+        $reason = trim((string) $validated['reason']);
+
+        $permitted_locations = auth()->user()->permitted_locations();
+        if ($permitted_locations !== 'all' && ! in_array($location_id, $permitted_locations)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $location = BusinessLocation::where('business_id', $business_id)
+            ->where('id', $location_id)
+            ->firstOrFail();
+
+        $product = Product::where('business_id', $business_id)
+            ->with('product_tax')
+            ->findOrFail($id);
+
+        if ((int) $product->enable_stock !== 1) {
+            return response()->json([
+                'success' => 0,
+                'msg' => __('messages.something_went_wrong'),
+            ], 422);
+        }
+
+        $variation = Variation::where('product_id', $product->id)
+            ->where('id', $variation_id)
+            ->firstOrFail();
+
+        try {
+            DB::beginTransaction();
+
+            $stock_row = VariationLocationDetails::where('variation_id', $variation_id)
+                ->where('product_id', $product->id)
+                ->where('location_id', $location_id)
+                ->lockForUpdate()
+                ->first();
+
+            $current_stock = (float) ($stock_row->qty_available ?? 0);
+            $delta = round($target_stock - $current_stock, 4);
+
+            if (abs($delta) < 0.0001) {
+                DB::rollBack();
+
+                return response()->json([
+                    'success' => 1,
+                    'msg' => __('lang_v1.success'),
+                    'data' => [
+                        'before_stock' => $current_stock,
+                        'after_stock' => $target_stock,
+                        'delta' => 0,
+                        'mapped_qty' => 0,
+                        'unmapped_qty' => 0,
+                    ],
+                ]);
+            }
+
+            $base_note = $this->buildDirectStockEditNote(
+                $current_stock,
+                $target_stock,
+                $delta,
+                $reason,
+                $location->name ?? ('#' . $location_id)
+            );
+
+            $mapped_qty = 0.0;
+            $unmapped_qty = 0.0;
+            $activity_transaction_type = null;
+            $activity_transaction_id = null;
+
+            if ($delta > 0) {
+                if (! auth()->user()->can('product.opening_stock')) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => 0,
+                        'msg' => __('product.unauthorized_action'),
+                    ], 403);
+                }
+
+                $opening_stock_transaction = $this->createDirectOpeningStockTransaction(
+                    $business_id,
+                    $user_id,
+                    $product,
+                    $variation,
+                    $location_id,
+                    $delta,
+                    $base_note
+                );
+                $activity_transaction_type = 'opening_stock';
+                $activity_transaction_id = (int) $opening_stock_transaction->id;
+            } else {
+                if (! auth()->user()->can('stock_adjustment.create')) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => 0,
+                        'msg' => __('product.unauthorized_action'),
+                    ], 403);
+                }
+
+                $decrease_qty = abs($delta);
+                $adjustment_result = $this->createDirectStockAdjustmentTransaction(
+                    $business_id,
+                    $user_id,
+                    $product,
+                    $variation,
+                    $location_id,
+                    $decrease_qty,
+                    $base_note
+                );
+
+                $mapped_qty = (float) ($adjustment_result['mapped_qty'] ?? 0);
+                $unmapped_qty = (float) ($adjustment_result['unmapped_qty'] ?? 0);
+                $activity_transaction_type = 'stock_adjustment';
+                $activity_transaction_id = (int) ($adjustment_result['transaction_id'] ?? 0);
+            }
+
+            $variation_name = trim((string) ($variation->name ?? ''));
+            $variation_sku = trim((string) ($variation->sub_sku ?? ''));
+            $variation_label_parts = [];
+
+            if ($variation_name !== '' && strcasecmp($variation_name, 'DUMMY') !== 0) {
+                $variation_label_parts[] = $variation_name;
+            }
+
+            if ($variation_sku !== '') {
+                $variation_label_parts[] = '(' . $variation_sku . ')';
+            }
+
+            $variation_label = trim(implode(' ', $variation_label_parts));
+            if ($variation_label === '') {
+                $variation_label = '#' . $variation->id;
+            }
+
+            $activity_description = $this->buildDirectStockActivityDescription(
+                $current_stock,
+                $target_stock,
+                $delta,
+                $reason,
+                $location->name ?? ('#' . $location_id),
+                $variation_label
+            );
+
+            app(ProductActivityLogUtil::class)->log(
+                $business_id,
+                (int) $product->id,
+                ProductActivityLog::ACTION_STOCK_ADJUSTED,
+                $activity_description,
+                $user_id > 0 ? $user_id : (int) auth()->id(),
+                [
+                    'location_id' => $location_id,
+                    'location_name' => $location->name,
+                    'variation_id' => (int) $variation->id,
+                    'variation_name' => $variation_name,
+                    'variation_sub_sku' => $variation_sku,
+                    'before_stock' => $current_stock,
+                    'after_stock' => $target_stock,
+                    'delta' => $delta,
+                    'reason' => $reason,
+                    'mapped_qty' => $mapped_qty,
+                    'unmapped_qty' => $unmapped_qty,
+                    'transaction_type' => $activity_transaction_type,
+                    'transaction_id' => $activity_transaction_id ?: null,
+                ]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => 1,
+                'msg' => __('lang_v1.success'),
+                'data' => [
+                    'before_stock' => $current_stock,
+                    'after_stock' => $target_stock,
+                    'delta' => $delta,
+                    'mapped_qty' => $mapped_qty,
+                    'unmapped_qty' => $unmapped_qty,
+                ],
+            ]);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Direct stock edit failed', [
+                'product_id' => $id,
+                'variation_id' => $variation_id,
+                'location_id' => $location_id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => 0,
+                'msg' => __('messages.something_went_wrong'),
+            ], 500);
+        }
+    }
+
+    private function buildDirectStockActivityDescription(
+        float $before_stock,
+        float $after_stock,
+        float $delta,
+        string $reason,
+        string $location_name,
+        string $variation_label
+    ): string {
+        $before_label = $this->formatDirectStockValue($before_stock);
+        $after_label = $this->formatDirectStockValue($after_stock);
+        $delta_label = $delta > 0
+            ? '+' . $this->formatDirectStockValue($delta)
+            : $this->formatDirectStockValue($delta);
+
+        return trim(sprintf(
+            'Stock adjusted at %s for %s. %s -> %s (%s). Reason: %s',
+            $location_name,
+            $variation_label,
+            $before_label,
+            $after_label,
+            $delta_label,
+            $reason
+        ));
+    }
+
+    private function buildDirectStockEditNote(
+        float $before_stock,
+        float $after_stock,
+        float $delta,
+        string $reason,
+        string $location_name
+    ): string {
+        $delta_label = $delta >= 0 ? '+' . $delta : (string) $delta;
+
+        return trim(implode(' | ', [
+            'Direct stock edit via product detail',
+            'Location: ' . $location_name,
+            'Before: ' . $before_stock,
+            'After: ' . $after_stock,
+            'Delta: ' . $delta_label,
+            'Reason: ' . $reason,
+        ]));
+    }
+
+    private function formatDirectStockValue(float $value): string
+    {
+        if (abs($value) < 0.0001) {
+            return '0';
+        }
+
+        $formatted = number_format($value, 4, '.', '');
+
+        return rtrim(rtrim($formatted, '0'), '.');
+    }
+
+    private function createDirectOpeningStockTransaction(
+        int $business_id,
+        int $user_id,
+        Product $product,
+        Variation $variation,
+        int $location_id,
+        float $quantity,
+        string $note
+    ): Transaction {
+        $tax_percent = (float) (optional($product->product_tax)->amount ?? 0);
+        $tax_id = optional($product->product_tax)->id;
+        $purchase_price = (float) ($variation->default_purchase_price ?? 0);
+        $item_tax = (float) $this->productUtil->calc_percentage($purchase_price, $tax_percent);
+        $purchase_price_inc_tax = $purchase_price + $item_tax;
+
+        $transaction = Transaction::create([
+            'type' => 'opening_stock',
+            'opening_stock_product_id' => $product->id,
+            'status' => 'received',
+            'business_id' => $business_id,
+            'transaction_date' => now()->toDateTimeString(),
+            'additional_notes' => $note,
+            'total_before_tax' => $purchase_price_inc_tax * $quantity,
+            'location_id' => $location_id,
+            'final_total' => $purchase_price_inc_tax * $quantity,
+            'payment_status' => 'paid',
+            'created_by' => $user_id,
+        ]);
+
+        $transaction->purchase_lines()->create([
+            'product_id' => $product->id,
+            'variation_id' => $variation->id,
+            'quantity' => $quantity,
+            'item_tax' => $item_tax,
+            'tax_id' => $tax_id,
+            'pp_without_discount' => $purchase_price,
+            'purchase_price' => $purchase_price,
+            'purchase_price_inc_tax' => $purchase_price_inc_tax,
+        ]);
+
+        $this->productUtil->updateProductQuantity(
+            $location_id,
+            $product->id,
+            $variation->id,
+            $quantity,
+            0,
+            null,
+            false
+        );
+
+        $this->productUtil->adjustStockOverSelling($transaction);
+
+        return $transaction;
+    }
+
+    private function createDirectStockAdjustmentTransaction(
+        int $business_id,
+        int $user_id,
+        Product $product,
+        Variation $variation,
+        int $location_id,
+        float $quantity,
+        string $note
+    ): array {
+        $unit_price = (float) ($variation->default_purchase_price ?? 0);
+        $ref_count = $this->productUtil->setAndGetReferenceCount('stock_adjustment');
+        $ref_no = $this->productUtil->generateReferenceNumber('stock_adjustment', $ref_count);
+
+        $transaction = Transaction::create([
+            'type' => 'stock_adjustment',
+            'business_id' => $business_id,
+            'location_id' => $location_id,
+            'transaction_date' => now()->toDateTimeString(),
+            'adjustment_type' => 'normal',
+            'additional_notes' => $note,
+            'total_amount_recovered' => 0,
+            'final_total' => $unit_price * $quantity,
+            'ref_no' => $ref_no,
+            'created_by' => $user_id,
+        ]);
+
+        /** @var StockAdjustmentLine $line */
+        $line = $transaction->stock_adjustment_lines()->create([
+            'product_id' => $product->id,
+            'variation_id' => $variation->id,
+            'quantity' => $quantity,
+            'unit_price' => $unit_price,
+        ]);
+
+        $mapped_qty = $this->mapDirectStockAdjustmentToPurchases(
+            $business_id,
+            $location_id,
+            $line,
+            (int) $product->id,
+            (int) $variation->id,
+            $quantity
+        );
+
+        $unmapped_qty = round(max(0, $quantity - $mapped_qty), 4);
+        if ($unmapped_qty > 0) {
+            $transaction->additional_notes = trim($transaction->additional_notes . ' | Unmapped Qty: ' . $unmapped_qty);
+            $transaction->save();
+        }
+
+        $this->productUtil->decreaseProductQuantity(
+            $product->id,
+            $variation->id,
+            $location_id,
+            $quantity
+        );
+
+        app(TransactionUtil::class)->activityLog($transaction, 'added', null, [], false);
+
+        return [
+            'mapped_qty' => $mapped_qty,
+            'unmapped_qty' => $unmapped_qty,
+            'transaction_id' => (int) $transaction->id,
+        ];
+    }
+
+    private function mapDirectStockAdjustmentToPurchases(
+        int $business_id,
+        int $location_id,
+        StockAdjustmentLine $line,
+        int $product_id,
+        int $variation_id,
+        float $quantity
+    ): float {
+        $remaining_qty = $quantity;
+        $mapped_rows = [];
+        $timestamp = now();
+
+        $purchase_lines = Transaction::join('purchase_lines as PL', 'transactions.id', '=', 'PL.transaction_id')
+            ->where('transactions.business_id', $business_id)
+            ->where('transactions.location_id', $location_id)
+            ->whereIn('transactions.type', ['purchase', 'purchase_transfer', 'opening_stock', 'production_purchase'])
+            ->where('transactions.status', 'received')
+            ->where('PL.product_id', $product_id)
+            ->where('PL.variation_id', $variation_id)
+            ->whereRaw('(PL.quantity - (COALESCE(PL.quantity_sold, 0) + COALESCE(PL.quantity_adjusted, 0) + COALESCE(PL.quantity_returned, 0) + COALESCE(PL.mfg_quantity_used, 0))) > 0')
+            ->orderBy('transactions.transaction_date', 'asc')
+            ->select(
+                'PL.id as purchase_line_id',
+                'PL.quantity_adjusted',
+                DB::raw('(PL.quantity - (COALESCE(PL.quantity_sold, 0) + COALESCE(PL.quantity_adjusted, 0) + COALESCE(PL.quantity_returned, 0) + COALESCE(PL.mfg_quantity_used, 0))) as quantity_available')
+            )
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($purchase_lines as $purchase_line) {
+            if ($remaining_qty <= 0) {
+                break;
+            }
+
+            $available_qty = (float) $purchase_line->quantity_available;
+            if ($available_qty <= 0) {
+                continue;
+            }
+
+            $allocated_qty = round(min($available_qty, $remaining_qty), 4);
+            if ($allocated_qty <= 0) {
+                continue;
+            }
+
+            PurchaseLine::where('id', $purchase_line->purchase_line_id)->update([
+                'quantity_adjusted' => ((float) $purchase_line->quantity_adjusted) + $allocated_qty,
+            ]);
+
+            $mapped_rows[] = [
+                'sell_line_id' => null,
+                'stock_adjustment_line_id' => $line->id,
+                'purchase_line_id' => $purchase_line->purchase_line_id,
+                'quantity' => $allocated_qty,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+
+            $remaining_qty = round($remaining_qty - $allocated_qty, 4);
+        }
+
+        if (! empty($mapped_rows)) {
+            TransactionSellLinesPurchaseLines::insert($mapped_rows);
+        }
+
+        return round($quantity - max($remaining_qty, 0), 4);
     }
 
     public function downloadDetailFile(int $id, int $media_id)

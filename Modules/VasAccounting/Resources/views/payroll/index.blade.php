@@ -7,43 +7,43 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.payroll'),
-        'subtitle' => 'Bridge Essentials payroll groups into accrual and payment vouchers without leaving the VAS workflow.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     <div class="row g-5 g-xl-8 mb-8">
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-600 fw-semibold fs-7 mb-2">Payroll Groups</div>
+                    <div class="text-gray-600 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.payroll.cards.payroll_groups') }}</div>
                     <div class="text-gray-900 fw-bolder fs-2">{{ number_format((int) $summary['payroll_groups']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Detected from Essentials payroll source data</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.payroll.cards.payroll_groups_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-600 fw-semibold fs-7 mb-2">Bridged Batches</div>
+                    <div class="text-gray-600 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.payroll.cards.bridged_batches') }}</div>
                     <div class="text-gray-900 fw-bolder fs-2">{{ number_format((int) $summary['bridged_batches']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Batches already created in VAS</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.payroll.cards.bridged_batches_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-600 fw-semibold fs-7 mb-2">Accrued Batches</div>
+                    <div class="text-gray-600 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.payroll.cards.accrued_batches') }}</div>
                     <div class="text-gray-900 fw-bolder fs-2">{{ number_format((int) $summary['accrued_batches']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Accrual vouchers posted from payroll groups</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.payroll.cards.accrued_batches_help') }}</div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
-                    <div class="text-gray-600 fw-semibold fs-7 mb-2">Payment Vouchers</div>
+                    <div class="text-gray-600 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.views.payroll.cards.payment_vouchers') }}</div>
                     <div class="text-gray-900 fw-bolder fs-2">{{ number_format((int) $summary['payment_vouchers']) }}</div>
-                    <div class="text-muted fs-8 mt-1">Payroll payment postings in the ledger</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.payroll.cards.payment_vouchers_help') }}</div>
                 </div>
             </div>
         </div>
@@ -52,8 +52,8 @@
     <div class="card card-flush mb-8">
         <div class="card-header align-items-center py-5">
             <div class="card-title d-flex flex-column">
-                <span class="text-gray-900 fw-bold">Payroll Group Bridge Queue</span>
-                <span class="text-muted fs-7">Bridge accruals and payments per payroll group.</span>
+                <span class="text-gray-900 fw-bold">{{ __('vasaccounting::lang.views.payroll.queue.title') }}</span>
+                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.payroll.queue.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body pt-0">
@@ -61,15 +61,15 @@
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Payroll Group</th>
-                            <th>Branch / Month</th>
-                            <th>Employees</th>
-                            <th>Gross</th>
-                            <th>Net</th>
-                            <th>Paid</th>
-                            <th>VAS Batch</th>
-                            <th>Accrual</th>
-                            <th>Payments</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.queue.table.payroll_group') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.queue.table.branch_month') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.employees') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.gross') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.net') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.paid') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.queue.table.vas_batch') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.queue.table.accrual') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.queue.table.payments') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,7 +77,7 @@
                             <tr>
                                 <td>
                                     <div class="text-gray-900 fw-semibold">{{ $row['group_name'] }}</div>
-                                    <div class="text-muted fs-8">Group #{{ $row['payroll_group_id'] }}</div>
+                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.payroll.queue.group_label', ['id' => $row['payroll_group_id']]) }}</div>
                                 </td>
                                 <td>
                                     <div>{{ $row['location_name'] }}</div>
@@ -97,21 +97,21 @@
                                     <form method="POST" action="{{ route('vasaccounting.payroll.bridge') }}" class="d-flex flex-column gap-2">
                                         @csrf
                                         <input type="hidden" name="payroll_group_id" value="{{ $row['payroll_group_id'] }}">
-                                        <button type="submit" class="btn btn-light-primary btn-sm">Bridge Accrual</button>
-                                        <span class="text-muted fs-8">Voucher: {{ $row['accrual_voucher_id'] ?: '-' }}</span>
+                                        <button type="submit" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.payroll.queue.actions.bridge_accrual') }}</button>
+                                        <span class="text-muted fs-8">{{ __('vasaccounting::lang.views.payroll.queue.voucher_label', ['id' => $row['accrual_voucher_id'] ?: '-']) }}</span>
                                     </form>
                                 </td>
                                 <td>
                                     <form method="POST" action="{{ route('vasaccounting.payroll.bridge_payments') }}" class="d-flex flex-column gap-2">
                                         @csrf
                                         <input type="hidden" name="payroll_group_id" value="{{ $row['payroll_group_id'] }}">
-                                        <button type="submit" class="btn btn-light-success btn-sm">Bridge Payments</button>
+                                        <button type="submit" class="btn btn-light-success btn-sm">{{ __('vasaccounting::lang.views.payroll.queue.actions.bridge_payments') }}</button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-muted">No Essentials payroll groups were found for this business.</td>
+                                <td colspan="9" class="text-muted">{{ __('vasaccounting::lang.views.payroll.queue.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -123,8 +123,8 @@
     <div class="card card-flush">
         <div class="card-header align-items-center py-5">
             <div class="card-title d-flex flex-column">
-                <span class="text-gray-900 fw-bold">VAS Payroll Batches</span>
-                <span class="text-muted fs-7">Monitor bridged batch status and voucher references.</span>
+                <span class="text-gray-900 fw-bold">{{ __('vasaccounting::lang.views.payroll.batches.title') }}</span>
+                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.payroll.batches.subtitle') }}</span>
             </div>
         </div>
         <div class="card-body pt-0">
@@ -132,12 +132,12 @@
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Batch</th>
-                            <th>Month / Branch</th>
-                            <th>Gross / Net</th>
-                            <th>Status</th>
-                            <th>Accrual Voucher</th>
-                            <th>Payment Vouchers</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.batch') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.batches.table.month_branch') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.gross') }} / {{ __('vasaccounting::lang.views.shared.net') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.shared.status') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.batches.table.accrual_voucher') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.payroll.batches.table.payment_vouchers') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,12 +145,12 @@
                             @php($batch = $row['batch'])
                             <tr>
                                 <td>
-                                    <div class="text-gray-900 fw-semibold">{{ $batch->reference_no ?: 'Batch #' . $batch->id }}</div>
-                                    <div class="text-muted fs-8">Payroll group #{{ $batch->payroll_group_id ?: '-' }}</div>
+                                    <div class="text-gray-900 fw-semibold">{{ $batch->reference_no ?: __('vasaccounting::lang.views.payroll.batches.reference_fallback', ['id' => $batch->id]) }}</div>
+                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.payroll.batches.group_label', ['id' => $batch->payroll_group_id ?: '-']) }}</div>
                                 </td>
                                 <td>
                                     <div>{{ optional($batch->payroll_month)->format('Y-m') ?: '-' }}</div>
-                                    <div class="text-muted fs-8">{{ optional($batch->businessLocation)->name ?: 'No branch linked' }}</div>
+                                    <div class="text-muted fs-8">{{ optional($batch->businessLocation)->name ?: __('vasaccounting::lang.views.payroll.batches.no_branch') }}</div>
                                 </td>
                                 <td>{{ number_format((float) $batch->gross_total, 2) }} / {{ number_format((float) $batch->net_total, 2) }} {{ $currency }}</td>
                                 <td>
@@ -163,7 +163,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-muted">No payroll batches have been bridged into VAS yet.</td>
+                                <td colspan="6" class="text-muted">{{ __('vasaccounting::lang.views.payroll.batches.empty') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

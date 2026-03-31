@@ -10,7 +10,7 @@
 
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.inventory'),
-        'subtitle' => 'Warehouse masters, movement traceability, and valuation control for inventory accounting.',
+        'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
     @if (session('status.msg'))
@@ -25,12 +25,12 @@
             <div class="card card-flush">
                 <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 py-5">
                     <div>
-                        <div class="text-gray-900 fw-bold fs-5">Inventory Scope</div>
-                        <div class="text-muted fs-7">Summary, movement, and reconciliation cards follow the active location filter.</div>
+                        <div class="text-gray-900 fw-bold fs-5">{{ __('vasaccounting::lang.views.inventory.scope.title') }}</div>
+                        <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.inventory.scope.subtitle') }}</div>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <span class="badge badge-light-primary">Operational workspace</span>
-                        <span class="badge badge-light-info">{{ $selectedLocationLabel ? 'Location: ' . $selectedLocationLabel : 'All locations' }}</span>
+                        <span class="badge badge-light-primary">{{ __('vasaccounting::lang.views.inventory.scope.workspace') }}</span>
+                        <span class="badge badge-light-info">{{ $selectedLocationLabel ? __('vasaccounting::lang.views.cash_bank.scope.location', ['location' => $selectedLocationLabel]) : __('vasaccounting::lang.ui.all_locations') }}</span>
                     </div>
                 </div>
             </div>
@@ -38,58 +38,58 @@
     </div>
 
     <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">SKUs</div><div class="text-gray-900 fw-bold fs-1">{{ $totals['sku_count'] }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">Quantity On Hand</div><div class="text-gray-900 fw-bold fs-1">{{ number_format($totals['quantity_on_hand'], 2) }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">Inventory Value</div><div class="text-gray-900 fw-bold fs-1">{{ number_format($totals['inventory_value'], 2) }}</div><div class="text-muted fs-8">{{ $currency }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">Active Warehouses</div><div class="text-gray-900 fw-bold fs-1">{{ $warehouseSummary['active_warehouses'] }}</div><div class="text-muted fs-8 mt-2">{{ $warehouseSummary['uncovered_locations'] }} uncovered stock location(s).</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">{{ __('vasaccounting::lang.views.inventory.cards.skus') }}</div><div class="text-gray-900 fw-bold fs-1">{{ $totals['sku_count'] }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">{{ __('vasaccounting::lang.views.inventory.cards.quantity_on_hand') }}</div><div class="text-gray-900 fw-bold fs-1">{{ number_format($totals['quantity_on_hand'], 2) }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">{{ __('vasaccounting::lang.views.inventory.cards.inventory_value') }}</div><div class="text-gray-900 fw-bold fs-1">{{ number_format($totals['inventory_value'], 2) }}</div><div class="text-muted fs-8">{{ $currency }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-gray-600 fs-7 fw-semibold">{{ __('vasaccounting::lang.views.inventory.cards.active_warehouses') }}</div><div class="text-gray-900 fw-bold fs-1">{{ $warehouseSummary['active_warehouses'] }}</div><div class="text-muted fs-8 mt-2">{{ __('vasaccounting::lang.views.inventory.cards.uncovered_locations', ['count' => $warehouseSummary['uncovered_locations']]) }}</div></div></div></div>
     </div>
 
     <div class="row g-5 g-xl-10 mb-8">
         <div class="col-xl-4">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Create Warehouse</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.warehouse_form.title') }}</div></div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.inventory.warehouses.store') }}">
                         @csrf
                         <div class="mb-5">
-                            <label class="form-label">Warehouse Code</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.inventory.warehouse_form.warehouse_code') }}</label>
                             <input type="text" name="code" class="form-control form-control-solid" placeholder="WH-HQ" required>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Warehouse Name</label>
-                            <input type="text" name="name" class="form-control form-control-solid" placeholder="Head office warehouse" required>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.inventory.warehouse_form.warehouse_name') }}</label>
+                            <input type="text" name="name" class="form-control form-control-solid" placeholder="{{ __('vasaccounting::lang.views.inventory.warehouse_form.placeholder') }}" required>
                         </div>
                         <div class="mb-6">
-                            <label class="form-label">Branch</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.shared.branch') }}</label>
                             <select name="business_location_id" class="form-select form-select-solid">
-                                <option value="">Select branch</option>
+                                <option value="">{{ __('vasaccounting::lang.views.shared.select_branch') }}</option>
                                 @foreach ($locationOptions as $locationId => $locationLabel)
                                     <option value="{{ $locationId }}">{{ $locationLabel }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">Save warehouse</button>
+                        <button type="submit" class="btn btn-primary btn-sm">{{ __('vasaccounting::lang.views.inventory.warehouse_form.save') }}</button>
                     </form>
                 </div>
             </div>
         </div>
         <div class="col-xl-8">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Warehouse Coverage</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.coverage.title') }}</div></div>
                 <div class="card-body">
                     <div class="row g-5 mb-6">
-                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">Warehouse Masters</div><div class="fw-bold fs-2">{{ $warehouseSummary['warehouse_count'] }}</div></div></div>
-                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">Stock Locations</div><div class="fw-bold fs-2">{{ $warehouseSummary['stock_locations'] }}</div></div></div>
-                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">Discrepancies</div><div class="fw-bold fs-2">{{ $warehouseSummary['warehouse_discrepancies'] }}</div></div></div>
+                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">{{ __('vasaccounting::lang.views.inventory.coverage.warehouse_masters') }}</div><div class="fw-bold fs-2">{{ $warehouseSummary['warehouse_count'] }}</div></div></div>
+                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">{{ __('vasaccounting::lang.views.inventory.coverage.stock_locations') }}</div><div class="fw-bold fs-2">{{ $warehouseSummary['stock_locations'] }}</div></div></div>
+                        <div class="col-md-4"><div class="border border-gray-200 rounded p-5 h-100"><div class="text-muted fs-8 mb-1">{{ __('vasaccounting::lang.views.inventory.coverage.discrepancies') }}</div><div class="fw-bold fs-2">{{ $warehouseSummary['warehouse_discrepancies'] }}</div></div></div>
                     </div>
 
                     @forelse ($warehouses as $warehouse)
                         <div class="border border-gray-200 rounded p-4 mb-3">
                             <div class="fw-bold text-gray-900">{{ $warehouse->code }} - {{ $warehouse->name }}</div>
-                            <div class="text-muted fs-8">{{ optional($warehouse->businessLocation)->name ?: 'Chưa gắn chi nhánh' }} | {{ $vasAccountingUtil->genericStatusLabel((string) $warehouse->status) }}</div>
+                            <div class="text-muted fs-8">{{ optional($warehouse->businessLocation)->name ?: __('vasaccounting::lang.views.inventory.coverage.no_branch') }} | {{ $vasAccountingUtil->genericStatusLabel((string) $warehouse->status) }}</div>
                         </div>
                     @empty
-                        <div class="text-muted">No warehouses configured yet.</div>
+                        <div class="text-muted">{{ __('vasaccounting::lang.views.inventory.coverage.empty') }}</div>
                     @endforelse
                 </div>
             </div>
@@ -99,104 +99,104 @@
     <div class="row g-5 g-xl-10 mb-8">
         <div class="col-xl-5">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Create Warehouse Document</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.document_form.title') }}</div></div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.inventory.documents.store') }}">
                         @csrf
                         <div class="row g-5">
                             <div class="col-md-6">
-                                <label class="form-label">Document Type</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.document_type') }}</label>
                                 <select name="document_type" class="form-select form-select-solid" required>
-                                    <option value="receipt">Receipt</option>
-                                    <option value="issue">Issue</option>
-                                    <option value="transfer">Transfer</option>
-                                    <option value="adjustment">Adjustment</option>
+                                    <option value="receipt">{{ __('vasaccounting::lang.document_types.inventory_receipt') }}</option>
+                                    <option value="issue">{{ __('vasaccounting::lang.document_types.inventory_issue') }}</option>
+                                    <option value="transfer">{{ __('vasaccounting::lang.document_types.inventory_transfer') }}</option>
+                                    <option value="adjustment">{{ __('vasaccounting::lang.document_types.inventory_adjustment') }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Status</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.status') }}</label>
                                 <select name="status" class="form-select form-select-solid">
-                                    <option value="approved">Approved</option>
-                                    <option value="draft">Draft</option>
-                                    <option value="pending_approval">Pending approval</option>
+                                    <option value="approved">{{ __('vasaccounting::lang.document_statuses.approved') }}</option>
+                                    <option value="draft">{{ __('vasaccounting::lang.document_statuses.draft') }}</option>
+                                    <option value="pending_approval">{{ __('vasaccounting::lang.document_statuses.pending_approval') }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Document Date</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.document_date') }}</label>
                                 <input type="date" name="document_date" class="form-control form-control-solid" value="{{ now()->toDateString() }}" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Posting Date</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.posting_date') }}</label>
                                 <input type="date" name="posting_date" class="form-control form-control-solid" value="{{ now()->toDateString() }}" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Branch</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.branch') }}</label>
                                 <select name="business_location_id" class="form-select form-select-solid">
-                                    <option value="">Select branch</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_branch') }}</option>
                                     @foreach ($locationOptions as $locationId => $locationLabel)
                                         <option value="{{ $locationId }}">{{ $locationLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Warehouse</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.warehouse') }}</label>
                                 <select name="warehouse_id" class="form-select form-select-solid" required>
-                                    <option value="">Select warehouse</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_warehouse') }}</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->code }} - {{ $warehouse->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Destination Warehouse</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.destination_warehouse') }}</label>
                                 <select name="destination_warehouse_id" class="form-select form-select-solid">
-                                    <option value="">Select destination</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_destination') }}</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->code }} - {{ $warehouse->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Offset Account</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.offset_account') }}</label>
                                 <select name="offset_account_id" class="form-select form-select-solid">
-                                    <option value="">Use default posting map</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.inventory.document_form.offset_account_default') }}</option>
                                     @foreach ($offsetAccountOptions as $accountId => $accountLabel)
                                         <option value="{{ $accountId }}">{{ $accountLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Product</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.product') }}</label>
                                 <select name="lines[0][product_id]" class="form-select form-select-solid" required>
-                                    <option value="">Select product</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_product') }}</option>
                                     @foreach ($productOptions as $productId => $productLabel)
                                         <option value="{{ $productId }}">{{ $productLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Quantity</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.quantity') }}</label>
                                 <input type="number" step="0.0001" min="0.0001" name="lines[0][quantity]" class="form-control form-control-solid" value="1" required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Unit Cost</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.unit_cost') }}</label>
                                 <input type="number" step="0.0001" min="0" name="lines[0][unit_cost]" class="form-control form-control-solid" value="0" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Adjustment Direction</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.inventory.document_form.adjustment_direction') }}</label>
                                 <select name="lines[0][direction]" class="form-select form-select-solid">
-                                    <option value="">Auto by document</option>
-                                    <option value="increase">Increase</option>
-                                    <option value="decrease">Decrease</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.inventory.document_form.auto_by_document') }}</option>
+                                    <option value="increase">{{ __('vasaccounting::lang.views.inventory.document_form.increase') }}</option>
+                                    <option value="decrease">{{ __('vasaccounting::lang.views.inventory.document_form.decrease') }}</option>
                                 </select>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Description</label>
-                                <textarea name="description" class="form-control form-control-solid" rows="3" placeholder="Warehouse posting note"></textarea>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.description') }}</label>
+                                <textarea name="description" class="form-control form-control-solid" rows="3" placeholder="{{ __('vasaccounting::lang.views.inventory.document_form.description_placeholder') }}"></textarea>
                             </div>
                         </div>
                         <div class="d-flex justify-content-end mt-6">
-                            <button type="submit" class="btn btn-primary btn-sm">Save warehouse document</button>
+                            <button type="submit" class="btn btn-primary btn-sm">{{ __('vasaccounting::lang.views.inventory.document_form.save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -204,13 +204,13 @@
         </div>
         <div class="col-xl-7">
             <div class="card card-flush h-100">
-                <div class="card-header"><div class="card-title">Recent Warehouse Documents</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.recent_documents.title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Document</th><th>Type</th><th>Warehouse</th><th>Status</th><th>Voucher</th><th class="text-end">Action</th>
+                                    <th>{{ __('vasaccounting::lang.views.shared.document') }}</th><th>{{ __('vasaccounting::lang.views.shared.type') }}</th><th>{{ __('vasaccounting::lang.views.inventory.document_form.warehouse') }}</th><th>{{ __('vasaccounting::lang.views.shared.status') }}</th><th>{{ __('vasaccounting::lang.views.shared.voucher') }}</th><th class="text-end">{{ __('vasaccounting::lang.views.shared.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -221,23 +221,23 @@
                                         <td>
                                             {{ optional($document->warehouse)->code ?: '-' }}
                                             @if ($document->destinationWarehouse)
-                                                <div class="text-muted fs-8">To {{ $document->destinationWarehouse->code }}</div>
+                                                <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.inventory.recent_documents.to_destination', ['code' => $document->destinationWarehouse->code]) }}</div>
                                             @endif
                                         </td>
                                         <td><span class="badge {{ $document->status === 'posted' ? 'badge-light-success' : ($document->status === 'reversed' ? 'badge-light-danger' : 'badge-light-warning') }}">{{ $vasAccountingUtil->documentStatusLabel((string) $document->status) }}</span></td>
                                         <td>{{ optional($document->postedVoucher)->voucher_no ?: '-' }}</td>
                                         <td class="text-end">
                                             @if (in_array($document->status, ['draft', 'pending_approval', 'approved'], true))
-                                                <form method="POST" action="{{ route('vasaccounting.inventory.documents.post', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-primary">Post</button></form>
+                                                <form method="POST" action="{{ route('vasaccounting.inventory.documents.post', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-primary">{{ $vasAccountingUtil->actionLabel('post') }}</button></form>
                                             @elseif ($document->status === 'posted')
-                                                <form method="POST" action="{{ route('vasaccounting.inventory.documents.reverse', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-danger">Reverse</button></form>
+                                                <form method="POST" action="{{ route('vasaccounting.inventory.documents.reverse', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-danger">{{ $vasAccountingUtil->actionLabel('reverse') }}</button></form>
                                             @else
-                                                <span class="text-muted fs-8">No action</span>
+                                                <span class="text-muted fs-8">{{ __('vasaccounting::lang.views.inventory.recent_documents.no_action') }}</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" class="text-muted">No warehouse documents have been created yet.</td></tr>
+                                    <tr><td colspan="6" class="text-muted">{{ __('vasaccounting::lang.views.inventory.recent_documents.empty') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -248,11 +248,11 @@
     </div>
 
     <div class="card card-flush mb-8">
-        <div class="card-header"><div class="card-title">Recent Inventory Movement</div></div>
+        <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.movement.title') }}</div></div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
-                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>Date</th><th>Reference</th><th>Type</th><th>Product</th><th>Warehouse Branch</th><th>Qty</th><th>Value</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.shared.date') }}</th><th>{{ __('vasaccounting::lang.views.shared.reference') }}</th><th>{{ __('vasaccounting::lang.views.shared.type') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.product') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.warehouse_branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.qty') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.value') }}</th></tr></thead>
                     <tbody>
                         @forelse ($movementRows as $row)
                             <tr>
@@ -265,7 +265,7 @@
                                 <td>{{ number_format((float) $row->movement_value, 2) }} {{ $currency }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-muted">No recent inventory movement was found.</td></tr>
+                            <tr><td colspan="7" class="text-muted">{{ __('vasaccounting::lang.views.inventory.movement.empty') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -274,16 +274,16 @@
     </div>
 
     <div class="card card-flush mb-8">
-        <div class="card-header"><div class="card-title">Warehouse Reconciliation</div></div>
+        <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.reconciliation.title') }}</div></div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
-                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>Branch</th><th>Warehouse Master</th><th>SKUs</th><th>Qty On Hand</th><th>Inventory Value</th><th>Last Movement</th><th>Status</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.shared.branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.warehouse_master') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.skus') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.qty_on_hand') }}</th><th>{{ __('vasaccounting::lang.views.inventory.cards.inventory_value') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.last_movement') }}</th><th>{{ __('vasaccounting::lang.views.shared.status') }}</th></tr></thead>
                     <tbody>
                         @forelse ($reconciliationRows as $row)
                             <tr>
                                 <td>{{ $row['location_name'] }}</td>
-                                <td>{{ $row['warehouse_code'] ? ($row['warehouse_code'] . ' - ' . $row['warehouse_name']) : 'Missing warehouse master' }}</td>
+                                <td>{{ $row['warehouse_code'] ? ($row['warehouse_code'] . ' - ' . $row['warehouse_name']) : __('vasaccounting::lang.views.inventory.reconciliation.missing_warehouse_master') }}</td>
                                 <td>{{ $row['sku_count'] }}</td>
                                 <td>{{ number_format($row['qty_available'], 2) }}</td>
                                 <td>{{ number_format($row['inventory_value'], 2) }} {{ $currency }}</td>
@@ -291,7 +291,7 @@
                                 <td><span class="badge {{ $row['coverage_status'] === 'aligned' ? 'badge-light-success' : ($row['coverage_status'] === 'missing_master' ? 'badge-light-danger' : 'badge-light-warning') }}">{{ $vasAccountingUtil->coverageStatusLabel((string) $row['coverage_status']) }}</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-muted">No reconciliation rows are available yet.</td></tr>
+                            <tr><td colspan="7" class="text-muted">{{ __('vasaccounting::lang.views.inventory.reconciliation.empty') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -300,23 +300,23 @@
     </div>
 
     <div class="card card-flush">
-        <div class="card-header"><div class="card-title">Inventory Valuation Detail</div></div>
+        <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.valuation.title') }}</div></div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-7 gy-4">
-                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>SKU</th><th>Product</th><th>Branch</th><th>Qty Available</th><th>Average Cost</th><th>Inventory Value</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.inventory.valuation.sku') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.product') }}</th><th>{{ __('vasaccounting::lang.views.shared.branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.valuation.qty_available') }}</th><th>{{ __('vasaccounting::lang.views.inventory.valuation.average_cost') }}</th><th>{{ __('vasaccounting::lang.views.inventory.cards.inventory_value') }}</th></tr></thead>
                     <tbody>
                         @forelse ($rows as $row)
                             <tr>
                                 <td>{{ $row['sku'] }}</td>
                                 <td>{{ $row['product_name'] }}</td>
-                                <td>{{ $row['location_name'] ?: ('Location #' . $row['location_id']) }}</td>
+                                <td>{{ $row['location_name'] ?: __('vasaccounting::lang.views.inventory.valuation.location_fallback', ['id' => $row['location_id']]) }}</td>
                                 <td>{{ number_format($row['qty_available'], 2) }}</td>
                                 <td>{{ number_format($row['average_cost'], 2) }}</td>
                                 <td>{{ number_format($row['inventory_value'], 2) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-muted">No inventory valuation rows available for the selected filter.</td></tr>
+                            <tr><td colspan="6" class="text-muted">{{ __('vasaccounting::lang.views.inventory.valuation.empty') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

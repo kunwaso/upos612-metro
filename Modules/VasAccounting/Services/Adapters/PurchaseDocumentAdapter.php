@@ -50,6 +50,31 @@ class PurchaseDocumentAdapter extends AbstractSourceDocumentAdapter
             'status' => 'posted',
             'currency_code' => 'VND',
             'created_by' => (int) ($transaction->created_by ?? 0),
+            'meta' => $this->metaBuilder()->buildInvoiceMeta([
+                'direction' => 'purchase',
+                'invoice_kind' => 'purchase_invoice',
+                'counterparty_type' => 'vendor',
+                'contact_id' => (int) ($transaction->contact_id ?? 0) ?: null,
+                'document_date' => $transaction->transaction_date,
+                'due_date' => $transaction->transaction_date,
+                'reference' => $transaction->ref_no ?: $transaction->invoice_no,
+                'requires_approval' => false,
+                'legacy_source_type' => 'purchase',
+                'legacy_source_id' => (int) $transaction->id,
+                'business_event_uid' => 'legacy:purchase:' . (int) $transaction->id,
+                'coexistence_mode' => 'parallel',
+                'legacy_links' => [
+                    'transaction_id' => (int) $transaction->id,
+                    'invoice_no' => $transaction->invoice_no,
+                    'ref_no' => $transaction->ref_no,
+                ],
+                'tax_summary' => [
+                    'gross_amount' => $gross,
+                    'net_amount' => $net,
+                    'tax_amount' => $tax,
+                ],
+                'lines' => $lines,
+            ]),
         ], $lines);
     }
 }

@@ -4379,6 +4379,15 @@ class TransactionUtil extends Util
      */
     public function createRecurringInvoice($transaction, $is_draft = false)
     {
+        $nativeSubscriptionBridgeEnabled = (bool) config('vasaccounting.native_document_families.invoice.bridges.subscription_release.enabled', false);
+        if ($nativeSubscriptionBridgeEnabled) {
+            \Log::info('VAS native subscription bridge is enabled; legacy recurring invoice generation remains active until cutover.', [
+                'business_id' => $transaction->business_id,
+                'transaction_id' => $transaction->id,
+                'strategy' => (string) config('vasaccounting.native_document_families.invoice.bridges.subscription_release.strategy', 'legacy_default'),
+            ]);
+        }
+
         $data = $transaction->toArray();
 
         unset($data['id']);
@@ -4417,6 +4426,9 @@ class TransactionUtil extends Util
         }
 
         $data['invoice_no'] = $this->getInvoiceNumber($transaction->business_id, $data['status'], $data['location_id']);
+        if ($nativeSubscriptionBridgeEnabled) {
+            $data['additional_notes'] = trim(((string) ($data['additional_notes'] ?? '')) . ' VAS_NATIVE_BRIDGE_PENDING');
+        }
 
         $recurring_invoice = Transaction::create($data);
 

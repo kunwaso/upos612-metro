@@ -61,6 +61,7 @@ class ProductActivityLogUtil
             ProductActivityLog::ACTION_COMPOSITION_UPDATED => __('product.activity_composition_updated'),
             ProductActivityLog::ACTION_PANTONE_UPDATED => __('product.activity_pantone_updated'),
             ProductActivityLog::ACTION_SALE_ADDED => __('product.activity_sale_added'),
+            ProductActivityLog::ACTION_STOCK_ADJUSTED => __('product.activity_stock_adjusted'),
             ProductActivityLog::ACTION_SUBMITTED_FOR_APPROVAL => __('product.activity_submitted_for_approval'),
             ProductActivityLog::ACTION_APPROVED => __('product.activity_approved'),
             ProductActivityLog::ACTION_REJECTED => __('product.activity_rejected'),

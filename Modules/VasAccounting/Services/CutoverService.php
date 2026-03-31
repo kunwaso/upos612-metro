@@ -46,6 +46,10 @@ class CutoverService
             array_fill_keys(array_keys($this->cutoverPersonaDefinitions()), false),
             array_map(fn ($value) => (bool) $value, (array) ($merged['uat_statuses'] ?? []))
         );
+        $merged['family_modes'] = array_replace(
+            (array) ($defaults['family_modes'] ?? []),
+            (array) ($merged['family_modes'] ?? [])
+        );
 
         return $merged;
     }
@@ -58,6 +62,11 @@ class CutoverService
             ->filter(fn ($value) => $value !== null && $value !== '')
             ->map(fn ($value) => (int) $value)
             ->filter(fn (int $value) => $value > 0)
+            ->values()
+            ->all();
+        $merged['enabled_document_families'] = collect((array) ($merged['enabled_document_families'] ?? []))
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->map(fn ($value) => (string) $value)
             ->values()
             ->all();
 
@@ -172,6 +181,11 @@ class CutoverService
         ];
     }
 
+    public function familyModeOptions(): array
+    {
+        return $this->vasUtil->familyModeOptions();
+    }
+
     public function legacyRoutesMode(int $businessId): string
     {
         return (string) ($this->cutoverSettings($businessId)['legacy_routes_mode'] ?? 'observe');
@@ -238,6 +252,8 @@ class CutoverService
             ['label' => 'Unposted warehouse documents', 'count' => (int) ($warehouseSummary['unposted_documents'] ?? 0)],
             ['label' => 'Warehouse discrepancies', 'count' => (int) ($warehouseSummary['warehouse_discrepancies'] ?? 0)],
             ['label' => 'Provider readiness gaps', 'count' => $providerGaps],
+            ['label' => 'Approval rule gaps', 'count' => $this->approvalRuleGapCount($businessId)],
+            ['label' => 'Coexistence duplicates', 'count' => $this->nativeCoexistenceDuplicateCount($businessId)],
             ['label' => 'Queued integrations', 'count' => $this->countIn('vas_integration_runs', 'status', ['queued', 'processing'], ['business_id' => $businessId])],
             ['label' => 'Pending UAT personas', 'count' => $remainingPersonas],
         ];
@@ -357,6 +373,51 @@ class CutoverService
         }
 
         return (int) $query->count();
+    }
+
+    protected function approvalRuleGapCount(int $businessId): int
+    {
+        if (! Schema::hasTable('vas_approval_rules')) {
+            return count($this->vasUtil->nativeDocumentFamilies());
+        }
+
+        return collect($this->vasUtil->nativeDocumentFamilies())
+            ->filter(function (array $definition, string $family) use ($businessId) {
+                $requiresRule = (bool) data_get(config('vasaccounting.approval_defaults'), "native_document_defaults.{$family}.requires_rule", false);
+                if (! $requiresRule) {
+                    return false;
+                }
+
+                return ! DB::table('vas_approval_rules')
+                    ->where('business_id', $businessId)
+                    ->where('document_family', $family)
+                    ->where('is_active', true)
+                    ->exists();
+            })
+            ->count();
+    }
+
+    protected function nativeCoexistenceDuplicateCount(int $businessId): int
+    {
+        if (! Schema::hasTable('vas_vouchers')) {
+            return 0;
+        }
+
+        $driver = DB::connection()->getDriverName();
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            return 0;
+        }
+
+        $rows = DB::table('vas_vouchers')
+            ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(meta, '$.coexistence.business_event_uid')) as business_event_uid")
+            ->selectRaw('COUNT(*) as duplicate_count')
+            ->where('business_id', $businessId)
+            ->whereRaw("JSON_EXTRACT(meta, '$.coexistence.business_event_uid') IS NOT NULL")
+            ->groupBy('business_event_uid')
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+
+        return $rows->count();
     }
 
     protected function legacyAccountTransactionCount(int $businessId): int

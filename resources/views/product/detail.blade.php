@@ -38,7 +38,10 @@
 <script>
 $(function() {
     var $stockDiv = $('#view_product_stock_details');
-    if ($stockDiv.length && $stockDiv.data('product_id')) {
+    var directStockAdjustUrl = "{{ route('product.detail.stock.adjust', ['id' => $product->id]) }}";
+    var directStockModal = null;
+
+    function loadProductStockDetails() {
         $.ajax({
             url: "{{ action([\App\Http\Controllers\ReportController::class, 'getStockReport']) }}" + '?for=view_product&product_id=' + $stockDiv.data('product_id'),
             dataType: 'html',
@@ -50,6 +53,106 @@ $(function() {
             },
         });
     }
+
+    if ($stockDiv.length && $stockDiv.data('product_id')) {
+        loadProductStockDetails();
+    }
+
+    $(document).on('click', '.btn-open-direct-stock-modal', function () {
+        var modalElement = document.getElementById('directStockEditModal');
+        if (!modalElement) {
+            return;
+        }
+
+        var $btn = $(this);
+        var currentStock = parseFloat($btn.data('current-stock')) || 0;
+        var unit = $btn.data('unit') || '';
+        var productName = $btn.data('product-name') || '-';
+        var locationName = $btn.data('location-name') || '-';
+
+        $('#direct_stock_product_id').val($btn.data('product-id'));
+        $('#direct_stock_variation_id').val($btn.data('variation-id'));
+        $('#direct_stock_location_id').val($btn.data('location-id'));
+        $('#direct_stock_product_name').text(productName);
+        $('#direct_stock_location_name').text(locationName);
+        $('#direct_stock_current').text(currentStock + (unit ? (' ' + unit) : ''));
+        $('#direct_stock_target').val(currentStock);
+        $('#direct_stock_reason').val('');
+
+        if (!directStockModal || directStockModal._element !== modalElement) {
+            directStockModal = (typeof bootstrap.Modal.getOrCreateInstance === 'function')
+                ? bootstrap.Modal.getOrCreateInstance(modalElement)
+                : new bootstrap.Modal(modalElement);
+        }
+        directStockModal.show();
+    });
+
+    $(document).on('click', '#direct_stock_save_btn', function () {
+        var $saveBtn = $(this);
+        var variationId = $('#direct_stock_variation_id').val();
+        var locationId = $('#direct_stock_location_id').val();
+        var reason = ($('#direct_stock_reason').val() || '').trim();
+
+        var targetStock = (typeof __read_number === 'function')
+            ? parseFloat(__read_number($('#direct_stock_target')))
+            : parseFloat($('#direct_stock_target').val());
+
+        if (!variationId || !locationId || isNaN(targetStock) || targetStock < 0 || !reason) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error("@lang('messages.required')");
+            }
+            return;
+        }
+
+        var originalBtnHtml = $saveBtn.html();
+        $saveBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+        $.ajax({
+            url: directStockAdjustUrl,
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                _token: '{{ csrf_token() }}',
+                variation_id: variationId,
+                location_id: locationId,
+                target_stock: targetStock,
+                reason: reason
+            },
+            success: function (res) {
+                if (res && res.success) {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.msg || "@lang('lang_v1.success')");
+                    }
+                    if (directStockModal) {
+                        directStockModal.hide();
+                    }
+                    loadProductStockDetails();
+                } else if (typeof toastr !== 'undefined') {
+                    toastr.error((res && res.msg) ? res.msg : "@lang('messages.something_went_wrong')");
+                }
+            },
+            error: function (xhr) {
+                var message = "@lang('messages.something_went_wrong')";
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.msg) {
+                        message = xhr.responseJSON.msg;
+                    } else if (xhr.responseJSON.errors) {
+                        var firstField = Object.keys(xhr.responseJSON.errors)[0];
+                        if (firstField && xhr.responseJSON.errors[firstField][0]) {
+                            message = xhr.responseJSON.errors[firstField][0];
+                        }
+                    }
+                }
+
+                if (typeof toastr !== 'undefined') {
+                    toastr.error(message);
+                }
+            },
+            complete: function () {
+                $saveBtn.prop('disabled', false).html(originalBtnHtml);
+            }
+        });
+    });
 });
 </script>
 

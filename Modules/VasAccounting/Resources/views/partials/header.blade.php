@@ -12,11 +12,11 @@
                         <div class="d-flex flex-wrap gap-2">
                             <span class="badge badge-light-dark">{{ data_get($vasAccountingBusinessContext ?? [], 'label', $vasAccountingUtil->uiLabel('business_scope')) }}</span>
                             <span class="badge badge-{{ data_get($vasAccountingPageMeta ?? [], 'badge_variant', 'light-primary') }}">
-                                {{ data_get($vasAccountingPageMeta ?? [], 'section_label', 'VAS Accounting') }}
+                                {{ data_get($vasAccountingPageMeta ?? [], 'section_label', __('vasaccounting::lang.module_name')) }}
                             </span>
                             @if (data_get($vasAccountingCurrentPeriod ?? [], 'name'))
                                 <span class="badge badge-light-info">
-                                    {{ data_get($vasAccountingCurrentPeriod, 'name') }}
+                                    {{ $vasAccountingUtil->localizedPeriodName((string) data_get($vasAccountingCurrentPeriod, 'name')) }}
                                 </span>
                             @endif
                             @if (data_get($vasAccountingCurrentPeriod ?? [], 'status'))
@@ -40,9 +40,9 @@
                                 <div>
                                     <div class="text-muted fs-8 fw-semibold text-uppercase mb-1">{{ $vasAccountingUtil->uiLabel('period_window') }}</div>
                                     <div class="text-gray-800 fw-semibold fs-7">
-                                        {{ \Carbon\Carbon::parse((string) data_get($vasAccountingCurrentPeriod, 'start_date'))->format('d M Y') }}
+                                        {{ \Carbon\Carbon::parse((string) data_get($vasAccountingCurrentPeriod, 'start_date'))->locale(app()->getLocale())->translatedFormat('d M Y') }}
                                         -
-                                        {{ \Carbon\Carbon::parse((string) data_get($vasAccountingCurrentPeriod, 'end_date'))->format('d M Y') }}
+                                        {{ \Carbon\Carbon::parse((string) data_get($vasAccountingCurrentPeriod, 'end_date'))->locale(app()->getLocale())->translatedFormat('d M Y') }}
                                     </div>
                                 </div>
                                 <div>

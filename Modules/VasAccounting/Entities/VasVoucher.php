@@ -41,4 +41,25 @@ class VasVoucher extends BaseVasModel
     {
         return $this->hasMany(VasJournalEntry::class, 'voucher_id');
     }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(VasDocumentApproval::class, 'entity_id')
+            ->where('entity_type', self::class)
+            ->orderBy('step_no');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(VasDocumentAuditLog::class, 'entity_id')
+            ->where('entity_type', self::class)
+            ->latest('id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(VasDocumentAttachment::class, 'entity_id')
+            ->where('entity_type', self::class)
+            ->latest('id');
+    }
 }

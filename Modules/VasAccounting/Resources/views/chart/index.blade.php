@@ -32,7 +32,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.statutory_accounts') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ data_get($bootstrapStatus, 'system_account_count', 0) }}</div>
-                    <div class="text-muted fs-8 mt-1">Standard VAS base accounts</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.chart.cards.statutory_accounts') }}</div>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.manual_accounts') }}</div>
                     <div class="text-gray-900 fw-bold fs-2">{{ data_get($bootstrapStatus, 'manual_account_count', 0) }}</div>
-                    <div class="text-muted fs-8 mt-1">Business-defined extensions</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.chart.cards.manual_accounts') }}</div>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                 <div class="card-body">
                     <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.bootstrap_status') }}</div>
                     <div class="text-gray-900 fw-bold fs-6">{{ data_get($bootstrapStatus, 'needs_bootstrap') ? __('vasaccounting::lang.bootstrap_needed') : __('vasaccounting::lang.bootstrap_ready') }}</div>
-                    <div class="text-muted fs-8 mt-1">Current chart initialization state</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.chart.cards.bootstrap_status') }}</div>
                 </div>
             </div>
         </div>
@@ -61,8 +61,8 @@
             <div class="card card-flush">
                 <div class="card-header">
                     <div class="card-title d-flex flex-column">
-                        <span>Account Register</span>
-                        <span class="text-muted fw-semibold fs-8 mt-1">All accounts available for posting and reporting.</span>
+                        <span>{{ __('vasaccounting::lang.views.chart.register.title') }}</span>
+                        <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.chart.register.subtitle') }}</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -70,13 +70,13 @@
                         <table class="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Level</th>
-                                    <th>Balance</th>
-                                    <th>Origin</th>
-                                    <th>Status</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.code') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.name') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.type') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.level') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.balance') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.origin') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.chart.table.status') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,7 +92,7 @@
                                                 {{ $account->is_system ? __('vasaccounting::lang.origin_statutory') : __('vasaccounting::lang.origin_manual') }}
                                             </span>
                                         </td>
-                                        <td><span class="badge {{ $account->is_active ? 'badge-light-success' : 'badge-light-danger' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                        <td><span class="badge {{ $account->is_active ? 'badge-light-success' : 'badge-light-danger' }}">{{ $account->is_active ? __('vasaccounting::lang.generic_statuses.active') : __('vasaccounting::lang.generic_statuses.inactive') }}</span></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -105,37 +105,37 @@
         <div class="col-xl-4">
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Add Account</div>
+                    <div class="card-title">{{ __('vasaccounting::lang.views.chart.form.title') }}</div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.chart.store') }}">
                         @csrf
                         <div class="mb-5">
-                            <label class="form-label required">Account code</label>
+                            <label class="form-label required">{{ __('vasaccounting::lang.views.chart.form.account_code') }}</label>
                             <input type="text" class="form-control form-control-solid" name="account_code">
                         </div>
                         <div class="mb-5">
-                            <label class="form-label required">Account name</label>
+                            <label class="form-label required">{{ __('vasaccounting::lang.views.chart.form.account_name') }}</label>
                             <input type="text" class="form-control form-control-solid" name="account_name">
                         </div>
                         <div class="mb-5">
-                            <label class="form-label required">Account type</label>
+                            <label class="form-label required">{{ __('vasaccounting::lang.views.chart.form.account_type') }}</label>
                             <input type="text" class="form-control form-control-solid" name="account_type">
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Category</label>
+                            <label class="form-label">{{ __('vasaccounting::lang.views.chart.form.category') }}</label>
                             <input type="text" class="form-control form-control-solid" name="account_category">
                         </div>
                         <div class="mb-5">
-                            <label class="form-label required">Normal balance</label>
+                            <label class="form-label required">{{ __('vasaccounting::lang.views.chart.form.normal_balance') }}</label>
                             <select class="form-select form-select-solid" name="normal_balance">
-                                <option value="debit">Debit</option>
-                                <option value="credit">Credit</option>
+                                <option value="debit">{{ $vasAccountingUtil->normalBalanceLabel('debit') }}</option>
+                                <option value="credit">{{ $vasAccountingUtil->normalBalanceLabel('credit') }}</option>
                             </select>
                         </div>
                         <div class="mb-5">
-                            <label class="form-label">Parent account</label>
-                            <select class="form-select form-select-solid select2" name="parent_id" data-control="select2" data-placeholder="Select parent account">
+                            <label class="form-label">{{ __('vasaccounting::lang.views.chart.form.parent_account') }}</label>
+                            <select class="form-select form-select-solid select2" name="parent_id" data-control="select2" data-placeholder="{{ __('vasaccounting::lang.views.shared.select_parent_account') }}">
                                 <option value=""></option>
                                 @foreach ($parentOptions as $parentAccount)
                                     <option value="{{ $parentAccount->id }}">
@@ -146,7 +146,7 @@
                             <div class="text-muted fs-8 mt-2">{{ __('vasaccounting::lang.manual_extension_hint') }}</div>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Save account</button>
+                            <button type="submit" class="btn btn-primary">{{ __('vasaccounting::lang.views.chart.form.save') }}</button>
                         </div>
                     </form>
                 </div>

@@ -139,6 +139,16 @@ Use this exact handoff so tools complement each other instead of overlapping:
 4. **Before commit** -> run `gitnexus_detect_changes` to confirm affected scope and execution-flow impact.
 5. **If semantic degrades** (`NOT_INDEXED`, `STALE`, `EMBEDDER_UNAVAILABLE`) -> fallback immediately to `gitnexus` + `grep` + `read_file_cache` + `laravel_mysql`.
 
+### 5.1a) Hard Search Routing
+
+Use this strict split unless the current host lacks the named tool:
+
+1. Exact lookup (ID, selector, symbol, route, translation key, literal string, regex) -> `grep` first.
+2. Behavior/architecture lookup with unknown symbol -> semantic search only if health/index says `READY`.
+3. If semantic is `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE` -> skip semantic immediately and continue with `grep` + `read_file_cache`.
+4. Do not use shell `rg`/`grep` for discovery while a repo-aware grep tool exists; only use shell search as last fallback when the host exposes no repo-aware grep/search tool.
+5. For mixed tasks, semantic may shortlist candidates, but confirm concrete edit locations with `grep` before editing.
+
 Session-start check:
 
 1. Keep exact startup commands centralized in `mcp/CODEX-SETUP.md`.
