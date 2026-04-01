@@ -62,7 +62,7 @@ return [
         'o2c_v2' => false,
         'inventory_v2' => false,
         'treasury_v2' => false,
-        'expense_v2' => false,
+        'expense_v2' => true,
         'assets_v2' => false,
         'payroll_v2' => false,
         'tax_v2' => false,
@@ -141,6 +141,36 @@ return [
                 'posting_mode' => 'manual',
                 'required_counterparty' => false,
                 'allowed_parent_types' => [],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+        ],
+        'expense_management' => [
+            'expense_claim' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => ['advance_request'],
+                'allowed_child_types' => ['reimbursement_voucher', 'advance_settlement'],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'advance_request' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => ['expense_claim', 'advance_settlement'],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'advance_settlement' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => ['advance_request', 'expense_claim'],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'reimbursement_voucher' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => ['expense_claim'],
                 'allowed_child_types' => [],
                 'postable_workflow_statuses' => ['approved'],
             ],
@@ -248,6 +278,34 @@ return [
                 'accounting_status' => 'closed',
             ],
         ],
+        'expense_claim' => [
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'advance_request' => [
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'advance_settlement' => [
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'reimbursement_voucher' => [
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
     ],
     'finance_matching' => [
         'supplier_invoice' => [
@@ -302,6 +360,119 @@ return [
             'default_policy_code' => 'FINANCE_DOCUMENT_DEFAULT',
             'default_step_role' => 'finance_manager',
             'default_permission_code' => 'vasaccounting.finance_documents.approve',
+        ],
+        'expense_document_policies' => [
+            'expense_claim' => [
+                'maker_checker' => true,
+                'tiers' => [
+                    [
+                        'max_amount' => 5000000,
+                        'policy_code' => 'EXPENSE_CLAIM_STANDARD',
+                        'steps' => [
+                            [
+                                'approver_role' => 'branch_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Branch expense review',
+                            ],
+                        ],
+                    ],
+                    [
+                        'min_amount' => 5000000.0001,
+                        'policy_code' => 'EXPENSE_CLAIM_HIGH_VALUE',
+                        'steps' => [
+                            [
+                                'approver_role' => 'branch_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Branch expense review',
+                            ],
+                            [
+                                'approver_role' => 'finance_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Finance approval',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'advance_request' => [
+                'maker_checker' => true,
+                'tiers' => [
+                    [
+                        'max_amount' => 10000000,
+                        'policy_code' => 'ADVANCE_REQUEST_STANDARD',
+                        'steps' => [
+                            [
+                                'approver_role' => 'branch_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Branch cash advance review',
+                            ],
+                        ],
+                    ],
+                    [
+                        'min_amount' => 10000000.0001,
+                        'policy_code' => 'ADVANCE_REQUEST_HIGH_VALUE',
+                        'steps' => [
+                            [
+                                'approver_role' => 'branch_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Branch cash advance review',
+                            ],
+                            [
+                                'approver_role' => 'finance_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Finance cash control review',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'advance_settlement' => [
+                'maker_checker' => true,
+                'tiers' => [
+                    [
+                        'policy_code' => 'ADVANCE_SETTLEMENT_STANDARD',
+                        'steps' => [
+                            [
+                                'approver_role' => 'finance_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Settlement validation',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'reimbursement_voucher' => [
+                'maker_checker' => true,
+                'tiers' => [
+                    [
+                        'max_amount' => 5000000,
+                        'policy_code' => 'REIMBURSEMENT_STANDARD',
+                        'steps' => [
+                            [
+                                'approver_role' => 'finance_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Finance reimbursement review',
+                            ],
+                        ],
+                    ],
+                    [
+                        'min_amount' => 5000000.0001,
+                        'policy_code' => 'REIMBURSEMENT_HIGH_VALUE',
+                        'steps' => [
+                            [
+                                'approver_role' => 'branch_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Branch reimbursement review',
+                            ],
+                            [
+                                'approver_role' => 'finance_manager',
+                                'permission_code' => 'vas_accounting.expenses.manage',
+                                'label' => 'Finance reimbursement review',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ],
         'native_document_defaults' => [
             'invoice' => [
@@ -610,6 +781,22 @@ return [
                 ['title' => 'Warehouse masters', 'description' => 'Track warehouse structures alongside branch locations for inventory accounting.'],
                 ['title' => 'Movement accounting', 'description' => 'Receipts, issues, adjustments, and transfers map cleanly into the ledger.'],
                 ['title' => 'Close-ready valuation', 'description' => 'Inventory valuation remains reproducible by period and warehouse.'],
+            ],
+        ],
+        'expenses' => [
+            'route' => 'vasaccounting.expenses.index',
+            'path' => 'expenses',
+            'permission' => 'vas_accounting.expenses.manage',
+            'title' => 'Expense Management',
+            'nav_label' => 'Expenses',
+            'subtitle' => 'Expense claims, employee advances, settlements, reimbursements, and dimension-aware cost capture.',
+            'record_table' => 'vas_fin_documents',
+            'document_family' => 'expense_management',
+            'record_label' => 'Expense documents',
+            'capabilities' => [
+                ['title' => 'Native employee expense flows', 'description' => 'Expense claims and advances move through the same canonical finance document workflow as other operational documents.'],
+                ['title' => 'Dimension-aware cost capture', 'description' => 'Department, cost center, project, and branch tagging are preserved on the finance document line for later reporting.'],
+                ['title' => 'Posting-ready claims and reimbursements', 'description' => 'Claims, settlements, and reimbursements can post straight through the finance-core engine with tax and traceability.'],
             ],
         ],
         'tools' => [
@@ -1144,6 +1331,23 @@ return [
             'supports_location_filter' => true,
             'quick_actions' => [
                 ['route' => 'vasaccounting.reports.inventory', 'label' => 'Inventory report', 'style' => 'light-primary'],
+            ],
+        ],
+        'vasaccounting.expenses.index' => [
+            'title' => 'Expense Management',
+            'nav_label' => 'Expenses',
+            'subtitle' => 'Native expense claims, employee advances, settlements, and reimbursements on the finance-core workflow.',
+            'icon' => 'ki-outline ki-wallet',
+            'section_group' => 'operations',
+            'permission' => 'vas_accounting.expenses.manage',
+            'feature_flag' => 'expense_v2',
+            'show_in_nav' => true,
+            'nav_sort' => 55,
+            'active_pattern' => 'vasaccounting.expenses.*',
+            'supports_location_filter' => true,
+            'quick_actions' => [
+                ['route' => 'vasaccounting.reports.payables', 'label' => 'Payables report', 'style' => 'light-primary'],
+                ['route' => 'vasaccounting.cash_bank.index', 'label' => 'Cash & bank', 'style' => 'light-warning'],
             ],
         ],
         'vasaccounting.tools.index' => [

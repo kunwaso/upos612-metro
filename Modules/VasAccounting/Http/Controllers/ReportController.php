@@ -74,6 +74,16 @@ class ReportController extends VasBaseController
         return $this->renderReport($request, 'invoice_register');
     }
 
+    public function expenseOutstanding(Request $request)
+    {
+        return $this->renderReport($request, 'expense_outstanding');
+    }
+
+    public function expenseRegister(Request $request)
+    {
+        return $this->renderReport($request, 'expense_register');
+    }
+
     public function inventory(Request $request)
     {
         return $this->renderReport($request, 'inventory');

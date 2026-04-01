@@ -27,6 +27,7 @@ use App\Utils\ProductCostingUtil;
 use App\Utils\ProductUtil;
 use App\Utils\QuoteDisplayPresenter;
 use App\Utils\TransactionUtil;
+use App\Utils\Util;
 use App\Variation;
 use App\VariationGroupPrice;
 use App\VariationLocationDetails;
@@ -2922,7 +2923,8 @@ class ProductController extends Controller
 
     public function adjustDetailStock(Request $request, int $id)
     {
-        if (! auth()->user()->can('product.update')) {
+        $business_id = (int) $request->session()->get('user.business_id');
+        if (! $this->canDirectStockEdit(auth()->user(), $business_id)) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -2933,7 +2935,6 @@ class ProductController extends Controller
             'reason' => 'required|string|max:1000',
         ]);
 
-        $business_id = (int) $request->session()->get('user.business_id');
         $user_id = (int) $request->session()->get('user.id');
 
         $location_id = (int) $validated['location_id'];
@@ -3131,6 +3132,20 @@ class ProductController extends Controller
                 'msg' => __('messages.something_went_wrong'),
             ], 500);
         }
+    }
+
+    private function canDirectStockEdit($user, int $business_id): bool
+    {
+        if (empty($user) || $business_id <= 0) {
+            return false;
+        }
+
+        if (! app(Util::class)->is_admin($user, $business_id)) {
+            return false;
+        }
+
+        return $user->can('product.update')
+            && ($user->can('product.opening_stock') || $user->can('stock_adjustment.create'));
     }
 
     private function buildDirectStockActivityDescription(

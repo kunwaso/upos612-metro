@@ -8,6 +8,7 @@ use Modules\VasAccounting\Application\DTOs\DocumentCreateData;
 use Modules\VasAccounting\Application\DTOs\DocumentUpdateData;
 use Modules\VasAccounting\Contracts\ApprovalWorkflowServiceInterface;
 use Modules\VasAccounting\Contracts\DocumentMatchingServiceInterface;
+use Modules\VasAccounting\Contracts\ExpenseSettlementServiceInterface;
 use Modules\VasAccounting\Contracts\FinanceDocumentServiceInterface;
 use Modules\VasAccounting\Contracts\OrderToCashLifecycleServiceInterface;
 use Modules\VasAccounting\Domain\AuditCompliance\Models\FinanceAuditEvent;
@@ -23,7 +24,8 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
         protected ApprovalWorkflowServiceInterface $approvalWorkflowService,
         protected DocumentWorkflowService $documentWorkflowService,
         protected DocumentMatchingServiceInterface $documentMatchingService,
-        protected OrderToCashLifecycleServiceInterface $orderToCashLifecycleService
+        protected OrderToCashLifecycleServiceInterface $orderToCashLifecycleService,
+        protected ExpenseSettlementServiceInterface $expenseSettlementService
     ) {
     }
 
@@ -32,12 +34,14 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
         return DB::transaction(function () use ($data) {
             $this->documentWorkflowService->validateDocumentDefinition($data->attributes);
             $this->documentWorkflowService->validateLinks($data->attributes, $data->links);
+            $this->expenseSettlementService->validateCreatePayload($data->attributes, $data->links);
             $document = FinanceDocument::query()->create($data->attributes);
 
             $this->syncLines($document, $data->lines);
             $this->syncLinks($document, $data->links);
             $this->recordHistory($document, 'created', null, $document->workflow_status, null, $document->accounting_status);
             $this->recordAudit($document, 'document.created', null, null, ['attributes' => $data->attributes]);
+            $this->expenseSettlementService->syncDocumentChain($document);
 
             return $document->fresh(['lines', 'statusHistory']);
         });
@@ -61,6 +65,7 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
             }
 
             $this->recordAudit($document, 'document.updated', null, $before, $document->fresh()->toArray());
+            $this->expenseSettlementService->syncDocumentChain($document);
 
             return $document->fresh(['lines', 'statusHistory']);
         });
@@ -102,18 +107,31 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
                 throw new RuntimeException('Only submitted finance documents can be approved.');
             }
 
-            $this->approvalWorkflowService->approve($document, $context);
+            $approvalInstance = $this->approvalWorkflowService->approve($document, $context);
 
             $oldWorkflowStatus = $document->workflow_status;
             $oldAccountingStatus = $document->accounting_status;
-            $document->workflow_status = 'approved';
-            $document->accounting_status = $this->documentWorkflowService->approvalAccountingStatus($document);
-            $document->approved_at = now();
-            $document->approved_by = $context->userId();
-            $document->save();
+            if ($approvalInstance->status === 'approved') {
+                $document->workflow_status = 'approved';
+                $document->accounting_status = $this->documentWorkflowService->approvalAccountingStatus($document);
+                $document->approved_at = now();
+                $document->approved_by = $context->userId();
+                $document->save();
 
-            $this->recordHistory($document, 'approved', $oldWorkflowStatus, 'approved', $oldAccountingStatus, $document->accounting_status, $context);
-            $this->recordAudit($document, 'document.approved', $context, $before, $document->fresh()->toArray());
+                $this->recordHistory($document, 'approved', $oldWorkflowStatus, 'approved', $oldAccountingStatus, $document->accounting_status, $context);
+                $this->recordAudit($document, 'document.approved', $context, $before, $document->fresh()->toArray());
+            } else {
+                $this->recordHistory(
+                    $document,
+                    'approval_progressed',
+                    $oldWorkflowStatus,
+                    $document->workflow_status,
+                    $oldAccountingStatus,
+                    $document->accounting_status,
+                    $context
+                );
+                $this->recordAudit($document, 'document.approval_progressed', $context, $before, $document->fresh()->toArray());
+            }
 
             return $document->fresh(['lines', 'statusHistory', 'approvalInstances.steps']);
         });
@@ -201,6 +219,7 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
                 $context
             );
             $this->recordAudit($document, 'document.' . $eventName, $context, $before, $document->fresh()->toArray());
+            $this->expenseSettlementService->syncDocumentChain($document, $context);
 
             return $document->fresh(['lines', 'statusHistory']);
         });
@@ -236,6 +255,7 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
 
             $document = $document->fresh(['lines', 'statusHistory', 'approvalInstances.steps']);
             $this->orderToCashLifecycleService->syncDocumentChain($document, $context);
+            $this->expenseSettlementService->syncDocumentChain($document, $context);
 
             return $document->fresh(['lines', 'statusHistory', 'approvalInstances.steps']);
         });

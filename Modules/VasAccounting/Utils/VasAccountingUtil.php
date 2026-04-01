@@ -953,6 +953,7 @@ class VasAccountingUtil
         $recordTable = (string) ($config['record_table'] ?? '');
         $recordLabel = (string) ($config['record_label'] ?? 'Records');
         $providerConfigKey = (string) ($config['provider_config_key'] ?? '');
+        $documentFamily = (string) ($config['document_family'] ?? '');
 
         $records = 0;
         if ($recordTable !== '' && Schema::hasTable($recordTable)) {
@@ -960,6 +961,10 @@ class VasAccountingUtil
 
             if ($recordTable === 'vas_vouchers') {
                 $query->where('module_area', $domain);
+            }
+
+            if ($recordTable === 'vas_fin_documents' && $documentFamily !== '') {
+                $query->where('document_family', $documentFamily);
             }
 
             $records = (int) $query->count();

@@ -5,6 +5,7 @@ namespace Modules\VasAccounting\Tests\Unit;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Modules\VasAccounting\Contracts\DocumentTraceServiceInterface;
+use Modules\VasAccounting\Contracts\ExpenseSettlementServiceInterface;
 use Modules\VasAccounting\Contracts\InventoryCostServiceInterface;
 use Modules\VasAccounting\Contracts\OpenItemServiceInterface;
 use Modules\VasAccounting\Contracts\OrderToCashLifecycleServiceInterface;
@@ -47,6 +48,7 @@ class PostingRuleEngineServiceTest extends TestCase
             Mockery::mock(InventoryCostServiceInterface::class),
             Mockery::mock(OpenItemServiceInterface::class),
             Mockery::mock(OrderToCashLifecycleServiceInterface::class),
+            Mockery::mock(ExpenseSettlementServiceInterface::class),
             new DocumentWorkflowService(),
         ])->makePartial()->shouldAllowMockingProtectedMethods();
         $service->shouldReceive('resolveRuleSet')->once()->andReturnNull();

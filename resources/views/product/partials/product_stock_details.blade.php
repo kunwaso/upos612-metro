@@ -1,5 +1,6 @@
 @php
-    $canDirectEditStock = auth()->user()->can('product.update')
+    $canDirectEditStock = !empty($is_org_admin)
+        && auth()->user()->can('product.update')
         && (auth()->user()->can('product.opening_stock') || auth()->user()->can('stock_adjustment.create'));
 @endphp
 

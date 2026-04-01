@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
 
 class EnterpriseFinanceReportUtil
 {
@@ -179,6 +180,66 @@ class EnterpriseFinanceReportUtil
 
                 return $row;
             });
+    }
+
+    public function expenseRegisterRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_family', 'expense_management')
+            ->whereIn('document_type', ['expense_claim', 'advance_request', 'advance_settlement', 'reimbursement_voucher'])
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'open_amount',
+                'currency_code',
+                'meta',
+            ]);
+    }
+
+    public function expenseOutstandingRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_family', 'expense_management')
+            ->whereIn('document_type', ['expense_claim', 'advance_request'])
+            ->where('open_amount', '>', 0)
+            ->whereNotIn('workflow_status', ['cancelled', 'closed'])
+            ->whereNotIn('accounting_status', ['reversed', 'cancelled'])
+            ->orderByDesc('open_amount')
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'open_amount',
+                'currency_code',
+                'meta',
+            ]);
     }
 
     public function salesVatBook(int $businessId): Collection

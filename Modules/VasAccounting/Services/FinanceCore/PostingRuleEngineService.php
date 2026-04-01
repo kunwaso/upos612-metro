@@ -11,6 +11,7 @@ use Modules\VasAccounting\Application\DTOs\PostingResult;
 use Modules\VasAccounting\Application\DTOs\ReversalContext;
 use Modules\VasAccounting\Contracts\AccountDerivationServiceInterface;
 use Modules\VasAccounting\Contracts\DocumentTraceServiceInterface;
+use Modules\VasAccounting\Contracts\ExpenseSettlementServiceInterface;
 use Modules\VasAccounting\Contracts\InventoryCostServiceInterface;
 use Modules\VasAccounting\Contracts\OpenItemServiceInterface;
 use Modules\VasAccounting\Contracts\OrderToCashLifecycleServiceInterface;
@@ -34,6 +35,7 @@ class PostingRuleEngineService implements PostingRuleEngineInterface
         protected InventoryCostServiceInterface $inventoryCostService,
         protected OpenItemServiceInterface $openItemService,
         protected OrderToCashLifecycleServiceInterface $orderToCashLifecycleService,
+        protected ExpenseSettlementServiceInterface $expenseSettlementService,
         protected DocumentWorkflowService $documentWorkflowService
     ) {
     }
@@ -174,6 +176,7 @@ class PostingRuleEngineService implements PostingRuleEngineInterface
             $this->openItemService->syncPostedDocument($document->fresh(), $event->fresh('lines'), $context);
             $this->inventoryCostService->syncPostedDocument($document->fresh(), $event->fresh('lines'), $context);
             $this->orderToCashLifecycleService->syncDocumentChain($document->fresh(), $context);
+            $this->expenseSettlementService->syncDocumentChain($document->fresh(), $context);
             $this->recordAudit($document, $event, $journal, 'posting.posted', $context);
 
             return new PostingResult($event->fresh('lines'), $journal->fresh('lines'), $preview->warnings);
@@ -291,6 +294,7 @@ class PostingRuleEngineService implements PostingRuleEngineInterface
             $this->openItemService->reverseDocument($document->fresh(), $reversalEvent->fresh('lines'), $context);
             $this->inventoryCostService->reverseDocument($document->fresh(), $reversalEvent->fresh('lines'), $context);
             $this->orderToCashLifecycleService->syncDocumentChain($document->fresh(), $context);
+            $this->expenseSettlementService->syncDocumentChain($document->fresh(), $context);
             $this->recordAudit($document, $reversalEvent, $reversalJournal, 'posting.reversed', $context);
 
             return new PostingResult($reversalEvent->fresh('lines'), $reversalJournal->fresh('lines'));

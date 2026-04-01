@@ -9,6 +9,7 @@ use Modules\VasAccounting\Services\Adapters\LocalTaxExportAdapter;
 use Modules\VasAccounting\Services\Adapters\NullBankStatementImportAdapter;
 use Modules\VasAccounting\Services\Adapters\PaymentDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\SandboxEInvoiceAdapter;
+use Modules\VasAccounting\Services\Adapters\StockAdjustmentDocumentAdapter;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 use Tests\TestCase;
 
@@ -94,6 +95,7 @@ class EnterpriseAdapterWorkflowTest extends TestCase
         $payload = $adapter->toVoucherPayload((object) [
             'id' => 20,
             'transaction_id' => 10,
+            'transaction_no' => 'INV-0010',
             'method' => 'bank_transfer',
             'amount' => 1000,
             'paid_on' => '2026-03-28',
@@ -104,6 +106,69 @@ class EnterpriseAdapterWorkflowTest extends TestCase
         $this->assertSame('bank_receipt', $payload['voucher_type']);
         $this->assertSame('bank_receipt', $payload['sequence_key']);
         $this->assertSame('PMT-100', $payload['external_reference']);
+    }
+
+    public function test_stock_adjustment_adapter_builds_delete_payload_from_snapshot_context(): void
+    {
+        $vasUtil = Mockery::mock(VasAccountingUtil::class);
+        $vasUtil->shouldReceive('getOrCreateBusinessSettings')
+            ->once()
+            ->andReturn(new VasBusinessSetting([
+                'posting_map' => [
+                    'stock_adjustment' => 632,
+                    'inventory' => 156,
+                ],
+            ]));
+
+        $adapter = new class($vasUtil) extends StockAdjustmentDocumentAdapter {
+            protected function resolveAmount($transaction, array $snapshot, int $sourceId, int $businessId, bool $isDeleted): float
+            {
+                return (float) ($snapshot['final_total'] ?? 0);
+            }
+        };
+
+        $payload = $adapter->toVoucherPayload((object) ['id' => 91], [
+            'is_deleted' => true,
+            'source_snapshot' => [
+                'id' => 91,
+                'business_id' => 7,
+                'location_id' => 3,
+                'transaction_date' => '2026-03-29',
+                'ref_no' => 'SA-00091',
+                'created_by' => 11,
+                'final_total' => 1500.5,
+            ],
+        ]);
+
+        $this->assertSame(7, $payload['business_id']);
+        $this->assertSame('stock_adjustment', $payload['source_type']);
+        $this->assertSame(91, $payload['source_id']);
+        $this->assertSame(3, $payload['business_location_id']);
+        $this->assertSame('2026-03-29', $payload['posting_date']);
+        $this->assertSame('SA-00091', $payload['reference']);
+        $this->assertCount(2, $payload['lines']);
+        $this->assertSame(632, $payload['lines'][0]['account_id']);
+        $this->assertSame(1500.5, $payload['lines'][0]['debit']);
+        $this->assertSame(156, $payload['lines'][1]['account_id']);
+        $this->assertSame(1500.5, $payload['lines'][1]['credit']);
+    }
+
+    public function test_stock_adjustment_adapter_requires_source_identifiers(): void
+    {
+        $adapter = new class(Mockery::mock(VasAccountingUtil::class)) extends StockAdjustmentDocumentAdapter {
+            protected function resolveAmount($transaction, array $snapshot, int $sourceId, int $businessId, bool $isDeleted): float
+            {
+                return 0;
+            }
+        };
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Stock adjustment payload is missing required source identifiers.');
+
+        $adapter->toVoucherPayload((object) ['id' => 0], [
+            'is_deleted' => true,
+            'source_snapshot' => [],
+        ]);
     }
 
     public function test_essentials_payroll_bridge_adapter_builds_payroll_batch_payload(): void
@@ -166,6 +231,7 @@ class EnterpriseAdapterWorkflowTest extends TestCase
         $payload = $adapter->toVoucherPayload((object) [
             'id' => 44,
             'transaction_id' => 10,
+            'transaction_no' => 'PAYROLL-0010',
             'method' => 'bank_transfer',
             'amount' => 5000,
             'paid_on' => '2026-03-28',

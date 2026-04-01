@@ -61,6 +61,8 @@ class CashBankController extends VasBaseController
         $closePeriod = $closeScope['period'];
         $periodStart = $closeScope['start_date'];
         $periodEnd = $closeScope['end_date'];
+        $workspaceFocus = $this->workspaceFocus($request);
+        $exceptionStatuses = $this->treasuryExceptionStatuses($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -107,6 +109,9 @@ class CashBankController extends VasBaseController
                 ->whereIn('document_type', ['cash_transfer', 'bank_transfer', 'petty_cash_expense'])
                 ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
                 ->when($periodStart || $periodEnd, fn ($query) => $this->applyDocumentDateScope($query, $periodStart, $periodEnd))
+                ->when($workspaceFocus === 'pending_documents', function ($query) {
+                    $query->whereIn('workflow_status', ['draft', 'submitted', 'approved']);
+                })
                 ->latest('document_date')
                 ->latest('id')
                 ->take(12)
@@ -127,6 +132,11 @@ class CashBankController extends VasBaseController
                 })
                 ->when($periodStart, fn ($query) => $query->whereDate('transaction_date', '>=', $periodStart))
                 ->when($periodEnd, fn ($query) => $query->whereDate('transaction_date', '<=', $periodEnd))
+                ->when($workspaceFocus === 'treasury_exceptions', function ($query) use ($exceptionStatuses) {
+                    $query->whereHas('treasuryException', function ($exceptionQuery) use ($exceptionStatuses) {
+                        $exceptionQuery->whereIn('status', $exceptionStatuses);
+                    });
+                })
                 ->orderByDesc('transaction_date')
                 ->orderByDesc('id')
                 ->get()
@@ -155,6 +165,13 @@ class CashBankController extends VasBaseController
         $treasuryExceptionQueue = Schema::hasTable('vas_fin_treasury_exceptions')
             ? $this->treasuryExceptionService->queue($businessId, 8, $selectedLocationId)
             : [];
+
+        if ($workspaceFocus === 'treasury_exceptions') {
+            $treasuryExceptionQueue = collect($treasuryExceptionQueue)
+                ->filter(fn ($exception) => in_array((string) ($exception['status'] ?? 'open'), $exceptionStatuses, true))
+                ->values()
+                ->all();
+        }
 
         if (Schema::hasTable('vas_fin_treasury_exceptions') && ($periodStart || $periodEnd)) {
             $treasuryExceptionSummary = [
@@ -241,6 +258,9 @@ class CashBankController extends VasBaseController
             'locationOptions' => BusinessLocation::forDropdown($businessId),
             'selectedLocationId' => $selectedLocationId,
             'closePeriod' => $closePeriod,
+            'workspaceFocus' => $workspaceFocus,
+            'workspaceFocusLabel' => $this->workspaceFocusLabel($workspaceFocus),
+            'exceptionStatusFilter' => $exceptionStatuses,
             'chartOptions' => $this->vasUtil->chartOptions($businessId),
             'providerOptions' => $this->vasUtil->providerOptions('bank_statement_import_adapters'),
             'defaultProvider' => (string) (((array) $settings->integration_settings)['bank_statement_provider'] ?? 'manual'),
@@ -297,13 +317,9 @@ class CashBankController extends VasBaseController
                 ]]
             ));
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_saved', ['document' => $document->document_no])]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_saved', ['document' => $document->document_no])]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -320,9 +336,7 @@ class CashBankController extends VasBaseController
             'status' => $request->input('status', 'active'),
         ]);
 
-        return redirect()
-            ->route('vasaccounting.cash_bank.index')
-            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.cashbook_saved')]);
+        return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.cashbook_saved')]);
     }
 
     public function storeBankAccount(StoreBankAccountRequest $request): RedirectResponse
@@ -341,9 +355,7 @@ class CashBankController extends VasBaseController
             'status' => $request->input('status', 'active'),
         ]);
 
-        return redirect()
-            ->route('vasaccounting.cash_bank.index')
-            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.bank_account_saved')]);
+        return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.bank_account_saved')]);
     }
 
     public function importStatement(StoreBankStatementImportRequest $request): RedirectResponse
@@ -386,9 +398,7 @@ class CashBankController extends VasBaseController
         $this->treasuryExceptionService->refreshForImport($statementImport->fresh('lines'), $businessId);
         $this->refreshStatementImportStatus($statementImport->fresh('lines'));
 
-        return redirect()
-            ->route('vasaccounting.cash_bank.index')
-            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_imported')]);
+        return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.statement_imported')]);
     }
 
     public function reconcileLine(UpdateBankStatementLineRequest $request, int $line): RedirectResponse
@@ -428,9 +438,7 @@ class CashBankController extends VasBaseController
             ? 'statement_line_reconciled'
             : ($matchStatus === 'ignored' ? 'statement_line_ignored' : 'statement_line_cleared');
 
-        return redirect()
-            ->route('vasaccounting.cash_bank.index')
-            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.' . $messageKey)]);
+        return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.' . $messageKey)]);
     }
 
     public function reconcileLineCanonically(TreasuryReconciliationActionRequest $request, int $line): RedirectResponse
@@ -474,13 +482,9 @@ class CashBankController extends VasBaseController
             );
             $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reconciled')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reconciled')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -510,13 +514,9 @@ class CashBankController extends VasBaseController
             );
             $this->refreshStatementImportStatus($reconciliationModel->statementLine->statementImport->fresh('lines'));
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reversal_completed')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reversal_completed')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -536,13 +536,9 @@ class CashBankController extends VasBaseController
             $this->treasuryExceptionService->refreshForStatementLine($lineModel, $businessId, $actionContext);
             $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_refreshed')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_refreshed')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -575,13 +571,9 @@ class CashBankController extends VasBaseController
             $this->treasuryExceptionService->refreshForStatementLine($lineModel->fresh(), $businessId, $actionContext);
             $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_ignored')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_ignored')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -598,13 +590,9 @@ class CashBankController extends VasBaseController
                 $this->treasuryActionContext($request, $businessId, 'Cash/bank native treasury document submitted')
             );
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_submitted')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_submitted')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -621,13 +609,9 @@ class CashBankController extends VasBaseController
                 $this->treasuryActionContext($request, $businessId, 'Cash/bank native treasury document approved')
             );
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_approved')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_approved')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -653,13 +637,9 @@ class CashBankController extends VasBaseController
                 )
             );
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_posted')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_posted')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -685,13 +665,9 @@ class CashBankController extends VasBaseController
                 )
             );
 
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_reversed')]);
+            return $this->redirectBackToCashBank($request, ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_reversed')]);
         } catch (\Throwable $exception) {
-            return redirect()
-                ->route('vasaccounting.cash_bank.index')
-                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+            return $this->redirectBackToCashBank($request, ['success' => false, 'msg' => $exception->getMessage()]);
         }
     }
 
@@ -792,6 +768,20 @@ class CashBankController extends VasBaseController
             ->findOrFail($documentId);
     }
 
+    protected function redirectBackToCashBank(Request $request, array $status): RedirectResponse
+    {
+        $previousUrl = url()->previous();
+        $cashBankUrl = route('vasaccounting.cash_bank.index');
+
+        if ($previousUrl && str_starts_with($previousUrl, $cashBankUrl)) {
+            return redirect()->to($previousUrl)->with('status', $status);
+        }
+
+        return redirect()
+            ->route('vasaccounting.cash_bank.index', $this->cashBankIndexQuery($request))
+            ->with('status', $status);
+    }
+
     protected function closeScope(Request $request, int $businessId): array
     {
         $periodId = (int) $request->query('period_id', 0);
@@ -812,6 +802,49 @@ class CashBankController extends VasBaseController
             'start_date' => optional(optional($period)->start_date)->toDateString(),
             'end_date' => optional(optional($period)->end_date)->toDateString(),
         ];
+    }
+
+    protected function cashBankIndexQuery(Request $request): array
+    {
+        return array_filter([
+            'period_id' => $request->query('period_id'),
+            'focus' => $this->workspaceFocus($request),
+            'exception_status' => $request->query('exception_status'),
+        ], fn ($value) => filled($value));
+    }
+
+    protected function workspaceFocus(Request $request): ?string
+    {
+        $focus = (string) $request->query('focus', '');
+
+        return in_array($focus, ['pending_documents', 'treasury_exceptions'], true)
+            ? $focus
+            : null;
+    }
+
+    protected function workspaceFocusLabel(?string $focus): ?string
+    {
+        return match ($focus) {
+            'pending_documents' => 'Pending treasury documents',
+            'treasury_exceptions' => 'Treasury reconciliation exceptions',
+            default => null,
+        };
+    }
+
+    protected function treasuryExceptionStatuses(Request $request): array
+    {
+        $raw = collect(explode(',', (string) $request->query('exception_status', '')))
+            ->map(fn ($status) => trim((string) $status))
+            ->filter()
+            ->values();
+
+        $allowed = ['open', 'suggested', 'ignored', 'resolved'];
+
+        $statuses = $raw->isEmpty()
+            ? ['open', 'suggested']
+            : $raw->filter(fn ($status) => in_array($status, $allowed, true))->values()->all();
+
+        return $statuses === [] ? ['open', 'suggested'] : $statuses;
     }
 
     protected function applyDocumentDateScope($query, ?string $periodStart, ?string $periodEnd)

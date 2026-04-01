@@ -37,6 +37,8 @@ class EnterpriseReportingService
             'receivables' => ['title' => 'Receivables Aging', 'route' => 'vasaccounting.reports.receivables', 'description' => 'Outstanding customer invoices and aging.', 'group' => 'Subledger'],
             'payables' => ['title' => 'Payables Aging', 'route' => 'vasaccounting.reports.payables', 'description' => 'Outstanding vendor bills and aging.', 'group' => 'Subledger'],
             'invoice_register' => ['title' => 'Invoice Register', 'route' => 'vasaccounting.reports.invoice_register', 'description' => 'Sales and purchase invoice register with e-invoice status.', 'group' => 'Subledger'],
+            'expense_outstanding' => ['title' => 'Expense Outstanding', 'route' => 'vasaccounting.reports.expense_outstanding', 'description' => 'Open employee advances and unresolved expense claims.', 'group' => 'Subledger'],
+            'expense_register' => ['title' => 'Expense Register', 'route' => 'vasaccounting.reports.expense_register', 'description' => 'Native expense claims, advances, settlements, and reimbursements.', 'group' => 'Operations'],
             'inventory' => ['title' => 'Inventory Valuation', 'route' => 'vasaccounting.reports.inventory', 'description' => 'Weighted-average inventory reporting.', 'group' => 'Operations'],
             'fixed_assets' => ['title' => 'Fixed Asset Register', 'route' => 'vasaccounting.reports.fixed_assets', 'description' => 'Capitalized assets and depreciation.', 'group' => 'Operations'],
             'payroll_bridge' => ['title' => 'Payroll Bridge', 'route' => 'vasaccounting.reports.payroll_bridge', 'description' => 'Essentials payroll groups and bridge status.', 'group' => 'Planning'],
@@ -81,6 +83,8 @@ class EnterpriseReportingService
             'receivables' => $this->receivables($businessId),
             'payables' => $this->payables($businessId),
             'invoice_register' => $this->invoiceRegister($businessId),
+            'expense_outstanding' => $this->expenseOutstanding($businessId),
+            'expense_register' => $this->expenseRegister($businessId),
             'inventory' => $this->inventory($businessId),
             'fixed_assets' => $this->fixedAssets($businessId),
             'payroll_bridge' => $this->payrollBridge($businessId),
@@ -221,6 +225,88 @@ class EnterpriseReportingService
         );
     }
 
+    protected function expenseOutstanding(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->expenseOutstandingRows($businessId);
+
+        return $this->dataset(
+            'Expense Outstanding',
+            ['Document', 'Type', 'Claimant', 'Posting Date', 'Outstanding', 'Settlement Status', 'Linked Context'],
+            $rows->map(function ($document) {
+                $expense = (array) data_get($document->meta, 'expense', []);
+                $expenseChain = (array) data_get($document->meta, 'expense_chain', []);
+
+                return [
+                    $document->document_no ?: ('#' . $document->id),
+                    $document->document_type,
+                    $expense['claimant_name'] ?? 'Unassigned',
+                    optional($document->posting_date)->format('Y-m-d') ?: optional($document->document_date)->format('Y-m-d') ?: '-',
+                    $this->money($document->open_amount) . ' ' . $document->currency_code,
+                    strtoupper((string) ($expenseChain['settlement_status'] ?? 'open')),
+                    $expenseChain['linked_advance_document_no']
+                        ?? (($expenseChain['linked_claim_count'] ?? null) !== null
+                            ? 'Linked claims: ' . $expenseChain['linked_claim_count']
+                            : '-'),
+                ];
+            }),
+            [
+                ['label' => 'Outstanding total', 'value' => $this->money($rows->sum('open_amount'))],
+                ['label' => 'Open advances', 'value' => $rows->where('document_type', 'advance_request')->count()],
+                ['label' => 'Open claims', 'value' => $rows->where('document_type', 'expense_claim')->count()],
+            ]
+        );
+    }
+
+    protected function expenseRegister(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->expenseRegisterRows($businessId);
+
+        return $this->dataset(
+            'Expense Register',
+            ['Document', 'Type', 'Claimant', 'Document Date', 'Posting Date', 'Gross Amount', 'Open Amount', 'Workflow', 'Accounting'],
+            $rows->map(function ($document) {
+                $expense = (array) data_get($document->meta, 'expense', []);
+
+                return [
+                    $document->document_no ?: ('#' . $document->id),
+                    $document->document_type,
+                    $expense['claimant_name'] ?? 'Unassigned',
+                    optional($document->document_date)->format('Y-m-d') ?: '-',
+                    optional($document->posting_date)->format('Y-m-d') ?: '-',
+                    $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                    $this->money($document->open_amount) . ' ' . $document->currency_code,
+                    ucfirst((string) $document->workflow_status),
+                    ucfirst((string) $document->accounting_status),
+                ];
+            }),
+            [
+                ['label' => 'Documents', 'value' => $rows->count()],
+                ['label' => 'Posted docs', 'value' => $rows->where('workflow_status', 'posted')->count()],
+                ['label' => 'Gross total', 'value' => $this->money($rows->sum('gross_amount'))],
+            ],
+            [
+                [
+                    'title' => 'Expense Document Mix',
+                    'subtitle' => 'Track how claims, advances, settlements, and reimbursements are flowing through the native expense workspace.',
+                    'columns' => ['Type', 'Documents', 'Gross Total', 'Open Total'],
+                    'rows' => $rows
+                        ->groupBy('document_type')
+                        ->map(function ($documents, $documentType) {
+                            return [
+                                $documentType,
+                                $documents->count(),
+                                $this->money($documents->sum('gross_amount')),
+                                $this->money($documents->sum('open_amount')),
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No expense documents have been posted into the native register yet.',
+                ],
+            ]
+        );
+    }
+
     protected function inventory(int $businessId): array
     {
         $rows = collect($this->inventoryValuationService->summaries($businessId));
@@ -333,6 +419,7 @@ class EnterpriseReportingService
         $blockers = $this->periodCloseService->blockers($businessId, $period);
         $checklists = $this->periodCloseService->checklistForPeriod($businessId, $period);
         $treasuryInsights = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
+        $expenseInsights = $this->periodCloseService->expenseCloseInsights($businessId, $period);
         $blockedCount = collect($blockers)->reduce(function ($carry, $value, $key) {
             if ($key === 'posting_map_incomplete') {
                 return $carry + ($value ? 1 : 0);
@@ -351,6 +438,8 @@ class EnterpriseReportingService
                 ['label' => 'Blocked items', 'value' => $blockedCount],
                 ['label' => 'Pending treasury docs', 'value' => $blockers['pending_treasury_documents']],
                 ['label' => 'Treasury exceptions', 'value' => $blockers['unreconciled_bank_lines']],
+                ['label' => 'Pending expense docs', 'value' => $blockers['pending_expense_documents']],
+                ['label' => 'Outstanding expense balances', 'value' => $blockers['outstanding_expense_documents']],
             ],
             [
                 [
@@ -381,6 +470,36 @@ class EnterpriseReportingService
                         ];
                     })->values()->all(),
                     'empty' => 'No treasury reconciliation exceptions are blocking close for this period.',
+                ],
+                [
+                    'title' => 'Pending Expense Documents',
+                    'subtitle' => 'Native expense documents in the close period that still need workflow or posting action.',
+                    'columns' => ['Document', 'Type', 'Workflow', 'Accounting', 'Amount'],
+                    'rows' => $expenseInsights['pending_documents']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            $document->document_type,
+                            ucfirst((string) $document->workflow_status),
+                            ucfirst((string) $document->accounting_status),
+                            $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No expense documents are blocking close for this period.',
+                ],
+                [
+                    'title' => 'Outstanding Expense Balances',
+                    'subtitle' => 'Posted advances and claims that still carry unresolved open amounts through the period end.',
+                    'columns' => ['Document', 'Type', 'Claimant', 'Outstanding', 'Status'],
+                    'rows' => $expenseInsights['outstanding_documents']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            $document->document_type,
+                            data_get($document->meta, 'expense.claimant_name') ?: 'Unassigned',
+                            $this->money($document->open_amount) . ' ' . $document->currency_code,
+                            strtoupper((string) data_get($document->meta, 'expense_chain.settlement_status', 'open')),
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No expense advances or claims remain outstanding through the period end.',
                 ],
             ]
         );

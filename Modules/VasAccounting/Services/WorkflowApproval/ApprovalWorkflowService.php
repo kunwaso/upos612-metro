@@ -14,7 +14,10 @@ use RuntimeException;
 
 class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
 {
-    public function __construct(protected MakerCheckerGuard $makerCheckerGuard)
+    public function __construct(
+        protected MakerCheckerGuard $makerCheckerGuard,
+        protected ExpenseApprovalPolicyResolver $expenseApprovalPolicyResolver
+    )
     {
     }
 
@@ -33,30 +36,38 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
                 return $existing;
             }
 
+            $policy = $this->resolvePolicy($document);
+
             $instance = FinanceApprovalInstance::query()->create([
                 'business_id' => $document->business_id,
                 'document_id' => $document->id,
-                'policy_code' => config('vasaccounting.approval_defaults.finance_document_defaults.default_policy_code'),
+                'policy_code' => $policy['policy_code'],
                 'status' => 'pending',
                 'current_step_no' => 1,
                 'started_at' => now(),
                 'meta' => [
                     'document_family' => $document->document_family,
                     'document_type' => $document->document_type,
+                    'maker_checker' => $policy['maker_checker'],
+                    'threshold_max_amount' => $policy['threshold_max_amount'],
+                    'threshold_min_amount' => $policy['threshold_min_amount'],
                 ],
             ]);
 
-            FinanceApprovalStep::query()->create([
-                'business_id' => $document->business_id,
-                'approval_instance_id' => $instance->id,
-                'step_no' => 1,
-                'approver_role' => config('vasaccounting.approval_defaults.finance_document_defaults.default_step_role'),
-                'permission_code' => config('vasaccounting.approval_defaults.finance_document_defaults.default_permission_code'),
-                'status' => 'pending',
-                'meta' => [
-                    'submitted_by' => $context->userId(),
-                ],
-            ]);
+            foreach ($policy['steps'] as $index => $step) {
+                FinanceApprovalStep::query()->create([
+                    'business_id' => $document->business_id,
+                    'approval_instance_id' => $instance->id,
+                    'step_no' => (int) $step['step_no'],
+                    'approver_role' => $step['approver_role'],
+                    'permission_code' => $step['permission_code'],
+                    'status' => $index === 0 ? 'pending' : 'queued',
+                    'meta' => [
+                        'submitted_by' => $context->userId(),
+                        'label' => $step['label'],
+                    ],
+                ]);
+            }
 
             $this->recordAudit($document, 'workflow.started', $context, null, [
                 'approval_instance_id' => $instance->id,
@@ -99,9 +110,21 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
             $step->approver_user_id = $step->approver_user_id ?: $context->userId();
             $step->save();
 
-            $instance->status = 'approved';
-            $instance->current_step_no = $step->step_no;
-            $instance->completed_at = now();
+            $nextStep = $instance->steps->firstWhere('status', 'queued');
+
+            if ($nextStep) {
+                $nextStep->status = 'pending';
+                $nextStep->save();
+
+                $instance->status = 'in_progress';
+                $instance->current_step_no = $nextStep->step_no;
+                $instance->completed_at = null;
+            } else {
+                $instance->status = 'approved';
+                $instance->current_step_no = $step->step_no;
+                $instance->completed_at = now();
+            }
+
             $instance->save();
 
             $this->recordAudit($document, 'workflow.approved', $context, [
@@ -109,8 +132,9 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
                 'previous_status' => 'pending',
             ], [
                 'approval_instance_id' => $instance->id,
-                'status' => 'approved',
+                'status' => $instance->status,
                 'approved_step_no' => $step->step_no,
+                'next_step_no' => $nextStep?->step_no,
             ]);
 
             return $instance->fresh('steps');
@@ -165,5 +189,26 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
             'meta' => $context->meta(),
             'acted_at' => now(),
         ]);
+    }
+
+    protected function resolvePolicy(FinanceDocument $document): array
+    {
+        $expensePolicy = $this->expenseApprovalPolicyResolver->resolve($document);
+        if ($expensePolicy !== null && $expensePolicy['steps'] !== []) {
+            return $expensePolicy;
+        }
+
+        return [
+            'policy_code' => (string) config('vasaccounting.approval_defaults.finance_document_defaults.default_policy_code'),
+            'maker_checker' => (bool) config('vasaccounting.approval_defaults.finance_document_defaults.maker_checker', true),
+            'threshold_max_amount' => null,
+            'threshold_min_amount' => null,
+            'steps' => [[
+                'step_no' => 1,
+                'approver_role' => config('vasaccounting.approval_defaults.finance_document_defaults.default_step_role'),
+                'permission_code' => config('vasaccounting.approval_defaults.finance_document_defaults.default_permission_code'),
+                'label' => null,
+            ]],
+        ];
     }
 }

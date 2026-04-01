@@ -33,7 +33,10 @@ class PhaseSevenServicesTest extends TestCase
 
         $this->assertTrue($service->supports('close_packet'));
         $this->assertTrue($service->supports('operational_health'));
+        $this->assertTrue($service->supports('expense_register'));
+        $this->assertTrue($service->supports('expense_outstanding'));
         $this->assertSame('Close Packet', $service->definition('close_packet')['title']);
+        $this->assertSame('Expense Register', $service->definition('expense_register')['title']);
     }
 
     public function test_integration_hub_service_parses_bank_statement_lines(): void

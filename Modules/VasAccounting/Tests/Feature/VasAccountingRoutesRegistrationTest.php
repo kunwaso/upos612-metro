@@ -63,6 +63,12 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.inventory.documents.store'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.post'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.reverse'));
+        $this->assertTrue($router->has('vasaccounting.expenses.index'));
+        $this->assertTrue($router->has('vasaccounting.expenses.store'));
+        $this->assertTrue($router->has('vasaccounting.expenses.submit'));
+        $this->assertTrue($router->has('vasaccounting.expenses.approve'));
+        $this->assertTrue($router->has('vasaccounting.expenses.post'));
+        $this->assertTrue($router->has('vasaccounting.expenses.reverse'));
         $this->assertTrue($router->has('vasaccounting.tools.index'));
         $this->assertTrue($router->has('vasaccounting.tools.store'));
         $this->assertTrue($router->has('vasaccounting.tools.amortization.run'));
@@ -116,6 +122,8 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.reports.receivables'));
         $this->assertTrue($router->has('vasaccounting.reports.payables'));
         $this->assertTrue($router->has('vasaccounting.reports.invoice_register'));
+        $this->assertTrue($router->has('vasaccounting.reports.expense_outstanding'));
+        $this->assertTrue($router->has('vasaccounting.reports.expense_register'));
         $this->assertTrue($router->has('vasaccounting.reports.payroll_bridge'));
         $this->assertTrue($router->has('vasaccounting.reports.contracts'));
         $this->assertTrue($router->has('vasaccounting.reports.loans'));
@@ -206,8 +214,24 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.payment_documents.post')->uri()
         );
         $this->assertSame(
+            'vas-accounting/expenses',
+            $routes->getByName('vasaccounting.expenses.index')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/expenses/{document}/post',
+            $routes->getByName('vasaccounting.expenses.post')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/reports/bank-reconciliation',
             $routes->getByName('vasaccounting.reports.bank_reconciliation')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/reports/expense-outstanding',
+            $routes->getByName('vasaccounting.reports.expense_outstanding')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/reports/expense-register',
+            $routes->getByName('vasaccounting.reports.expense_register')->uri()
         );
         $this->assertSame(
             'vas-accounting/invoices/{voucher}/approve',

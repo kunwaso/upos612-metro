@@ -33,4 +33,21 @@ class MakerCheckerGuardTest extends TestCase
 
         $this->assertTrue(true);
     }
+
+    public function test_it_uses_expense_specific_maker_checker_override_when_present(): void
+    {
+        config()->set('vasaccounting.approval_defaults.finance_document_defaults.maker_checker', true);
+        config()->set('vasaccounting.approval_defaults.expense_document_policies.advance_settlement.maker_checker', false);
+
+        $guard = new MakerCheckerGuard();
+        $document = new FinanceDocument([
+            'document_family' => 'expense_management',
+            'document_type' => 'advance_settlement',
+            'submitted_by' => 25,
+        ]);
+
+        $guard->assertCanApprove($document, 25);
+
+        $this->assertTrue(true);
+    }
 }

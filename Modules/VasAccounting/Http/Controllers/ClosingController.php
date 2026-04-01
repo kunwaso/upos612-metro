@@ -30,10 +30,12 @@ class ClosingController extends VasBaseController
         $blockers = [];
         $checklists = [];
         $treasuryInsights = [];
+        $expenseInsights = [];
         foreach ($periods as $period) {
             $blockers[$period->id] = $this->periodCloseService->blockers($businessId, $period);
             $checklists[$period->id] = $this->periodCloseService->checklistForPeriod($businessId, $period);
             $treasuryInsights[$period->id] = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
+            $expenseInsights[$period->id] = $this->periodCloseService->expenseCloseInsights($businessId, $period);
         }
 
         return view('vasaccounting::closing.index', [
@@ -41,6 +43,7 @@ class ClosingController extends VasBaseController
             'blockers' => $blockers,
             'checklists' => $checklists,
             'treasuryInsights' => $treasuryInsights,
+            'expenseInsights' => $expenseInsights,
             'recentPackets' => $this->reportSnapshotService->recentSnapshots($businessId, 10)->where('report_key', 'close_packet'),
         ]);
     }

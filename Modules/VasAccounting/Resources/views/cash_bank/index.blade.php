@@ -6,6 +6,9 @@
     @php
         $currency = config('vasaccounting.book_currency', 'VND');
         $selectedLocationLabel = !empty($selectedLocationId) ? ($locationOptions[$selectedLocationId] ?? null) : null;
+        $clearFocusParams = array_filter([
+            'period_id' => $closePeriod?->id,
+        ]);
     @endphp
 
     @include('vasaccounting::partials.header', [
@@ -25,6 +28,29 @@
             <div>
                 <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cash_bank.close_scope.title', ['period' => $vasAccountingUtil->localizedPeriodName($closePeriod->name)]) }}</div>
                 <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.cash_bank.close_scope.subtitle', ['start' => optional($closePeriod->start_date)->format('Y-m-d'), 'end' => optional($closePeriod->end_date)->format('Y-m-d')]) }}</div>
+            </div>
+        </div>
+    @endif
+
+    @if ($workspaceFocus)
+        <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 mb-8">
+            <div>
+                <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.cash_bank.focus.title', ['focus' => $workspaceFocusLabel]) }}</div>
+                <div class="text-muted fs-7">
+                    @if ($workspaceFocus === 'treasury_exceptions')
+                        {{ __('vasaccounting::lang.views.cash_bank.focus.exception_subtitle', ['statuses' => collect($exceptionStatusFilter)->map(fn ($status) => \Illuminate\Support\Str::headline((string) $status))->implode(', ')]) }}
+                    @else
+                        {{ __('vasaccounting::lang.views.cash_bank.focus.pending_subtitle') }}
+                    @endif
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('vasaccounting.cash_bank.index', $clearFocusParams) }}" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.cash_bank.focus.clear') }}</a>
+                @if ($workspaceFocus === 'pending_documents')
+                    <a href="#native-treasury-documents" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.cash_bank.focus.jump_pending') }}</a>
+                @else
+                    <a href="#treasury-exception-queue" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.cash_bank.focus.jump_exceptions') }}</a>
+                @endif
             </div>
         </div>
     @endif
@@ -187,7 +213,7 @@
             </div>
         </div>
         <div class="col-xl-8">
-            <div class="card card-flush h-100">
+            <div class="card card-flush h-100" id="native-treasury-documents">
                 <div class="card-header">
                     <div>
                         <div class="card-title">{{ __('vasaccounting::lang.views.cash_bank.native_documents.title') }}</div>
@@ -540,7 +566,7 @@
             </div>
         </div>
         <div class="col-xl-4">
-            <div class="card card-flush mb-5">
+            <div class="card card-flush mb-5" id="treasury-exception-queue">
                 <div class="card-header">
                     <div>
                         <div class="card-title">{{ __('vasaccounting::lang.views.cash_bank.treasury_queue.title') }}</div>
