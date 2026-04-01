@@ -235,9 +235,29 @@ class VasAccountingServiceProvider extends ServiceProvider
         });
 
         Event::listen(StockAdjustmentCreatedOrModified::class, function (StockAdjustmentCreatedOrModified $event) {
-            app(VasPostingService::class)->queueSourceDocument('stock_adjustment', $event->stockAdjustment, [
-                'action' => (string) $event->action,
-            ]);
+            $stockAdjustment = $event->stockAdjustment;
+            $action = (string) $event->action;
+            $context = [
+                'action' => $action,
+            ];
+
+            // On delete flows the transaction may already be removed before posting runs
+            // (especially with after-commit + sync queue). Capture minimal source data so
+            // adapters can build a safe payload without hard failing on findOrFail().
+            if ($action === 'deleted') {
+                $context['is_deleted'] = true;
+                $context['source_snapshot'] = [
+                    'id' => (int) ($stockAdjustment->id ?? 0),
+                    'business_id' => (int) ($stockAdjustment->business_id ?? 0),
+                    'location_id' => (int) ($stockAdjustment->location_id ?? 0),
+                    'transaction_date' => $stockAdjustment->transaction_date ?? null,
+                    'ref_no' => $stockAdjustment->ref_no ?? null,
+                    'created_by' => (int) ($stockAdjustment->created_by ?? 0),
+                    'final_total' => (float) ($stockAdjustment->final_total ?? 0),
+                ];
+            }
+
+            app(VasPostingService::class)->queueSourceDocument('stock_adjustment', $stockAdjustment, $context);
         });
 
         Event::listen(StockTransferCreatedOrModified::class, function (StockTransferCreatedOrModified $event) {

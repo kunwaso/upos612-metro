@@ -134,7 +134,10 @@ $(document).ready(function() {
     });
     var detailRows = [];
 
-    $(document).on('click', 'button.delete_stock_adjustment', function() {
+    $(document).on('click', 'button.delete_stock_adjustment', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         swal({
             title: LANG.sure,
             icon: 'warning',

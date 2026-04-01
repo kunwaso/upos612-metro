@@ -103,7 +103,7 @@ class StockAdjustmentController extends Controller
             return Datatables::of($stock_adjustments)
                 ->addColumn('action', '<button type="button" data-href="{{action([\App\Http\Controllers\StockAdjustmentController::class, \'show\'], [$id]) }}" class="btn btn-sm btn-light-info btn-modal" data-container=".view_modal"><i class="fa fa-eye" aria-hidden="true"></i> @lang("messages.view")</button>
                  &nbsp;
-                    <button type="button" data-href="{{  action([\App\Http\Controllers\StockAdjustmentController::class, \'destroy\'], [$id]) }}" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline  tw-dw-btn-error delete_stock_adjustment '.$hide.'"><i class="fa fa-trash" aria-hidden="true"></i> @lang("messages.delete")</button>')
+                    <button type="button" data-href="{{  action([\App\Http\Controllers\StockAdjustmentController::class, \'destroy\'], [$id]) }}" class="btn btn-sm btn-light-danger delete_stock_adjustment '.$hide.'"><i class="fa fa-trash" aria-hidden="true"></i> @lang("messages.delete")</button>')
                 ->removeColumn('id')
                 ->editColumn(
                     'final_total',
@@ -335,14 +335,25 @@ class StockAdjustmentController extends Controller
         if (! auth()->user()->can('stock_adjustment.delete')) {
             abort(403, 'Unauthorized action.');
         }
+
+        $output = ['success' => 0,
+            'msg' => __('messages.something_went_wrong'),
+        ];
+
         try {
             if (request()->ajax()) {
-                DB::beginTransaction();
-
-                $stock_adjustment = Transaction::where('id', $id)
+                $business_id = request()->session()->get('user.business_id');
+                $stock_adjustment = Transaction::where('business_id', $business_id)
+                                    ->where('id', $id)
                                     ->where('type', 'stock_adjustment')
                                     ->with(['stock_adjustment_lines'])
                                     ->first();
+
+                if (empty($stock_adjustment)) {
+                    return $output;
+                }
+
+                DB::beginTransaction();
 
                 //Add deleted product quantity to available quantity
                 $stock_adjustment_lines = $stock_adjustment->stock_adjustment_lines;
@@ -374,12 +385,10 @@ class StockAdjustmentController extends Controller
                 DB::commit();
             }
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
-
-            $output = ['success' => 0,
-                'msg' => __('messages.something_went_wrong'),
-            ];
         }
 
         return $output;
@@ -518,3 +527,4 @@ class StockAdjustmentController extends Controller
         return $output;
     }
 }
+
