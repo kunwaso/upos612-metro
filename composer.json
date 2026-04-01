@@ -107,6 +107,9 @@
         "test:clean:artisan": [
             "@php -d error_reporting=8191 artisan test"
         ],
+        "translation:audit": [
+            "@php scripts/translation-audit.php"
+        ],
         "test:clean:aichat": [
             "@php -d error_reporting=8191 vendor/bin/phpunit Modules/Aichat/Tests"
         ]

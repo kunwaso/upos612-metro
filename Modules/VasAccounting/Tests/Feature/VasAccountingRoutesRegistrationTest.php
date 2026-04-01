@@ -17,10 +17,19 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.periods.index'));
         $this->assertTrue($router->has('vasaccounting.vouchers.index'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.index'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.store'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.submit'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.approve'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.post'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.reverse'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.cashbooks.store'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.bank_accounts.store'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.statements.import'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.statements.reconcile'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.statements.canonical_reconcile'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.statements.refresh_exception'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.statements.ignore_exception'));
+        $this->assertTrue($router->has('vasaccounting.cash_bank.reconciliations.reverse'));
         $this->assertTrue($router->has('vasaccounting.payment_documents.index'));
         $this->assertTrue($router->has('vasaccounting.payment_documents.create'));
         $this->assertTrue($router->has('vasaccounting.payment_documents.store'));
@@ -118,6 +127,21 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.api.domains'));
         $this->assertTrue($router->has('vasaccounting.api.snapshots'));
         $this->assertTrue($router->has('vasaccounting.api.integration_runs'));
+        $this->assertTrue($router->has('vasaccounting.api.posting.preview'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.store'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.submit'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.approve'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.match'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.fulfill'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.close'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.post'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.reverse'));
+        $this->assertTrue($router->has('vasaccounting.api.finance_documents.trace'));
+        $this->assertTrue($router->has('vasaccounting.api.treasury.statement_lines.candidates'));
+        $this->assertTrue($router->has('vasaccounting.api.treasury.statement_lines.reconcile'));
+        $this->assertTrue($router->has('vasaccounting.api.treasury.reconciliations.reverse'));
+        $this->assertTrue($router->has('vasaccounting.api.treasury.exceptions.index'));
+        $this->assertTrue($router->has('vasaccounting.api.treasury.statement_lines.refresh_exception'));
         $this->assertTrue($router->has('vasaccounting.api.webhooks.store'));
     }
 
@@ -138,6 +162,42 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.cash_bank.index')->uri()
         );
         $this->assertSame(
+            'vas-accounting/cash-bank/treasury-documents',
+            $routes->getByName('vasaccounting.cash_bank.treasury_documents.store')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/treasury-documents/{document}/submit',
+            $routes->getByName('vasaccounting.cash_bank.treasury_documents.submit')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/treasury-documents/{document}/approve',
+            $routes->getByName('vasaccounting.cash_bank.treasury_documents.approve')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/treasury-documents/{document}/post',
+            $routes->getByName('vasaccounting.cash_bank.treasury_documents.post')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/treasury-documents/{document}/reverse',
+            $routes->getByName('vasaccounting.cash_bank.treasury_documents.reverse')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/statements/lines/{line}/canonical-reconcile',
+            $routes->getByName('vasaccounting.cash_bank.statements.canonical_reconcile')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/statements/lines/{line}/refresh-exception',
+            $routes->getByName('vasaccounting.cash_bank.statements.refresh_exception')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/statements/lines/{line}/ignore-exception',
+            $routes->getByName('vasaccounting.cash_bank.statements.ignore_exception')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/cash-bank/reconciliations/{reconciliation}/reverse',
+            $routes->getByName('vasaccounting.cash_bank.reconciliations.reverse')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/payment-documents',
             $routes->getByName('vasaccounting.payment_documents.index')->uri()
         );
@@ -154,8 +214,60 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.invoices.approve')->uri()
         );
         $this->assertSame(
+            'api/vas-accounting/posting/preview',
+            $routes->getByName('vasaccounting.api.posting.preview')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{family}',
+            $routes->getByName('vasaccounting.api.finance_documents.store')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/post',
+            $routes->getByName('vasaccounting.api.finance_documents.post')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/trace',
+            $routes->getByName('vasaccounting.api.finance_documents.trace')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/treasury/statement-lines/{statementLine}/candidates',
+            $routes->getByName('vasaccounting.api.treasury.statement_lines.candidates')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/treasury/statement-lines/{statementLine}/reconcile',
+            $routes->getByName('vasaccounting.api.treasury.statement_lines.reconcile')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/treasury/reconciliations/{reconciliation}/reverse',
+            $routes->getByName('vasaccounting.api.treasury.reconciliations.reverse')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/treasury/exceptions',
+            $routes->getByName('vasaccounting.api.treasury.exceptions.index')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/treasury/statement-lines/{statementLine}/refresh-exception',
+            $routes->getByName('vasaccounting.api.treasury.statement_lines.refresh_exception')->uri()
+        );
+        $this->assertSame(
             'api/vas-accounting/domains',
             $routes->getByName('vasaccounting.api.domains')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/approve',
+            $routes->getByName('vasaccounting.api.finance_documents.approve')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/match',
+            $routes->getByName('vasaccounting.api.finance_documents.match')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/fulfill',
+            $routes->getByName('vasaccounting.api.finance_documents.fulfill')->uri()
+        );
+        $this->assertSame(
+            'api/vas-accounting/finance-documents/{document}/close',
+            $routes->getByName('vasaccounting.api.finance_documents.close')->uri()
         );
         $this->assertSame(
             'vas-accounting/payroll/bridge',

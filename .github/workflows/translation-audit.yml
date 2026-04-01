@@ -1,0 +1,38 @@
+name: Translation Audit
+
+on:
+  pull_request:
+    paths:
+      - 'lang/**'
+      - 'Modules/**/Resources/lang/**'
+      - 'scripts/translation-audit.php'
+      - 'composer.json'
+      - '.github/workflows/translation-audit.yml'
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'lang/**'
+      - 'Modules/**/Resources/lang/**'
+      - 'scripts/translation-audit.php'
+      - 'composer.json'
+      - '.github/workflows/translation-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  translation-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Validate Vietnamese translation parity
+        run: composer translation:audit

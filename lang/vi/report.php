@@ -1,18 +1,8 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Report Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used in reports
-    |
-    */
-
     'reports' => 'Báo cáo',
-    'purchase_sell_report' => 'Purchase & Sale',
+    'purchase_sell_report' => 'Mua bán',
     'purchase_sell' => 'Báo cáo mua / bán',
     'purchase_sell_msg' => 'Chi tiết mua và bán cho phạm vi ngày đã chọn',
     'total_purchase' => 'Tổng mua',
@@ -26,11 +16,11 @@ return [
     'difference_due' => 'Tổng nợ chưa thanh toán',
     'customer' => 'Khách hàng',
     'supplier' => 'Nhà cung cấp',
-    'total_due' => 'Due',
+    'total_due' => 'Đến hạn',
     'contacts' => 'Nhà cung cấp & khách hàng',
     'contact' => 'Liên hệ',
     'stock_report' => 'Báo cáo tồn kho',
-    'products' => 'Products',
+    'products' => 'Sản phẩm',
     'current_stock' => 'Tồn kho hiện tại',
     'total_unit_sold' => 'Tổng đơn vị đã bán',
     'tax_report' => 'Báo cáo thuế',
@@ -43,12 +33,12 @@ return [
     'filters' => 'Bộ lọc',
     'expense_report' => 'Báo cáo chi phí',
     'total_expense' => 'Tổng chi phí',
-    'others' => 'Others',
-    'all' => 'All',
+    'others' => 'Khác',
+    'all' => 'Tất cả',
     'top_trending_products' => 'Sản phẩm hàng đầu',
     'all_locations' => 'Tất cả địa điểm',
     'stock_adjustment_report' => 'Điều chỉnh kho',
-    'total_stock_adjustment' => 'Tổng điều chỉnh cổ phiếu',
+    'total_stock_adjustment' => 'Tổng điều chỉnh kho',
     'total_recovered' => 'Tổng tiền thu hồi',
     'total_normal' => 'Tổng tồn chuẩn',
     'total_abnormal' => 'Tổng tồn bất thường',
@@ -74,8 +64,6 @@ return [
     'profit_loss' => 'Báo cáo lãi / lỗ',
     'opening_stock' => 'Tồn đầu kì',
     'closing_stock' => 'Tồn cuối',
-    'total_expense' => 'Tổng chi phí',
     'net_profit' => 'Lợi nhuận ròng',
-    'total_stock_adjustment' => 'Tổng điều chỉnh kho',
     'total_stock_recovered' => 'Tổng tồn kho thu hồi',
 ];

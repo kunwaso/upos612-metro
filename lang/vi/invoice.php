@@ -1,15 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invoice Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are for invoice screen
-    |
-    */
     'invoice_settings' => 'Cài đặt hóa đơn',
     'manage_your_invoices' => 'Quản lý cài đặt hóa đơn của bạn',
     'all_your_invoice_schemes' => 'Tất cả hóa đơn của bạn',
@@ -19,7 +10,7 @@ return [
     'add_invoice' => 'Thêm sơ đồ hóa đơn mới',
     'edit_invoice' => 'Sửa sơ đồ hóa đơn',
     'name' => 'Tên',
-    'prefix' => 'Prefix',
+    'prefix' => 'Tiền tố',
     'start_number' => 'Bắt đầu từ',
     'total_digits' => 'Độ dài số hóa đơn',
     'preview' => 'Xem trước',
@@ -31,7 +22,7 @@ return [
     'all_your_invoice_layouts' => 'Tất cả bố trí hóa đơn của bạn',
     'add_invoice_layout' => 'Thêm bố cục hóa đơn mới',
     'layout_name' => 'Tên bố cục',
-    'invoice_scheme' => 'Invoice scheme',
+    'invoice_scheme' => 'lược đồ hóa đơn',
     'header_text' => 'Văn bản tiêu đề',
     'invoice_no_prefix' => 'Hóa đơn không có. nhãn',
     'invoice_heading' => 'Tiêu đề hóa đơn',
@@ -58,11 +49,17 @@ return [
     'invoice_logo' => 'Logo hóa đơn',
     'show_logo' => 'Hiển thị hóa đơn Logo',
     'show_barcode' => 'Chương trình mã vạch',
-    'total_due_label' => 'Total Due Label',
+    'total_due_label' => 'Tổng số nhãn đến hạn',
     'invoice_heading_not_paid' => 'Tiêu đề Suffix không được trả tiền',
     'invoice_heading_paid' => 'Tiêu đề Suffix cho thanh toán',
     'show_payments' => 'Hiển thị thông tin thanh toán',
     'show_customer' => 'Hiển thị thông tin khách hàng',
     'paid_label' => 'Số tiền được trả nhãn',
     'customer_label' => 'Nhãn khách hàng',
+    'invoice_scheme_for_pos' => 'Sơ đồ hóa đơn cho POS',
+    'invoice_scheme_for_sale' => 'Sơ đồ hóa đơn bán hàng',
+    'number_type' => 'Kiểu đánh số',
+    'sequential' => 'tuần tự',
+    'random' => 'Thay đổi/ngẫu nhiên',
+    'number_type_tooltip' => 'Tuần tự sẽ tạo số nối tiếp như 1,2,3,4 <br/> Aleatory sẽ tạo số ngẫu nhiên',
 ];

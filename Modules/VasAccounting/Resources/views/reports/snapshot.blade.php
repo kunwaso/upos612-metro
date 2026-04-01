@@ -103,5 +103,52 @@
                 </div>
             </div>
         </div>
+
+        @if (!empty($payload['sections']))
+            <div class="row g-5 g-xl-10 mt-1">
+                @foreach ($payload['sections'] as $section)
+                    <div class="col-12">
+                        <div class="card card-flush">
+                            <div class="card-header">
+                                <div class="card-title d-flex flex-column">
+                                    <span>{{ data_get($section, 'title') }}</span>
+                                    @if (data_get($section, 'subtitle'))
+                                        <span class="text-muted fw-semibold fs-8 mt-1">{{ data_get($section, 'subtitle') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-row-dashed fs-6 gy-5">
+                                        <thead>
+                                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                                @foreach ((array) data_get($section, 'columns', []) as $column)
+                                                    <th>{{ $column }}</th>
+                                                @endforeach
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ((array) data_get($section, 'rows', []) as $row)
+                                                <tr>
+                                                    @foreach ($row as $index => $cell)
+                                                        <td class="{{ $index === 0 ? 'fw-semibold text-gray-900' : 'text-gray-700' }}">{{ $cell }}</td>
+                                                    @endforeach
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="{{ count((array) data_get($section, 'columns', [])) ?: 1 }}" class="text-muted">
+                                                        {{ data_get($section, 'empty') ?: __('vasaccounting::lang.views.report_snapshot.empty') }}
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
     @endif
 @endsection

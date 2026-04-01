@@ -1,22 +1,11 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Role Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Brand CRUD operations.
-    |
-    */
-
     'add_role' => 'Thêm vai trò',
     'edit_role' => 'Chỉnh sửa vai trò',
     'user' => 'Người dùng',
     'supplier' => 'Nhà cung cấp',
     'customer' => 'Khách hàng',
-    'purchase' => 'Điều chỉnh mua & bán cổ phiếu',
     'report' => 'Bài báo cáo',
     'user.view' => 'Xem người dùng',
     'user.create' => 'Thêm người dùng',
@@ -35,10 +24,11 @@ return [
     'product.update' => 'Chỉnh sửa sản phẩm',
     'product.delete' => 'Xóa sản phẩm',
     'purchase.view' => 'Xem mua & điều chỉnh cổ phiếu',
+    'purchase.view_own' => 'Xem giao dịch mua riêng',
+    'purchase.view_all' => 'Xem tất cả mua hàng',
     'purchase.create' => 'Thêm mua & điều chỉnh cổ phiếu',
     'purchase.update' => 'Chỉnh sửa mua & điều chỉnh cổ phiếu',
     'purchase.delete' => 'Xóa mua & điều chỉnh cổ phiếu',
-    
     'stock_adjustment.view' => 'Xem điều chỉnh kho',
     'stock_adjustment.view_own' => 'Xem điều chỉnh kho của riêng mình',
     'stock_adjustment.create' => 'Thêm điều chỉnh kho',
@@ -46,14 +36,12 @@ return [
     'stock_adjustment.delete' => 'Xóa điều chỉnh kho',
     'purchase' => 'Mua hàng',
     'stock_adjustment' => 'Điều chỉnh Kho',
-
     'stock_transfer' => 'Chuyển kho',
     'stock_transfer.view' => 'Xem tất cả chuyển kho',
     'stock_transfer.view_own' => 'Xem chuyển kho của riêng mình',
     'stock_transfer.create' => 'Thêm chuyển kho',
     'stock_transfer.update' => 'Chỉnh sửa chuyển kho',
     'stock_transfer.delete' => 'Xóa chuyển kho',
-
     'sell.view' => 'Xem POS bán',
     'sell.create' => 'Thêm POS bán',
     'sell.update' => 'Chỉnh sửa bán POS',

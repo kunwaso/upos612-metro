@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cash Register Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Cash Register CRUD operations.
-    |
-    */
-
     'cash_register' => 'Máy tính tiền',
     'manage_your_cash_register' => 'Quản lý máy tính tiền',
     'all_your_cash_register' => 'Tất cả các máy tính tiền',
@@ -26,7 +16,7 @@ return [
     'other_payments' => 'Thanh toán khác',
     'total_sales' => 'Tổng doanh thu',
     'total_cash' => 'Tổng tiền mặt',
-    'current_register' => 'Current Register',
+    'current_register' => 'Đăng ký hiện tại',
     'close_register' => 'Đóng đăng ký',
     'total_card_slips' => 'Tổng thanh toán thẻ',
     'total_cheques' => 'Tổng sec',
@@ -36,5 +26,4 @@ return [
     'close' => 'Đóng',
     'total_refund' => 'Tổng hoàn tiền',
     'refunds' => 'Hoàn tiền',
-
 ];

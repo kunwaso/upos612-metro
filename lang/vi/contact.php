@@ -1,19 +1,9 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Contact Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used during Contacts CRUD operations.
-    |
-    */
-
     'contacts' => 'Liên hệ',
     'name' => 'Tên',
-    'contact' => 'Contact',
+    'contact' => 'Liên hệ',
     'manage_your_contact' => 'Quản lý của bạn :contacts',
     'all_your_contact' => 'Tất cả của bạn :contacts',
     'add_contact' => 'Thêm một liên hệ mới',

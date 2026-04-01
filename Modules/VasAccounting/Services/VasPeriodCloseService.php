@@ -4,11 +4,13 @@ namespace Modules\VasAccounting\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasAssetDepreciation;
 use Modules\VasAccounting\Entities\VasCloseChecklist;
 use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Entities\VasVoucher;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 use RuntimeException;
@@ -44,12 +46,26 @@ class VasPeriodCloseService
             ->where('status', '!=', 'posted')
             ->count();
 
-        $unreconciledBankLines = Schema::hasTable('vas_bank_statement_lines')
-            ? (int) DB::table('vas_bank_statement_lines')
+        $unreconciledBankLines = Schema::hasTable('vas_fin_treasury_exceptions')
+            ? (int) FinanceTreasuryException::query()
                 ->where('business_id', $businessId)
-                ->where('match_status', 'unmatched')
+                ->whereIn('status', ['open', 'suggested'])
+                ->whereHas('statementLine', function ($query) use ($periodEnd) {
+                    if ($periodEnd) {
+                        $query->whereDate('transaction_date', '<=', $periodEnd);
+                    }
+                })
+                ->count()
+            : (Schema::hasTable('vas_bank_statement_lines')
+                ? (int) DB::table('vas_bank_statement_lines')
+                    ->where('business_id', $businessId)
+                    ->where('match_status', 'unmatched')
                 ->when($periodEnd, fn ($query) => $query->whereDate('transaction_date', '<=', $periodEnd))
                 ->count()
+            : 0);
+
+        $pendingTreasuryDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->pendingTreasuryDocumentsQuery($businessId, $periodEnd)->count()
             : 0;
 
         $pendingApprovals = Schema::hasTable('vas_document_approvals')
@@ -67,9 +83,46 @@ class VasPeriodCloseService
             'posting_failures' => $postingFailures,
             'pending_depreciation' => $pendingDepreciation,
             'unreconciled_bank_lines' => $unreconciledBankLines,
+            'pending_treasury_documents' => (int) $pendingTreasuryDocuments,
             'pending_approvals' => $pendingApprovals,
             'unposted_inventory_documents' => (int) ($warehouseSummary['unposted_documents'] ?? 0),
             'warehouse_discrepancies' => (int) ($warehouseSummary['warehouse_discrepancies'] ?? 0),
+        ];
+    }
+
+    public function treasuryCloseInsights(int $businessId, VasAccountingPeriod $period): array
+    {
+        $periodEnd = optional($period->end_date)->toDateString();
+
+        $pendingDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->pendingTreasuryDocumentsQuery($businessId, $periodEnd)
+                ->orderByDesc('document_date')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get([
+                    'id',
+                    'document_no',
+                    'document_type',
+                    'workflow_status',
+                    'accounting_status',
+                    'gross_amount',
+                    'currency_code',
+                    'document_date',
+                    'posting_date',
+                ])
+            : collect();
+
+        $exceptions = Schema::hasTable('vas_fin_treasury_exceptions')
+            ? $this->unresolvedTreasuryExceptionsQuery($businessId, $periodEnd)
+                ->with(['statementLine', 'recommendedDocument'])
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get()
+            : collect();
+
+        return [
+            'pending_documents' => $pendingDocuments,
+            'exceptions' => $exceptions,
         ];
     }
 
@@ -112,7 +165,12 @@ class VasPeriodCloseService
             'bank_reconciliation' => [
                 'title' => 'Bank reconciliation exceptions reviewed',
                 'status' => $blockers['unreconciled_bank_lines'] > 0 ? 'blocked' : 'completed',
-                'notes' => $blockers['unreconciled_bank_lines'] > 0 ? $blockers['unreconciled_bank_lines'] . ' bank statement lines remain unmatched.' : 'No unmatched bank statement lines remain.',
+                'notes' => $blockers['unreconciled_bank_lines'] > 0 ? $blockers['unreconciled_bank_lines'] . ' treasury reconciliation exceptions remain unresolved.' : 'No unresolved treasury reconciliation exceptions remain.',
+            ],
+            'treasury_documents' => [
+                'title' => 'Native treasury documents posted or reversed',
+                'status' => $blockers['pending_treasury_documents'] > 0 ? 'blocked' : 'completed',
+                'notes' => $blockers['pending_treasury_documents'] > 0 ? $blockers['pending_treasury_documents'] . ' native treasury documents still need posting or reversal review.' : 'All native treasury documents through the period end are posted or reversed.',
             ],
             'approvals' => [
                 'title' => 'Document approval queue cleared',
@@ -182,6 +240,7 @@ class VasPeriodCloseService
             || $blockers['posting_failures'] > 0
             || $blockers['pending_depreciation'] > 0
             || $blockers['unreconciled_bank_lines'] > 0
+            || $blockers['pending_treasury_documents'] > 0
             || $blockers['pending_approvals'] > 0
             || $blockers['unposted_inventory_documents'] > 0
             || $blockers['warehouse_discrepancies'] > 0;
@@ -227,5 +286,35 @@ class VasPeriodCloseService
     protected function operationsAssetReportUtil(): ?OperationsAssetReportUtil
     {
         return $this->operationsAssetReportUtil ?: app(OperationsAssetReportUtil::class);
+    }
+
+    protected function pendingTreasuryDocumentsQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_family', 'cash_bank')
+            ->whereIn('document_type', ['cash_transfer', 'bank_transfer', 'petty_cash_expense'])
+            ->whereIn('workflow_status', ['draft', 'submitted', 'approved'])
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->where(function ($dateQuery) use ($periodEnd) {
+                    $dateQuery->whereDate('posting_date', '<=', $periodEnd)
+                        ->orWhere(function ($fallbackQuery) use ($periodEnd) {
+                            $fallbackQuery->whereNull('posting_date')
+                                ->whereDate('document_date', '<=', $periodEnd);
+                        });
+                });
+            });
+    }
+
+    protected function unresolvedTreasuryExceptionsQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceTreasuryException::query()
+            ->where('business_id', $businessId)
+            ->whereIn('status', ['open', 'suggested'])
+            ->whereHas('statementLine', function ($query) use ($periodEnd) {
+                if ($periodEnd) {
+                    $query->whereDate('transaction_date', '<=', $periodEnd);
+                }
+            });
     }
 }

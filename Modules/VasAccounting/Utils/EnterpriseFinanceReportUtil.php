@@ -28,6 +28,9 @@ class EnterpriseFinanceReportUtil
             'unmatched_lines' => Schema::hasTable('vas_bank_statement_lines')
                 ? (int) DB::table('vas_bank_statement_lines')->where('business_id', $businessId)->where('match_status', 'unmatched')->count()
                 : 0,
+            'treasury_exceptions' => Schema::hasTable('vas_fin_treasury_exceptions')
+                ? (int) DB::table('vas_fin_treasury_exceptions')->where('business_id', $businessId)->whereIn('status', ['open', 'suggested'])->count()
+                : 0,
         ];
     }
 
@@ -51,6 +54,12 @@ class EnterpriseFinanceReportUtil
             ->join('vas_bank_statement_imports as import', 'import.id', '=', 'line.statement_import_id')
             ->leftJoin('vas_bank_accounts as bank_account', 'bank_account.id', '=', 'import.bank_account_id')
             ->leftJoin('vas_vouchers as voucher', 'voucher.id', '=', 'line.matched_voucher_id')
+            ->leftJoin('vas_fin_treasury_reconciliations as reconciliation', function ($join) {
+                $join->on('reconciliation.statement_line_id', '=', 'line.id')
+                    ->where('reconciliation.status', '=', 'active');
+            })
+            ->leftJoin('vas_fin_documents as finance_document', 'finance_document.id', '=', 'reconciliation.document_id')
+            ->leftJoin('vas_fin_treasury_exceptions as treasury_exception', 'treasury_exception.statement_line_id', '=', 'line.id')
             ->where('line.business_id', $businessId)
             ->select(
                 'line.id',
@@ -62,6 +71,14 @@ class EnterpriseFinanceReportUtil
                 'line.matched_voucher_id',
                 'voucher.voucher_no',
                 'voucher.reference as voucher_reference',
+                'reconciliation.id as finance_reconciliation_id',
+                'reconciliation.matched_amount as finance_matched_amount',
+                'finance_document.document_no as finance_document_no',
+                'finance_document.document_type as finance_document_type',
+                'treasury_exception.status as treasury_exception_status',
+                'treasury_exception.severity as treasury_exception_severity',
+                'treasury_exception.exception_code as treasury_exception_code',
+                'treasury_exception.top_match_score as treasury_top_match_score',
                 'bank_account.account_code as bank_account_code',
                 'bank_account.bank_name',
                 'import.reference_no as statement_reference'

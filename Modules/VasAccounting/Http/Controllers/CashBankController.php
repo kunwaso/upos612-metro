@@ -7,8 +7,21 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Modules\VasAccounting\Application\DTOs\ActionContext;
+use Modules\VasAccounting\Application\DTOs\DocumentCreateData;
+use Modules\VasAccounting\Application\DTOs\PostingContext;
+use Modules\VasAccounting\Application\DTOs\ReversalContext;
+use Modules\VasAccounting\Contracts\FinanceDocumentServiceInterface;
+use Modules\VasAccounting\Contracts\PostingRuleEngineInterface;
+use Modules\VasAccounting\Contracts\TreasuryReconciliationServiceInterface;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryReconciliation;
+use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasBankAccount;
 use Modules\VasAccounting\Entities\VasBankStatementImport;
 use Modules\VasAccounting\Entities\VasBankStatementLine;
@@ -17,8 +30,11 @@ use Modules\VasAccounting\Entities\VasVoucher;
 use Modules\VasAccounting\Http\Requests\StoreBankAccountRequest;
 use Modules\VasAccounting\Http\Requests\StoreBankStatementImportRequest;
 use Modules\VasAccounting\Http\Requests\StoreCashbookRequest;
+use Modules\VasAccounting\Http\Requests\StoreTreasuryFinanceDocumentRequest;
+use Modules\VasAccounting\Http\Requests\TreasuryReconciliationActionRequest;
 use Modules\VasAccounting\Http\Requests\UpdateBankStatementLineRequest;
 use Modules\VasAccounting\Services\BankStatementImportAdapterManager;
+use Modules\VasAccounting\Contracts\TreasuryExceptionServiceInterface;
 use Modules\VasAccounting\Utils\EnterpriseFinanceReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
@@ -27,7 +43,11 @@ class CashBankController extends VasBaseController
     public function __construct(
         protected VasAccountingUtil $vasUtil,
         protected EnterpriseFinanceReportUtil $enterpriseReportUtil,
-        protected BankStatementImportAdapterManager $statementImportAdapterManager
+        protected BankStatementImportAdapterManager $statementImportAdapterManager,
+        protected TreasuryExceptionServiceInterface $treasuryExceptionService,
+        protected TreasuryReconciliationServiceInterface $treasuryReconciliationService,
+        protected FinanceDocumentServiceInterface $financeDocumentService,
+        protected PostingRuleEngineInterface $postingRuleEngine
     ) {
     }
 
@@ -37,6 +57,10 @@ class CashBankController extends VasBaseController
 
         $businessId = $this->businessId($request);
         $selectedLocationId = $this->selectedLocationId($request);
+        $closeScope = $this->closeScope($request, $businessId);
+        $closePeriod = $closeScope['period'];
+        $periodStart = $closeScope['start_date'];
+        $periodEnd = $closeScope['end_date'];
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
         $featureFlags = array_replace($this->vasUtil->defaultFeatureFlags(), (array) $settings->feature_flags);
 
@@ -69,18 +93,40 @@ class CashBankController extends VasBaseController
                 ->when($selectedLocationId, function ($query) use ($selectedLocationId) {
                     $query->whereHas('bankAccount', fn ($bankAccountQuery) => $bankAccountQuery->where('business_location_id', $selectedLocationId));
                 })
+                ->when($periodStart, fn ($query) => $query->whereDate('imported_at', '>=', $periodStart))
+                ->when($periodEnd, fn ($query) => $query->whereDate('imported_at', '<=', $periodEnd))
                 ->latest()
+                ->take(12)
+                ->get()
+            : collect();
+
+        $nativeTreasuryDocuments = Schema::hasTable('vas_fin_documents')
+            ? FinanceDocument::query()
+                ->where('business_id', $businessId)
+                ->where('document_family', 'cash_bank')
+                ->whereIn('document_type', ['cash_transfer', 'bank_transfer', 'petty_cash_expense'])
+                ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
+                ->when($periodStart || $periodEnd, fn ($query) => $this->applyDocumentDateScope($query, $periodStart, $periodEnd))
+                ->latest('document_date')
+                ->latest('id')
                 ->take(12)
                 ->get()
             : collect();
 
         $statementLines = Schema::hasTable('vas_bank_statement_lines')
             ? VasBankStatementLine::query()
-                ->with(['statementImport.bankAccount', 'matchedVoucher'])
+                ->with([
+                    'statementImport.bankAccount',
+                    'matchedVoucher',
+                    'treasuryException.recommendedDocument',
+                    'financeReconciliations.document',
+                ])
                 ->where('business_id', $businessId)
                 ->when($selectedLocationId, function ($query) use ($selectedLocationId) {
                     $query->whereHas('statementImport.bankAccount', fn ($bankAccountQuery) => $bankAccountQuery->where('business_location_id', $selectedLocationId));
                 })
+                ->when($periodStart, fn ($query) => $query->whereDate('transaction_date', '>=', $periodStart))
+                ->when($periodEnd, fn ($query) => $query->whereDate('transaction_date', '<=', $periodEnd))
                 ->orderByDesc('transaction_date')
                 ->orderByDesc('id')
                 ->get()
@@ -103,7 +149,49 @@ class CashBankController extends VasBaseController
             ->get();
 
         $summary = $this->enterpriseReportUtil->cashBankSummary($businessId);
+        $treasuryExceptionSummary = Schema::hasTable('vas_fin_treasury_exceptions')
+            ? $this->treasuryExceptionService->queueSummary($businessId, $selectedLocationId)
+            : ['open' => 0, 'suggested' => 0, 'ignored' => 0, 'resolved' => 0];
+        $treasuryExceptionQueue = Schema::hasTable('vas_fin_treasury_exceptions')
+            ? $this->treasuryExceptionService->queue($businessId, 8, $selectedLocationId)
+            : [];
+
+        if (Schema::hasTable('vas_fin_treasury_exceptions') && ($periodStart || $periodEnd)) {
+            $treasuryExceptionSummary = [
+                'open' => $this->treasuryExceptionScopeCount($businessId, $selectedLocationId, $periodStart, $periodEnd, ['open']),
+                'suggested' => $this->treasuryExceptionScopeCount($businessId, $selectedLocationId, $periodStart, $periodEnd, ['suggested']),
+                'ignored' => $this->treasuryExceptionScopeCount($businessId, $selectedLocationId, $periodStart, $periodEnd, ['ignored']),
+                'resolved' => $this->treasuryExceptionScopeCount($businessId, $selectedLocationId, $periodStart, $periodEnd, ['resolved']),
+            ];
+
+            $treasuryExceptionQueue = collect($treasuryExceptionQueue)->filter(function ($exception) use ($periodStart, $periodEnd) {
+                $transactionDate = optional(optional($exception->statementLine)->transaction_date)?->toDateString();
+                if (! $transactionDate) {
+                    return false;
+                }
+
+                if ($periodStart && $transactionDate < $periodStart) {
+                    return false;
+                }
+
+                if ($periodEnd && $transactionDate > $periodEnd) {
+                    return false;
+                }
+
+                return true;
+            })->values()->all();
+        }
+
         if ($selectedLocationId) {
+            $summary = [
+                'cashbooks' => $cashbooks->count(),
+                'bank_accounts' => $bankAccounts->count(),
+                'statement_imports' => $statementImports->count(),
+                'unmatched_lines' => $statementLines->where('match_status', 'unmatched')->count(),
+            ];
+        }
+
+        if ($closePeriod) {
             $summary = [
                 'cashbooks' => $cashbooks->count(),
                 'bank_accounts' => $bankAccounts->count(),
@@ -142,17 +230,81 @@ class CashBankController extends VasBaseController
             'cashbooks' => $cashbooks,
             'bankAccounts' => $bankAccounts,
             'statementImports' => $statementImports,
+            'nativeTreasuryDocuments' => $nativeTreasuryDocuments,
             'statementLines' => $statementLines,
             'candidateVouchers' => $candidateVouchers,
             'cashLedgerRows' => $cashLedgerRows,
             'bankLedgerRows' => $bankLedgerRows,
             'reconciliationRows' => $reconciliationRows,
+            'treasuryExceptionSummary' => $treasuryExceptionSummary,
+            'treasuryExceptionQueue' => $treasuryExceptionQueue,
             'locationOptions' => BusinessLocation::forDropdown($businessId),
             'selectedLocationId' => $selectedLocationId,
+            'closePeriod' => $closePeriod,
             'chartOptions' => $this->vasUtil->chartOptions($businessId),
             'providerOptions' => $this->vasUtil->providerOptions('bank_statement_import_adapters'),
             'defaultProvider' => (string) (((array) $settings->integration_settings)['bank_statement_provider'] ?? 'manual'),
         ]);
+    }
+
+    public function storeTreasuryDocument(StoreTreasuryFinanceDocumentRequest $request): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+        $validated = $request->validated();
+
+        try {
+            $document = $this->financeDocumentService->create(new DocumentCreateData(
+                [
+                    'business_id' => $businessId,
+                    'document_family' => 'cash_bank',
+                    'document_type' => $validated['document_type'],
+                    'document_no' => $validated['document_no'],
+                    'external_reference' => $validated['external_reference'] ?? null,
+                    'business_location_id' => $validated['business_location_id'] ?? null,
+                    'currency_code' => config('vasaccounting.book_currency', 'VND'),
+                    'exchange_rate' => 1,
+                    'document_date' => $validated['document_date'],
+                    'posting_date' => $validated['posting_date'] ?? $validated['document_date'],
+                    'workflow_status' => 'draft',
+                    'accounting_status' => 'not_ready',
+                    'gross_amount' => $validated['amount'],
+                    'tax_amount' => 0,
+                    'net_amount' => $validated['amount'],
+                    'open_amount' => 0,
+                    'meta' => [
+                        'treasury_document' => [
+                            'source_account_id' => (int) $validated['source_account_id'],
+                            'target_account_id' => (int) $validated['target_account_id'],
+                        ],
+                    ],
+                ],
+                [[
+                    'line_type' => $validated['document_type'] === 'petty_cash_expense' ? 'expense' : 'transfer',
+                    'business_location_id' => $validated['business_location_id'] ?? null,
+                    'description' => $validated['description'],
+                    'quantity' => 1,
+                    'unit_price' => $validated['amount'],
+                    'line_amount' => $validated['amount'],
+                    'tax_amount' => 0,
+                    'gross_amount' => $validated['amount'],
+                    'debit_account_id' => (int) $validated['target_account_id'],
+                    'credit_account_id' => (int) $validated['source_account_id'],
+                    'payload' => [
+                        'treasury_document_type' => $validated['document_type'],
+                    ],
+                ]]
+            ));
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_saved', ['document' => $document->document_no])]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
     }
 
     public function storeCashbook(StoreCashbookRequest $request): RedirectResponse
@@ -231,6 +383,7 @@ class CashBankController extends VasBaseController
             ]);
         }
 
+        $this->treasuryExceptionService->refreshForImport($statementImport->fresh('lines'), $businessId);
         $this->refreshStatementImportStatus($statementImport->fresh('lines'));
 
         return redirect()
@@ -268,6 +421,7 @@ class CashBankController extends VasBaseController
             'meta' => $meta,
         ]);
 
+        $this->treasuryExceptionService->refreshForStatementLine($lineModel->fresh(), $businessId);
         $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
 
         $messageKey = $matchStatus === 'matched'
@@ -277,6 +431,268 @@ class CashBankController extends VasBaseController
         return redirect()
             ->route('vasaccounting.cash_bank.index')
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.' . $messageKey)]);
+    }
+
+    public function reconcileLineCanonically(TreasuryReconciliationActionRequest $request, int $line): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $lineModel = VasBankStatementLine::query()
+                ->with(['statementImport', 'treasuryException'])
+                ->where('business_id', $businessId)
+                ->findOrFail($line);
+            $actionContext = $this->treasuryActionContext($request, $businessId, 'Cash/bank canonical reconciliation');
+
+            $financeDocumentId = (int) ($request->input('finance_document_id')
+                ?: optional($lineModel->treasuryException)->recommended_document_id
+                ?: data_get($lineModel->treasuryException?->meta, 'top_candidate.document_id'));
+
+            if ($financeDocumentId <= 0) {
+                throw ValidationException::withMessages([
+                    'finance_document_id' => 'No canonical finance document recommendation is available for this statement line.',
+                ]);
+            }
+
+            $document = FinanceDocument::query()
+                ->where('business_id', $businessId)
+                ->findOrFail($financeDocumentId);
+
+            $this->treasuryReconciliationService->reconcile(
+                $lineModel,
+                $document,
+                $actionContext,
+                $request->filled('finance_open_item_id') ? (int) $request->input('finance_open_item_id') : null
+            );
+
+            $this->treasuryExceptionService->refreshForStatementLine(
+                $lineModel->fresh(),
+                $businessId,
+                $actionContext
+            );
+            $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reconciled')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function reverseCanonicalReconciliation(TreasuryReconciliationActionRequest $request, int $reconciliation): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $reconciliationModel = FinanceTreasuryReconciliation::query()
+                ->with('statementLine.statementImport')
+                ->where('business_id', $businessId)
+                ->findOrFail($reconciliation);
+            $actionContext = $this->treasuryActionContext($request, $businessId, 'Cash/bank canonical reconciliation reversal');
+
+            $reconciliationModel = $this->treasuryReconciliationService->reverse(
+                $reconciliationModel,
+                $actionContext
+            );
+
+            $statementLine = $reconciliationModel->statementLine->fresh();
+            $this->treasuryExceptionService->refreshForStatementLine(
+                $statementLine,
+                $businessId,
+                $actionContext
+            );
+            $this->refreshStatementImportStatus($reconciliationModel->statementLine->statementImport->fresh('lines'));
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_canonical_reversal_completed')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function refreshTreasuryException(TreasuryReconciliationActionRequest $request, int $line): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $lineModel = VasBankStatementLine::query()
+                ->with('statementImport')
+                ->where('business_id', $businessId)
+                ->findOrFail($line);
+            $actionContext = $this->treasuryActionContext($request, $businessId, 'Cash/bank treasury exception refresh');
+
+            $this->treasuryExceptionService->refreshForStatementLine($lineModel, $businessId, $actionContext);
+            $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_refreshed')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function ignoreTreasuryException(TreasuryReconciliationActionRequest $request, int $line): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        try {
+            $lineModel = VasBankStatementLine::query()
+                ->with('statementImport')
+                ->where('business_id', $businessId)
+                ->findOrFail($line);
+            $actionContext = $this->treasuryActionContext($request, $businessId, 'Cash/bank treasury exception ignored');
+            $meta = (array) $lineModel->meta;
+            $meta['reconciliation_notes'] = $validated['reason'];
+            $meta['reconciled_at'] = now()->toDateTimeString();
+            $meta['reconciled_by'] = auth()->id();
+
+            $lineModel->update([
+                'match_status' => 'ignored',
+                'matched_voucher_id' => null,
+                'meta' => $meta,
+            ]);
+
+            $this->treasuryExceptionService->refreshForStatementLine($lineModel->fresh(), $businessId, $actionContext);
+            $this->refreshStatementImportStatus($lineModel->statementImport->fresh('lines'));
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.statement_line_treasury_exception_ignored')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function submitTreasuryDocument(TreasuryReconciliationActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $documentModel = $this->treasuryDocumentOrFail($document, $businessId);
+            $this->financeDocumentService->submit(
+                $documentModel->id,
+                $this->treasuryActionContext($request, $businessId, 'Cash/bank native treasury document submitted')
+            );
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_submitted')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function approveTreasuryDocument(TreasuryReconciliationActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $documentModel = $this->treasuryDocumentOrFail($document, $businessId);
+            $this->financeDocumentService->approve(
+                $documentModel->id,
+                $this->treasuryActionContext($request, $businessId, 'Cash/bank native treasury document approved')
+            );
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_approved')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function postTreasuryDocument(TreasuryReconciliationActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $documentModel = $this->treasuryDocumentOrFail($document, $businessId);
+            $this->postingRuleEngine->post(
+                $documentModel,
+                (string) $request->input('event_type', 'post'),
+                new PostingContext(
+                    (int) auth()->id(),
+                    $businessId,
+                    $request->input('reason') ?: 'Cash/bank native treasury document posted',
+                    $request->input('request_id') ?: (string) Str::uuid(),
+                    $request->ip(),
+                    $request->userAgent(),
+                    (array) $request->input('meta', [])
+                )
+            );
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_posted')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function reverseTreasuryDocument(TreasuryReconciliationActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.cash_bank.manage');
+
+        $businessId = $this->businessId($request);
+
+        try {
+            $documentModel = $this->treasuryDocumentOrFail($document, $businessId);
+            $this->postingRuleEngine->reverse(
+                $documentModel,
+                (string) $request->input('event_type', 'post'),
+                new ReversalContext(
+                    (int) auth()->id(),
+                    $businessId,
+                    $request->input('reason') ?: 'Cash/bank native treasury document reversed',
+                    $request->input('request_id') ?: (string) Str::uuid(),
+                    $request->ip(),
+                    $request->userAgent(),
+                    (array) $request->input('meta', [])
+                )
+            );
+
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.treasury_document_reversed')]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('vasaccounting.cash_bank.index')
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        }
     }
 
     protected function parseStatementLines(string $input): Collection
@@ -338,12 +754,107 @@ class CashBankController extends VasBaseController
         $matched = (int) $statementImport->lines->where('match_status', 'matched')->count();
         $ignored = (int) $statementImport->lines->where('match_status', 'ignored')->count();
         $unmatched = (int) $statementImport->lines->where('match_status', 'unmatched')->count();
+        $openExceptions = \Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException::query()
+            ->whereIn('statement_line_id', $statementImport->lines->pluck('id')->all())
+            ->whereIn('status', ['open', 'suggested'])
+            ->count();
 
         $statementImport->status = match (true) {
             $matched === 0 && $ignored === 0 && $unmatched > 0 => 'imported',
-            $unmatched === 0 && ($matched + $ignored) > 0 => 'reconciled',
+            $unmatched === 0 && $openExceptions === 0 && ($matched + $ignored) > 0 => 'reconciled',
             default => 'in_review',
         };
         $statementImport->save();
+    }
+
+    protected function treasuryActionContext(
+        TreasuryReconciliationActionRequest $request,
+        int $businessId,
+        string $defaultReason
+    ): ActionContext {
+        return new ActionContext(
+            (int) auth()->id(),
+            $businessId,
+            $request->input('reason') ?: $defaultReason,
+            $request->input('request_id') ?: (string) Str::uuid(),
+            $request->ip(),
+            $request->userAgent(),
+            (array) $request->input('meta', [])
+        );
+    }
+
+    protected function treasuryDocumentOrFail(int $documentId, int $businessId): FinanceDocument
+    {
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_family', 'cash_bank')
+            ->whereIn('document_type', ['cash_transfer', 'bank_transfer', 'petty_cash_expense'])
+            ->findOrFail($documentId);
+    }
+
+    protected function closeScope(Request $request, int $businessId): array
+    {
+        $periodId = (int) $request->query('period_id', 0);
+        if ($periodId <= 0) {
+            return [
+                'period' => null,
+                'start_date' => null,
+                'end_date' => null,
+            ];
+        }
+
+        $period = VasAccountingPeriod::query()
+            ->where('business_id', $businessId)
+            ->find($periodId);
+
+        return [
+            'period' => $period,
+            'start_date' => optional(optional($period)->start_date)->toDateString(),
+            'end_date' => optional(optional($period)->end_date)->toDateString(),
+        ];
+    }
+
+    protected function applyDocumentDateScope($query, ?string $periodStart, ?string $periodEnd)
+    {
+        if (! $periodStart && ! $periodEnd) {
+            return $query;
+        }
+
+        if ($periodStart) {
+            $query->whereDate(DB::raw('COALESCE(posting_date, document_date)'), '>=', $periodStart);
+        }
+
+        if ($periodEnd) {
+            $query->whereDate(DB::raw('COALESCE(posting_date, document_date)'), '<=', $periodEnd);
+        }
+
+        return $query;
+    }
+
+    protected function treasuryExceptionScopeCount(
+        int $businessId,
+        ?int $selectedLocationId,
+        ?string $periodStart,
+        ?string $periodEnd,
+        array $statuses
+    ): int {
+        return (int) FinanceTreasuryException::query()
+            ->where('business_id', $businessId)
+            ->whereIn('status', $statuses)
+            ->when($selectedLocationId, function ($query) use ($selectedLocationId) {
+                $query->whereHas('statementLine.statementImport.bankAccount', function ($bankAccountQuery) use ($selectedLocationId) {
+                    $bankAccountQuery->where('business_location_id', $selectedLocationId);
+                });
+            })
+            ->whereHas('statementLine', function ($query) use ($periodStart, $periodEnd) {
+                if ($periodStart) {
+                    $query->whereDate('transaction_date', '>=', $periodStart);
+                }
+
+                if ($periodEnd) {
+                    $query->whereDate('transaction_date', '<=', $periodEnd);
+                }
+            })
+            ->count();
     }
 }

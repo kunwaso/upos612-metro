@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Receipt Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used in receipt
-    |
-    */
-
     'product' => 'Sản phẩm',
     'qty' => 'Số lượng',
     'unit_price' => 'Đơn giá',

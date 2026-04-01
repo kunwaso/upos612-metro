@@ -54,6 +54,220 @@ return [
         'integrations' => true,
         'reports' => true,
         'closing' => true,
+        'finance_core_v2' => true,
+        'workflow_v2' => true,
+        'posting_engine_v2' => true,
+        'traceability_v2' => true,
+        'p2p_v2' => false,
+        'o2c_v2' => false,
+        'inventory_v2' => false,
+        'treasury_v2' => false,
+        'expense_v2' => false,
+        'assets_v2' => false,
+        'payroll_v2' => false,
+        'tax_v2' => false,
+        'close_v2' => false,
+    ],
+    'finance_core_defaults' => [
+        'default_event_type' => 'post',
+        'supported_account_sources' => ['fixed', 'document_line_account', 'document_line_debit', 'document_line_credit', 'document_line_tax'],
+        'supported_amount_sources' => ['line_amount', 'tax_amount', 'gross_amount', 'unit_price'],
+        'supported_workflow_statuses' => ['draft', 'submitted', 'approved', 'matched', 'converted_to_po', 'ordered', 'released', 'partially_received', 'fully_received', 'partially_delivered', 'fully_delivered', 'posted', 'partially_collected', 'collected', 'closed', 'reversed', 'cancelled'],
+        'supported_accounting_statuses' => ['not_ready', 'pending_approval', 'ready_to_post', 'matched', 'posted', 'closed', 'reversed', 'cancelled'],
+    ],
+    'finance_document_blueprints' => [
+        'procurement' => [
+            'purchase_requisition' => [
+                'posting_mode' => 'none',
+                'required_counterparty' => false,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => ['purchase_order'],
+                'postable_workflow_statuses' => [],
+            ],
+            'purchase_order' => [
+                'posting_mode' => 'none',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['purchase_requisition'],
+                'allowed_child_types' => ['goods_receipt', 'supplier_invoice'],
+                'postable_workflow_statuses' => [],
+            ],
+            'goods_receipt' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['purchase_order'],
+                'allowed_child_types' => ['supplier_invoice'],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+        ],
+        'payables' => [
+            'supplier_invoice' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['goods_receipt', 'purchase_order'],
+                'allowed_child_types' => ['supplier_payment'],
+                'postable_workflow_statuses' => ['approved', 'matched'],
+            ],
+        ],
+        'cash_bank' => [
+            'supplier_payment' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['supplier_invoice'],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'customer_receipt' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['customer_invoice'],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'cash_transfer' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'bank_transfer' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+            'petty_cash_expense' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => false,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => [],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+        ],
+        'sales' => [
+            'quotation' => [
+                'posting_mode' => 'none',
+                'required_counterparty' => true,
+                'allowed_parent_types' => [],
+                'allowed_child_types' => ['sales_order'],
+                'postable_workflow_statuses' => [],
+            ],
+            'sales_order' => [
+                'posting_mode' => 'none',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['quotation'],
+                'allowed_child_types' => ['delivery', 'customer_invoice'],
+                'postable_workflow_statuses' => [],
+            ],
+            'delivery' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['sales_order'],
+                'allowed_child_types' => ['customer_invoice'],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+        ],
+        'receivables' => [
+            'customer_invoice' => [
+                'posting_mode' => 'manual',
+                'required_counterparty' => true,
+                'allowed_parent_types' => ['delivery', 'sales_order'],
+                'allowed_child_types' => ['customer_receipt'],
+                'postable_workflow_statuses' => ['approved'],
+            ],
+        ],
+    ],
+    'finance_document_transition_events' => [
+        'purchase_requisition' => [
+            'fulfill' => [
+                'allowed_from' => ['approved'],
+                'targets' => [
+                    'converted_to_po' => ['workflow_status' => 'converted_to_po', 'accounting_status' => 'not_ready'],
+                ],
+            ],
+            'close' => [
+                'allowed_from' => ['approved', 'converted_to_po'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'purchase_order' => [
+            'fulfill' => [
+                'allowed_from' => ['approved', 'ordered', 'partially_received'],
+                'targets' => [
+                    'ordered' => ['workflow_status' => 'ordered', 'accounting_status' => 'not_ready'],
+                    'partially_received' => ['workflow_status' => 'partially_received', 'accounting_status' => 'not_ready'],
+                    'fully_received' => ['workflow_status' => 'fully_received', 'accounting_status' => 'not_ready'],
+                ],
+            ],
+            'close' => [
+                'allowed_from' => ['approved', 'ordered', 'partially_received', 'fully_received'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'supplier_invoice' => [
+            'match' => [
+                'allowed_from' => ['approved'],
+                'workflow_status' => 'matched',
+                'accounting_status' => 'ready_to_post',
+            ],
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'quotation' => [
+            'close' => [
+                'allowed_from' => ['approved'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'sales_order' => [
+            'fulfill' => [
+                'allowed_from' => ['approved', 'released', 'partially_delivered'],
+                'targets' => [
+                    'released' => ['workflow_status' => 'released', 'accounting_status' => 'not_ready'],
+                    'partially_delivered' => ['workflow_status' => 'partially_delivered', 'accounting_status' => 'not_ready'],
+                    'fully_delivered' => ['workflow_status' => 'fully_delivered', 'accounting_status' => 'not_ready'],
+                ],
+            ],
+            'close' => [
+                'allowed_from' => ['approved', 'released', 'partially_delivered', 'fully_delivered'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+        'customer_invoice' => [
+            'close' => [
+                'allowed_from' => ['posted'],
+                'workflow_status' => 'closed',
+                'accounting_status' => 'closed',
+            ],
+        ],
+    ],
+    'finance_matching' => [
+        'supplier_invoice' => [
+            'require_parent_link' => true,
+            'allow_purchase_order_only' => true,
+            'quantity_variance_tolerance' => '0.0001',
+            'amount_variance_tolerance' => '0.0100',
+            'tax_variance_tolerance' => '0.0100',
+        ],
+    ],
+    'inventory_ledger_defaults' => [
+        'costing_method' => 'weighted_average',
+        'allow_negative_stock' => false,
+    ],
+    'treasury_reconciliation' => [
+        'default_candidate_limit' => 5,
+        'candidate_date_window_days' => 7,
+        'amount_tolerance' => '0.0100',
+        'candidate_amount_variance' => '1000.0000',
+        'suggest_threshold' => 70,
     ],
     'cutover_defaults' => [
         'legacy_routes_mode' => 'observe',
@@ -82,6 +296,13 @@ return [
     'approval_defaults' => [
         'default_manual_voucher_status' => 'draft',
         'require_manual_voucher_approval' => false,
+        'finance_document_defaults' => [
+            'maker_checker' => true,
+            'auto_approve_without_steps' => false,
+            'default_policy_code' => 'FINANCE_DOCUMENT_DEFAULT',
+            'default_step_role' => 'finance_manager',
+            'default_permission_code' => 'vasaccounting.finance_documents.approve',
+        ],
         'native_document_defaults' => [
             'invoice' => [
                 'default_status' => 'draft',
@@ -300,6 +521,21 @@ return [
         ],
     ],
     'enterprise_domains' => [
+        'finance_core' => [
+            'route' => 'vasaccounting.dashboard.index',
+            'path' => 'finance-core',
+            'permission' => 'vas_accounting.access',
+            'title' => 'Finance Core & Posting',
+            'nav_label' => 'Finance Core',
+            'subtitle' => 'Canonical finance documents, configurable posting rules, traceability, and the enterprise posting engine foundation.',
+            'record_table' => 'vas_fin_documents',
+            'record_label' => 'Finance documents',
+            'capabilities' => [
+                ['title' => 'Canonical finance documents', 'description' => 'Operational finance documents are stored separately from legacy vouchers so migration can happen family by family.'],
+                ['title' => 'Posting preview and rule versioning', 'description' => 'Posting previews resolve configurable rule sets and account derivation before anything is posted to the journal.'],
+                ['title' => 'Document-to-journal traceability', 'description' => 'Every accounting event and journal line is linked back to the source document chain for audit and control evidence.'],
+            ],
+        ],
         'cash_bank' => [
             'route' => 'vasaccounting.cash_bank.index',
             'path' => 'cash-bank',

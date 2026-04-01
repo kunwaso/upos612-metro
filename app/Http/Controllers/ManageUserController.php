@@ -166,22 +166,15 @@ class ManageUserController extends Controller
         }
 
         $business_id = request()->session()->get('user.business_id');
+        $active_tab = $this->resolveUserAccountTab(request()->query('tab'));
+        if ($active_tab == 'settings' && ! auth()->user()->can('user.update')) {
+            $active_tab = 'overview';
+        }
 
-        $user = User::where('business_id', $business_id)
-                    ->with(['contactAccess'])
-                    ->find($id);
+        $payload = $this->getUserAccountViewData($business_id, $id);
+        $payload['active_tab'] = $active_tab;
 
-        //Get user view part from modules
-        $view_partials = $this->moduleUtil->getModuleData('moduleViewPartials', ['view' => 'manage_user.show', 'user' => $user]);
-
-        $users = User::forDropdown($business_id, false);
-
-        $activities = Activity::forSubject($user)
-           ->with(['causer', 'subject'])
-           ->latest()
-           ->get();
-
-        return view('manage_user.show')->with(compact('user', 'view_partials', 'users', 'activities'));
+        return view('manage_user.show')->with($payload);
     }
 
     /**
@@ -196,32 +189,7 @@ class ManageUserController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $business_id = request()->session()->get('user.business_id');
-        $user = User::where('business_id', $business_id)
-                    ->with(['contactAccess'])
-                    ->findOrFail($id);
-
-        $roles = $this->getRolesArray($business_id);
-
-        $contact_access = $user->contactAccess->pluck('name', 'id')->toArray();
-
-        if ($user->status == 'active') {
-            $is_checked_checkbox = true;
-        } else {
-            $is_checked_checkbox = false;
-        }
-
-        $locations = BusinessLocation::where('business_id', $business_id)
-                                    ->get();
-
-        $permitted_locations = $user->permitted_locations();
-        $username_ext = $this->moduleUtil->getUsernameExtension();
-
-        //Get user form part from modules
-        $form_partials = $this->moduleUtil->getModuleData('moduleViewPartials', ['view' => 'manage_user.edit', 'user' => $user]);
-
-        return view('manage_user.edit')
-                ->with(compact('roles', 'user', 'contact_access', 'is_checked_checkbox', 'locations', 'permitted_locations', 'form_partials', 'username_ext'));
+        return redirect()->route('users.show', ['user' => $id, 'tab' => 'settings']);
     }
 
     /**
@@ -258,7 +226,7 @@ class ManageUserController extends Controller
         }
 
         try {
-            $user_data = $request->only(['surname', 'first_name', 'last_name', 'email', 'selected_contacts', 'marital_status',
+            $user_data = $request->only(['surname', 'first_name', 'last_name', 'email', 'language', 'selected_contacts', 'marital_status',
                 'blood_group', 'contact_number', 'fb_link', 'twitter_link', 'social_media_1',
                 'social_media_2', 'permanent_address', 'current_address',
                 'guardian_name', 'custom_field_1', 'custom_field_2',
@@ -272,6 +240,11 @@ class ManageUserController extends Controller
 
             if (! isset($user_data['selected_contacts'])) {
                 $user_data['selected_contacts'] = 0;
+            }
+
+            $allowed_languages = array_keys(config('constants.langs', []));
+            if (empty($user_data['language']) || ! in_array($user_data['language'], $allowed_languages, true)) {
+                $user_data['language'] = config('app.locale');
             }
 
             if (empty($request->input('allow_login'))) {
@@ -365,6 +338,7 @@ class ManageUserController extends Controller
             ];
 
             DB::commit();
+            $this->syncCurrentUserSession($request, $user);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -375,7 +349,85 @@ class ManageUserController extends Controller
             ];
         }
 
-        return redirect('users')->with('status', $output);
+        return redirect()->route('users.show', ['user' => $id, 'tab' => 'settings'])->with('status', $output);
+    }
+
+    private function resolveUserAccountTab($tab)
+    {
+        $allowed_tabs = ['overview', 'settings', 'documents', 'activities'];
+
+        if (in_array($tab, $allowed_tabs, true)) {
+            return $tab;
+        }
+
+        return 'overview';
+    }
+
+    private function getUserAccountViewData($business_id, $id)
+    {
+        $user = User::where('business_id', $business_id)
+                    ->with(['contactAccess'])
+                    ->findOrFail($id);
+
+        //Get user view part from modules
+        $view_partials = $this->moduleUtil->getModuleData('moduleViewPartials', ['view' => 'manage_user.show', 'user' => $user]);
+
+        $users = User::forDropdown($business_id, false);
+
+        $activities = Activity::forSubject($user)
+            ->with(['causer', 'subject'])
+            ->latest()
+            ->get();
+
+        $roles = $this->getRolesArray($business_id);
+        $contact_access = $user->contactAccess->pluck('name', 'id')->toArray();
+        $is_checked_checkbox = $user->status == 'active';
+        $locations = BusinessLocation::where('business_id', $business_id)->get();
+        $permitted_locations = $user->permitted_locations();
+        $username_ext = $this->moduleUtil->getUsernameExtension();
+
+        $languages = $this->getLanguagesArray();
+
+        //Get user form part from modules
+        $form_partials = $this->moduleUtil->getModuleData('moduleViewPartials', ['view' => 'manage_user.edit', 'user' => $user]);
+
+        return compact(
+            'user',
+            'view_partials',
+            'users',
+            'activities',
+            'roles',
+            'languages',
+            'contact_access',
+            'is_checked_checkbox',
+            'locations',
+            'permitted_locations',
+            'form_partials',
+            'username_ext'
+        );
+    }
+
+    private function getLanguagesArray()
+    {
+        $config_languages = config('constants.langs', []);
+        $languages = [];
+
+        foreach ($config_languages as $key => $value) {
+            $languages[$key] = $value['full_name'];
+        }
+
+        return $languages;
+    }
+
+    private function syncCurrentUserSession(Request $request, User $user): void
+    {
+        if ((int) $request->session()->get('user.id') !== (int) $user->id) {
+            return;
+        }
+
+        foreach (['id', 'surname', 'first_name', 'last_name', 'email', 'business_id', 'language'] as $key) {
+            $request->session()->put("user.$key", $user->{$key});
+        }
     }
 
     private function getAdmins()

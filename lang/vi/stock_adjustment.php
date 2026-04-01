@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Stock Adjustment Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Stock Adjustment CRUD operations.
-    |
-    */
-
     'stock_adjustment' => 'Điều chỉnh kho',
     'stock_adjustments' => 'Điều chỉnh kho',
     'list' => 'Danh sách điều chỉnh kho',

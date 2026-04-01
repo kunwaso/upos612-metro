@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Expense Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Expense CRUD operations.
-    |
-    */
-
     'expenses' => 'Chi phí',
     'expense_categories' => 'Danh mục chi phí',
     'manage_your_expense_categories' => 'Quản lý danh mục chi phí',
@@ -33,6 +23,6 @@ return [
     'expense_delete_success' => 'Chi phí đã xóa thành công',
     'expense_for' => 'Chi phí cho',
     'expense_for_help' => 'Chọn người dùng (email/tên đăng nhập) mà chi phí liên quan đến (Tùy chọn)',
-    'import_expense' => 'Nhập chi phí'
-
+    'import_expense' => 'Nhập chi phí',
+    'date_format_instruction' => 'Định dạng ngày giờ chi phí phải là "Y-m-d H:i:s" (2020-07-15 17:45:32)',
 ];

@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'pageCheckout' => 'MyFatoorah - Thanh toán',
+    'pageError' => 'Lỗi MyFatoorah',
+    'noPaymentGateways' => 'Không có phương thức thanh toán nào có sẵn trên tài khoản của bạn, vui lòng liên hệ với người quản lý tài khoản của bạn.',
+    'howWouldYouLikeToPay' => 'Bạn muốn thanh toán như thế nào?',
+    'or' => 'Hoặc',
+    'payWith' => 'Thanh toán bằng',
+    'insertCardDetails' => 'Chèn chi tiết thẻ',
+    'payNow' => 'Thanh toán ngay',
+    'holderName' => 'Tên trên thẻ',
+    'cardNumber' => 'Số',
+    'expiryDate' => 'MM/YY',
+    'securityCode' => 'CVV',
+    'cardHolderNameLabel' => 'Tên chủ thẻ',
+    'cardNumberLabel' => 'Số thẻ',
+    'expiryDateLabel' => 'Ngày hết hạn',
+    'securityCodeLabel' => 'Mã bảo mật',
+    'saveCard' => 'Lưu số thẻ để thanh toán sau',
+    'addCard' => 'Sử dụng thẻ khác',
+    'deleteAlert.title' => 'Xóa thẻ',
+    'deleteAlert.message' => 'Bạn có chắc chắn muốn xóa thẻ này không?',
+    'deleteAlert.confirm' => 'Có',
+    'deleteAlert.cancel' => 'Không',
+    'Kindly review your MyFatoorah admin configuration due to a wrong entry.' => 'Vui lòng xem lại cấu hình quản trị viên MyFatoorah của bạn do nhập sai.',
+];

@@ -8,6 +8,7 @@ use Modules\VasAccounting\Services\EInvoiceAdapterManager;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
 use Modules\VasAccounting\Services\IntegrationHubService;
 use Modules\VasAccounting\Services\TaxExportAdapterManager;
+use Modules\VasAccounting\Contracts\TreasuryExceptionServiceInterface;
 use Modules\VasAccounting\Services\VasInventoryValuationService;
 use Modules\VasAccounting\Services\VasPayrollBridgeService;
 use Modules\VasAccounting\Services\VasPeriodCloseService;
@@ -44,7 +45,8 @@ class PhaseSevenServicesTest extends TestCase
             Mockery::mock(EInvoiceAdapterManager::class),
             Mockery::mock(EnterpriseFinanceReportUtil::class),
             Mockery::mock(VasPayrollBridgeService::class),
-            Mockery::mock(VasPostingService::class)
+            Mockery::mock(VasPostingService::class),
+            Mockery::mock(TreasuryExceptionServiceInterface::class)
         );
 
         $lines = $service->parseStatementLinesText("2026-03-28|Incoming transfer|1500.50|4500.75\n2026-03-29|Service fee|-20.00|4480.75");

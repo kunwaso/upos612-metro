@@ -11,7 +11,9 @@ use Modules\VasAccounting\Entities\VasEInvoiceLog;
 use Modules\VasAccounting\Entities\VasIntegrationRun;
 use Modules\VasAccounting\Entities\VasIntegrationWebhook;
 use Modules\VasAccounting\Entities\VasPostingFailure;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException;
 use Modules\VasAccounting\Jobs\RunIntegrationTaskJob;
+use Modules\VasAccounting\Contracts\TreasuryExceptionServiceInterface;
 use Modules\VasAccounting\Utils\EnterpriseFinanceReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 use RuntimeException;
@@ -26,7 +28,8 @@ class IntegrationHubService
         protected EInvoiceAdapterManager $eInvoiceAdapterManager,
         protected EnterpriseFinanceReportUtil $enterpriseFinanceReportUtil,
         protected VasPayrollBridgeService $vasPayrollBridgeService,
-        protected VasPostingService $postingService
+        protected VasPostingService $postingService,
+        protected TreasuryExceptionServiceInterface $treasuryExceptionService
     ) {
     }
 
@@ -260,6 +263,7 @@ class IntegrationHubService
             ]);
         }
 
+        $this->treasuryExceptionService->refreshForImport($statementImport->fresh('lines'), (int) $run->business_id);
         $this->refreshStatementImportStatus($statementImport->fresh('lines'));
 
         return [
@@ -427,10 +431,14 @@ class IntegrationHubService
         $matched = (int) $statementImport->lines->where('match_status', 'matched')->count();
         $ignored = (int) $statementImport->lines->where('match_status', 'ignored')->count();
         $unmatched = (int) $statementImport->lines->where('match_status', 'unmatched')->count();
+        $openExceptions = FinanceTreasuryException::query()
+            ->whereIn('statement_line_id', $statementImport->lines->pluck('id')->all())
+            ->whereIn('status', ['open', 'suggested'])
+            ->count();
 
         $statementImport->status = match (true) {
             $matched === 0 && $ignored === 0 && $unmatched > 0 => 'imported',
-            $unmatched === 0 && ($matched + $ignored) > 0 => 'reconciled',
+            $unmatched === 0 && $openExceptions === 0 && ($matched + $ignored) > 0 => 'reconciled',
             default => 'in_review',
         };
         $statementImport->save();

@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Brand Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Brand CRUD operations.
-    |
-    */
-
     'categories' => 'Danh mục',
     'manage_your_categories' => 'Quản lý danh mục',
     'all_your_categories' => 'Tất cả danh mục',
@@ -24,5 +14,4 @@ return [
     'deleted_success' => 'Danh mục đã xóa thành công',
     'add_category' => 'Thêm danh mục',
     'edit_category' => 'Sửa danh mục',
-
 ];

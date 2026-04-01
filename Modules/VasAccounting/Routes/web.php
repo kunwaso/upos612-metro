@@ -49,10 +49,19 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::post('/vouchers/{voucher}/reverse', [VoucherController::class, 'reverse'])->whereNumber('voucher')->name('vouchers.reverse');
 
         Route::get('/cash-bank', [CashBankController::class, 'index'])->name('cash_bank.index');
+        Route::post('/cash-bank/treasury-documents', [CashBankController::class, 'storeTreasuryDocument'])->name('cash_bank.treasury_documents.store');
+        Route::post('/cash-bank/treasury-documents/{document}/submit', [CashBankController::class, 'submitTreasuryDocument'])->whereNumber('document')->name('cash_bank.treasury_documents.submit');
+        Route::post('/cash-bank/treasury-documents/{document}/approve', [CashBankController::class, 'approveTreasuryDocument'])->whereNumber('document')->name('cash_bank.treasury_documents.approve');
+        Route::post('/cash-bank/treasury-documents/{document}/post', [CashBankController::class, 'postTreasuryDocument'])->whereNumber('document')->name('cash_bank.treasury_documents.post');
+        Route::post('/cash-bank/treasury-documents/{document}/reverse', [CashBankController::class, 'reverseTreasuryDocument'])->whereNumber('document')->name('cash_bank.treasury_documents.reverse');
         Route::post('/cash-bank/cashbooks', [CashBankController::class, 'storeCashbook'])->name('cash_bank.cashbooks.store');
         Route::post('/cash-bank/bank-accounts', [CashBankController::class, 'storeBankAccount'])->name('cash_bank.bank_accounts.store');
         Route::post('/cash-bank/statements', [CashBankController::class, 'importStatement'])->name('cash_bank.statements.import');
         Route::post('/cash-bank/statements/lines/{line}/reconcile', [CashBankController::class, 'reconcileLine'])->whereNumber('line')->name('cash_bank.statements.reconcile');
+        Route::post('/cash-bank/statements/lines/{line}/canonical-reconcile', [CashBankController::class, 'reconcileLineCanonically'])->whereNumber('line')->name('cash_bank.statements.canonical_reconcile');
+        Route::post('/cash-bank/statements/lines/{line}/refresh-exception', [CashBankController::class, 'refreshTreasuryException'])->whereNumber('line')->name('cash_bank.statements.refresh_exception');
+        Route::post('/cash-bank/statements/lines/{line}/ignore-exception', [CashBankController::class, 'ignoreTreasuryException'])->whereNumber('line')->name('cash_bank.statements.ignore_exception');
+        Route::post('/cash-bank/reconciliations/{reconciliation}/reverse', [CashBankController::class, 'reverseCanonicalReconciliation'])->whereNumber('reconciliation')->name('cash_bank.reconciliations.reverse');
         Route::prefix('payment-documents')->name('payment_documents.')->group(function () {
             Route::get('/', [PaymentDocumentController::class, 'index'])->name('index');
             Route::get('/create', [PaymentDocumentController::class, 'create'])->name('create');

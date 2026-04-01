@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Brand Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Brand CRUD operations.
-    |
-    */
-
     'sale' => 'Bán hàng',
     'sells' => 'Bán hàng',
     'list_sale' => 'Danh sách bán hàng',
@@ -32,7 +22,6 @@ return [
     'unit_price' => 'Đơn giá',
     'qty' => 'Số lượng',
     'subtotal' => 'Thành tiền',
-    'recent_transactions' => 'Giao dịch gần đây',
     'pos_sale_added' => 'Bán thành công',
     'price_inc_tax' => 'Giá bao gồm thuế',
     'tax' => 'Thuế',
@@ -70,4 +59,5 @@ return [
     'shipping' => 'Vận chuyển',
     'shipping_details' => 'Chi tiết vận chuyển',
     'shipping_charges' => 'Phí vận chuyển',
+    'recent_transactions' => 'Giao dịch gần đây',
 ];

@@ -1,24 +1,14 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Printer Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Printer CRUD operations.
-    |
-    */
-
     'printers' => 'Máy in',
     'add_printer' => 'Thêm máy in',
     'name' => 'Tên máy in',
     'connection_type' => 'Kiểu kết nối',
     'capability_profile' => 'Hồ sơ năng lực',
     'ip_address' => 'Địa chỉ IP',
-    'port' => 'Port',
-    'path' => 'Path',
+    'port' => 'Cảng',
+    'path' => 'Đường dẫn',
     'added_success' => 'Máy in được thêm thành công',
     'manage_your_printers' => 'Quản lý máy in của bạn',
     'all_your_printer' => 'Tất cả các máy in được cấu hình',

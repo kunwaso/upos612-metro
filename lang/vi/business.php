@@ -1,15 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Business Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used during registration of a business.
-    |
-    */
     'register_and_get_started_in_minutes' => 'Đăng ký và bắt đầu trong vài phút',
     'business_name' => 'Tên doanh nghiệp',
     'start_date' => 'Ngày bắt đầu',
@@ -19,15 +10,15 @@ return [
     'country' => 'Quốc gia',
     'state' => 'Tỉnh/TP',
     'city' => 'Quận/Huyện/Tx',
-    'zip_code' => 'Zip Code',
-    'zip_code_placeholder' => 'Zip/Postal Code',
+    'zip_code' => 'Mã Zip',
+    'zip_code_placeholder' => 'Mã Zip/Bưu Chính',
     'landmark' => 'Số nhà, Đường, Phường',
     'tax_1_name' => 'Tên thuế 1',
     'tax_1_no' => 'Thuế 1 No.',
     'tax_2_name' => 'Tên thuế 2',
     'tax_2_no' => 'Thuế 2 No.',
     'tax_1_placeholder' => 'GST/VAT/khác',
-    'prefix' => 'Prefix',
+    'prefix' => 'Tiền tố',
     'prefix_placeholder' => 'Anh / Chị',
     'first_name' => 'Tên',
     'last_name' => 'Họ & Lót',
@@ -53,7 +44,7 @@ return [
     'sale' => 'Bán hàng',
     'sell_price_tax' => 'Gia ban',
     'product' => 'Sản phẩm',
-    'sku_prefix' => 'SKU prefix',
+    'sku_prefix' => 'Tiền tố SKU',
     'language' => 'Ngôn ngữ',
     'time_zone' => 'Múi giờ',
     'months' => [
@@ -72,8 +63,8 @@ return [
     ],
     'fy_start_month' => 'Tháng bắt đầu năm tài chính',
     'accounting_method' => 'Phương pháp quản lý tồn kho',
-    'fifo' => 'FIFO (First In First Out)',
-    'lifo' => 'LIFO (Last In First Out)',
+    'fifo' => 'FIFO (Vào trước ra trước)',
+    'lifo' => 'LIFO (Vào sau ra trước)',
     'business_locations' => 'Địa điểm kinh doanh',
     'business_location' => 'Địa điểm kinh doanh',
     'manage_your_business_locations' => 'Quản lý địa điểm kinh doanh của bạn',
@@ -91,7 +82,6 @@ return [
     'show_help_text' => 'Hiển thị văn bản trợ giúp',
     'mobile' => 'Di động',
     'alternate_number' => 'Số liên lạc thay thế',
-    'email' => 'Email',
     'settings' => 'Cài đặt',
     'transaction_edit_days' => 'Ngày chỉnh sửa giao dịch',
     'dashboard' => 'Bảng điều khiển',
@@ -105,6 +95,10 @@ return [
     'tax_number1' => 'Thuế số 1',
     'tax_number2' => 'Thuế số 2',
     'is_active' => 'Hoạt động',
-     'created_by' => 'Được tạo bởi',
-     'additional_number_secondary' => 'Số bổ sung/Số phụ',
- ];
+    'created_by' => 'Được tạo bởi',
+    'land_mark' => 'Cột mốc',
+    'street_name' => 'Tên đường',
+    'building_number' => 'Số tòa nhà',
+    'additional_number' => 'Số bổ sung',
+    'additional_number_secondary' => 'Số bổ sung/Số phụ',
+];

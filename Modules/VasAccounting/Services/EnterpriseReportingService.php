@@ -179,9 +179,9 @@ class EnterpriseReportingService
 
         return $this->dataset(
             'Bank Reconciliation',
-            ['Transaction Date', 'Bank Account', 'Statement Ref', 'Description', 'Amount', 'Match Status', 'Matched Voucher'],
-            $rows->map(fn ($row) => [$row->transaction_date, trim(($row->bank_account_code ?: '') . ' ' . ($row->bank_name ?: '')), $row->statement_reference, $row->description, $this->money($row->amount), ucfirst($row->match_status), $row->voucher_no ?: 'Unmatched']),
-            [['label' => 'Unmatched lines', 'value' => $rows->where('match_status', 'unmatched')->count()]]
+            ['Transaction Date', 'Bank Account', 'Statement Ref', 'Description', 'Amount', 'Match Status', 'Exception', 'Matched Document'],
+            $rows->map(fn ($row) => [$row->transaction_date, trim(($row->bank_account_code ?: '') . ' ' . ($row->bank_name ?: '')), $row->statement_reference, $row->description, $this->money($row->amount), ucfirst($row->match_status), $row->treasury_exception_status ? ucfirst($row->treasury_exception_status) . ($row->treasury_exception_code ? ' (' . $row->treasury_exception_code . ')' : '') : '-', $row->finance_document_no ?: ($row->voucher_no ?: 'Unmatched')]),
+            [['label' => 'Open treasury exceptions', 'value' => $rows->whereIn('treasury_exception_status', ['open', 'suggested'])->count()]]
         );
     }
 
@@ -332,6 +332,7 @@ class EnterpriseReportingService
 
         $blockers = $this->periodCloseService->blockers($businessId, $period);
         $checklists = $this->periodCloseService->checklistForPeriod($businessId, $period);
+        $treasuryInsights = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
         $blockedCount = collect($blockers)->reduce(function ($carry, $value, $key) {
             if ($key === 'posting_map_incomplete') {
                 return $carry + ($value ? 1 : 0);
@@ -348,6 +349,39 @@ class EnterpriseReportingService
                 ['label' => 'Period', 'value' => $period->name],
                 ['label' => 'Status', 'value' => ucfirst($period->status)],
                 ['label' => 'Blocked items', 'value' => $blockedCount],
+                ['label' => 'Pending treasury docs', 'value' => $blockers['pending_treasury_documents']],
+                ['label' => 'Treasury exceptions', 'value' => $blockers['unreconciled_bank_lines']],
+            ],
+            [
+                [
+                    'title' => 'Pending Treasury Documents',
+                    'subtitle' => 'Native treasury documents in the close period that still need posting workflow action.',
+                    'columns' => ['Document', 'Type', 'Workflow', 'Accounting', 'Amount'],
+                    'rows' => $treasuryInsights['pending_documents']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            $document->document_type,
+                            ucfirst((string) $document->workflow_status),
+                            ucfirst((string) $document->accounting_status),
+                            $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No native treasury documents are blocking close for this period.',
+                ],
+                [
+                    'title' => 'Treasury Reconciliation Exceptions',
+                    'subtitle' => 'Open or suggested bank statement exceptions that still block treasury close readiness.',
+                    'columns' => ['Transaction Date', 'Statement Line', 'Status', 'Recommended Document'],
+                    'rows' => $treasuryInsights['exceptions']->map(function ($exception) {
+                        return [
+                            optional(optional($exception->statementLine)->transaction_date)->format('Y-m-d') ?: '-',
+                            optional($exception->statementLine)->description ?: 'Statement line',
+                            strtoupper((string) $exception->status),
+                            $exception->recommendedDocument?->document_no ?: 'No recommendation yet',
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No treasury reconciliation exceptions are blocking close for this period.',
+                ],
             ]
         );
     }
@@ -382,13 +416,14 @@ class EnterpriseReportingService
         );
     }
 
-    protected function dataset(string $title, array $columns, Collection $rows, array $summary = []): array
+    protected function dataset(string $title, array $columns, Collection $rows, array $summary = [], array $sections = []): array
     {
         return [
             'title' => $title,
             'columns' => $columns,
             'rows' => $rows->values()->all(),
             'summary' => $summary,
+            'sections' => $sections,
         ];
     }
 

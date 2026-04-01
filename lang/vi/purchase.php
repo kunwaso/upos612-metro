@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Purchase Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Purchase screens
-    |
-    */
-
     'supplier' => 'Nhà cung cấp',
     'ref_no' => 'Số tham chiếu',
     'business_location' => 'Địa điểm kinh doanh',
@@ -22,7 +12,6 @@ return [
     'payment_added_success' => 'Đã thanh toán thành công',
     'payment_updated_success' => 'Thanh toán được cập nhật thành công',
     'payment_deleted_success' => 'Đã xóa thanh toán thành công',
-    'view_payments' => 'Xem thanh toán',
     'amount' => 'Số tiền',
     'payment_method' => 'Phương thức thanh toán',
     'no_records_found' => 'Không có dữ liệu được tìm thấy',
@@ -52,7 +41,6 @@ return [
     'purchase_tax' => 'Thuế mua hàng',
     'shipping_details' => 'Chi tiết vận chuyển',
     'additional_shipping_charges' => 'Phí vận chuyển bổ sung',
-    'purchase_total' => 'Tổng số mua',
     'additional_notes' => 'Ghi chú bổ sung',
     'purchase_add_success' => 'Đã thêm thành công',
     'purchase_update_success' => 'Mua hàng cập nhật thành công',

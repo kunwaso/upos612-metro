@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tax Rates Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Tax Rate CRUD operations.
-    |
-    */
-
     'tax_rates' => 'Thuế suất',
     'manage_your_tax_rates' => 'Quản lý thuế của bạn',
     'all_your_tax_rates' => 'Tất cả thuế',
@@ -28,5 +18,4 @@ return [
     'edit_tax_group' => 'Sửa nhóm thuế',
     'sub_taxes' => 'Thuế phụ',
     'can_not_be_deleted' => 'Thuế này thuộc về một số nhóm thuế',
-
 ];

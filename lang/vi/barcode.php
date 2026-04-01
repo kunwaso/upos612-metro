@@ -1,16 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Brand Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used for Brand CRUD operations.
-    |
-    */
-
     'barcodes' => 'Mã vạch',
     'barcode_settings' => 'Cài đặt mã vạch',
     'manage_your_barcodes' => 'Quản lý cài đặt mã vạch của bạn',
@@ -32,7 +22,7 @@ return [
     'col_distance' => 'Khoảng cách giữa hai cột',
     'blank_stickers' => 'Nhãn trống',
     'stickers_in_one_row' => 'Dán trong một hàng',
-    'delete_confirm' => 'Cài đặt này sẽ bị xóa \n Bạn có chắc không?',
+    'delete_confirm' => 'Cài đặt này sẽ bị xóa \\n Bạn có chắc không?',
     'set_as_default' => 'Đặt làm mặc định',
     'default' => 'Mặc định',
     'default_set_success' => 'Mặc định được đặt thành công',

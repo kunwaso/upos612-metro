@@ -1,15 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Home Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used in home page.
-    |
-    */
     'home' => 'Trang chủ',
     'welcome_message' => 'Chào :name,',
     'total_sell' => 'Doanh thu',
@@ -24,8 +15,9 @@ return [
     'sells_current_fy' => 'Doanh thu năm tài chính hiện tại',
     'total_sells' => 'Tổng doanh thu (:currency)',
     'product_stock_alert' => 'Cảnh báo tồn kho',
-    'payment_dues' => 'Payment Dues',
+    'payment_dues' => 'Phí thanh toán',
     'due_amount' => 'Chưa thanh toán',
     'stock_expiry_alert' => 'Thông báo hết hạn cổ phiếu',
     'todays_profit' => 'Lợi nhuận hôm nay',
+    'dashboard' => 'Trang tổng quan',
 ];

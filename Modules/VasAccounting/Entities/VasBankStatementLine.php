@@ -3,6 +3,10 @@
 namespace Modules\VasAccounting\Entities;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryReconciliation;
 
 class VasBankStatementLine extends BaseVasModel
 {
@@ -23,5 +27,15 @@ class VasBankStatementLine extends BaseVasModel
     public function matchedVoucher(): BelongsTo
     {
         return $this->belongsTo(VasVoucher::class, 'matched_voucher_id');
+    }
+
+    public function financeReconciliations(): HasMany
+    {
+        return $this->hasMany(FinanceTreasuryReconciliation::class, 'statement_line_id')->orderByDesc('id');
+    }
+
+    public function treasuryException(): HasOne
+    {
+        return $this->hasOne(FinanceTreasuryException::class, 'statement_line_id');
     }
 }

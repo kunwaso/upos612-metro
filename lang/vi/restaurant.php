@@ -1,13 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Restaurant Language Lines
-    |--------------------------------------------------------------------------
-    */
-
     'restaurant' => 'Nhà hàng',
     'tables' => 'Những cái bàn',
     'table' => 'Bàn',
@@ -23,6 +16,7 @@ return [
     'table_label' => 'Nhãn bàn',
     'show_service_staff' => 'Hiển thị nhân viên phục vụ',
     'service_staff_label' => 'Nhân viên phục vụ',
+    'service_staff_replacement' => 'Thay thế nhân viên phục vụ',
     'select_waiter' => 'Chọn người phục vụ',
     'modifiers' => 'Công cụ sửa đổi',
     'modifier_sets' => 'Bộ sửa đổi',
@@ -31,7 +25,7 @@ return [
     'add_modifier' => 'Thêm công cụ sửa đổi',
     'modifier_set' => 'Chỉnh sửa bộ',
     'modifier' => 'Công cụ sửa đổi',
-    'edit_modifier' => 'Edit Modifier',
+    'edit_modifier' => 'Chỉnh sửa công cụ sửa đổi',
     'manage_products' => 'Quản lý sản phẩm',
     'products' => 'Các sản phẩm',
     'modifiers_for_product' => 'Công cụ sửa đổi cho sản phẩm',
@@ -45,6 +39,8 @@ return [
         'cooked' => 'Nấu chín',
         'served' => 'Phục vụ',
         '' => 'Nhận',
+        'partial_cooked' => 'nấu chín một phần',
+        'partial_served' => 'Được phục vụ một phần',
     ],
     'order_successfully_marked_cooked' => 'Đặt hàng thành công được đánh dấu là nấu chín',
     'order_successfully_marked_served' => 'Đặt hàng thành công được đánh dấu là phục vụ',
@@ -73,10 +69,10 @@ return [
     'start_time' => 'Bắt đầu',
     'end_time' => 'Kết thúc',
     'booking_not_available' => 'Bàn đã được đặt cho <b>:customer_name</b> giữa <b>:booking_time_range</b>',
-    'select_correspondent' => 'Select correspondent',
+    'select_correspondent' => 'Chọn phóng viên',
     'send_notification_to_customer' => 'Gửi thông báo Email / SMS cho khách hàng',
     'booking_details' => 'Chi tiết đặt phòng',
-    'correspondent' => 'Correspondent',
+    'correspondent' => 'phóng viên',
     'booking_starts' => 'Đặt phòng bắt đầu',
     'booking_ends' => 'Đặt phòng kết thúc',
     'cancelled' => 'Đã hủy',
@@ -95,6 +91,4 @@ return [
     'customer_note' => 'Lưu ý khách hàng',
     'table_report' => 'Báo cáo bàn',
     'service_staff_report' => 'Nhân viên phục vụ',
-    'service_staff_replacement' => 'Thay thế nhân viên phục vụ',
-
 ];

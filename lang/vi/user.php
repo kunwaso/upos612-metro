@@ -1,15 +1,6 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Business Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used during registration of a business.
-    |
-    */
     'edit_profile' => 'Chỉnh sửa hồ sơ',
     'change_password' => 'Đổi mật khẩu',
     'current_password' => 'Mật khẩu hiện tại',
@@ -22,7 +13,7 @@ return [
     'all_roles' => 'Tất cả vai trò',
     'add_role' => 'Thêm vai trò',
     'role_name' => 'Tên vai trò',
-    'permissions' => 'Permissions',
+    'permissions' => 'Quyền',
     'role_added' => 'Đã thêm vai trò thành công',
     'role_already_exists' => 'Vai trò có cùng tên đã tồn tại',
     'edit_role' => 'Chỉnh sửa vai trò',
