@@ -205,8 +205,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-contracts-register-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-contracts-register-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.contracts.contract_register.table.contract') }}</th>
@@ -259,8 +262,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-contracts-recognition-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-contracts-recognition-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.contracts.recognition.table.milestone') }}</th>
@@ -316,4 +322,33 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const contractRegisterTable = window.VasWorkspace?.initLocalDataTable('#vas-contracts-register-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (contractRegisterTable) {
+                $('#vas-contracts-register-search').on('keyup', function () {
+                    contractRegisterTable.search(this.value).draw();
+                });
+            }
+
+            const contractRecognitionTable = window.VasWorkspace?.initLocalDataTable('#vas-contracts-recognition-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (contractRecognitionTable) {
+                $('#vas-contracts-recognition-search').on('keyup', function () {
+                    contractRecognitionTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

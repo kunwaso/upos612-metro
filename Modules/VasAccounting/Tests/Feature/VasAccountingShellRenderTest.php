@@ -14,6 +14,12 @@ use Tests\TestCase;
 
 class VasAccountingShellRenderTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    }
+
     public function test_header_renders_shared_shell_navigation_and_quick_actions(): void
     {
         $this->actingAs($this->makeUser([
@@ -77,6 +83,7 @@ class VasAccountingShellRenderTest extends TestCase
             'vas_accounting.access',
             'vas_accounting.reports.view',
         ]));
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
         $html = view('vasaccounting::reports.table', [
             'title' => 'Trial Balance',
@@ -117,10 +124,135 @@ class VasAccountingShellRenderTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('Trial Balance', $html);
-        $this->assertStringContainsString('Rendered Dataset', $html);
+        $this->assertStringContainsString(__('vasaccounting::lang.views.report_table.dataset_title'), $html);
         $this->assertStringContainsString('1111 Cash', $html);
         $this->assertStringContainsString('Open escalated approvals', $html);
         $this->assertStringContainsString('Retry failed dispatches', $html);
+        $this->assertStringContainsString('Back to reports', $html);
+    }
+
+    public function test_report_table_renders_procurement_ownership_sections_inside_shared_shell(): void
+    {
+        $this->actingAs($this->makeUser([
+            'vas_accounting.access',
+            'vas_accounting.reports.view',
+        ]));
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        $html = view('vasaccounting::reports.table', [
+            'title' => 'Procurement Discrepancy Ownership',
+            'columns' => ['Invoice', 'Supplier', 'Queue Status', 'Owner', 'Owner Age', 'Severity', 'Code', 'Match Summary'],
+            'rows' => [
+                ['AP-00043', 'Acme Supplier', 'In Review', 'Tran Procurement Lead', '8 days', 'BLOCKING', 'amount_variance_exceeded', 'Blocked | B2 / W1'],
+            ],
+            'summary' => [
+                ['label' => 'Unassigned', 'value' => 1],
+                ['label' => 'Aged > 7 days', 'value' => 1],
+                ['label' => 'Older than 14 days', 'value' => 0],
+            ],
+            'sections' => [
+                [
+                    'title' => 'Assignment Aging Trend',
+                    'subtitle' => 'Weekly backlog aging trend based on current unresolved discrepancies and when ownership was last assigned.',
+                    'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => [
+                        ['2026-03-24', '2', '1', '1', '0'],
+                    ],
+                ],
+                [
+                    'title' => 'Owner Aging Mix',
+                    'subtitle' => 'See where procurement mismatch follow-up is drifting by owner and queue age.',
+                    'columns' => ['Owner', 'Aging Bucket', 'Rows'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '8+ days', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Stale Owner Backlog',
+                    'subtitle' => 'Owners currently holding discrepancies older than two days, ranked by stale queue size.',
+                    'columns' => ['Owner', 'Open Discrepancies', 'Aged > 2 Days', 'Aged > 7 Days'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '2', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Unassigned Discrepancies',
+                    'subtitle' => 'Exceptions still waiting for an explicit owner assignment.',
+                    'columns' => ['Invoice', 'Supplier', 'Severity', 'Code', 'Match Summary'],
+                    'rows' => [
+                        ['AP-00044', 'Acme Supplier', 'BLOCKING', 'Quantity Variance Exceeded', 'Blocked | B1 / W0'],
+                    ],
+                ],
+                [
+                    'title' => 'Ownership Activity Trend',
+                    'subtitle' => 'Daily ownership, reassignment, and resolution flow over the last fourteen days from the canonical audit stream.',
+                    'columns' => ['Date', 'Claimed', 'Reassigned', 'Resolved'],
+                    'rows' => [
+                        ['2026-04-01', '1', '0', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reviewer Throughput',
+                    'subtitle' => 'See which reviewers are actively taking ownership, reassigning, or resolving procurement discrepancies.',
+                    'columns' => ['Reviewer', 'Claimed', 'Reassigned', 'Resolved', 'Total Actions'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '1', '1', '1', '3'],
+                    ],
+                ],
+            ],
+            'actions' => [
+                [
+                    'label' => 'Open discrepancy queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'discrepancy_queue']),
+                    'style' => 'light-danger',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Assign unassigned to me',
+                    'url' => route('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned_to_me'),
+                    'style' => 'light-primary',
+                    'method' => 'POST',
+                ],
+            ],
+            'reportManagement' => [
+                'title' => 'Ownership controls',
+                'subtitle' => 'Assign every currently unassigned procurement discrepancy to the selected reviewer without leaving the report.',
+                'owner_label' => 'Assign unassigned backlog to',
+                'owner_placeholder' => 'Select owner',
+                'assign_label' => 'Assign unassigned',
+                'route' => route('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned'),
+                'owner_options' => [
+                    9 => 'Tran Procurement Lead',
+                    14 => 'Le Vendor Review',
+                ],
+            ],
+            'vasAccountingPageMeta' => [
+                'title' => 'Procurement Discrepancy Ownership',
+                'subtitle' => 'Ownership, queue aging, and assignee backlog for procurement discrepancies.',
+                'icon' => 'ki-outline ki-delivery',
+                'section_label' => 'Operations',
+                'badge_variant' => 'light-warning',
+                'quick_actions' => [],
+            ],
+            'vasAccountingBusinessContext' => ['label' => 'Demo Business'],
+            'vasAccountingCurrentPeriod' => null,
+            'vasAccountingNavConfig' => ['navigation_groups' => []],
+        ])->render();
+
+        $this->assertStringContainsString('Procurement Discrepancy Ownership', $html);
+        $this->assertStringContainsString('Assignment Aging Trend', $html);
+        $this->assertStringContainsString('Owner Aging Mix', $html);
+        $this->assertStringContainsString('Stale Owner Backlog', $html);
+        $this->assertStringContainsString('Unassigned Discrepancies', $html);
+        $this->assertStringContainsString('Ownership Activity Trend', $html);
+        $this->assertStringContainsString('Reviewer Throughput', $html);
+        $this->assertStringContainsString('Ownership controls', $html);
+        $this->assertStringContainsString('Assign unassigned backlog to', $html);
+        $this->assertStringContainsString('Select owner', $html);
+        $this->assertStringContainsString('Le Vendor Review', $html);
+        $this->assertStringContainsString('Open discrepancy queue', $html);
+        $this->assertStringContainsString('Assign unassigned to me', $html);
+        $this->assertStringContainsString('Assign unassigned', $html);
         $this->assertStringContainsString('Back to reports', $html);
     }
 
@@ -130,6 +262,7 @@ class VasAccountingShellRenderTest extends TestCase
             'vas_accounting.access',
             'vas_accounting.reports.view',
         ]));
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
         $snapshot = new VasReportSnapshot([
             'snapshot_name' => 'March Close Pack',
@@ -164,8 +297,66 @@ class VasAccountingShellRenderTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('March Close Pack', $html);
-        $this->assertStringContainsString('Snapshot Dataset', $html);
+        $this->assertStringContainsString(__('vasaccounting::lang.views.report_snapshot.dataset_title'), $html);
         $this->assertStringContainsString('Open items', $html);
+        $this->assertStringContainsString('Back to reports', $html);
+    }
+
+    public function test_report_table_renders_close_packet_procurement_activity_sections_inside_shared_shell(): void
+    {
+        $this->actingAs($this->makeUser([
+            'vas_accounting.access',
+            'vas_accounting.reports.view',
+        ]));
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        $html = view('vasaccounting::reports.table', [
+            'title' => 'Close Packet - March 2026',
+            'columns' => ['Checklist', 'Status', 'Notes'],
+            'rows' => [
+                ['Procurement workflow and matching cleared', 'Blocked', 'Receiving backlog still open'],
+            ],
+            'summary' => [
+                ['label' => 'Procurement ownership actions', 'value' => 4],
+                ['label' => 'Procurement reassignments', 'value' => 2],
+            ],
+            'sections' => [
+                [
+                    'title' => 'Procurement Ownership Activity',
+                    'subtitle' => 'Canonical audit history for procurement discrepancy ownership actions recorded during the close period.',
+                    'columns' => ['Date/Time', 'Reviewer', 'Action', 'Document', 'Reason'],
+                    'rows' => [
+                        ['2026-04-02 09:15', 'Tran Procurement Lead', 'Discrepancy Reassigned', 'AP-00043', 'Moved to vendor specialist'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment History',
+                    'subtitle' => 'Track procurement discrepancy owner handoffs during the close period, including reviewer and rationale.',
+                    'columns' => ['Date/Time', 'Document', 'Previous Owner', 'New Owner', 'Reviewer', 'Reason'],
+                    'rows' => [
+                        ['2026-04-02 09:15', 'AP-00043', 'Tran Procurement Lead', 'Le Vendor Review', 'Tran Procurement Lead', 'Moved to vendor specialist'],
+                    ],
+                ],
+            ],
+            'actions' => [],
+            'vasAccountingPageMeta' => [
+                'title' => 'Close Packet - March 2026',
+                'subtitle' => 'Period-close checklist and blocker pack.',
+                'icon' => 'ki-outline ki-abstract-26',
+                'section_label' => 'Operations',
+                'badge_variant' => 'light-primary',
+                'quick_actions' => [],
+            ],
+            'vasAccountingBusinessContext' => ['label' => 'Demo Business'],
+            'vasAccountingCurrentPeriod' => null,
+            'vasAccountingNavConfig' => ['navigation_groups' => []],
+        ])->render();
+
+        $this->assertStringContainsString('Close Packet - March 2026', $html);
+        $this->assertStringContainsString('Procurement Ownership Activity', $html);
+        $this->assertStringContainsString('Procurement Reassignment History', $html);
+        $this->assertStringContainsString('Moved to vendor specialist', $html);
+        $this->assertStringContainsString('Le Vendor Review', $html);
         $this->assertStringContainsString('Back to reports', $html);
     }
 
@@ -264,6 +455,44 @@ class VasAccountingShellRenderTest extends TestCase
                             ],
                         ]),
                     ]),
+                    'discrepancy_exceptions' => collect([
+                        tap(new \Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException([
+                            'id' => 6001,
+                            'document_id' => 43,
+                            'status' => 'in_review',
+                            'code' => 'amount_variance_exceeded',
+                            'severity' => 'blocking',
+                            'owner_id' => 99,
+                            'owner_assigned_at' => now()->subDays(8),
+                        ]), function ($exception) {
+                            $exception->setRelation('document', new FinanceDocument([
+                                'id' => 43,
+                                'document_no' => 'AP-00043',
+                            ]));
+                            $exception->setRelation('owner', (object) [
+                                'id' => 99,
+                                'surname' => 'Tran',
+                                'first_name' => 'Procurement',
+                                'last_name' => 'Lead',
+                            ]);
+                        }),
+                    ]),
+                    'owner_summary' => collect([
+                        [
+                            'owner_id' => 99,
+                            'owner_name' => 'Tran Procurement Lead',
+                            'open_count' => 2,
+                            'aged_over_2_days' => 1,
+                            'aged_over_7_days' => 1,
+                        ],
+                        [
+                            'owner_id' => 0,
+                            'owner_name' => null,
+                            'open_count' => 1,
+                            'aged_over_2_days' => 0,
+                            'aged_over_7_days' => 0,
+                        ],
+                    ]),
                 ],
             ],
             'expenseInsights' => [
@@ -284,6 +513,7 @@ class VasAccountingShellRenderTest extends TestCase
                     ]),
                 ],
             ],
+            'procurementAssigneeOptions' => [99 => 'Tran Procurement Lead', 101 => 'Finance Controller'],
             'recentPackets' => collect(),
             'vasAccountingPageMeta' => [
                 'title' => 'Closing',
@@ -303,6 +533,13 @@ class VasAccountingShellRenderTest extends TestCase
         $this->assertStringContainsString('Pending procurement documents', $html);
         $this->assertStringContainsString('Review matching', $html);
         $this->assertStringContainsString('block / warn', $html);
+        $this->assertStringContainsString('Discrepancy ownership', $html);
+        $this->assertStringContainsString('Assign unassigned', $html);
+        $this->assertStringContainsString('Claim unassigned', $html);
+        $this->assertStringContainsString('Aged discrepancies', $html);
+        $this->assertStringContainsString('Tran Procurement Lead', $html);
+        $this->assertStringContainsString('Assign owner...', $html);
+        $this->assertStringContainsString('Reassign owner', $html);
         $this->assertStringContainsString('Escalated expense approvals', $html);
         $this->assertStringContainsString('Review escalations', $html);
         $this->assertStringContainsString('Escalate to CFO', $html);
@@ -585,13 +822,20 @@ class VasAccountingShellRenderTest extends TestCase
                 'blocking' => 1,
                 'warning' => 0,
                 'documents' => 1,
+                'in_review' => 1,
+                'owned_by_me' => 1,
+                'unassigned' => 0,
+                'aged_over_2_days' => 0,
+                'aged_over_7_days' => 0,
             ],
             'discrepancyQueue' => collect([
                 [
+                    'exception_id' => 9001,
                     'document_id' => 302,
                     'document_no' => 'AP-00302',
                     'document_date' => now()->format('Y-m-d'),
                     'workflow_status' => 'approved',
+                    'status' => 'in_review',
                     'severity' => 'blocking',
                     'code' => 'amount_variance_exceeded',
                     'message' => 'Supplier invoice line [1] amount variance exceeds tolerance.',
@@ -600,6 +844,11 @@ class VasAccountingShellRenderTest extends TestCase
                     'match_status' => 'blocked',
                     'blocking_exception_count' => 1,
                     'warning_count' => 0,
+                    'owner_id' => 99,
+                    'owner_name' => 'Procurement Lead',
+                    'owner_assigned_at' => '2026-04-02 09:15',
+                    'owner_age_days' => 2,
+                    'resolution_note' => '',
                     'meta' => ['match_key' => 'product:7'],
                 ],
             ]),
@@ -608,6 +857,7 @@ class VasAccountingShellRenderTest extends TestCase
             'locationOptions' => [2 => 'Main Branch'],
             'supplierOptions' => [10 => 'Acme Supplier'],
             'productOptions' => [7 => 'Steel Roll'],
+            'assigneeOptions' => [99 => 'Procurement Lead', 101 => 'Finance Controller'],
             'taxCodeOptions' => collect(),
             'chartOptions' => collect(),
             'parentDocumentOptions' => collect([$purchaseOrder, $supplierInvoice]),
@@ -631,6 +881,16 @@ class VasAccountingShellRenderTest extends TestCase
         $this->assertStringContainsString('Mark fully received', $html);
         $this->assertStringContainsString('Open discrepancies', $html);
         $this->assertStringContainsString('Procurement discrepancy queue', $html);
+        $this->assertStringContainsString('Queue status', $html);
+        $this->assertStringContainsString('Owned by me', $html);
+        $this->assertStringContainsString('Unassigned', $html);
+        $this->assertStringContainsString('Aged &gt; 2 days', $html);
+        $this->assertStringContainsString('Open ownership report', $html);
+        $this->assertStringContainsString('Procurement Lead', $html);
+        $this->assertStringContainsString('Take ownership', $html);
+        $this->assertStringContainsString('Reassign owner', $html);
+        $this->assertStringContainsString('Finance Controller', $html);
+        $this->assertStringContainsString('Resolve with note', $html);
         $this->assertStringContainsString('Re-run match', $html);
         $this->assertStringContainsString('Amount Variance Exceeded', $html);
         $this->assertStringContainsString('Focused procurement review: Discrepancy Queue', $html);

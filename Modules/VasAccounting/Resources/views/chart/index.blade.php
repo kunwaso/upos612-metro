@@ -66,8 +66,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-chart-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5">
+                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-chart-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.chart.table.code') }}</th>
@@ -153,4 +156,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const chartTable = window.VasWorkspace?.initLocalDataTable('#vas-chart-table', {
+                order: [[0, 'asc']],
+                pageLength: 25
+            });
+
+            if (chartTable) {
+                $('#vas-chart-search').on('keyup', function () {
+                    chartTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

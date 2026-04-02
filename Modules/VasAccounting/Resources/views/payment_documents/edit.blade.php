@@ -1,6 +1,6 @@
 ﻿@extends('layouts.app')
 
-@section('title', 'Edit Payment Document')
+@section('title', __('vasaccounting::lang.views.payment_documents.form.page_title_edit'))
 
 @section('content')
     @php
@@ -26,13 +26,13 @@
     @endphp
 
     @include('vasaccounting::partials.header', [
-        'title' => 'Edit Payment Document',
-        'subtitle' => $document->voucher_no ?? 'Native cash/bank document',
+        'title' => __('vasaccounting::lang.views.payment_documents.form.header_edit_title'),
+        'subtitle' => $document->voucher_no ?? __('vasaccounting::lang.views.payment_documents.form.header_edit_subtitle_fallback'),
     ])
 
     @if ($errors->any())
         <div class="alert alert-danger mb-8">
-            <div class="fw-semibold mb-2">Please correct the highlighted fields.</div>
+            <div class="fw-semibold mb-2">{{ __('vasaccounting::lang.views.payment_documents.form.error_summary') }}</div>
             <ul class="mb-0 ps-5">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -45,7 +45,7 @@
         <div class="col-xl-8">
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Payment details</div>
+                    <div class="card-title">{{ __('vasaccounting::lang.views.payment_documents.form.details_title') }}</div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.payment_documents.update', $document->id) }}">
@@ -54,7 +54,7 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label required">Payment kind</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.payment_documents.form.payment_kind') }}</label>
                                 <select class="form-select form-select-solid" name="payment_kind" id="payment-kind-select">
                                     @foreach (($paymentKindOptions ?? $paymentKinds ?? []) as $kindValue => $kindLabel)
                                         <option value="{{ $kindValue }}" {{ $selectedKind === $kindValue ? 'selected' : '' }}>{{ $kindLabel }}</option>
@@ -62,24 +62,24 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required">Counterparty</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.payment_documents.form.counterparty') }}</label>
                                 <select class="form-select form-select-solid counterparty-select" name="contact_id" id="payment-counterparty-select" {{ $isReceipt ? 'disabled' : '' }}>
-                                    <option value="">Select contact</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.payment_documents.form.select_contact') }}</option>
                                     @foreach (($contactOptions['payment'] ?? []) as $contactId => $contactLabel)
                                         <option value="{{ $contactId }}" {{ ! $isReceipt && (string) $selectedContactId === (string) $contactId ? 'selected' : '' }}>{{ $contactLabel }}</option>
                                     @endforeach
                                 </select>
                                 <select class="form-select form-select-solid counterparty-select d-none" name="contact_id" id="receipt-counterparty-select" {{ $isReceipt ? '' : 'disabled' }}>
-                                    <option value="">Select contact</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.payment_documents.form.select_contact') }}</option>
                                     @foreach (($contactOptions['receipt'] ?? []) as $contactId => $contactLabel)
                                         <option value="{{ $contactId }}" {{ $isReceipt && (string) $selectedContactId === (string) $contactId ? 'selected' : '' }}>{{ $contactLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Branch</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.branch') }}</label>
                                 <select class="form-select form-select-solid" name="business_location_id">
-                                    <option value="">Select branch</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_branch') }}</option>
                                     @foreach ($locationOptions as $locationId => $locationName)
                                         <option value="{{ $locationId }}" {{ (string) $selectedLocationId === (string) $locationId ? 'selected' : '' }}>{{ $locationName }}</option>
                                     @endforeach
@@ -89,41 +89,41 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-3">
-                                <label class="form-label required">Document date</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.payment_documents.form.document_date') }}</label>
                                 <input type="date" class="form-control form-control-solid" name="document_date" value="{{ $selectedDocumentDate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label required">Posting date</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.payment_documents.form.posting_date') }}</label>
                                 <input type="date" class="form-control form-control-solid" name="posting_date" value="{{ $selectedPostingDate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label required">Amount</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.shared.amount') }}</label>
                                 <input type="number" min="0.0001" step="0.0001" class="form-control form-control-solid text-end" name="amount" value="{{ $selectedAmount }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Currency</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.currency') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="currency_code" value="{{ $selectedCurrency }}">
                             </div>
                         </div>
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label">Exchange rate</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.exchange_rate') }}</label>
                                 <input type="number" min="0.000001" step="0.000001" class="form-control form-control-solid text-end" name="exchange_rate" value="{{ $selectedExchangeRate }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Cashbook</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.cashbook') }}</label>
                                 <select class="form-select form-select-solid" name="cashbook_id">
-                                    <option value="">Auto cash account</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.payment_documents.form.auto_cash_account') }}</option>
                                     @foreach ($cashbooks as $cashbook)
                                         <option value="{{ $cashbook->id }}" {{ (string) $selectedCashbookId === (string) $cashbook->id ? 'selected' : '' }}>{{ $cashbook->code }} - {{ $cashbook->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Bank account</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.bank_account') }}</label>
                                 <select class="form-select form-select-solid" name="bank_account_id">
-                                    <option value="">Auto bank account</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.payment_documents.form.auto_bank_account') }}</option>
                                     @foreach ($bankAccounts as $bankAccount)
                                         <option value="{{ $bankAccount->id }}" {{ (string) $selectedBankAccountId === (string) $bankAccount->id ? 'selected' : '' }}>{{ $bankAccount->account_code }} - {{ $bankAccount->bank_name }}</option>
                                     @endforeach
@@ -133,40 +133,40 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label">Payment instrument</label>
-                                <input type="text" class="form-control form-control-solid" name="payment_instrument" value="{{ $selectedInstrument }}" placeholder="Bank transfer, cash, cheque, card">
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.payment_instrument') }}</label>
+                                <input type="text" class="form-control form-control-solid" name="payment_instrument" value="{{ $selectedInstrument }}" placeholder="{{ __('vasaccounting::lang.views.payment_documents.form.payment_instrument_placeholder') }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Reference</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.reference') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="reference" value="{{ $selectedReference }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">External reference</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.payment_documents.form.external_reference') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="external_reference" value="{{ $selectedExternalReference }}">
                             </div>
                         </div>
 
                         <div class="mb-8">
-                            <label class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-solid" name="description" value="{{ $selectedDescription }}" placeholder="Settlement note, payment memo, receipt memo">
+                            <label class="form-label">{{ __('vasaccounting::lang.views.shared.description') }}</label>
+                            <input type="text" class="form-control form-control-solid" name="description" value="{{ $selectedDescription }}" placeholder="{{ __('vasaccounting::lang.views.payment_documents.form.description_placeholder') }}">
                         </div>
 
                         <div class="card card-bordered mb-8">
                             <div class="card-header">
-                                <div class="card-title fs-6">Settlement targets</div>
+                                <div class="card-title fs-6">{{ __('vasaccounting::lang.views.payment_documents.form.settlement_targets_title') }}</div>
                             </div>
                             <div class="card-body">
-                                <div class="text-muted fs-7 mb-4">Choose the open items to allocate against once the document is posted.</div>
+                                <div class="text-muted fs-7 mb-4">{{ __('vasaccounting::lang.views.payment_documents.form.settlement_targets_subtitle') }}</div>
 
                                 <div id="payment-settlement-table" class="table-responsive">
                                     <table class="table align-middle table-row-dashed fs-7 gy-3">
                                         <thead>
                                             <tr class="text-muted fw-bold text-uppercase">
-                                                <th style="width: 60px;">Use</th>
-                                                <th>Voucher</th>
-                                                <th>Contact</th>
-                                                <th class="text-end">Open amount</th>
-                                                <th class="text-end">Allocate</th>
+                                                <th style="width: 60px;">{{ __('vasaccounting::lang.views.payment_documents.form.settlement_table_use') }}</th>
+                                                <th>{{ __('vasaccounting::lang.views.payment_documents.form.settlement_table_voucher') }}</th>
+                                                <th>{{ __('vasaccounting::lang.views.payment_documents.form.settlement_table_contact') }}</th>
+                                                <th class="text-end">{{ __('vasaccounting::lang.views.payment_documents.form.settlement_table_open_amount') }}</th>
+                                                <th class="text-end">{{ __('vasaccounting::lang.views.payment_documents.form.settlement_table_allocate') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody id="payable-targets" {{ $isReceipt ? 'style=display:none;' : '' }}>
@@ -185,7 +185,7 @@
                                                     </td>
                                                 </tr>
                                             @empty
-                                                <tr><td colspan="5" class="text-muted">No payable items are open.</td></tr>
+                                                <tr><td colspan="5" class="text-muted">{{ __('vasaccounting::lang.views.payment_documents.form.no_payable_items') }}</td></tr>
                                             @endforelse
                                         </tbody>
                                         <tbody id="receivable-targets" {{ $isReceipt ? '' : 'style=display:none;' }}>
@@ -204,7 +204,7 @@
                                                     </td>
                                                 </tr>
                                             @empty
-                                                <tr><td colspan="5" class="text-muted">No receivable items are open.</td></tr>
+                                                <tr><td colspan="5" class="text-muted">{{ __('vasaccounting::lang.views.payment_documents.form.no_receivable_items') }}</td></tr>
                                             @endforelse
                                         </tbody>
                                     </table>
@@ -213,11 +213,11 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ route('vasaccounting.payment_documents.index') }}" class="btn btn-light">Back to register</a>
+                            <a href="{{ route('vasaccounting.payment_documents.index') }}" class="btn btn-light">{{ __('vasaccounting::lang.views.payment_documents.form.back_to_register') }}</a>
                             <div class="d-flex gap-3">
-                                <button type="submit" name="action" value="save_draft" class="btn btn-light-primary">Save draft</button>
-                                <button type="submit" name="action" value="submit" class="btn btn-light-warning">Submit</button>
-                                <button type="submit" name="action" value="save_and_post" class="btn btn-primary">Save and post</button>
+                                <button type="submit" name="action" value="save_draft" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.payment_documents.form.update_draft') }}</button>
+                                <button type="submit" name="action" value="submit" class="btn btn-light-warning">{{ __('vasaccounting::lang.views.payment_documents.form.submit') }}</button>
+                                <button type="submit" name="action" value="save_and_post" class="btn btn-primary">{{ __('vasaccounting::lang.views.payment_documents.form.save_and_post') }}</button>
                             </div>
                         </div>
                     </form>
@@ -228,12 +228,12 @@
         <div class="col-xl-4">
             <div class="card card-flush mb-5">
                 <div class="card-header">
-                    <div class="card-title">Workflow notes</div>
+                    <div class="card-title">{{ __('vasaccounting::lang.views.payment_documents.form.workflow_notes_title') }}</div>
                 </div>
                 <div class="card-body">
-                    <div class="text-muted fs-7 mb-3">Voucher numbering follows the VAS sequence for cash and bank documents.</div>
-                    <div class="text-muted fs-7 mb-3">Use Save draft or Submit when approval rules apply; use Save and post only for direct-post documents.</div>
-                    <div class="text-muted fs-7">Settlement targets are optional, but they make the payment appear in AR/AP allocation reports immediately after posting.</div>
+                    <div class="text-muted fs-7 mb-3">{{ __('vasaccounting::lang.views.payment_documents.form.workflow_note_1') }}</div>
+                    <div class="text-muted fs-7 mb-3">{{ __('vasaccounting::lang.views.payment_documents.form.workflow_note_2') }}</div>
+                    <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.payment_documents.form.workflow_note_3') }}</div>
                 </div>
             </div>
         </div>

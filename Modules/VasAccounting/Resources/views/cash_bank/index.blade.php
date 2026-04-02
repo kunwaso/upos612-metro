@@ -221,8 +221,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-cash-bank-native-documents-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-cash-bank-native-documents-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.cash_bank.native_documents.table.document') }}</th>
@@ -427,8 +430,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-cash-bank-reconciliation-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-cash-bank-reconciliation-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.cash_bank.reconciliation.table.date') }}</th>
@@ -711,4 +717,32 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const nativeDocumentsTable = window.VasWorkspace?.initLocalDataTable('#vas-cash-bank-native-documents-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            const reconciliationTable = window.VasWorkspace?.initLocalDataTable('#vas-cash-bank-reconciliation-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+
+            if (nativeDocumentsTable) {
+                $('#vas-cash-bank-native-documents-search').on('keyup', function () {
+                    nativeDocumentsTable.search(this.value).draw();
+                });
+            }
+
+            if (reconciliationTable) {
+                $('#vas-cash-bank-reconciliation-search').on('keyup', function () {
+                    reconciliationTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

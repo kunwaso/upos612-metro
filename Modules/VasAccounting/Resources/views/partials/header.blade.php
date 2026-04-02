@@ -1,5 +1,16 @@
-<div class="card card-flush mb-8">
-    <div class="card-body py-8">
+<div class="card card-flush shadow-sm mb-8 border border-gray-200">
+    <div class="card-header border-0 pt-6 pb-0">
+        <div class="card-toolbar w-100 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-light-dark">{{ data_get($vasAccountingBusinessContext ?? [], 'label', $vasAccountingUtil->uiLabel('business_scope')) }}</span>
+                @if (data_get($vasAccountingCurrentPeriod ?? [], 'name'))
+                    <span class="badge badge-light-info">{{ $vasAccountingUtil->localizedPeriodName((string) data_get($vasAccountingCurrentPeriod, 'name')) }}</span>
+                @endif
+            </div>
+            <div class="text-muted fs-8 fw-semibold">{{ request()->route()?->getName() }}</div>
+        </div>
+    </div>
+    <div class="card-body py-7">
         <div class="d-flex flex-column gap-8">
             <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-start gap-8">
                 <div class="d-flex flex-column flex-sm-row align-items-sm-start gap-5">
@@ -10,15 +21,9 @@
                     </div>
                     <div class="d-flex flex-column gap-4">
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="badge badge-light-dark">{{ data_get($vasAccountingBusinessContext ?? [], 'label', $vasAccountingUtil->uiLabel('business_scope')) }}</span>
                             <span class="badge badge-{{ data_get($vasAccountingPageMeta ?? [], 'badge_variant', 'light-primary') }}">
                                 {{ data_get($vasAccountingPageMeta ?? [], 'section_label', __('vasaccounting::lang.module_name')) }}
                             </span>
-                            @if (data_get($vasAccountingCurrentPeriod ?? [], 'name'))
-                                <span class="badge badge-light-info">
-                                    {{ $vasAccountingUtil->localizedPeriodName((string) data_get($vasAccountingCurrentPeriod, 'name')) }}
-                                </span>
-                            @endif
                             @if (data_get($vasAccountingCurrentPeriod ?? [], 'status'))
                                 <span class="badge badge-light-{{ data_get($vasAccountingCurrentPeriod, 'status') === 'open' ? 'success' : 'warning' }}">
                                     {{ data_get($vasAccountingCurrentPeriod, 'status_label', $vasAccountingUtil->periodStatusLabel((string) data_get($vasAccountingCurrentPeriod, 'status'))) }}
@@ -26,7 +31,7 @@
                             @endif
                         </div>
                         <div>
-                            <div class="text-gray-900 fw-bolder fs-2hx">
+                            <div class="text-gray-900 fw-bolder fs-2hx lh-sm">
                                 {{ $title ?? data_get($vasAccountingPageMeta ?? [], 'title', __('vasaccounting::lang.module_name')) }}
                             </div>
                             @if (!empty($subtitle) || data_get($vasAccountingPageMeta ?? [], 'subtitle'))
@@ -96,7 +101,7 @@
                         <div class="d-flex flex-wrap gap-3 justify-content-xl-end">
                             @foreach (data_get($vasAccountingPageMeta ?? [], 'quick_actions', []) as $action)
                                 @if (!empty($action['route']) && Route::has($action['route']))
-                                    <a href="{{ route($action['route']) }}" class="btn btn-sm btn-{{ $action['style'] ?? 'light-primary' }}">
+                                    <a href="{{ route($action['route']) }}" class="btn btn-sm btn-{{ $action['style'] ?? 'light-primary' }} btn-active-color-white">
                                         {{ $action['label'] }}
                                     </a>
                                 @endif

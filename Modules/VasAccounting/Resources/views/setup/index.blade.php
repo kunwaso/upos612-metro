@@ -17,6 +17,48 @@
             'tax_export' => $vasAccountingUtil->providerOptions('tax_export_adapters'),
             'payroll_bridge' => $vasAccountingUtil->providerOptions('payroll_bridge_adapters'),
         ];
+        $setupKpiCards = [
+            [
+                'key' => 'open_periods',
+                'label' => $vasAccountingUtil->metricLabel('open_periods'),
+                'value' => number_format((int) ($metrics['openPeriods'] ?? 0)),
+                'delta' => 0,
+                'direction' => 'flat',
+                'hint' => __('vasaccounting::lang.views.dashboard.metrics.open_periods'),
+                'icon' => 'ki-outline ki-calendar-8',
+                'badgeVariant' => 'light-primary',
+            ],
+            [
+                'key' => 'posting_failures',
+                'label' => $vasAccountingUtil->metricLabel('posting_failures'),
+                'value' => number_format((int) ($metrics['postingFailures'] ?? 0)),
+                'delta' => 0,
+                'direction' => 'flat',
+                'hint' => __('vasaccounting::lang.views.dashboard.metrics.posting_failures'),
+                'icon' => 'ki-outline ki-shield-cross',
+                'badgeVariant' => 'light-danger',
+            ],
+            [
+                'key' => 'draft_vouchers',
+                'label' => $vasAccountingUtil->metricLabel('draft_vouchers'),
+                'value' => number_format((int) ($metrics['draftVouchers'] ?? 0)),
+                'delta' => 0,
+                'direction' => 'flat',
+                'hint' => __('vasaccounting::lang.views.setup.cards.draft_vouchers_hint'),
+                'icon' => 'ki-outline ki-note-2',
+                'badgeVariant' => 'light-warning',
+            ],
+            [
+                'key' => 'statutory_accounts',
+                'label' => __('vasaccounting::lang.statutory_accounts'),
+                'value' => number_format((int) data_get($bootstrapStatus, 'system_account_count', 0)),
+                'delta' => 0,
+                'direction' => 'flat',
+                'hint' => __('vasaccounting::lang.views.setup.cards.manual_accounts_hint', ['count' => (int) data_get($bootstrapStatus, 'manual_account_count', 0)]),
+                'icon' => 'ki-outline ki-bank',
+                'badgeVariant' => 'light-success',
+            ],
+        ];
     @endphp
 
     @include('vasaccounting::partials.header', [
@@ -35,40 +77,8 @@
         </div>
     @endif
 
-    <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3">
-            <div class="card card-flush h-100">
-                <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ $vasAccountingUtil->metricLabel('open_periods') }}</div>
-                    <div class="text-gray-900 fw-bold fs-2">{{ $metrics['openPeriods'] }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush h-100">
-                <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ $vasAccountingUtil->metricLabel('posting_failures') }}</div>
-                    <div class="text-gray-900 fw-bold fs-2">{{ $metrics['postingFailures'] }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush h-100">
-                <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ $vasAccountingUtil->metricLabel('draft_vouchers') }}</div>
-                    <div class="text-gray-900 fw-bold fs-2">{{ $metrics['draftVouchers'] }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush h-100">
-                <div class="card-body">
-                    <div class="text-gray-700 fw-semibold fs-7 mb-2">{{ __('vasaccounting::lang.statutory_accounts') }}</div>
-                    <div class="text-gray-900 fw-bold fs-2">{{ data_get($bootstrapStatus, 'system_account_count', 0) }}</div>
-                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.manual_accounts') }}: {{ data_get($bootstrapStatus, 'manual_account_count', 0) }}</div>
-                </div>
-            </div>
-        </div>
+    <div class="mb-8">
+        @include('vasaccounting::partials.workspace.kpi_strip', ['cards' => $setupKpiCards])
     </div>
 
     <div class="row g-5 g-xl-10">

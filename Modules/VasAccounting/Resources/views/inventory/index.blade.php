@@ -206,8 +206,11 @@
             <div class="card card-flush h-100">
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.recent_documents.title') }}</div></div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-inventory-documents-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-inventory-documents-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.document') }}</th><th>{{ __('vasaccounting::lang.views.shared.type') }}</th><th>{{ __('vasaccounting::lang.views.inventory.document_form.warehouse') }}</th><th>{{ __('vasaccounting::lang.views.shared.status') }}</th><th>{{ __('vasaccounting::lang.views.shared.voucher') }}</th><th class="text-end">{{ __('vasaccounting::lang.views.shared.action') }}</th>
@@ -250,8 +253,11 @@
     <div class="card card-flush mb-8">
         <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.movement.title') }}</div></div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-inventory-movements-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-inventory-movements-table">
                     <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.shared.date') }}</th><th>{{ __('vasaccounting::lang.views.shared.reference') }}</th><th>{{ __('vasaccounting::lang.views.shared.type') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.product') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.warehouse_branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.qty') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.value') }}</th></tr></thead>
                     <tbody>
                         @forelse ($movementRows as $row)
@@ -276,8 +282,11 @@
     <div class="card card-flush mb-8">
         <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.reconciliation.title') }}</div></div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-inventory-reconciliation-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-inventory-reconciliation-table">
                     <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.shared.branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.warehouse_master') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.skus') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.qty_on_hand') }}</th><th>{{ __('vasaccounting::lang.views.inventory.cards.inventory_value') }}</th><th>{{ __('vasaccounting::lang.views.inventory.reconciliation.last_movement') }}</th><th>{{ __('vasaccounting::lang.views.shared.status') }}</th></tr></thead>
                     <tbody>
                         @forelse ($reconciliationRows as $row)
@@ -302,8 +311,11 @@
     <div class="card card-flush">
         <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.inventory.valuation.title') }}</div></div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-inventory-valuation-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-inventory-valuation-table">
                     <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.inventory.valuation.sku') }}</th><th>{{ __('vasaccounting::lang.views.inventory.movement.product') }}</th><th>{{ __('vasaccounting::lang.views.shared.branch') }}</th><th>{{ __('vasaccounting::lang.views.inventory.valuation.qty_available') }}</th><th>{{ __('vasaccounting::lang.views.inventory.valuation.average_cost') }}</th><th>{{ __('vasaccounting::lang.views.inventory.cards.inventory_value') }}</th></tr></thead>
                     <tbody>
                         @forelse ($rows as $row)
@@ -323,4 +335,52 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const documentsTable = window.VasWorkspace?.initLocalDataTable('#vas-inventory-documents-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+            const movementsTable = window.VasWorkspace?.initLocalDataTable('#vas-inventory-movements-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+            const reconciliationTable = window.VasWorkspace?.initLocalDataTable('#vas-inventory-reconciliation-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            const valuationTable = window.VasWorkspace?.initLocalDataTable('#vas-inventory-valuation-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (documentsTable) {
+                $('#vas-inventory-documents-search').on('keyup', function () {
+                    documentsTable.search(this.value).draw();
+                });
+            }
+
+            if (movementsTable) {
+                $('#vas-inventory-movements-search').on('keyup', function () {
+                    movementsTable.search(this.value).draw();
+                });
+            }
+
+            if (reconciliationTable) {
+                $('#vas-inventory-reconciliation-search').on('keyup', function () {
+                    reconciliationTable.search(this.value).draw();
+                });
+            }
+
+            if (valuationTable) {
+                $('#vas-inventory-valuation-search').on('keyup', function () {
+                    valuationTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

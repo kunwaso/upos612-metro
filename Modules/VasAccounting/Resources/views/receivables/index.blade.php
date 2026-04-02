@@ -59,8 +59,11 @@
             <div class="card card-flush h-100">
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.receivables.open_invoices.title') }}</div></div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-receivables-open-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-receivables-open-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.receivables.open_invoices.table.invoice') }}</th><th>{{ __('vasaccounting::lang.views.receivables.open_invoices.table.customer') }}</th><th>{{ __('vasaccounting::lang.views.receivables.open_invoices.table.posting_date') }}</th><th>{{ __('vasaccounting::lang.views.receivables.open_invoices.table.outstanding') }}</th><th>{{ __('vasaccounting::lang.views.receivables.open_invoices.table.age') }}</th>
@@ -92,7 +95,7 @@
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.receivables.available_receipts.title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-receivables-receipts-table">
                             <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.receivables.available_receipts.table.receipt') }}</th><th>{{ __('vasaccounting::lang.views.receivables.available_receipts.table.customer') }}</th><th>{{ __('vasaccounting::lang.views.receivables.available_receipts.table.available') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($receiptItems as $item)
@@ -115,7 +118,7 @@
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.receivables.recent_allocations.title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-receivables-allocations-table">
                             <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.receivables.recent_allocations.table.date') }}</th><th>{{ __('vasaccounting::lang.views.receivables.recent_allocations.table.customer') }}</th><th>{{ __('vasaccounting::lang.views.receivables.recent_allocations.table.invoice') }}</th><th>{{ __('vasaccounting::lang.views.receivables.recent_allocations.table.receipt') }}</th><th>{{ __('vasaccounting::lang.views.receivables.recent_allocations.table.amount') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($recentAllocations as $allocation)
@@ -136,4 +139,31 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const openTable = window.VasWorkspace?.initLocalDataTable('#vas-receivables-open-table', {
+                order: [[2, 'desc']],
+                pageLength: 10
+            });
+
+            if (openTable) {
+                $('#vas-receivables-open-search').on('keyup', function () {
+                    openTable.search(this.value).draw();
+                });
+            }
+
+            window.VasWorkspace?.initLocalDataTable('#vas-receivables-receipts-table', {
+                order: [],
+                pageLength: 10
+            });
+            window.VasWorkspace?.initLocalDataTable('#vas-receivables-allocations-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+        });
+    </script>
 @endsection

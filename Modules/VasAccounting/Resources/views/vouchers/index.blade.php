@@ -60,8 +60,19 @@
             </div>
         </div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-vouchers-register-search',
+                'actions' => [
+                    [
+                        'label' => $vasAccountingUtil->actionLabel('open_reports'),
+                        'url' => route('vasaccounting.reports.index'),
+                        'style' => 'light-primary',
+                        'method' => 'GET',
+                    ],
+                ],
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+                <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-vouchers-register-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.vouchers.index.table.voucher') }}</th>
@@ -98,4 +109,25 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const vouchersTable = window.VasWorkspace?.initLocalDataTable('#vas-vouchers-register-table', {
+                order: [[4, 'desc']],
+                pageLength: 20,
+                paging: false,
+                info: false,
+                dom: "<'table-responsive'tr>"
+            });
+
+            if (vouchersTable) {
+                $('#vas-vouchers-register-search').on('keyup', function () {
+                    vouchersTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

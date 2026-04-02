@@ -661,7 +661,9 @@ class ProductController extends Controller
             }
 
             //upload document
-            $product_details['image'] = $this->productUtil->uploadFile($request, 'image', config('constants.product_img_path'), 'image');
+            $product_details['image'] = $this->normalizeProductImageFilename(
+                $this->productUtil->uploadFile($request, 'image', config('constants.product_img_path'), 'image')
+            );
             $common_settings = session()->get('business.common_settings');
 
             $product_details['warranty_id'] = ! empty($request->input('warranty_id')) ? $request->input('warranty_id') : null;
@@ -1145,42 +1147,69 @@ class ProductController extends Controller
                 }
             }
 
-            $product->name = $product_details['name'];
-            $product->brand_id = $product_details['brand_id'];
-            $product->unit_id = $product_details['unit_id'];
-            $product->category_id = $product_details['category_id'];
-            $product->tax = $product_details['tax'];
-            $product->barcode_type = $product_details['barcode_type'];
-            $product->sku = $product_details['sku'];
-            $product->alert_quantity = ! empty($product_details['alert_quantity']) ? $this->productUtil->num_uf($product_details['alert_quantity']) : $product_details['alert_quantity'];
-            $product->tax_type = $product_details['tax_type'];
-            $product->weight = $product_details['weight'];
-            $product->product_custom_field1 = $product_details['product_custom_field1'] ?? '';
-            $product->product_custom_field2 = $product_details['product_custom_field2'] ?? '';
-            $product->product_custom_field3 = $product_details['product_custom_field3'] ?? '';
-            $product->product_custom_field4 = $product_details['product_custom_field4'] ?? '';
-            $product->product_custom_field5 = $product_details['product_custom_field5'] ?? '';
-            $product->product_custom_field6 = $product_details['product_custom_field6'] ?? '';
-            $product->product_custom_field7 = $product_details['product_custom_field7'] ?? '';
-            $product->product_custom_field8 = $product_details['product_custom_field8'] ?? '';
-            $product->product_custom_field9 = $product_details['product_custom_field9'] ?? '';
-            $product->product_custom_field10 = $product_details['product_custom_field10'] ?? '';
-            $product->product_custom_field11 = $product_details['product_custom_field11'] ?? '';
-            $product->product_custom_field12 = $product_details['product_custom_field12'] ?? '';
-            $product->product_custom_field13 = $product_details['product_custom_field13'] ?? '';
-            $product->product_custom_field14 = $product_details['product_custom_field14'] ?? '';
-            $product->product_custom_field15 = $product_details['product_custom_field15'] ?? '';
-            $product->product_custom_field16 = $product_details['product_custom_field16'] ?? '';
-            $product->product_custom_field17 = $product_details['product_custom_field17'] ?? '';
-            $product->product_custom_field18 = $product_details['product_custom_field18'] ?? '';
-            $product->product_custom_field19 = $product_details['product_custom_field19'] ?? '';
-            $product->product_custom_field20 = $product_details['product_custom_field20'] ?? '';
+            $nullableInput = static function ($value) {
+                return $value === '' ? null : $value;
+            };
+            $hasProductDetail = static function (array $details, string $key): bool {
+                return array_key_exists($key, $details);
+            };
 
-            $product->product_description = $product_details['product_description'];
-            $product->sub_unit_ids = ! empty($product_details['sub_unit_ids']) ? $product_details['sub_unit_ids'] : null;
-            $product->preparation_time_in_minutes = $product_details['preparation_time_in_minutes'];
-            $product->warranty_id = ! empty($request->input('warranty_id')) ? $request->input('warranty_id') : null;
-            $product->secondary_unit_id = ! empty($request->input('secondary_unit_id')) ? $request->input('secondary_unit_id') : null;
+            if ($hasProductDetail($product_details, 'name')) {
+                $product->name = $product_details['name'];
+            }
+            if ($hasProductDetail($product_details, 'brand_id')) {
+                $product->brand_id = $nullableInput($product_details['brand_id']);
+            }
+            if ($hasProductDetail($product_details, 'unit_id')) {
+                $product->unit_id = $nullableInput($product_details['unit_id']);
+            }
+            if ($hasProductDetail($product_details, 'category_id')) {
+                $product->category_id = $nullableInput($product_details['category_id']);
+            }
+            if ($hasProductDetail($product_details, 'tax')) {
+                $product->tax = $nullableInput($product_details['tax']);
+            }
+            if ($hasProductDetail($product_details, 'barcode_type')) {
+                $product->barcode_type = $nullableInput($product_details['barcode_type']);
+            }
+            if ($hasProductDetail($product_details, 'sku')) {
+                $product->sku = $product_details['sku'];
+            }
+            if ($hasProductDetail($product_details, 'alert_quantity')) {
+                $product->alert_quantity = ! empty($product_details['alert_quantity'])
+                    ? $this->productUtil->num_uf($product_details['alert_quantity'])
+                    : null;
+            }
+            if ($hasProductDetail($product_details, 'tax_type')) {
+                $product->tax_type = $nullableInput($product_details['tax_type']);
+            }
+            if ($hasProductDetail($product_details, 'weight')) {
+                $product->weight = $product_details['weight'];
+            }
+
+            for ($i = 1; $i <= 20; $i++) {
+                $customField = 'product_custom_field'.$i;
+                if ($hasProductDetail($product_details, $customField)) {
+                    $product->$customField = $product_details[$customField] ?? '';
+                }
+            }
+
+            if ($hasProductDetail($product_details, 'product_description')) {
+                $product->product_description = $product_details['product_description'];
+            }
+            if ($hasProductDetail($product_details, 'sub_unit_ids')) {
+                $product->sub_unit_ids = ! empty($product_details['sub_unit_ids']) ? $product_details['sub_unit_ids'] : null;
+            }
+            if ($hasProductDetail($product_details, 'preparation_time_in_minutes')) {
+                $product->preparation_time_in_minutes = $product_details['preparation_time_in_minutes'];
+            }
+
+            if ($request->exists('warranty_id')) {
+                $product->warranty_id = $nullableInput($request->input('warranty_id'));
+            }
+            if ($request->exists('secondary_unit_id')) {
+                $product->secondary_unit_id = $nullableInput($request->input('secondary_unit_id'));
+            }
 
             if (! empty($request->input('enable_stock')) && $request->input('enable_stock') == 1) {
                 $product->enable_stock = 1;
@@ -1213,12 +1242,10 @@ class ProductController extends Controller
                 $product->enable_sr_no = 0;
             }
 
+            $existing_image = $product->image;
             $should_remove_existing_image = (int) $request->input('remove_image', 0) === 1;
             if ($should_remove_existing_image) {
-                if (! empty($product->image_path) && file_exists($product->image_path)) {
-                    unlink($product->image_path);
-                }
-
+                $this->deleteProductImageFromStorage($existing_image);
                 $product->image = null;
 
                 if (! empty($product->woocommerce_media_id)) {
@@ -1231,11 +1258,11 @@ class ProductController extends Controller
             if (! empty($file_name)) {
 
                 //If previous image found then remove
-                if (! $should_remove_existing_image && ! empty($product->image_path) && file_exists($product->image_path)) {
-                    unlink($product->image_path);
+                if (! $should_remove_existing_image) {
+                    $this->deleteProductImageFromStorage($existing_image);
                 }
 
-                $product->image = $file_name;
+                $product->image = $this->normalizeProductImageFilename($file_name);
                 //If product image is updated update woocommerce media id
                 if (! empty($product->woocommerce_media_id)) {
                     $product->woocommerce_media_id = null;
@@ -3399,6 +3426,50 @@ class ProductController extends Controller
         return redirect()
             ->route('product.detail', ['id' => $id, 'tab' => 'activity'])
             ->with('status', ['success' => 1, 'msg' => __('lang_v1.success')]);
+    }
+
+    protected function normalizeProductImageFilename(?string $image): ?string
+    {
+        if (empty($image)) {
+            return null;
+        }
+
+        $normalized = str_replace('\\', '/', trim($image));
+        $file_name = basename($normalized);
+
+        return $file_name !== '' ? $file_name : null;
+    }
+
+    protected function deleteProductImageFromStorage(?string $image): void
+    {
+        $file_name = $this->normalizeProductImageFilename($image);
+        if (empty($file_name)) {
+            return;
+        }
+
+        $directory = trim((string) config('constants.product_img_path', 'img'), '/\\');
+        $relative_path = $directory !== '' ? $directory.'/'.$file_name : $file_name;
+        $default_disk = (string) config('filesystems.default', 'local');
+
+        try {
+            if (Storage::disk($default_disk)->exists($relative_path)) {
+                Storage::disk($default_disk)->delete($relative_path);
+            }
+        } catch (\Throwable $e) {
+            // Best-effort cleanup: keep update flow resilient even if disk deletion fails.
+        }
+
+        $possible_paths = array_filter(array_unique([
+            public_path('uploads/'.$relative_path),
+            public_path('uploads/'.$file_name),
+            storage_path('app/public/'.$relative_path),
+        ]));
+
+        foreach ($possible_paths as $path) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
     }
 
     protected function resolveBusinessFromSession(): ?object

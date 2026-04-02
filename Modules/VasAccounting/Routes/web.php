@@ -35,6 +35,12 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::post('/setup/bootstrap', [SetupController::class, 'bootstrap'])->name('setup.bootstrap');
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+        Route::prefix('ui')->name('ui.')->group(function () {
+            Route::get('/dashboard/kpis', [DashboardController::class, 'kpis'])->name('dashboard.kpis');
+            Route::get('/dashboard/trends', [DashboardController::class, 'trends'])->name('dashboard.trends');
+            Route::get('/dashboard/failures', [DashboardController::class, 'failures'])->name('dashboard.failures');
+            Route::get('/reports/{reportKey}/datatable', [ReportController::class, 'datatable'])->name('reports.datatable');
+        });
 
         Route::get('/chart-of-accounts', [ChartOfAccountsController::class, 'index'])->name('chart.index');
         Route::post('/chart-of-accounts', [ChartOfAccountsController::class, 'store'])->name('chart.store');
@@ -87,6 +93,9 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::post('/procurement/{document}/reject', [ProcurementController::class, 'reject'])->whereNumber('document')->name('procurement.reject');
         Route::post('/procurement/{document}/fulfill', [ProcurementController::class, 'fulfill'])->whereNumber('document')->name('procurement.fulfill');
         Route::post('/procurement/{document}/match', [ProcurementController::class, 'match'])->whereNumber('document')->name('procurement.match');
+        Route::post('/procurement/discrepancies/{exception}/take-ownership', [ProcurementController::class, 'takeOwnership'])->whereNumber('exception')->name('procurement.discrepancies.take_ownership');
+        Route::post('/procurement/discrepancies/{exception}/assign', [ProcurementController::class, 'assignDiscrepancy'])->whereNumber('exception')->name('procurement.discrepancies.assign');
+        Route::post('/procurement/discrepancies/{exception}/resolve', [ProcurementController::class, 'resolveDiscrepancy'])->whereNumber('exception')->name('procurement.discrepancies.resolve');
         Route::post('/procurement/{document}/post', [ProcurementController::class, 'post'])->whereNumber('document')->name('procurement.post');
         Route::post('/procurement/{document}/close', [ProcurementController::class, 'close'])->whereNumber('document')->name('procurement.close');
         Route::post('/procurement/{document}/reverse', [ProcurementController::class, 'reverse'])->whereNumber('document')->name('procurement.reverse');
@@ -164,6 +173,9 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::post('/closing/period/{period}', [ClosingController::class, 'close'])->whereNumber('period')->name('closing.close');
         Route::post('/closing/period/{period}/reopen', [ClosingController::class, 'reopen'])->whereNumber('period')->name('closing.reopen');
         Route::post('/closing/period/{period}/packet', [ClosingController::class, 'packet'])->whereNumber('period')->name('closing.packet');
+        Route::post('/closing/period/{period}/procurement-discrepancies/assign-unassigned', [ClosingController::class, 'assignUnassignedProcurementDiscrepancies'])->whereNumber('period')->name('closing.procurement_discrepancies.assign_unassigned');
+        Route::post('/closing/period/{period}/procurement-discrepancies/assign-unassigned-to-me', [ClosingController::class, 'assignUnassignedProcurementDiscrepanciesToMe'])->whereNumber('period')->name('closing.procurement_discrepancies.assign_unassigned_to_me');
+        Route::post('/closing/period/{period}/procurement-discrepancies/{exception}/assign', [ClosingController::class, 'assignProcurementDiscrepancy'])->whereNumber('period')->whereNumber('exception')->name('closing.procurement_discrepancies.assign');
 
         Route::prefix('cutover')->name('cutover.')->group(function () {
             Route::get('/', [CutoverController::class, 'index'])->name('index');
@@ -187,6 +199,9 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
             Route::get('/purchase-register', [ReportController::class, 'purchaseRegister'])->name('purchase_register');
             Route::get('/goods-receipt-register', [ReportController::class, 'goodsReceiptRegister'])->name('goods_receipt_register');
             Route::get('/procurement-discrepancies', [ReportController::class, 'procurementDiscrepancies'])->name('procurement_discrepancies');
+            Route::get('/procurement-discrepancy-ownership', [ReportController::class, 'procurementDiscrepancyOwnership'])->name('procurement_discrepancy_ownership');
+            Route::post('/procurement-discrepancy-ownership/assign-unassigned', [ReportController::class, 'assignUnassignedProcurementDiscrepancies'])->name('procurement_discrepancy_ownership.assign_unassigned');
+            Route::post('/procurement-discrepancy-ownership/assign-unassigned-to-me', [ReportController::class, 'assignUnassignedProcurementDiscrepanciesToMe'])->name('procurement_discrepancy_ownership.assign_unassigned_to_me');
             Route::get('/procurement-aging', [ReportController::class, 'procurementAging'])->name('procurement_aging');
             Route::get('/expense-outstanding', [ReportController::class, 'expenseOutstanding'])->name('expense_outstanding');
             Route::get('/expense-register', [ReportController::class, 'expenseRegister'])->name('expense_register');

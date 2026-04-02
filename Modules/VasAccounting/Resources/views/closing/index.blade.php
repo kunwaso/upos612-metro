@@ -58,8 +58,11 @@
             <div class="card-title">{{ __('vasaccounting::lang.views.closing.packets.title') }}</div>
         </div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-closing-packets-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+                <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-closing-packets-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.closing.packets.table.snapshot') }}</th>
@@ -101,8 +104,11 @@
             </div>
         </div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-closing-control-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+                <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-closing-control-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.period') }}</th>
@@ -125,7 +131,7 @@
                                 $periodChecklists = $checklists[$period->id];
                                 $completedChecklistCount = $periodChecklists->where('status', 'completed')->count();
                                 $periodTreasury = $treasuryInsights[$period->id] ?? ['pending_documents' => collect(), 'exceptions' => collect()];
-                                $periodProcurement = $procurementInsights[$period->id] ?? ['pending_documents' => collect(), 'receiving_documents' => collect(), 'matching_documents' => collect()];
+                                $periodProcurement = $procurementInsights[$period->id] ?? ['pending_documents' => collect(), 'receiving_documents' => collect(), 'matching_documents' => collect(), 'discrepancy_exceptions' => collect(), 'owner_summary' => collect()];
                                 $periodExpense = $expenseInsights[$period->id] ?? ['pending_documents' => collect(), 'outstanding_documents' => collect(), 'escalated_approvals' => collect()];
                             @endphp
                             <tr>
@@ -343,6 +349,97 @@
                                                 @endforelse
                                             </div>
                                         </div>
+                                        <div class="col-xl-6">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.procurement.ownership_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.ownership_subtitle') }}</div>
+                                                    </div>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        @if (collect($periodProcurement['owner_summary'])->contains(fn ($row) => (int) ($row['owner_id'] ?? 0) === 0 && (int) ($row['open_count'] ?? 0) > 0))
+                                                            <form method="POST" action="{{ route('vasaccounting.closing.procurement_discrepancies.assign_unassigned', ['period' => $period->id]) }}" class="d-flex flex-wrap gap-2 align-items-center">
+                                                                @csrf
+                                                                <select name="owner_id" class="form-select form-select-sm w-auto">
+                                                                    <option value="">{{ __('vasaccounting::lang.views.closing.control_board.procurement.select_owner') }}</option>
+                                                                    @foreach (($procurementAssigneeOptions ?? []) as $ownerId => $ownerLabel)
+                                                                        <option value="{{ $ownerId }}">{{ $ownerLabel }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <button type="submit" class="btn btn-light-warning btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.assign_unassigned') }}</button>
+                                                            </form>
+                                                            <form method="POST" action="{{ route('vasaccounting.closing.procurement_discrepancies.assign_unassigned_to_me', ['period' => $period->id]) }}">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.assign_unassigned_to_me') }}</button>
+                                                            </form>
+                                                        @endif
+                                                        <a href="{{ route('vasaccounting.reports.procurement_discrepancy_ownership') }}" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.review_ownership') }}</a>
+                                                    </div>
+                                                </div>
+
+                                                @forelse ($periodProcurement['owner_summary'] as $row)
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $row['owner_id'] > 0 ? ($row['owner_name'] ?: ('User #' . $row['owner_id'])) : __('vasaccounting::lang.views.closing.control_board.procurement.unassigned_owner') }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ __('vasaccounting::lang.views.closing.control_board.procurement.owner_aging_counts', ['aged2' => (int) $row['aged_over_2_days'], 'aged7' => (int) $row['aged_over_7_days']]) }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">{{ (int) $row['open_count'] }}</div>
+                                                            <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.open_discrepancies') }}</div>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.ownership_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-6">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.procurement.aged_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.aged_subtitle') }}</div>
+                                                    </div>
+                                                    <a href="{{ route('vasaccounting.procurement.index', ['period_id' => $period->id, 'focus' => 'discrepancy_queue']) }}#procurement-discrepancy-queue" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.review_discrepancies') }}</a>
+                                                </div>
+
+                                                @forelse ($periodProcurement['discrepancy_exceptions'] as $exception)
+                                                    @php($ownerAgeDays = $exception->owner_assigned_at ? $exception->owner_assigned_at->diffInDays(now()) : null)
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $exception->document?->document_no ?: ('#' . $exception->document_id) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ str($exception->code)->replace('_', ' ')->title() }}
+                                                                |
+                                                                {{ $exception->owner_id > 0 ? (trim((string) ($exception->owner?->surname . ' ' . $exception->owner?->first_name . ' ' . $exception->owner?->last_name)) ?: ('User #' . $exception->owner_id)) : __('vasaccounting::lang.views.closing.control_board.procurement.unassigned_owner') }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">{{ strtoupper((string) $exception->status) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ is_null($ownerAgeDays)
+                                                                    ? __('vasaccounting::lang.views.closing.control_board.procurement.unassigned_age')
+                                                                    : __('vasaccounting::lang.views.closing.control_board.procurement.owner_age_days', ['days' => $ownerAgeDays]) }}
+                                                            </div>
+                                                            <form method="POST" action="{{ route('vasaccounting.closing.procurement_discrepancies.assign', ['period' => $period->id, 'exception' => $exception->id]) }}" class="mt-3">
+                                                                @csrf
+                                                                <select name="owner_id" class="form-select form-select-solid form-select-sm">
+                                                                    <option value="">{{ __('vasaccounting::lang.views.closing.control_board.procurement.select_owner') }}</option>
+                                                                    @foreach (($procurementAssigneeOptions ?? []) as $assigneeId => $assigneeLabel)
+                                                                        <option value="{{ $assigneeId }}" @selected((int) $assigneeId === (int) $exception->owner_id)>{{ $assigneeLabel }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <button type="submit" class="btn btn-light-info btn-sm w-100 mt-2">{{ __('vasaccounting::lang.views.closing.control_board.procurement.assign_owner') }}</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.aged_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="row g-5 mt-1">
@@ -446,4 +543,31 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const packetsTable = window.VasWorkspace?.initLocalDataTable('#vas-closing-packets-table', {
+                order: [[2, 'desc']],
+                pageLength: 10
+            });
+            if (packetsTable) {
+                $('#vas-closing-packets-search').on('keyup', function () {
+                    packetsTable.search(this.value).draw();
+                });
+            }
+
+            const controlTable = window.VasWorkspace?.initLocalDataTable('#vas-closing-control-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (controlTable) {
+                $('#vas-closing-control-search').on('keyup', function () {
+                    controlTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

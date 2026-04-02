@@ -18,8 +18,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-payment-documents-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-4">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4" id="vas-payment-documents-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>Voucher</th>
@@ -93,4 +96,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const paymentDocumentsTable = window.VasWorkspace?.initLocalDataTable('#vas-payment-documents-table', {
+                order: [[4, 'desc']],
+                pageLength: 10
+            });
+
+            if (paymentDocumentsTable) {
+                $('#vas-payment-documents-search').on('keyup', function () {
+                    paymentDocumentsTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

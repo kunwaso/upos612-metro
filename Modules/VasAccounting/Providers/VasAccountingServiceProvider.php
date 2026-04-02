@@ -33,6 +33,7 @@ use Modules\VasAccounting\Contracts\InventoryCostServiceInterface;
 use Modules\VasAccounting\Contracts\OpenItemServiceInterface;
 use Modules\VasAccounting\Contracts\OrderToCashLifecycleServiceInterface;
 use Modules\VasAccounting\Contracts\PostingRuleEngineInterface;
+use Modules\VasAccounting\Contracts\ProcurementDiscrepancyServiceInterface;
 use Modules\VasAccounting\Contracts\TreasuryReconciliationServiceInterface;
 use Modules\VasAccounting\Contracts\TreasuryExceptionServiceInterface;
 use Modules\VasAccounting\Services\FinanceCore\AccountDerivationService;
@@ -64,6 +65,7 @@ use Modules\VasAccounting\Services\Inventory\InventoryCostService;
 use Modules\VasAccounting\Services\LoanAccountingService;
 use Modules\VasAccounting\Services\PayrollBridgeManager;
 use Modules\VasAccounting\Services\ProviderHealthService;
+use Modules\VasAccounting\Services\Procurement\ProcurementDiscrepancyService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
 use Modules\VasAccounting\Services\Sales\OrderToCashLifecycleService;
 use Modules\VasAccounting\Services\SourceDocumentAdapterManager;
@@ -192,6 +194,7 @@ class VasAccountingServiceProvider extends ServiceProvider
         $this->app->singleton(OpenItemService::class);
         $this->app->singleton(OrderToCashLifecycleService::class);
         $this->app->singleton(PostingRuleEngineService::class);
+        $this->app->singleton(ProcurementDiscrepancyService::class);
         $this->app->singleton(TreasuryReconciliationService::class);
         $this->app->singleton(TreasuryExceptionService::class);
         $this->app->bind(AccountDerivationServiceInterface::class, AccountDerivationService::class);
@@ -205,6 +208,7 @@ class VasAccountingServiceProvider extends ServiceProvider
         $this->app->bind(OpenItemServiceInterface::class, OpenItemService::class);
         $this->app->bind(OrderToCashLifecycleServiceInterface::class, OrderToCashLifecycleService::class);
         $this->app->bind(PostingRuleEngineInterface::class, PostingRuleEngineService::class);
+        $this->app->bind(ProcurementDiscrepancyServiceInterface::class, ProcurementDiscrepancyService::class);
         $this->app->bind(TreasuryReconciliationServiceInterface::class, TreasuryReconciliationService::class);
         $this->app->bind(TreasuryExceptionServiceInterface::class, TreasuryExceptionService::class);
     }

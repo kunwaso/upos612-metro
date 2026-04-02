@@ -186,8 +186,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-costing-department-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-costing-department-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.department') }}</th>
@@ -225,8 +228,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-costing-cost-center-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-costing-cost-center-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.cost_center') }}</th>
@@ -264,8 +270,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-costing-project-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-costing-project-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.project') }}</th>
@@ -295,4 +304,44 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const departmentTable = window.VasWorkspace?.initLocalDataTable('#vas-costing-department-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (departmentTable) {
+                $('#vas-costing-department-search').on('keyup', function () {
+                    departmentTable.search(this.value).draw();
+                });
+            }
+
+            const costCenterTable = window.VasWorkspace?.initLocalDataTable('#vas-costing-cost-center-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (costCenterTable) {
+                $('#vas-costing-cost-center-search').on('keyup', function () {
+                    costCenterTable.search(this.value).draw();
+                });
+            }
+
+            const projectTable = window.VasWorkspace?.initLocalDataTable('#vas-costing-project-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (projectTable) {
+                $('#vas-costing-project-search').on('keyup', function () {
+                    projectTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

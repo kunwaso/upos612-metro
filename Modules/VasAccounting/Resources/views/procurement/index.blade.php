@@ -125,38 +125,82 @@
                 </div>
                 <div class="card-body pt-0">
                     <div class="row g-5 mb-6">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="border border-gray-300 rounded p-4 h-100">
                                 <div class="text-muted fw-semibold fs-7">Open discrepancies</div>
                                 <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['total']) }}</div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="border border-danger rounded p-4 h-100">
                                 <div class="text-muted fw-semibold fs-7">Blocking</div>
                                 <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['blocking']) }}</div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="border border-warning rounded p-4 h-100">
                                 <div class="text-muted fw-semibold fs-7">Warnings</div>
                                 <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['warning']) }}</div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="border border-gray-300 rounded p-4 h-100">
                                 <div class="text-muted fw-semibold fs-7">Supplier invoices</div>
                                 <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['documents']) }}</div>
                             </div>
                         </div>
+                        <div class="col-md-2">
+                            <div class="border border-info rounded p-4 h-100">
+                                <div class="text-muted fw-semibold fs-7">In review</div>
+                                <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['in_review']) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border border-primary rounded p-4 h-100">
+                                <div class="text-muted fw-semibold fs-7">Owned by me</div>
+                                <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['owned_by_me']) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border border-gray-300 rounded p-4 h-100">
+                                <div class="text-muted fw-semibold fs-7">Unassigned</div>
+                                <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['unassigned']) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border border-warning rounded p-4 h-100">
+                                <div class="text-muted fw-semibold fs-7">Aged &gt; 2 days</div>
+                                <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['aged_over_2_days']) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border border-danger rounded p-4 h-100">
+                                <div class="text-muted fw-semibold fs-7">Aged &gt; 7 days</div>
+                                <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $discrepancySummary['aged_over_7_days']) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border border-info rounded p-4 h-100 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="text-muted fw-semibold fs-7">Ownership report</div>
+                                    <div class="text-muted fs-8 mt-2">Review owner backlog and aging outside the live queue.</div>
+                                </div>
+                                <a href="{{ route('vasaccounting.reports.procurement_discrepancy_ownership') }}" class="btn btn-light-info btn-sm mt-4">Open ownership report</a>
+                            </div>
+                        </div>
                     </div>
 
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-procurement-discrepancies-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-procurement-discrepancies-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>Invoice</th>
                                     <th>Severity</th>
+                                    <th>Queue status</th>
+                                    <th>Owner</th>
                                     <th>Code</th>
                                     <th>Message</th>
                                     <th>Line</th>
@@ -173,6 +217,19 @@
                                         </td>
                                         <td>
                                             <span class="badge {{ $item['severity'] === 'blocking' ? 'badge-light-danger' : 'badge-light-warning' }}">{{ strtoupper($item['severity']) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $item['status'] === 'in_review' ? 'badge-light-info' : 'badge-light-secondary' }}">
+                                                {{ str($item['status'])->replace('_', ' ')->title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if ($item['owner_id'] > 0)
+                                                <div class="text-gray-900 fw-semibold">{{ $item['owner_name'] }}</div>
+                                                <div class="text-muted fs-8">{{ $item['owner_assigned_at'] ?: 'Recently assigned' }}</div>
+                                            @else
+                                                <div class="text-muted fs-8">Unassigned</div>
+                                            @endif
                                         </td>
                                         <td>
                                             <div class="text-gray-900 fw-semibold">{{ str($item['code'])->replace('_', ' ')->title() }}</div>
@@ -193,15 +250,44 @@
                                             <div class="text-muted fs-8">Blocking {{ $item['blocking_exception_count'] }} | Warning {{ $item['warning_count'] }}</div>
                                         </td>
                                         <td>
-                                            <form method="POST" action="{{ route('vasaccounting.procurement.match', $item['document_id']) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-light-warning btn-sm w-100">Re-run match</button>
-                                            </form>
+                                            <div class="d-flex flex-column gap-2">
+                                                @if ($item['owner_id'] !== (int) auth()->id())
+                                                    <form method="POST" action="{{ route('vasaccounting.procurement.discrepancies.take_ownership', $item['exception_id']) }}">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-light-primary btn-sm w-100">Take ownership</button>
+                                                    </form>
+                                                @endif
+                                                <form method="POST" action="{{ route('vasaccounting.procurement.discrepancies.assign', $item['exception_id']) }}">
+                                                    @csrf
+                                                    <select name="owner_id" class="form-select form-select-solid form-select-sm">
+                                                        <option value="">Assign owner...</option>
+                                                        @foreach ($assigneeOptions as $assigneeId => $assigneeLabel)
+                                                            <option value="{{ $assigneeId }}" @selected((int) $assigneeId === (int) $item['owner_id'])>{{ $assigneeLabel }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit" class="btn btn-light-info btn-sm w-100 mt-2">Reassign owner</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('vasaccounting.procurement.discrepancies.resolve', $item['exception_id']) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="reason" value="">
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-light-success btn-sm w-100"
+                                                        onclick="var note = prompt('Describe how this discrepancy was resolved.'); if (!note) { return false; } this.form.querySelector('input[name=&quot;reason&quot;]').value = note;"
+                                                    >
+                                                        Resolve with note
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ route('vasaccounting.procurement.match', $item['document_id']) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-light-warning btn-sm w-100">Re-run match</button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-10">No open procurement discrepancies are currently queued.</td>
+                                        <td colspan="9" class="text-center text-muted py-10">No open procurement discrepancies are currently queued.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -372,8 +458,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-procurement-documents-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-procurement-documents-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.document') }}</th>
@@ -538,4 +627,32 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const discrepancyTable = window.VasWorkspace?.initLocalDataTable('#vas-procurement-discrepancies-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            const documentsTable = window.VasWorkspace?.initLocalDataTable('#vas-procurement-documents-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (discrepancyTable) {
+                $('#vas-procurement-discrepancies-search').on('keyup', function () {
+                    discrepancyTable.search(this.value).draw();
+                });
+            }
+
+            if (documentsTable) {
+                $('#vas-procurement-documents-search').on('keyup', function () {
+                    documentsTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

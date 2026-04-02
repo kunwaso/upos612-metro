@@ -249,6 +249,7 @@ $(document).ready(function() {
                 method: 'post',
                 url: '/products/validate_variation_skus',
                 data: { skus: variation_skus},
+                dataType: 'json',
                 success: function(result) {
                     if (result.success == true) {
                         $('#submit_type').val(submit_type);
@@ -258,6 +259,13 @@ $(document).ready(function() {
                     } else {
                         toastr.error(__translate('skus_already_exists', {sku: result.sku}));
                         return false;
+                    }
+                },
+                error: function() {
+                    // Do not block product updates when SKU pre-validation endpoint is unavailable.
+                    $('#submit_type').val(submit_type);
+                    if ($('form#product_add_form').valid()) {
+                        $('form#product_add_form').submit();
                     }
                 },
             });

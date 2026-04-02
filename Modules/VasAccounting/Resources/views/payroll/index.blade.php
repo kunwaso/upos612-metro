@@ -57,8 +57,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-payroll-groups-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-payroll-groups-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.payroll.queue.table.payroll_group') }}</th>
@@ -128,8 +131,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-payroll-batches-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-payroll-batches-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.batch') }}</th>
@@ -171,4 +177,33 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const payrollGroupsTable = window.VasWorkspace?.initLocalDataTable('#vas-payroll-groups-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (payrollGroupsTable) {
+                $('#vas-payroll-groups-search').on('keyup', function () {
+                    payrollGroupsTable.search(this.value).draw();
+                });
+            }
+
+            const payrollBatchesTable = window.VasWorkspace?.initLocalDataTable('#vas-payroll-batches-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (payrollBatchesTable) {
+                $('#vas-payroll-batches-search').on('keyup', function () {
+                    payrollBatchesTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

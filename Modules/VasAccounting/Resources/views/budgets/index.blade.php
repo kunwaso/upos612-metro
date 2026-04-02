@@ -196,8 +196,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-budgets-register-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-budgets-register-table">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.budgets.register.table.budget') }}</th>
@@ -257,8 +260,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-budgets-variance-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-budgets-variance-table">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.budgets.variance.table.budget') }}</th>
@@ -301,4 +307,33 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const budgetsRegisterTable = window.VasWorkspace?.initLocalDataTable('#vas-budgets-register-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (budgetsRegisterTable) {
+                $('#vas-budgets-register-search').on('keyup', function () {
+                    budgetsRegisterTable.search(this.value).draw();
+                });
+            }
+
+            const budgetsVarianceTable = window.VasWorkspace?.initLocalDataTable('#vas-budgets-variance-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (budgetsVarianceTable) {
+                $('#vas-budgets-variance-search').on('keyup', function () {
+                    budgetsVarianceTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

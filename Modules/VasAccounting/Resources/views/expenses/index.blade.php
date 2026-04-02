@@ -282,14 +282,17 @@
         <div class="col-xl-8">
             <div class="card card-flush h-100">
                 <div class="card-header">
-                    <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.expenses.register.document_table_title') }}</span>
-                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.expenses.register.document_table_subtitle') }}</span>
-                    </div>
+                <div class="card-title d-flex flex-column">
+                    <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.expenses.register.document_table_title') }}</span>
+                    <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.expenses.register.document_table_subtitle') }}</span>
+                </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-expenses-documents-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-expenses-documents-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.expenses.table.document') }}</th>
@@ -519,4 +522,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const expensesTable = window.VasWorkspace?.initLocalDataTable('#vas-expenses-documents-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+
+            if (expensesTable) {
+                $('#vas-expenses-documents-search').on('keyup', function () {
+                    expensesTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

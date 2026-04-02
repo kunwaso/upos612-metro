@@ -197,8 +197,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-fixed-assets-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-fixed-assets-table">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.asset') }}</th>
@@ -273,4 +276,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const fixedAssetsTable = window.VasWorkspace?.initLocalDataTable('#vas-fixed-assets-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (fixedAssetsTable) {
+                $('#vas-fixed-assets-search').on('keyup', function () {
+                    fixedAssetsTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

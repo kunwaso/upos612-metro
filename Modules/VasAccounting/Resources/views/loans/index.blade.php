@@ -178,8 +178,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-loans-register-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-loans-register-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.loans.loan_register.table.loan') }}</th>
@@ -238,8 +241,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-loans-schedules-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-loans-schedules-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.loans.schedules.table.schedule') }}</th>
@@ -291,4 +297,33 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const loanRegisterTable = window.VasWorkspace?.initLocalDataTable('#vas-loans-register-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (loanRegisterTable) {
+                $('#vas-loans-register-search').on('keyup', function () {
+                    loanRegisterTable.search(this.value).draw();
+                });
+            }
+
+            const loanSchedulesTable = window.VasWorkspace?.initLocalDataTable('#vas-loans-schedules-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+
+            if (loanSchedulesTable) {
+                $('#vas-loans-schedules-search').on('keyup', function () {
+                    loanSchedulesTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

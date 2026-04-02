@@ -57,8 +57,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tax-summary-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tax-summary-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.tax.summary.table.tax_code') }}</th>
@@ -138,8 +141,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tax-sales-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tax-sales-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.tax.sales_book.table.document') }}</th>
@@ -176,8 +182,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tax-purchase-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tax-purchase-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.tax.purchase_book.table.document') }}</th>
@@ -215,8 +224,11 @@
             </div>
         </div>
         <div class="card-body pt-0">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-tax-codes-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tax-codes-table">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.code') }}</th>
@@ -243,4 +255,51 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const taxSummaryTable = window.VasWorkspace?.initLocalDataTable('#vas-tax-summary-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (taxSummaryTable) {
+                $('#vas-tax-summary-search').on('keyup', function () {
+                    taxSummaryTable.search(this.value).draw();
+                });
+            }
+
+            const taxSalesTable = window.VasWorkspace?.initLocalDataTable('#vas-tax-sales-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (taxSalesTable) {
+                $('#vas-tax-sales-search').on('keyup', function () {
+                    taxSalesTable.search(this.value).draw();
+                });
+            }
+
+            const taxPurchaseTable = window.VasWorkspace?.initLocalDataTable('#vas-tax-purchase-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (taxPurchaseTable) {
+                $('#vas-tax-purchase-search').on('keyup', function () {
+                    taxPurchaseTable.search(this.value).draw();
+                });
+            }
+
+            const taxCodesTable = window.VasWorkspace?.initLocalDataTable('#vas-tax-codes-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (taxCodesTable) {
+                $('#vas-tax-codes-search').on('keyup', function () {
+                    taxCodesTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

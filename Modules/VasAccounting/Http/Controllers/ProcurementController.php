@@ -5,6 +5,7 @@ namespace Modules\VasAccounting\Http\Controllers;
 use App\BusinessLocation;
 use App\Contact;
 use App\Product;
+use App\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Modules\VasAccounting\Application\DTOs\PostingContext;
 use Modules\VasAccounting\Application\DTOs\ReversalContext;
 use Modules\VasAccounting\Contracts\FinanceDocumentServiceInterface;
 use Modules\VasAccounting\Contracts\PostingRuleEngineInterface;
+use Modules\VasAccounting\Contracts\ProcurementDiscrepancyServiceInterface;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchRun;
@@ -30,7 +32,8 @@ class ProcurementController extends VasBaseController
     public function __construct(
         protected VasAccountingUtil $vasUtil,
         protected FinanceDocumentServiceInterface $financeDocumentService,
-        protected PostingRuleEngineInterface $postingRuleEngine
+        protected PostingRuleEngineInterface $postingRuleEngine,
+        protected ProcurementDiscrepancyServiceInterface $procurementDiscrepancyService
     ) {
     }
 
@@ -51,7 +54,7 @@ class ProcurementController extends VasBaseController
 
         $allDocuments = Schema::hasTable('vas_fin_documents')
             ? FinanceDocument::query()
-                ->with(['approvalInstances.steps', 'parentLinks.parentDocument', 'childLinks.childDocument', 'matchRuns.exceptions'])
+                ->with(['approvalInstances.steps', 'parentLinks.parentDocument', 'childLinks.childDocument', 'matchRuns.exceptions.documentLine', 'matchRuns.exceptions.owner'])
                 ->where('business_id', $businessId)
                 ->whereIn('document_type', $this->supportedDocumentTypes())
                 ->when($selectedLocationId, fn ($query) => $query->where('business_location_id', $selectedLocationId))
@@ -111,6 +114,11 @@ class ProcurementController extends VasBaseController
             'blocking' => $discrepancyQueue->where('severity', 'blocking')->count(),
             'warning' => $discrepancyQueue->where('severity', 'warning')->count(),
             'documents' => $discrepancyQueue->pluck('document_id')->unique()->count(),
+            'in_review' => $discrepancyQueue->where('status', FinanceMatchException::STATUS_IN_REVIEW)->count(),
+            'owned_by_me' => $discrepancyQueue->where('owner_id', (int) auth()->id())->count(),
+            'unassigned' => $discrepancyQueue->filter(fn (array $item) => (int) ($item['owner_id'] ?? 0) === 0)->count(),
+            'aged_over_2_days' => $discrepancyQueue->filter(fn (array $item) => (int) ($item['owner_age_days'] ?? 0) > 2)->count(),
+            'aged_over_7_days' => $discrepancyQueue->filter(fn (array $item) => (int) ($item['owner_age_days'] ?? 0) > 7)->count(),
         ];
 
         $documentTypeCounts = collect($this->supportedDocumentTypes())
@@ -139,6 +147,7 @@ class ProcurementController extends VasBaseController
             'selectedLocationId' => $selectedLocationId,
             'locationOptions' => BusinessLocation::forDropdown($businessId),
             'supplierOptions' => Contact::suppliersDropdown($businessId, true, true),
+            'assigneeOptions' => User::forDropdown($businessId, false, false, false, false),
             'productOptions' => Product::query()
                 ->where('business_id', $businessId)
                 ->where('is_inactive', 0)
@@ -327,6 +336,62 @@ class ProcurementController extends VasBaseController
         }
     }
 
+    public function takeOwnership(FinanceDocumentActionRequest $request, int $exception): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.procurement.manage');
+
+        try {
+            $exceptionModel = $this->procurementDiscrepancyOrFail($this->businessId($request), $exception);
+            $this->procurementDiscrepancyService->takeOwnership($exceptionModel, $this->actionContext($request, 'Procurement discrepancy taken into review'));
+
+            return $this->redirectBackToProcurement($request, ['success' => true, 'msg' => __('vasaccounting::lang.procurement_discrepancy_owned')]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToProcurement($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function resolveDiscrepancy(FinanceDocumentActionRequest $request, int $exception): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.procurement.manage');
+
+        $resolutionNote = trim((string) $request->input('reason', ''));
+        if ($resolutionNote === '') {
+            return $this->redirectBackToProcurement($request, ['success' => false, 'msg' => __('vasaccounting::lang.procurement_discrepancy_resolution_note_required')]);
+        }
+
+        try {
+            $exceptionModel = $this->procurementDiscrepancyOrFail($this->businessId($request), $exception);
+            $this->procurementDiscrepancyService->resolve($exceptionModel, $resolutionNote, $this->actionContext($request, $resolutionNote));
+
+            return $this->redirectBackToProcurement($request, ['success' => true, 'msg' => __('vasaccounting::lang.procurement_discrepancy_resolved')]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToProcurement($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function assignDiscrepancy(FinanceDocumentActionRequest $request, int $exception): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.procurement.manage');
+
+        $ownerId = (int) $request->input('owner_id', 0);
+        if ($ownerId <= 0) {
+            return $this->redirectBackToProcurement($request, ['success' => false, 'msg' => __('vasaccounting::lang.procurement_discrepancy_owner_required')]);
+        }
+
+        try {
+            $exceptionModel = $this->procurementDiscrepancyOrFail($this->businessId($request), $exception);
+            $this->procurementDiscrepancyService->assignOwner(
+                $exceptionModel,
+                $ownerId,
+                $this->actionContext($request, 'Procurement discrepancy reassigned', ['assigned_owner_id' => $ownerId])
+            );
+
+            return $this->redirectBackToProcurement($request, ['success' => true, 'msg' => __('vasaccounting::lang.procurement_discrepancy_reassigned')]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToProcurement($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
     public function post(FinanceDocumentActionRequest $request, int $document): RedirectResponse
     {
         $this->authorizePermission('vas_accounting.procurement.manage');
@@ -489,6 +554,13 @@ class ProcurementController extends VasBaseController
         return in_array($focus, ['pending_documents', 'receiving_queue', 'pending_matching', 'discrepancy_queue'], true) ? $focus : null;
     }
 
+    protected function procurementDiscrepancyOrFail(int $businessId, int $exceptionId): FinanceMatchException
+    {
+        return FinanceMatchException::query()
+            ->where('business_id', $businessId)
+            ->findOrFail($exceptionId);
+    }
+
     protected function applyDocumentDateScope($query, ?string $periodStart, ?string $periodEnd)
     {
         if (! $periodStart && ! $periodEnd) {
@@ -517,14 +589,16 @@ class ProcurementController extends VasBaseController
                 }
 
                 return $matchRun->exceptions
-                    ->where('status', 'open')
+                    ->whereIn('status', FinanceMatchException::unresolvedStatuses())
                     ->map(function (FinanceMatchException $exception) use ($document, $matchRun) {
                         return [
+                            'exception_id' => $exception->id,
                             'document_id' => $document->id,
                             'document_no' => $document->document_no ?: ('#' . $document->id),
                             'document_type' => $document->document_type,
                             'document_date' => optional($document->document_date)->format('Y-m-d') ?: '-',
                             'workflow_status' => (string) $document->workflow_status,
+                            'status' => (string) $exception->status,
                             'severity' => (string) $exception->severity,
                             'code' => (string) $exception->code,
                             'message' => (string) $exception->message,
@@ -533,12 +607,21 @@ class ProcurementController extends VasBaseController
                             'warning_count' => (int) $matchRun->warning_count,
                             'line_no' => (int) optional($exception->documentLine)->line_no,
                             'product_id' => (int) optional($exception->documentLine)->product_id,
+                            'owner_id' => (int) $exception->owner_id,
+                            'owner_name' => $exception->owner_id
+                                ? (optional($exception->owner)->full_name ?: optional($exception->owner)->username ?: ('User #' . (int) $exception->owner_id))
+                                : null,
+                            'owner_assigned_at' => optional($exception->owner_assigned_at)->format('Y-m-d H:i'),
+                            'owner_age_days' => $exception->owner_assigned_at ? $exception->owner_assigned_at->diffInDays(now()) : null,
+                            'resolution_note' => (string) ($exception->resolution_note ?? ''),
                             'meta' => (array) ($exception->meta ?? []),
                         ];
                     });
             })
             ->sortBy([
+                fn (array $item) => $item['owner_id'] === (int) auth()->id() ? 0 : 1,
                 fn (array $item) => $item['severity'] === 'blocking' ? 0 : 1,
+                fn (array $item) => $item['status'] === FinanceMatchException::STATUS_OPEN ? 0 : 1,
                 fn (array $item) => $item['document_date'],
                 fn (array $item) => $item['document_no'],
             ])
@@ -563,6 +646,6 @@ class ProcurementController extends VasBaseController
     {
         $run = $this->latestMatchRun($document);
 
-        return $run ? $run->exceptions->where('status', 'open')->count() : 0;
+        return $run ? $run->exceptions->whereIn('status', FinanceMatchException::unresolvedStatuses())->count() : 0;
     }
 }

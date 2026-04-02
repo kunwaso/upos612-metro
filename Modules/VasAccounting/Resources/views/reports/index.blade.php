@@ -3,56 +3,91 @@
 @section('title', __('vasaccounting::lang.reports'))
 
 @section('content')
+    @php
+        $summaryIcons = [
+            'ki-outline ki-chart-line-up-2',
+            'ki-outline ki-time',
+            'ki-outline ki-abstract-26',
+            'ki-outline ki-finance-calculator',
+        ];
+        $summaryBadges = ['light-primary', 'light-success', 'light-info', 'light-warning'];
+        $summaryCards = collect($hubSummary ?? [])->values()->map(function ($metric, $index) use ($summaryIcons, $summaryBadges) {
+            return [
+                'key' => 'hub_metric_' . $index,
+                'label' => data_get($metric, 'label'),
+                'value' => data_get($metric, 'value'),
+                'delta' => null,
+                'direction' => 'flat',
+                'hint' => null,
+                'icon' => $summaryIcons[$index % count($summaryIcons)],
+                'badgeVariant' => $summaryBadges[$index % count($summaryBadges)],
+            ];
+        })->all();
+
+        $snapshotWidgetItems = collect($recentSnapshots ?? [])->take(5)->map(function ($snapshot) use ($vasAccountingUtil) {
+            $status = (string) data_get($snapshot, 'status', 'queued');
+            return [
+                'title' => (string) (data_get($snapshot, 'snapshot_name') ?: data_get($snapshot, 'report_key')),
+                'description' => $vasAccountingUtil->genericStatusLabel($status),
+                'icon' => $status === 'ready' ? 'ki-outline ki-check-circle' : ($status === 'failed' ? 'ki-outline ki-cross-circle' : 'ki-outline ki-time'),
+                'badgeVariant' => $status === 'ready' ? 'light-success' : ($status === 'failed' ? 'light-danger' : 'light-warning'),
+            ];
+        })->all();
+    @endphp
+
     @include('vasaccounting::partials.header', [
         'title' => __('vasaccounting::lang.reports'),
         'subtitle' => data_get($vasAccountingPageMeta ?? [], 'subtitle'),
     ])
 
-    <div class="row g-5 g-xl-10 mb-8">
-        @foreach ($hubSummary as $metric)
-            <div class="col-md-3">
-                <div class="card card-flush h-100">
-                    <div class="card-body">
-                        <div class="text-muted fs-7 fw-semibold mb-2">{{ $metric['label'] }}</div>
-                        <div class="text-gray-900 fw-bold fs-2">{{ $metric['value'] }}</div>
-                    </div>
-                </div>
-            </div>
-        @endforeach
+    <div class="mb-8" id="vas-reports-hub-kpis">
+        @include('vasaccounting::partials.workspace.kpi_strip', ['cards' => $summaryCards])
     </div>
 
-    @foreach (collect($reportDefinitions)->groupBy('group', true) as $group => $reports)
-        <div class="card card-flush mb-8">
-            <div class="card-header">
-                <div class="card-title d-flex flex-column">
-                    <span>{{ $group }}</span>
-                    <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.reports.group_subtitle', ['group' => mb_strtolower($group)]) }}</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row g-5">
-                    @foreach ($reports as $reportKey => $report)
-                        <div class="col-xl-4 col-md-6">
-                            <div class="card card-bordered h-100">
-                                <div class="card-body d-flex flex-column">
-                                    <div class="fw-bold fs-4 text-gray-900 mb-2">{{ $vasAccountingUtil->reportKeyLabel((string) $reportKey) }}</div>
-                                    <div class="text-muted fs-7 mb-6 flex-grow-1">{{ $report['description'] }}</div>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <a href="{{ route($report['route']) }}" class="btn btn-light-primary btn-sm">{{ $vasAccountingUtil->actionLabel('open_live_report') }}</a>
-                                        <form method="POST" action="{{ route('vasaccounting.reports.snapshots.store') }}">
-                                            @csrf
-                                            <input type="hidden" name="report_key" value="{{ $reportKey }}">
-                                            <button type="submit" class="btn btn-light btn-sm">{{ $vasAccountingUtil->actionLabel('queue_snapshot') }}</button>
-                                        </form>
+    <div class="row g-5 g-xl-10 mb-8">
+        <div class="col-xl-8">
+            @foreach (collect($reportDefinitions)->groupBy('group', true) as $group => $reports)
+                <div class="card card-flush mb-8">
+                    <div class="card-header">
+                        <div class="card-title d-flex flex-column">
+                            <span>{{ $group }}</span>
+                            <span class="text-muted fw-semibold fs-8 mt-1">{{ __('vasaccounting::lang.views.reports.group_subtitle', ['group' => mb_strtolower($group)]) }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-5">
+                            @foreach ($reports as $reportKey => $report)
+                                <div class="col-xl-6 col-md-6">
+                                    <div class="card card-bordered h-100">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="fw-bold fs-4 text-gray-900 mb-2">{{ $vasAccountingUtil->reportKeyLabel((string) $reportKey) }}</div>
+                                            <div class="text-muted fs-7 mb-6 flex-grow-1">{{ $report['description'] }}</div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a href="{{ route($report['route']) }}" class="btn btn-light-primary btn-sm">{{ $vasAccountingUtil->actionLabel('open_live_report') }}</a>
+                                                <form method="POST" action="{{ route('vasaccounting.reports.snapshots.store') }}">
+                                                    @csrf
+                                                    <input type="hidden" name="report_key" value="{{ $reportKey }}">
+                                                    <button type="submit" class="btn btn-light btn-sm">{{ $vasAccountingUtil->actionLabel('queue_snapshot') }}</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endforeach
                         </div>
-                    @endforeach
+                    </div>
                 </div>
-            </div>
+            @endforeach
         </div>
-    @endforeach
+
+        <div class="col-xl-4">
+            @include('vasaccounting::partials.workspace.side_widget', [
+                'title' => __('vasaccounting::lang.views.reports.recent_snapshots.title'),
+                'subtitle' => __('vasaccounting::lang.views.reports.recent_snapshots.subtitle'),
+                'items' => $snapshotWidgetItems,
+            ])
+        </div>
+    </div>
 
     <div class="card card-flush">
         <div class="card-header">
@@ -62,8 +97,19 @@
             </div>
         </div>
         <div class="card-body">
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-report-hub-snapshot-search',
+                'actions' => [
+                    [
+                        'label' => $vasAccountingUtil->actionLabel('open_live_report'),
+                        'url' => route('vasaccounting.reports.operational_health'),
+                        'style' => 'light-primary',
+                        'method' => 'GET',
+                    ],
+                ],
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+                <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-report-hub-snapshots-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.reports.recent_snapshots.table.snapshot') }}</th>
@@ -102,4 +148,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const snapshotTable = window.VasWorkspace?.initLocalDataTable('#vas-report-hub-snapshots-table', {
+                order: [[3, 'desc']],
+                pageLength: 10
+            });
+
+            if (snapshotTable) {
+                $('#vas-report-hub-snapshot-search').on('keyup', function () {
+                    snapshotTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

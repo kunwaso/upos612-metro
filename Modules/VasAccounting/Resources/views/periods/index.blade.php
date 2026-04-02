@@ -62,8 +62,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-periods-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5">
+                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="vas-periods-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.periods.table.name') }}</th>
@@ -137,4 +140,22 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const periodsTable = window.VasWorkspace?.initLocalDataTable('#vas-periods-table', {
+                order: [[1, 'desc']],
+                pageLength: 25
+            });
+
+            if (periodsTable) {
+                $('#vas-periods-search').on('keyup', function () {
+                    periodsTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

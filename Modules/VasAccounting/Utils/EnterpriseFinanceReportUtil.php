@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchRun;
 
 class EnterpriseFinanceReportUtil
@@ -250,11 +251,11 @@ class EnterpriseFinanceReportUtil
         }
 
         return FinanceDocument::query()
-            ->with(['lines', 'matchRuns.exceptions.documentLine', 'matchRuns.lines'])
+            ->with(['lines', 'matchRuns.exceptions.documentLine', 'matchRuns.exceptions.owner', 'matchRuns.lines'])
             ->where('business_id', $businessId)
             ->where('document_type', 'supplier_invoice')
             ->whereHas('matchRuns.exceptions', function ($query) {
-                $query->where('status', 'open');
+                $query->whereIn('status', FinanceMatchException::unresolvedStatuses());
             })
             ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
             ->orderByDesc('id')
@@ -279,9 +280,10 @@ class EnterpriseFinanceReportUtil
                 }
 
                 return $matchRun->exceptions
-                    ->where('status', 'open')
+                    ->whereIn('status', FinanceMatchException::unresolvedStatuses())
                     ->map(function ($exception) use ($document, $matchRun) {
                         return (object) [
+                            'exception_id' => $exception->id,
                             'document_id' => $document->id,
                             'document_no' => $document->document_no ?: ('#' . $document->id),
                             'document_date' => optional($document->document_date)->format('Y-m-d') ?: '-',
@@ -292,16 +294,23 @@ class EnterpriseFinanceReportUtil
                             'match_status' => (string) $matchRun->status,
                             'blocking_exception_count' => (int) $matchRun->blocking_exception_count,
                             'warning_count' => (int) $matchRun->warning_count,
+                            'status' => (string) $exception->status,
                             'severity' => (string) $exception->severity,
                             'code' => (string) $exception->code,
                             'message' => (string) $exception->message,
                             'line_no' => (int) optional($exception->documentLine)->line_no,
                             'product_id' => (int) optional($exception->documentLine)->product_id,
+                            'owner_id' => (int) $exception->owner_id,
+                            'owner_name' => optional($exception->owner)->full_name ?: optional($exception->owner)->username,
+                            'owner_assigned_at' => optional($exception->owner_assigned_at)->format('Y-m-d H:i'),
+                            'owner_age_days' => $exception->owner_assigned_at ? $exception->owner_assigned_at->diffInDays(now()) : null,
+                            'resolution_note' => (string) ($exception->resolution_note ?? ''),
                             'meta' => (array) ($exception->meta ?? []),
                         ];
                     });
             })
             ->sortBy([
+                fn ($row) => $row->status === FinanceMatchException::STATUS_OPEN ? 0 : 1,
                 fn ($row) => $row->severity === 'blocking' ? 0 : 1,
                 fn ($row) => $row->document_date,
                 fn ($row) => $row->document_no,

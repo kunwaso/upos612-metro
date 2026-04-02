@@ -27,8 +27,11 @@
             <div class="card card-flush h-100">
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.invoices.sales_queue.title') }}</div></div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-invoices-sales-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-invoices-sales-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.invoices.sales_queue.table.voucher') }}</th>
@@ -60,8 +63,11 @@
             <div class="card card-flush h-100">
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.invoices.purchase_queue.title') }}</div></div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-invoices-purchase-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-invoices-purchase-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.invoices.purchase_queue.table.voucher') }}</th>
@@ -90,4 +96,32 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const salesTable = window.VasWorkspace?.initLocalDataTable('#vas-invoices-sales-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            const purchaseTable = window.VasWorkspace?.initLocalDataTable('#vas-invoices-purchase-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (salesTable) {
+                $('#vas-invoices-sales-search').on('keyup', function () {
+                    salesTable.search(this.value).draw();
+                });
+            }
+
+            if (purchaseTable) {
+                $('#vas-invoices-purchase-search').on('keyup', function () {
+                    purchaseTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

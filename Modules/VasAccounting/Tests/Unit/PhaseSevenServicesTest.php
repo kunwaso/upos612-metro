@@ -41,6 +41,7 @@ class PhaseSevenServicesTest extends TestCase
         $this->assertTrue($service->supports('purchase_register'));
         $this->assertTrue($service->supports('goods_receipt_register'));
         $this->assertTrue($service->supports('procurement_discrepancies'));
+        $this->assertTrue($service->supports('procurement_discrepancy_ownership'));
         $this->assertTrue($service->supports('procurement_aging'));
         $this->assertSame('Close Packet', $service->definition('close_packet')['title']);
         $this->assertSame('Expense Register', $service->definition('expense_register')['title']);
@@ -50,6 +51,8 @@ class PhaseSevenServicesTest extends TestCase
         $this->assertSame('vasaccounting.reports.purchase_register', $service->definition('purchase_register')['route']);
         $this->assertSame('Procurement Discrepancies', $service->definition('procurement_discrepancies')['title']);
         $this->assertSame('vasaccounting.reports.procurement_discrepancies', $service->definition('procurement_discrepancies')['route']);
+        $this->assertSame('Procurement Discrepancy Ownership', $service->definition('procurement_discrepancy_ownership')['title']);
+        $this->assertSame('vasaccounting.reports.procurement_discrepancy_ownership', $service->definition('procurement_discrepancy_ownership')['route']);
         $this->assertSame('Procurement Aging', $service->definition('procurement_aging')['title']);
         $this->assertSame('vasaccounting.reports.procurement_aging', $service->definition('procurement_aging')['route']);
     }

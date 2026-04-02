@@ -1,6 +1,6 @@
 ﻿@extends('layouts.app')
 
-@section('title', 'Create Invoice')
+@section('title', __('vasaccounting::lang.views.invoices.form.page_title_create'))
 
 @section('content')
     @php
@@ -28,13 +28,13 @@
     @endphp
 
     @include('vasaccounting::partials.header', [
-        'title' => 'Create Native Invoice',
-        'subtitle' => 'Native sales and purchase invoice workflow with approval, posting, and settlement handoff.',
+        'title' => __('vasaccounting::lang.views.invoices.form.header_create_title'),
+        'subtitle' => __('vasaccounting::lang.views.invoices.form.header_create_subtitle'),
     ])
 
     @if ($errors->any())
         <div class="alert alert-danger mb-8">
-            <div class="fw-semibold mb-2">Please correct the highlighted fields.</div>
+            <div class="fw-semibold mb-2">{{ __('vasaccounting::lang.views.invoices.form.error_summary') }}</div>
             <ul class="mb-0 ps-5">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -47,7 +47,7 @@
         <div class="col-xl-8">
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title">Purchase invoice details</div>
+                    <div class="card-title">{{ __('vasaccounting::lang.views.invoices.form.details_title') }}</div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('vasaccounting.invoices.store') }}">
@@ -55,7 +55,7 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label required">Invoice kind</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.invoices.form.invoice_kind') }}</label>
                                 <select class="form-select form-select-solid" name="invoice_kind" id="invoice-kind-select">
                                     @foreach (($invoiceKindOptions ?? $invoiceKinds ?? []) as $kindValue => $kindLabel)
                                         <option value="{{ $kindValue }}" {{ $selectedKind === $kindValue ? 'selected' : '' }}>{{ $kindLabel }}</option>
@@ -63,24 +63,24 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required">Counterparty</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.invoices.form.counterparty') }}</label>
                                 <select class="form-select form-select-solid counterparty-select" name="contact_id" id="purchase-counterparty-select" {{ $isSales ? 'disabled' : '' }}>
-                                    <option value="">Select supplier</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.select_supplier') }}</option>
                                     @foreach (($contactOptions['purchase'] ?? $supplierOptions ?? []) as $supplierId => $supplierLabel)
                                         <option value="{{ $supplierId }}" {{ ! $isSales && (string) $selectedSupplierId === (string) $supplierId ? 'selected' : '' }}>{{ $supplierLabel }}</option>
                                     @endforeach
                                 </select>
                                 <select class="form-select form-select-solid counterparty-select d-none" name="contact_id" id="sales-counterparty-select" {{ $isSales ? '' : 'disabled' }}>
-                                    <option value="">Select customer</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.select_customer') }}</option>
                                     @foreach (($contactOptions['sales'] ?? $customerOptions ?? []) as $customerId => $customerLabel)
                                         <option value="{{ $customerId }}" {{ $isSales && (string) $selectedSupplierId === (string) $customerId ? 'selected' : '' }}>{{ $customerLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Branch</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.shared.branch') }}</label>
                                 <select class="form-select form-select-solid" name="business_location_id">
-                                    <option value="">Select branch</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.shared.select_branch') }}</option>
                                     @foreach ($locationOptions as $locationId => $locationName)
                                         <option value="{{ $locationId }}" {{ (string) $selectedLocationId === (string) $locationId ? 'selected' : '' }}>{{ $locationName }}</option>
                                     @endforeach
@@ -90,52 +90,52 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-3">
-                                <label class="form-label required">Document date</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.invoices.form.document_date') }}</label>
                                 <input type="date" class="form-control form-control-solid" name="document_date" value="{{ $selectedDocumentDate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label required">Posting date</label>
+                                <label class="form-label required">{{ __('vasaccounting::lang.views.invoices.form.posting_date') }}</label>
                                 <input type="date" class="form-control form-control-solid" name="posting_date" value="{{ $selectedPostingDate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Due date</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.due_date') }}</label>
                                 <input type="date" class="form-control form-control-solid" name="due_date" value="{{ $selectedDueDate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Currency</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.currency') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="currency_code" value="{{ $selectedCurrency }}">
                             </div>
                         </div>
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-3">
-                                <label class="form-label">Exchange rate</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.exchange_rate') }}</label>
                                 <input type="number" min="0.000001" step="0.000001" class="form-control form-control-solid text-end" name="exchange_rate" value="{{ $selectedExchangeRate }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Internal reference</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.internal_reference') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="reference" value="{{ $selectedReference }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">External reference</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.external_reference') }}</label>
                                 <input type="text" class="form-control form-control-solid" name="external_reference" value="{{ $selectedExternalReference }}">
                             </div>
                         </div>
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label">Invoice scheme</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.invoice_scheme') }}</label>
                                 <select class="form-select form-select-solid" name="invoice_scheme_id">
-                                    <option value="">Auto by branch/default</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.auto_by_branch_default') }}</option>
                                     @foreach (($invoiceSchemeOptions ?? []) as $schemeId => $schemeName)
                                         <option value="{{ $schemeId }}" {{ (string) $selectedSchemeId === (string) $schemeId ? 'selected' : '' }}>{{ $schemeName }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Invoice layout</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.invoice_layout') }}</label>
                                 <select class="form-select form-select-solid" name="invoice_layout_id">
-                                    <option value="">Auto by branch/default</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.auto_by_branch_default') }}</option>
                                     @foreach (($invoiceLayoutOptions ?? []) as $layoutId => $layoutName)
                                         <option value="{{ $layoutId }}" {{ (string) $selectedLayoutId === (string) $layoutId ? 'selected' : '' }}>{{ $layoutName }}</option>
                                     @endforeach
@@ -145,33 +145,33 @@
 
                         <div class="row g-5 mb-8">
                             <div class="col-md-4">
-                                <label class="form-label">Pay term number</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.pay_term_number') }}</label>
                                 <input type="number" min="0" class="form-control form-control-solid" name="pay_term_number" value="{{ $selectedPayTermNumber }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Pay term type</label>
+                                <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.pay_term_type') }}</label>
                                 <select class="form-select form-select-solid" name="pay_term_type">
-                                    <option value="">Select term type</option>
-                                    <option value="days" {{ $selectedPayTermType === 'days' ? 'selected' : '' }}>Days</option>
-                                    <option value="months" {{ $selectedPayTermType === 'months' ? 'selected' : '' }}>Months</option>
+                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.select_term_type') }}</option>
+                                    <option value="days" {{ $selectedPayTermType === 'days' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.term_days') }}</option>
+                                    <option value="months" {{ $selectedPayTermType === 'months' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.term_months') }}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="mb-8">
-                            <label class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-solid" name="description" value="{{ $selectedDescription }}" placeholder="Supplier bill description, purchase memo, debit note reason">
+                            <label class="form-label">{{ __('vasaccounting::lang.views.shared.description') }}</label>
+                            <input type="text" class="form-control form-control-solid" name="description" value="{{ $selectedDescription }}" placeholder="{{ __('vasaccounting::lang.views.invoices.form.description_placeholder') }}">
                         </div>
 
                         <div class="table-responsive mb-8">
                             <table class="table align-middle table-row-dashed fs-6 gy-4" id="invoice-lines-table">
                                 <thead>
                                     <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                        <th style="min-width: 240px;">Expense / inventory account</th>
-                                        <th style="min-width: 220px;">Description</th>
-                                        <th style="min-width: 140px;" class="text-end">Net amount</th>
-                                        <th style="min-width: 140px;" class="text-end">Tax amount</th>
-                                        <th style="min-width: 180px;">Tax code</th>
+                                        <th style="min-width: 240px;">{{ __('vasaccounting::lang.views.invoices.form.line_account_header') }}</th>
+                                        <th style="min-width: 220px;">{{ __('vasaccounting::lang.views.invoices.form.line_description_header') }}</th>
+                                        <th style="min-width: 140px;" class="text-end">{{ __('vasaccounting::lang.views.invoices.form.line_net_amount_header') }}</th>
+                                        <th style="min-width: 140px;" class="text-end">{{ __('vasaccounting::lang.views.invoices.form.line_tax_amount_header') }}</th>
+                                        <th style="min-width: 180px;">{{ __('vasaccounting::lang.views.invoices.form.line_tax_code_header') }}</th>
                                         <th style="width: 56px;"></th>
                                     </tr>
                                 </thead>
@@ -180,7 +180,7 @@
                                         <tr>
                                             <td>
                                                 <select class="form-select form-select-solid" name="line_items[{{ $index }}][account_id]">
-                                                    <option value="">Select account</option>
+                                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.line_select_account') }}</option>
                                                     @foreach ($accountOptions as $account)
                                                         <option value="{{ $account->id }}" {{ (string) data_get($line, 'account_id') === (string) $account->id ? 'selected' : '' }}>{{ $account->account_code }} - {{ $account->account_name }}</option>
                                                     @endforeach
@@ -197,7 +197,7 @@
                                             </td>
                                             <td>
                                                 <select class="form-select form-select-solid" name="line_items[{{ $index }}][tax_code_id]">
-                                                    <option value="">No tax code</option>
+                                                    <option value="">{{ __('vasaccounting::lang.views.invoices.form.line_no_tax_code') }}</option>
                                                     @foreach ($effectiveTaxCodes as $taxCode)
                                                         <option value="{{ $taxCode->id }}" {{ (string) data_get($line, 'tax_code_id') === (string) $taxCode->id ? 'selected' : '' }}>{{ $taxCode->code }} - {{ $taxCode->name ?? $taxCode->description ?? '' }}</option>
                                                     @endforeach
@@ -213,70 +213,70 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center mb-8">
-                            <button type="button" class="btn btn-light-primary" id="add-invoice-line">Add line</button>
-                            <div class="text-muted fs-7">The AP control entry is generated automatically by the posting service.</div>
+                            <button type="button" class="btn btn-light-primary" id="add-invoice-line">{{ __('vasaccounting::lang.views.invoices.form.add_line') }}</button>
+                            <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.form.ap_control_hint') }}</div>
                         </div>
 
                         <div class="card card-bordered mb-8" id="immediate-payment-card">
                             <div class="card-header">
-                                <div class="card-title fs-6">Immediate settlement after posting</div>
+                                <div class="card-title fs-6">{{ __('vasaccounting::lang.views.invoices.form.immediate_settlement_title') }}</div>
                             </div>
                             <div class="card-body">
                                 <div class="row g-5">
                                     <div class="col-md-3">
-                                        <label class="form-label">Amount</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.shared.amount') }}</label>
                                         <input type="number" min="0" step="0.01" class="form-control form-control-solid text-end" name="immediate_payment[amount]" value="{{ data_get($immediatePayment, 'amount') }}">
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Settlement kind</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.settlement_kind') }}</label>
                                         <select class="form-select form-select-solid" name="immediate_payment[payment_kind]">
-                                            <option value="bank_payment" {{ data_get($immediatePayment, 'payment_kind', 'bank_payment') === 'bank_payment' ? 'selected' : '' }}>Bank payment</option>
-                                            <option value="cash_payment" {{ data_get($immediatePayment, 'payment_kind') === 'cash_payment' ? 'selected' : '' }}>Cash payment</option>
-                                            <option value="bank_receipt" {{ data_get($immediatePayment, 'payment_kind') === 'bank_receipt' ? 'selected' : '' }}>Bank receipt</option>
-                                            <option value="cash_receipt" {{ data_get($immediatePayment, 'payment_kind') === 'cash_receipt' ? 'selected' : '' }}>Cash receipt</option>
+                                            <option value="bank_payment" {{ data_get($immediatePayment, 'payment_kind', 'bank_payment') === 'bank_payment' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.settlement_kind_bank_payment') }}</option>
+                                            <option value="cash_payment" {{ data_get($immediatePayment, 'payment_kind') === 'cash_payment' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.settlement_kind_cash_payment') }}</option>
+                                            <option value="bank_receipt" {{ data_get($immediatePayment, 'payment_kind') === 'bank_receipt' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.settlement_kind_bank_receipt') }}</option>
+                                            <option value="cash_receipt" {{ data_get($immediatePayment, 'payment_kind') === 'cash_receipt' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.settlement_kind_cash_receipt') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Paid on</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.paid_on') }}</label>
                                         <input type="date" class="form-control form-control-solid" name="immediate_payment[paid_on]" value="{{ data_get($immediatePayment, 'paid_on', now()->toDateString()) }}">
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Payment method</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.payment_method') }}</label>
                                         <select class="form-select form-select-solid" name="immediate_payment[payment_method]">
-                                            <option value="bank_transfer" {{ data_get($immediatePayment, 'payment_method', 'bank_transfer') === 'bank_transfer' ? 'selected' : '' }}>Bank transfer</option>
-                                            <option value="cash" {{ data_get($immediatePayment, 'payment_method') === 'cash' ? 'selected' : '' }}>Cash</option>
-                                            <option value="cheque" {{ data_get($immediatePayment, 'payment_method') === 'cheque' ? 'selected' : '' }}>Cheque</option>
-                                            <option value="card" {{ data_get($immediatePayment, 'payment_method') === 'card' ? 'selected' : '' }}>Card</option>
+                                            <option value="bank_transfer" {{ data_get($immediatePayment, 'payment_method', 'bank_transfer') === 'bank_transfer' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.payment_method_bank_transfer') }}</option>
+                                            <option value="cash" {{ data_get($immediatePayment, 'payment_method') === 'cash' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.payment_method_cash') }}</option>
+                                            <option value="cheque" {{ data_get($immediatePayment, 'payment_method') === 'cheque' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.payment_method_cheque') }}</option>
+                                            <option value="card" {{ data_get($immediatePayment, 'payment_method') === 'card' ? 'selected' : '' }}>{{ __('vasaccounting::lang.views.invoices.form.payment_method_card') }}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="row g-5 mt-1">
                                     <div class="col-md-4">
-                                        <label class="form-label">Cashbook</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.cashbook') }}</label>
                                         <select class="form-select form-select-solid" name="immediate_payment[cashbook_id]">
-                                            <option value="">Optional</option>
+                                            <option value="">{{ __('vasaccounting::lang.views.invoices.form.optional') }}</option>
                                             @foreach ($cashbooks as $cashbook)
                                                 <option value="{{ $cashbook->id }}" {{ (string) data_get($immediatePayment, 'cashbook_id') === (string) $cashbook->id ? 'selected' : '' }}>{{ $cashbook->code }} - {{ $cashbook->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">Bank account</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.bank_account') }}</label>
                                         <select class="form-select form-select-solid" name="immediate_payment[bank_account_id]">
-                                            <option value="">Optional</option>
+                                            <option value="">{{ __('vasaccounting::lang.views.invoices.form.optional') }}</option>
                                             @foreach ($bankAccounts as $bankAccount)
                                                 <option value="{{ $bankAccount->id }}" {{ (string) data_get($immediatePayment, 'bank_account_id') === (string) $bankAccount->id ? 'selected' : '' }}>{{ $bankAccount->account_code }} - {{ $bankAccount->bank_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">Payment note</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.payment_note') }}</label>
                                         <input type="text" class="form-control form-control-solid" name="immediate_payment[notes]" value="{{ data_get($immediatePayment, 'notes') }}">
                                     </div>
                                 </div>
                                 <div class="row g-5 mt-1">
                                     <div class="col-md-4">
-                                        <label class="form-label">External reference</label>
+                                        <label class="form-label">{{ __('vasaccounting::lang.views.invoices.form.external_reference') }}</label>
                                         <input type="text" class="form-control form-control-solid" name="immediate_payment[external_reference]" value="{{ data_get($immediatePayment, 'external_reference') }}">
                                     </div>
                                 </div>
@@ -284,11 +284,11 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ route('vasaccounting.invoices.index') }}" class="btn btn-light">Back to register</a>
+                            <a href="{{ route('vasaccounting.invoices.index') }}" class="btn btn-light">{{ __('vasaccounting::lang.views.invoices.form.back_to_register') }}</a>
                             <div class="d-flex gap-3">
-                                <button type="submit" name="action" value="save_draft" class="btn btn-light-primary">Save draft</button>
-                                <button type="submit" name="action" value="submit" class="btn btn-light-warning">Submit</button>
-                                <button type="submit" name="action" value="save_and_post" class="btn btn-primary">Save and post</button>
+                                <button type="submit" name="action" value="save_draft" class="btn btn-light-primary">{{ __('vasaccounting::lang.views.invoices.form.save_draft') }}</button>
+                                <button type="submit" name="action" value="submit" class="btn btn-light-warning">{{ __('vasaccounting::lang.views.invoices.form.submit') }}</button>
+                                <button type="submit" name="action" value="save_and_post" class="btn btn-primary">{{ __('vasaccounting::lang.views.invoices.form.save_and_post') }}</button>
                             </div>
                         </div>
                     </form>
@@ -299,12 +299,12 @@
         <div class="col-xl-4">
             <div class="card card-flush mb-5">
                 <div class="card-header">
-                    <div class="card-title">Workflow notes</div>
+                    <div class="card-title">{{ __('vasaccounting::lang.views.invoices.form.workflow_notes_title') }}</div>
                 </div>
                 <div class="card-body">
-                    <div class="text-muted fs-7 mb-3">Internal reference preserves legacy numbering by invoice type when left blank.</div>
-                    <div class="text-muted fs-7 mb-3">Sales and purchase flows post into AR/AP control accounts from the VAS posting map.</div>
-                    <div class="text-muted fs-7">Immediate settlement runs only for posted sales/purchase invoices, not credit/debit notes.</div>
+                    <div class="text-muted fs-7 mb-3">{{ __('vasaccounting::lang.views.invoices.form.workflow_note_create_1') }}</div>
+                    <div class="text-muted fs-7 mb-3">{{ __('vasaccounting::lang.views.invoices.form.workflow_note_create_2') }}</div>
+                    <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.form.workflow_note_create_3') }}</div>
                 </div>
             </div>
         </div>

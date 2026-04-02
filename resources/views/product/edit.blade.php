@@ -448,6 +448,19 @@
             new KTImageInput(imageInputElement);
         }
 
+        var $removeImageInput = $('#remove_image');
+        var $uploadImageInput = $('#upload_image');
+
+        $(document).on('click', '[data-kt-image-input-action="remove"]', function() {
+            $removeImageInput.val('1');
+        });
+
+        $uploadImageInput.on('change', function() {
+            if (this.files && this.files.length > 0) {
+                $removeImageInput.val('0');
+            }
+        });
+
         __page_leave_confirmation('#product_add_form');
     });
 </script>

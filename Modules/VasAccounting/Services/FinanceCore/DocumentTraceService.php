@@ -179,6 +179,12 @@ class DocumentTraceService implements DocumentTraceServiceInterface
                             'code' => $exception->code,
                             'status' => $exception->status,
                             'message' => $exception->message,
+                            'owner_id' => $exception->owner_id,
+                            'reviewed_by' => $exception->reviewed_by,
+                            'reviewed_at' => optional($exception->reviewed_at)->toDateTimeString(),
+                            'resolved_by' => $exception->resolved_by,
+                            'resolved_at' => optional($exception->resolved_at)->toDateTimeString(),
+                            'resolution_note' => $exception->resolution_note,
                         ];
                     })->values()->all(),
                 ];

@@ -1,76 +1,84 @@
-@extends('layouts.guest')
+@extends('layouts.guest_metronic')
 @section('title', $title)
 
 @section('content')
-<div class="container">
-    <div class="spacer"></div>
-    <div class="row">
-        <div class="col-md-12 text-right mb-12">
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="d-flex justify-content-end gap-3 mb-6 no-print">
             @if(!empty($payment_link))
-                <a href="{{ $payment_link }}" class="btn btn-info no-print" style="margin-right: 20px;">
-                    <i class="fas fa-money-check-alt" title="@lang('lang_v1.pay')"></i> @lang('lang_v1.pay')
+                <a href="{{ $payment_link }}" class="btn btn-light-success">
+                    <i class="ki-outline ki-dollar fs-5 me-1"></i>@lang('lang_v1.pay')
                 </a>
             @endif
-            <button type="button" class="btn btn-primary btn-sm no-print" id="print_invoice" aria-label="Print">
-                <i class="fas fa-print"></i> @lang('messages.print')
+            <button type="button" class="btn btn-primary" id="print_invoice" aria-label="Print">
+                <i class="ki-outline ki-printer fs-5 me-1"></i>@lang('messages.print')
             </button>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-8 col-md-offset-2 col-sm-12" style="border: 1px solid #ccc;">
-            <div class="spacer"></div>
-            <div id="invoice_content">
-                <table class="table no-border">
-                    <tr>
+        <div id="invoice_content" class="card card-flush shadow-sm">
+            <div class="card-body p-8">
+                <div class="row g-6 align-items-center mb-8">
+                    <div class="col-md-4 text-center text-md-start">
                         @if(!empty($business->logo))
-                            <td class="width-50 text-center">
-                                <img src="{{ asset('uploads/business_logos/' . $business->logo) }}" alt="Logo" style="max-width: 80%;">
-                            </td>
+                            <img src="{{ asset('uploads/business_logos/' . $business->logo) }}" alt="Logo" class="mw-100 h-70px object-fit-contain">
                         @endif
-                        <td class="text-center">
-                            <address>
-                                <strong>{{ $business->name }}</strong><br>
-                                {{ $location->name ?? '' }}
-                                @if(!empty($location?->landmark))
-                                    <br>{{ $location->landmark }}
-                                @endif
-                                @if(!empty($location?->city) || !empty($location?->state) || !empty($location?->country))
-                                    <br>{{ implode(',', array_filter([$location?->city, $location?->state, $location?->country])) }}
-                                @endif
-                                @if(!empty($business->tax_number_1))
-                                    <br>{{ $business->tax_label_1 }}: {{ $business->tax_number_1 }}
-                                @endif
-                                @if(!empty($business->tax_number_2))
-                                    <br>{{ $business->tax_label_2 }}: {{ $business->tax_number_2 }}
-                                @endif
-                            </address>
-                        </td>
-                    </tr>
-                </table>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="text-gray-900 fw-bold fs-3">{{ $business->name }}</div>
+                        <div class="text-muted fs-7 mt-2">
+                            {{ $location->name ?? '' }}
+                            @if(!empty($location?->landmark))
+                                <div>{{ $location->landmark }}</div>
+                            @endif
+                            @if(!empty($location?->city) || !empty($location?->state) || !empty($location?->country))
+                                <div>{{ implode(',', array_filter([$location?->city, $location?->state, $location?->country])) }}</div>
+                            @endif
+                            @if(!empty($business->tax_number_1))
+                                <div>{{ $business->tax_label_1 }}: {{ $business->tax_number_1 }}</div>
+                            @endif
+                            @if(!empty($business->tax_number_2))
+                                <div>{{ $business->tax_label_2 }}: {{ $business->tax_number_2 }}</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
 
-                <h4 class="box-title">@lang('sale.invoice_no'): {{ $invoice->reference ?: $invoice->voucher_no }}</h4>
-                <table class="table no-border">
-                    <tr>
-                        <td><strong>@lang('sale.sale_date'):</strong> {{ optional($invoice->document_date)->format('d/m/Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>@lang('sale.total_amount'):</strong> {{ number_format((float) max($invoice->total_debit, $invoice->total_credit), 2) }} {{ $invoice->currency_code }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>@lang('sale.total_payable'):</strong> {{ number_format((float) $outstandingAmount, 2) }} {{ $invoice->currency_code }}</td>
-                    </tr>
-                </table>
+                <div class="row g-5 mb-8">
+                    <div class="col-md-4">
+                        <div class="card card-bordered h-100">
+                            <div class="card-body p-5">
+                                <div class="text-muted fs-8 fw-semibold mb-2">@lang('sale.invoice_no')</div>
+                                <div class="text-gray-900 fw-bold fs-6">{{ $invoice->reference ?: $invoice->voucher_no }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-bordered h-100">
+                            <div class="card-body p-5">
+                                <div class="text-muted fs-8 fw-semibold mb-2">@lang('sale.sale_date')</div>
+                                <div class="text-gray-900 fw-bold fs-6">{{ optional($invoice->document_date)->format('d/m/Y') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-bordered h-100">
+                            <div class="card-body p-5">
+                                <div class="text-muted fs-8 fw-semibold mb-2">@lang('sale.total_payable')</div>
+                                <div class="text-gray-900 fw-bold fs-6">{{ number_format((float) $outstandingAmount, 2) }} {{ $invoice->currency_code }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table align-middle table-row-dashed fs-7 gy-4">
                         <thead>
-                            <tr>
+                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                 <th>#</th>
                                 <th>@lang('account.account')</th>
                                 <th>@lang('sale.description')</th>
-                                <th class="text-right">@lang('account.debit')</th>
-                                <th class="text-right">@lang('account.credit')</th>
+                                <th class="text-end">@lang('account.debit')</th>
+                                <th class="text-end">@lang('account.credit')</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -79,18 +87,16 @@
                                     <td>{{ $line->line_no }}</td>
                                     <td>{{ optional($line->account)->account_code }} - {{ optional($line->account)->account_name }}</td>
                                     <td>{{ $line->description }}</td>
-                                    <td class="text-right">{{ number_format((float) $line->debit, 2) }}</td>
-                                    <td class="text-right">{{ number_format((float) $line->credit, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) $line->debit, 2) }}</td>
+                                    <td class="text-end">{{ number_format((float) $line->credit, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="spacer"></div>
         </div>
     </div>
-    <div class="spacer"></div>
 </div>
 @endsection
 

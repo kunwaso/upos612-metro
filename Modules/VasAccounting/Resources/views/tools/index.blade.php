@@ -161,14 +161,17 @@
         <div class="col-xl-7">
             <div class="card card-flush mb-8">
                 <div class="card-header">
-                    <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.amortization_queue.title') }}</span>
-                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.amortization_queue.subtitle') }}</span>
-                    </div>
+                <div class="card-title d-flex flex-column">
+                    <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.amortization_queue.title') }}</span>
+                    <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.amortization_queue.subtitle') }}</span>
+                </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tools-amortization-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tools-amortization-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.tool') }}</th>
@@ -204,14 +207,17 @@
 
             <div class="card card-flush">
                 <div class="card-header">
-                    <div class="card-title d-flex flex-column">
-                        <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.history.title') }}</span>
-                        <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.history.subtitle') }}</span>
-                    </div>
+                <div class="card-title d-flex flex-column">
+                    <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.history.title') }}</span>
+                    <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.history.subtitle') }}</span>
+                </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tools-history-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tools-history-table">
                             <thead>
                                 <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.date') }}</th>
@@ -245,14 +251,17 @@
 
     <div class="card card-flush">
         <div class="card-header">
-            <div class="card-title d-flex flex-column">
-                <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.lifecycle.title') }}</span>
-                <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.lifecycle.subtitle') }}</span>
-            </div>
-        </div>
-        <div class="card-body pt-0">
-            <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <div class="card-title d-flex flex-column">
+                    <span class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.tools.lifecycle.title') }}</span>
+                    <span class="text-muted fs-7">{{ __('vasaccounting::lang.views.tools.lifecycle.subtitle') }}</span>
+                </div>
+                </div>
+                <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-tools-lifecycle-search',
+                    ])
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-tools-lifecycle-table">
                     <thead>
                         <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.tool') }}</th>
@@ -293,4 +302,42 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const amortizationTable = window.VasWorkspace?.initLocalDataTable('#vas-tools-amortization-table', {
+                order: [[1, 'asc']],
+                pageLength: 10
+            });
+            const historyTable = window.VasWorkspace?.initLocalDataTable('#vas-tools-history-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+            const lifecycleTable = window.VasWorkspace?.initLocalDataTable('#vas-tools-lifecycle-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+
+            if (amortizationTable) {
+                $('#vas-tools-amortization-search').on('keyup', function () {
+                    amortizationTable.search(this.value).draw();
+                });
+            }
+
+            if (historyTable) {
+                $('#vas-tools-history-search').on('keyup', function () {
+                    historyTable.search(this.value).draw();
+                });
+            }
+
+            if (lifecycleTable) {
+                $('#vas-tools-lifecycle-search').on('keyup', function () {
+                    lifecycleTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

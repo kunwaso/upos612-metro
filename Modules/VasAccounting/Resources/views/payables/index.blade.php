@@ -59,8 +59,11 @@
             <div class="card card-flush h-100">
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.payables.open_bills.title') }}</div></div>
                 <div class="card-body">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-payables-open-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-payables-open-table">
                             <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.payables.open_bills.table.bill') }}</th><th>{{ __('vasaccounting::lang.views.payables.open_bills.table.vendor') }}</th><th>{{ __('vasaccounting::lang.views.payables.open_bills.table.posting_date') }}</th><th>{{ __('vasaccounting::lang.views.payables.open_bills.table.outstanding') }}</th><th>{{ __('vasaccounting::lang.views.payables.open_bills.table.age') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($openItems as $item)
@@ -88,7 +91,7 @@
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.payables.available_payments.title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-payables-payments-table">
                             <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.payables.available_payments.table.payment') }}</th><th>{{ __('vasaccounting::lang.views.payables.available_payments.table.vendor') }}</th><th>{{ __('vasaccounting::lang.views.payables.available_payments.table.available') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($paymentItems as $item)
@@ -111,7 +114,7 @@
                 <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.payables.recent_allocations.title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-payables-allocations-table">
                             <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>{{ __('vasaccounting::lang.views.payables.recent_allocations.table.date') }}</th><th>{{ __('vasaccounting::lang.views.payables.recent_allocations.table.vendor') }}</th><th>{{ __('vasaccounting::lang.views.payables.recent_allocations.table.bill') }}</th><th>{{ __('vasaccounting::lang.views.payables.recent_allocations.table.payment') }}</th><th>{{ __('vasaccounting::lang.views.payables.recent_allocations.table.amount') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($recentAllocations as $allocation)
@@ -132,4 +135,31 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const openTable = window.VasWorkspace?.initLocalDataTable('#vas-payables-open-table', {
+                order: [[2, 'desc']],
+                pageLength: 10
+            });
+
+            if (openTable) {
+                $('#vas-payables-open-search').on('keyup', function () {
+                    openTable.search(this.value).draw();
+                });
+            }
+
+            window.VasWorkspace?.initLocalDataTable('#vas-payables-payments-table', {
+                order: [],
+                pageLength: 10
+            });
+            window.VasWorkspace?.initLocalDataTable('#vas-payables-allocations-table', {
+                order: [[0, 'desc']],
+                pageLength: 10
+            });
+        });
+    </script>
 @endsection

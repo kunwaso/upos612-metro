@@ -204,8 +204,11 @@
             <div class="text-muted fs-7 mb-5">
                 {{ __('vasaccounting::lang.views.cutover.parity.window_label') }} {{ $parityReport['period']['label'] }} ({{ $parityReport['period']['start_date'] }} {{ __('vasaccounting::lang.views.cutover.parity.to') }} {{ $parityReport['period']['end_date'] }})
             </div>
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-cutover-parity-search',
+            ])
             <div class="table-responsive mb-8">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-cutover-parity-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.section') }}</th>
@@ -241,8 +244,11 @@
             </div>
 
             <div class="fw-bold text-gray-900 mb-4">{{ __('vasaccounting::lang.views.cutover.parity.branch_parity') }}</div>
+            @include('vasaccounting::partials.workspace.table_toolbar', [
+                'searchId' => 'vas-cutover-branches-search',
+            ])
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-7 gy-4">
+                <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-cutover-branches-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>{{ __('vasaccounting::lang.views.shared.branch') }}</th>
@@ -288,8 +294,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-cutover-uat-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-cutover-uat-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.cutover.uat.persona') }}</th>
@@ -429,4 +438,41 @@
             </form>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const parityTable = window.VasWorkspace?.initLocalDataTable('#vas-cutover-parity-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (parityTable) {
+                $('#vas-cutover-parity-search').on('keyup', function () {
+                    parityTable.search(this.value).draw();
+                });
+            }
+
+            const branchTable = window.VasWorkspace?.initLocalDataTable('#vas-cutover-branches-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (branchTable) {
+                $('#vas-cutover-branches-search').on('keyup', function () {
+                    branchTable.search(this.value).draw();
+                });
+            }
+
+            const uatTable = window.VasWorkspace?.initLocalDataTable('#vas-cutover-uat-table', {
+                order: [[0, 'asc']],
+                pageLength: 10
+            });
+            if (uatTable) {
+                $('#vas-cutover-uat-search').on('keyup', function () {
+                    uatTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

@@ -13,6 +13,10 @@ class VasAccountingRoutesRegistrationTest extends TestCase
 
         $this->assertTrue($router->has('vasaccounting.setup.index'));
         $this->assertTrue($router->has('vasaccounting.dashboard.index'));
+        $this->assertTrue($router->has('vasaccounting.ui.dashboard.kpis'));
+        $this->assertTrue($router->has('vasaccounting.ui.dashboard.trends'));
+        $this->assertTrue($router->has('vasaccounting.ui.dashboard.failures'));
+        $this->assertTrue($router->has('vasaccounting.ui.reports.datatable'));
         $this->assertTrue($router->has('vasaccounting.chart.index'));
         $this->assertTrue($router->has('vasaccounting.periods.index'));
         $this->assertTrue($router->has('vasaccounting.vouchers.index'));
@@ -51,6 +55,9 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.procurement.reject'));
         $this->assertTrue($router->has('vasaccounting.procurement.fulfill'));
         $this->assertTrue($router->has('vasaccounting.procurement.match'));
+        $this->assertTrue($router->has('vasaccounting.procurement.discrepancies.take_ownership'));
+        $this->assertTrue($router->has('vasaccounting.procurement.discrepancies.assign'));
+        $this->assertTrue($router->has('vasaccounting.procurement.discrepancies.resolve'));
         $this->assertTrue($router->has('vasaccounting.procurement.post'));
         $this->assertTrue($router->has('vasaccounting.procurement.close'));
         $this->assertTrue($router->has('vasaccounting.procurement.reverse'));
@@ -123,6 +130,9 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.closing.soft_lock'));
         $this->assertTrue($router->has('vasaccounting.closing.reopen'));
         $this->assertTrue($router->has('vasaccounting.closing.packet'));
+        $this->assertTrue($router->has('vasaccounting.closing.procurement_discrepancies.assign_unassigned'));
+        $this->assertTrue($router->has('vasaccounting.closing.procurement_discrepancies.assign_unassigned_to_me'));
+        $this->assertTrue($router->has('vasaccounting.closing.procurement_discrepancies.assign'));
         $this->assertTrue($router->has('vasaccounting.cutover.index'));
         $this->assertTrue($router->has('vasaccounting.cutover.settings.update'));
         $this->assertTrue($router->has('vasaccounting.cutover.personas.update'));
@@ -138,6 +148,9 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.reports.purchase_register'));
         $this->assertTrue($router->has('vasaccounting.reports.goods_receipt_register'));
         $this->assertTrue($router->has('vasaccounting.reports.procurement_discrepancies'));
+        $this->assertTrue($router->has('vasaccounting.reports.procurement_discrepancy_ownership'));
+        $this->assertTrue($router->has('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned'));
+        $this->assertTrue($router->has('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned_to_me'));
         $this->assertTrue($router->has('vasaccounting.reports.procurement_aging'));
         $this->assertTrue($router->has('vasaccounting.reports.expense_outstanding'));
         $this->assertTrue($router->has('vasaccounting.reports.expense_register'));
@@ -179,6 +192,22 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertSame(
             'vas-accounting/setup',
             $routes->getByName('vasaccounting.setup.index')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/dashboard/kpis',
+            $routes->getByName('vasaccounting.ui.dashboard.kpis')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/dashboard/trends',
+            $routes->getByName('vasaccounting.ui.dashboard.trends')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/dashboard/failures',
+            $routes->getByName('vasaccounting.ui.dashboard.failures')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/reports/{reportKey}/datatable',
+            $routes->getByName('vasaccounting.ui.reports.datatable')->uri()
         );
         $this->assertSame(
             'vas-accounting/reports/financial-statements',
@@ -245,12 +274,36 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.procurement.match')->uri()
         );
         $this->assertSame(
+            'vas-accounting/procurement/discrepancies/{exception}/take-ownership',
+            $routes->getByName('vasaccounting.procurement.discrepancies.take_ownership')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/procurement/discrepancies/{exception}/assign',
+            $routes->getByName('vasaccounting.procurement.discrepancies.assign')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/procurement/discrepancies/{exception}/resolve',
+            $routes->getByName('vasaccounting.procurement.discrepancies.resolve')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/procurement/{document}/fulfill',
             $routes->getByName('vasaccounting.procurement.fulfill')->uri()
         );
         $this->assertSame(
             'vas-accounting/reports/procurement-discrepancies',
             $routes->getByName('vasaccounting.reports.procurement_discrepancies')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/reports/procurement-discrepancy-ownership',
+            $routes->getByName('vasaccounting.reports.procurement_discrepancy_ownership')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/reports/procurement-discrepancy-ownership/assign-unassigned',
+            $routes->getByName('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/reports/procurement-discrepancy-ownership/assign-unassigned-to-me',
+            $routes->getByName('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned_to_me')->uri()
         );
         $this->assertSame(
             'vas-accounting/reports/procurement-aging',
@@ -375,6 +428,18 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertSame(
             'vas-accounting/closing/period/{period}/soft-lock',
             $routes->getByName('vasaccounting.closing.soft_lock')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/closing/period/{period}/procurement-discrepancies/assign-unassigned',
+            $routes->getByName('vasaccounting.closing.procurement_discrepancies.assign_unassigned')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/closing/period/{period}/procurement-discrepancies/assign-unassigned-to-me',
+            $routes->getByName('vasaccounting.closing.procurement_discrepancies.assign_unassigned_to_me')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/closing/period/{period}/procurement-discrepancies/{exception}/assign',
+            $routes->getByName('vasaccounting.closing.procurement_discrepancies.assign')->uri()
         );
         $this->assertSame(
             'vas-accounting/cutover',

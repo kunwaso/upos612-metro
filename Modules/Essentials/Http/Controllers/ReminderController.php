@@ -99,7 +99,7 @@ class ReminderController extends Controller
                     'msg' => __('messages.something_went_wrong'),
                 ];
 
-                return back()->with('status', $output);
+                return response()->json($output, 500);
             }
         }
     }

@@ -5,6 +5,7 @@ namespace Modules\VasAccounting\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasAssetDepreciation;
 use Modules\VasAccounting\Entities\VasCloseChecklist;
@@ -225,11 +226,77 @@ class VasPeriodCloseService
                 ])
             : collect();
 
+        $discrepancyExceptions = Schema::hasTable('vas_fin_match_exceptions')
+            ? $this->unresolvedProcurementDiscrepanciesQuery($businessId, $periodEnd)
+                ->with(['document', 'owner'])
+                ->get([
+                    'id',
+                    'business_id',
+                    'document_id',
+                    'status',
+                    'code',
+                    'severity',
+                    'message',
+                    'owner_id',
+                    'owner_assigned_at',
+                    'resolved_at',
+                ])
+                ->sort(function (FinanceMatchException $left, FinanceMatchException $right) {
+                    $leftUnassigned = $left->owner_id ? 1 : 0;
+                    $rightUnassigned = $right->owner_id ? 1 : 0;
+
+                    if ($leftUnassigned !== $rightUnassigned) {
+                        return $leftUnassigned <=> $rightUnassigned;
+                    }
+
+                    $leftAge = $left->owner_assigned_at ? $left->owner_assigned_at->timestamp : 0;
+                    $rightAge = $right->owner_assigned_at ? $right->owner_assigned_at->timestamp : 0;
+
+                    return $leftAge <=> $rightAge;
+                })
+                ->values()
+            : collect();
+
+        $ownerSummary = $discrepancyExceptions
+            ->groupBy(fn (FinanceMatchException $exception) => (int) ($exception->owner_id ?: 0))
+            ->map(function ($exceptions, $ownerId) {
+                $owner = $exceptions->first()?->owner;
+
+                return [
+                    'owner_id' => (int) $ownerId,
+                    'owner_name' => $ownerId > 0
+                        ? trim((string) ($owner?->surname . ' ' . $owner?->first_name . ' ' . $owner?->last_name))
+                        : null,
+                    'open_count' => $exceptions->count(),
+                    'aged_over_2_days' => $exceptions->filter(fn (FinanceMatchException $exception) => $exception->owner_assigned_at && $exception->owner_assigned_at->diffInDays(now()) > 2)->count(),
+                    'aged_over_7_days' => $exceptions->filter(fn (FinanceMatchException $exception) => $exception->owner_assigned_at && $exception->owner_assigned_at->diffInDays(now()) > 7)->count(),
+                ];
+            })
+            ->sort(function (array $left, array $right) {
+                return [$right['aged_over_7_days'], $right['aged_over_2_days'], $right['open_count']]
+                    <=> [$left['aged_over_7_days'], $left['aged_over_2_days'], $left['open_count']];
+            })
+            ->values();
+
         return [
             'pending_documents' => $pendingDocuments,
             'receiving_documents' => $receivingDocuments,
             'matching_documents' => $matchingDocuments,
+            'discrepancy_exceptions' => $discrepancyExceptions->take(5)->values(),
+            'owner_summary' => $ownerSummary->take(5)->values(),
         ];
+    }
+
+    public function unassignedProcurementDiscrepancies(int $businessId, VasAccountingPeriod $period)
+    {
+        $periodEnd = optional($period->end_date)->toDateString();
+
+        return Schema::hasTable('vas_fin_match_exceptions')
+            ? $this->unresolvedProcurementDiscrepanciesQuery($businessId, $periodEnd)
+                ->where('owner_id', 0)
+                ->orderBy('id')
+                ->get()
+            : collect();
     }
 
     public function expenseCloseInsights(int $businessId, VasAccountingPeriod $period): array
@@ -587,6 +654,25 @@ class VasPeriodCloseService
                                 ->whereDate('document_date', '<=', $periodEnd);
                         });
                 });
+            });
+    }
+
+    protected function unresolvedProcurementDiscrepanciesQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceMatchException::query()
+            ->where('business_id', $businessId)
+            ->whereIn('status', FinanceMatchException::unresolvedStatuses())
+            ->whereHas('document', function ($query) use ($periodEnd) {
+                $query->where('document_type', 'supplier_invoice')
+                    ->when($periodEnd, function ($documentQuery) use ($periodEnd) {
+                        $documentQuery->where(function ($dateQuery) use ($periodEnd) {
+                            $dateQuery->whereDate('posting_date', '<=', $periodEnd)
+                                ->orWhere(function ($fallbackQuery) use ($periodEnd) {
+                                    $fallbackQuery->whereNull('posting_date')
+                                        ->whereDate('document_date', '<=', $periodEnd);
+                                });
+                        });
+                    });
             });
     }
 

@@ -4,6 +4,9 @@ namespace Modules\VasAccounting\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Modules\VasAccounting\Domain\AuditCompliance\Models\FinanceAuditEvent;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasIntegrationRun;
 use Modules\VasAccounting\Entities\VasIntegrationWebhook;
@@ -42,6 +45,7 @@ class EnterpriseReportingService
             'purchase_register' => ['title' => 'Purchase Register', 'route' => 'vasaccounting.reports.purchase_register', 'description' => 'Canonical purchase requisitions, orders, and supplier invoices.', 'group' => 'Operations'],
             'goods_receipt_register' => ['title' => 'Goods Receipt Register', 'route' => 'vasaccounting.reports.goods_receipt_register', 'description' => 'Canonical goods receipts with linked PO and invoice visibility.', 'group' => 'Operations'],
             'procurement_discrepancies' => ['title' => 'Procurement Discrepancies', 'route' => 'vasaccounting.reports.procurement_discrepancies', 'description' => 'Latest supplier invoice matching exceptions and mismatch backlog.', 'group' => 'Operations'],
+            'procurement_discrepancy_ownership' => ['title' => 'Procurement Discrepancy Ownership', 'route' => 'vasaccounting.reports.procurement_discrepancy_ownership', 'description' => 'Ownership, queue aging, and assignee backlog for procurement discrepancies.', 'group' => 'Operations'],
             'procurement_aging' => ['title' => 'Procurement Aging', 'route' => 'vasaccounting.reports.procurement_aging', 'description' => 'Open procurement workflow aging across requisitions, orders, and supplier invoices.', 'group' => 'Operations'],
             'expense_outstanding' => ['title' => 'Expense Outstanding', 'route' => 'vasaccounting.reports.expense_outstanding', 'description' => 'Open employee advances and unresolved expense claims.', 'group' => 'Subledger'],
             'expense_register' => ['title' => 'Expense Register', 'route' => 'vasaccounting.reports.expense_register', 'description' => 'Native expense claims, advances, settlements, and reimbursements.', 'group' => 'Operations'],
@@ -93,6 +97,7 @@ class EnterpriseReportingService
             'purchase_register' => $this->purchaseRegister($businessId),
             'goods_receipt_register' => $this->goodsReceiptRegister($businessId),
             'procurement_discrepancies' => $this->procurementDiscrepancies($businessId),
+            'procurement_discrepancy_ownership' => $this->procurementDiscrepancyOwnership($businessId),
             'procurement_aging' => $this->procurementAging($businessId),
             'expense_outstanding' => $this->expenseOutstanding($businessId),
             'expense_register' => $this->expenseRegister($businessId),
@@ -357,15 +362,18 @@ class EnterpriseReportingService
     {
         $rows = $this->enterpriseReportUtil->procurementDiscrepancyRows($businessId);
         $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+        $ownerLabels = $this->userLabels($rows->pluck('owner_id')->filter()->all());
 
         return $this->dataset(
             'Procurement Discrepancies',
-            ['Invoice', 'Supplier', 'Severity', 'Code', 'Message', 'Line', 'Match Summary', 'Amount'],
-            $rows->map(function ($row) use ($supplierLabels) {
+            ['Invoice', 'Supplier', 'Severity', 'Queue Status', 'Owner', 'Code', 'Message', 'Line', 'Match Summary', 'Amount'],
+            $rows->map(function ($row) use ($supplierLabels, $ownerLabels) {
                 return [
                     $row->document_no,
                     $supplierLabels[(int) $row->counterparty_id] ?? ('Supplier #' . (int) $row->counterparty_id),
                     strtoupper((string) $row->severity),
+                    str($row->status)->replace('_', ' ')->title(),
+                    $ownerLabels[(int) $row->owner_id] ?? ($row->owner_id > 0 ? ('User #' . (int) $row->owner_id) : 'Unassigned'),
                     $row->code,
                     $row->message,
                     $row->line_no > 0 ? ('Line #' . $row->line_no) : 'Header',
@@ -377,6 +385,7 @@ class EnterpriseReportingService
                 ['label' => 'Open discrepancies', 'value' => $rows->count()],
                 ['label' => 'Blocking', 'value' => $rows->where('severity', 'blocking')->count()],
                 ['label' => 'Warnings', 'value' => $rows->where('severity', 'warning')->count()],
+                ['label' => 'In review', 'value' => $rows->where('status', FinanceMatchException::STATUS_IN_REVIEW)->count()],
                 ['label' => 'Affected invoices', 'value' => $rows->pluck('document_id')->unique()->count()],
             ],
             [
@@ -394,6 +403,25 @@ class EnterpriseReportingService
                         ->values()
                         ->all(),
                     'empty' => 'No open procurement discrepancies are currently queued.',
+                ],
+                [
+                    'title' => 'Ownership Mix',
+                    'subtitle' => 'See whether discrepancies are still unassigned or already owned by a procurement reviewer.',
+                    'columns' => ['Queue Status', 'Owner', 'Rows'],
+                    'rows' => $rows
+                        ->groupBy(fn ($row) => $row->status . '|' . ($row->owner_id > 0 ? $row->owner_id : 0))
+                        ->map(function ($group, $key) use ($ownerLabels) {
+                            [$status, $ownerId] = explode('|', (string) $key, 2);
+
+                            return [
+                                str($status)->replace('_', ' ')->title(),
+                                (int) $ownerId > 0 ? ($ownerLabels[(int) $ownerId] ?? ('User #' . (int) $ownerId)) : 'Unassigned',
+                                $group->count(),
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement ownership actions have been recorded yet.',
                 ],
             ],
             [
@@ -484,6 +512,267 @@ class EnterpriseReportingService
                 ],
             ]
         );
+    }
+
+    protected function procurementDiscrepancyOwnership(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->procurementDiscrepancyRows($businessId);
+        $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+        $ownerLabels = $this->userLabels($rows->pluck('owner_id')->filter()->all());
+        $ownershipActivity = $this->procurementOwnershipActivity($businessId);
+        $activityUserLabels = $this->userLabels($ownershipActivity->pluck('actor_id')->filter()->all());
+
+        return $this->dataset(
+            'Procurement Discrepancy Ownership',
+            ['Invoice', 'Supplier', 'Queue Status', 'Owner', 'Owner Age', 'Severity', 'Code', 'Match Summary'],
+            $rows->map(function ($row) use ($supplierLabels, $ownerLabels) {
+                $ownerLabel = $ownerLabels[(int) $row->owner_id] ?? ($row->owner_id > 0 ? ('User #' . (int) $row->owner_id) : 'Unassigned');
+                $ownerAge = is_null($row->owner_age_days)
+                    ? 'Unassigned'
+                    : ($row->owner_age_days . ' day' . ($row->owner_age_days === 1 ? '' : 's'));
+
+                return [
+                    $row->document_no,
+                    $supplierLabels[(int) $row->counterparty_id] ?? ('Supplier #' . (int) $row->counterparty_id),
+                    str($row->status)->replace('_', ' ')->title(),
+                    $ownerLabel,
+                    $ownerAge,
+                    strtoupper((string) $row->severity),
+                    $row->code,
+                    str($row->match_status)->replace('_', ' ')->title() . ' | B' . $row->blocking_exception_count . ' / W' . $row->warning_count,
+                ];
+            }),
+            [
+                ['label' => 'Unassigned', 'value' => $rows->where('owner_id', 0)->count()],
+                ['label' => 'In review', 'value' => $rows->where('status', FinanceMatchException::STATUS_IN_REVIEW)->count()],
+                ['label' => 'Aged > 2 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 2)->count()],
+                ['label' => 'Aged > 7 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 7)->count()],
+                ['label' => 'Older than 14 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 14)->count()],
+                ['label' => 'Ownership actions (14 days)', 'value' => $ownershipActivity->count()],
+            ],
+            [
+                [
+                    'title' => 'Assignment Aging Trend',
+                    'subtitle' => 'Weekly backlog aging trend based on current unresolved discrepancies and when ownership was last assigned.',
+                    'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => collect(range(5, 0))
+                        ->map(function ($weeksAgo) use ($rows) {
+                            $weekStart = now()->subWeeks($weeksAgo)->startOfWeek();
+                            $weekEnd = (clone $weekStart)->endOfWeek();
+                            $weekRows = $rows->filter(function ($row) use ($weekStart, $weekEnd) {
+                                if ((int) $row->owner_id === 0 || is_null($row->owner_age_days)) {
+                                    return false;
+                                }
+
+                                $assignedAt = now()->subDays((int) $row->owner_age_days);
+
+                                return $assignedAt->betweenIncluded($weekStart, $weekEnd);
+                            });
+
+                            return [
+                                $weekStart->format('Y-m-d'),
+                                $weekRows->count(),
+                                $weekRows->where('status', FinanceMatchException::STATUS_IN_REVIEW)->count(),
+                                $weekRows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 7)->count(),
+                                $weekRows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 14)->count(),
+                            ];
+                        })
+                        ->all(),
+                    'empty' => 'No ownership assignments are available to trend across the last six weeks.',
+                ],
+                [
+                    'title' => 'Owner Aging Mix',
+                    'subtitle' => 'See where procurement mismatch follow-up is drifting by owner and queue age.',
+                    'columns' => ['Owner', 'Aging Bucket', 'Rows'],
+                    'rows' => $rows
+                        ->groupBy(function ($row) {
+                            $ownerId = $row->owner_id > 0 ? $row->owner_id : 0;
+                            $bucket = match (true) {
+                                is_null($row->owner_age_days) => 'Unassigned',
+                                $row->owner_age_days <= 1 => '0-1 days',
+                                $row->owner_age_days <= 3 => '2-3 days',
+                                $row->owner_age_days <= 7 => '4-7 days',
+                                default => '8+ days',
+                            };
+
+                            return $ownerId . '|' . $bucket;
+                        })
+                        ->map(function ($group, $key) use ($ownerLabels) {
+                            [$ownerId, $bucket] = explode('|', (string) $key, 2);
+
+                            return [
+                                (int) $ownerId > 0 ? ($ownerLabels[(int) $ownerId] ?? ('User #' . (int) $ownerId)) : 'Unassigned',
+                                $bucket,
+                                $group->count(),
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement discrepancy ownership backlog is currently open.',
+                ],
+                [
+                    'title' => 'Stale Owner Backlog',
+                    'subtitle' => 'Owners currently holding discrepancies older than two days, ranked by stale queue size.',
+                    'columns' => ['Owner', 'Open Discrepancies', 'Aged > 2 Days', 'Aged > 7 Days'],
+                    'rows' => $rows
+                        ->groupBy(fn ($row) => (int) ($row->owner_id ?: 0))
+                        ->map(function ($group, $ownerId) use ($ownerLabels) {
+                            if ((int) $ownerId === 0) {
+                                return null;
+                            }
+
+                            $agedOver2 = $group->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 2)->count();
+                            $agedOver7 = $group->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 7)->count();
+
+                            if ($agedOver2 === 0 && $agedOver7 === 0) {
+                                return null;
+                            }
+
+                            return [
+                                $ownerLabels[(int) $ownerId] ?? ('User #' . (int) $ownerId),
+                                $group->count(),
+                                $agedOver2,
+                                $agedOver7,
+                            ];
+                        })
+                        ->filter()
+                        ->sortByDesc(fn ($row) => [$row[3], $row[2], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No owner currently has procurement discrepancies older than two days.',
+                ],
+                [
+                    'title' => 'Unassigned Discrepancies',
+                    'subtitle' => 'Exceptions still waiting for an explicit owner assignment.',
+                    'columns' => ['Invoice', 'Supplier', 'Severity', 'Code', 'Match Summary'],
+                    'rows' => $rows
+                        ->filter(fn ($row) => (int) $row->owner_id === 0)
+                        ->map(function ($row) use ($supplierLabels) {
+                            return [
+                                $row->document_no,
+                                $supplierLabels[(int) $row->counterparty_id] ?? ('Supplier #' . (int) $row->counterparty_id),
+                                strtoupper((string) $row->severity),
+                                str($row->code)->replace('_', ' ')->title()->value(),
+                                str($row->match_status)->replace('_', ' ')->title() . ' | B' . $row->blocking_exception_count . ' / W' . $row->warning_count,
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'All open procurement discrepancies currently have an assigned owner.',
+                ],
+                [
+                    'title' => 'Ownership Activity Trend',
+                    'subtitle' => 'Daily ownership, reassignment, and resolution flow over the last fourteen days from the canonical audit stream.',
+                    'columns' => ['Date', 'Claimed', 'Reassigned', 'Resolved'],
+                    'rows' => collect(range(13, 0))
+                        ->map(function ($daysAgo) use ($ownershipActivity) {
+                            $date = now()->subDays($daysAgo)->toDateString();
+                            $events = $ownershipActivity->where('activity_date', $date);
+
+                            return [
+                                $date,
+                                $events->where('event_type', 'procurement.discrepancy_owned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_reassigned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_resolved')->count(),
+                            ];
+                        })
+                        ->all(),
+                    'empty' => 'No procurement ownership activity has been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reviewer Throughput',
+                    'subtitle' => 'See which reviewers are actively taking ownership, reassigning, or resolving procurement discrepancies.',
+                    'columns' => ['Reviewer', 'Claimed', 'Reassigned', 'Resolved', 'Total Actions'],
+                    'rows' => $ownershipActivity
+                        ->groupBy(fn ($row) => (int) $row->actor_id)
+                        ->map(function ($events, $actorId) use ($activityUserLabels) {
+                            return [
+                                $activityUserLabels[(int) $actorId] ?? ('User #' . (int) $actorId),
+                                $events->where('event_type', 'procurement.discrepancy_owned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_reassigned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_resolved')->count(),
+                                $events->count(),
+                            ];
+                        })
+                        ->sortByDesc(fn ($row) => [$row[4], $row[3], $row[2], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No reviewer throughput has been recorded in the last fourteen days.',
+                ],
+            ],
+            [
+                [
+                    'label' => 'Open discrepancy queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'discrepancy_queue']),
+                    'style' => 'light-danger',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Assign unassigned to me',
+                    'url' => route('vasaccounting.reports.procurement_discrepancy_ownership.assign_unassigned_to_me'),
+                    'style' => 'light-primary',
+                    'method' => 'POST',
+                    'confirm' => 'Assign every unassigned procurement discrepancy in this report to you?',
+                ],
+                [
+                    'label' => 'Open procurement aging',
+                    'url' => route('vasaccounting.reports.procurement_aging'),
+                    'style' => 'light-warning',
+                    'method' => 'GET',
+                ],
+            ]
+        );
+    }
+
+    protected function procurementOwnershipActivity(int $businessId): Collection
+    {
+        return $this->procurementOwnershipActivityForRange(
+            $businessId,
+            now()->subDays(14)->toDateString(),
+            now()->toDateString()
+        );
+    }
+
+    protected function procurementOwnershipActivityForRange(int $businessId, ?string $startDate, ?string $endDate): Collection
+    {
+        if (! Schema::hasTable('vas_fin_audit_events')) {
+            return collect();
+        }
+
+        return FinanceAuditEvent::query()
+            ->with(['document:id,document_no'])
+            ->where('business_id', $businessId)
+            ->whereIn('event_type', [
+                'procurement.discrepancy_owned',
+                'procurement.discrepancy_reassigned',
+                'procurement.discrepancy_resolved',
+            ])
+            ->when($startDate, fn ($query) => $query->whereDate('acted_at', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('acted_at', '<=', $endDate))
+            ->orderBy('acted_at')
+            ->get([
+                'id',
+                'document_id',
+                'actor_id',
+                'event_type',
+                'reason',
+                'before_state',
+                'after_state',
+                'acted_at',
+            ])
+            ->map(function (FinanceAuditEvent $event) {
+                return (object) [
+                    'document_id' => (int) $event->document_id,
+                    'document_no' => $event->document?->document_no,
+                    'actor_id' => (int) $event->actor_id,
+                    'event_type' => (string) $event->event_type,
+                    'reason' => $event->reason,
+                    'activity_date' => optional($event->acted_at)->toDateString(),
+                    'acted_at_label' => optional($event->acted_at)->format('Y-m-d H:i'),
+                    'before_owner_id' => (int) data_get($event->before_state, 'owner_id', 0),
+                    'after_owner_id' => (int) data_get($event->after_state, 'owner_id', 0),
+                ];
+            });
     }
 
     protected function expenseOutstanding(int $businessId): array
@@ -749,6 +1038,21 @@ class EnterpriseReportingService
         $treasuryInsights = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
         $procurementInsights = $this->periodCloseService->procurementCloseInsights($businessId, $period);
         $expenseInsights = $this->periodCloseService->expenseCloseInsights($businessId, $period);
+        $procurementOwnershipActivity = $this->procurementOwnershipActivityForRange(
+            $businessId,
+            optional($period->start_date)->toDateString(),
+            optional($period->end_date)->toDateString()
+        );
+        $procurementOwnershipLabels = $this->userLabels(
+            $procurementOwnershipActivity
+                ->pluck('actor_id')
+                ->merge($procurementOwnershipActivity->pluck('before_owner_id'))
+                ->merge($procurementOwnershipActivity->pluck('after_owner_id'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all()
+        );
         $blockedCount = collect($blockers)->reduce(function ($carry, $value, $key) {
             if ($key === 'posting_map_incomplete') {
                 return $carry + ($value ? 1 : 0);
@@ -770,6 +1074,10 @@ class EnterpriseReportingService
                 ['label' => 'Pending procurement docs', 'value' => $blockers['pending_procurement_documents']],
                 ['label' => 'Receiving backlog', 'value' => $blockers['receiving_procurement_documents']],
                 ['label' => 'Matching backlog', 'value' => $blockers['matching_procurement_documents']],
+                ['label' => 'Unassigned procurement discrepancies', 'value' => $procurementInsights['owner_summary']->where('owner_id', 0)->sum('open_count')],
+                ['label' => 'Procurement discrepancies aged > 7 days', 'value' => $procurementInsights['owner_summary']->sum('aged_over_7_days')],
+                ['label' => 'Procurement ownership actions', 'value' => $procurementOwnershipActivity->count()],
+                ['label' => 'Procurement reassignments', 'value' => $procurementOwnershipActivity->where('event_type', 'procurement.discrepancy_reassigned')->count()],
                 ['label' => 'Pending expense docs', 'value' => $blockers['pending_expense_documents']],
                 ['label' => 'Outstanding expense balances', 'value' => $blockers['outstanding_expense_documents']],
                 ['label' => 'Escalated expense approvals', 'value' => $blockers['escalated_expense_approvals']],
@@ -852,6 +1160,83 @@ class EnterpriseReportingService
                         ];
                     })->values()->all(),
                     'empty' => 'No supplier invoices are blocking close with matching backlog for this period.',
+                ],
+                [
+                    'title' => 'Procurement Discrepancy Ownership',
+                    'subtitle' => 'Owner-level aging for unresolved procurement discrepancies through the period end.',
+                    'columns' => ['Owner', 'Open Discrepancies', 'Aged > 2 Days', 'Aged > 7 Days'],
+                    'rows' => $procurementInsights['owner_summary']->map(function (array $row) {
+                        return [
+                            $row['owner_id'] > 0 ? ($row['owner_name'] ?: ('User #' . $row['owner_id'])) : 'Unassigned',
+                            (int) $row['open_count'],
+                            (int) $row['aged_over_2_days'],
+                            (int) $row['aged_over_7_days'],
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No procurement discrepancy ownership backlog exists for this period.',
+                ],
+                [
+                    'title' => 'Procurement Ownership Activity',
+                    'subtitle' => 'Canonical audit history for procurement discrepancy ownership actions recorded during the close period.',
+                    'columns' => ['Date/Time', 'Reviewer', 'Action', 'Document', 'Reason'],
+                    'rows' => $procurementOwnershipActivity->map(function ($activity) use ($procurementOwnershipLabels) {
+                        return [
+                            $activity->acted_at_label ?: '-',
+                            $procurementOwnershipLabels[$activity->actor_id] ?? ('User #' . $activity->actor_id),
+                            str((string) $activity->event_type)->afterLast('.')->replace('_', ' ')->title()->value(),
+                            $activity->document_no ?: ('#' . $activity->document_id),
+                            $activity->reason ?: '-',
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No procurement ownership actions were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment History',
+                    'subtitle' => 'Track procurement discrepancy owner handoffs during the close period, including reviewer and rationale.',
+                    'columns' => ['Date/Time', 'Document', 'Previous Owner', 'New Owner', 'Reviewer', 'Reason'],
+                    'rows' => $procurementOwnershipActivity
+                        ->where('event_type', 'procurement.discrepancy_reassigned')
+                        ->map(function ($activity) use ($procurementOwnershipLabels) {
+                            $previousOwner = $activity->before_owner_id > 0
+                                ? ($procurementOwnershipLabels[$activity->before_owner_id] ?? ('User #' . $activity->before_owner_id))
+                                : 'Unassigned';
+                            $newOwner = $activity->after_owner_id > 0
+                                ? ($procurementOwnershipLabels[$activity->after_owner_id] ?? ('User #' . $activity->after_owner_id))
+                                : 'Unassigned';
+
+                            return [
+                                $activity->acted_at_label ?: '-',
+                                $activity->document_no ?: ('#' . $activity->document_id),
+                                $previousOwner,
+                                $newOwner,
+                                $procurementOwnershipLabels[$activity->actor_id] ?? ('User #' . $activity->actor_id),
+                                $activity->reason ?: '-',
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement discrepancy reassignments were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Aged Procurement Discrepancies',
+                    'subtitle' => 'Most stale unresolved procurement discrepancies, including unassigned items and aged owner queues.',
+                    'columns' => ['Invoice', 'Owner', 'Queue Status', 'Owner Age', 'Code'],
+                    'rows' => $procurementInsights['discrepancy_exceptions']->map(function ($exception) {
+                        $ownerAge = $exception->owner_assigned_at
+                            ? $this->agingBucketLabel($exception->owner_assigned_at->diffInDays(now()))
+                            : 'Unassigned';
+
+                        return [
+                            $exception->document?->document_no ?: ('#' . $exception->document_id),
+                            $exception->owner_id > 0
+                                ? trim((string) ($exception->owner?->surname . ' ' . $exception->owner?->first_name . ' ' . $exception->owner?->last_name)) ?: ('User #' . $exception->owner_id)
+                                : 'Unassigned',
+                            strtoupper((string) $exception->status),
+                            $ownerAge,
+                            str($exception->code)->replace('_', ' ')->title()->value(),
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No aged procurement discrepancies are blocking close for this period.',
                 ],
                 [
                     'title' => 'Pending Expense Documents',
@@ -975,6 +1360,30 @@ class EnterpriseReportingService
                 }
 
                 return [(int) $contact->id => $label !== '' ? $label : ('Contact #' . (int) $contact->id)];
+            })
+            ->all();
+    }
+
+    protected function userLabels(array $userIds): array
+    {
+        $ids = collect($userIds)->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('users')
+            ->whereIn('id', $ids->all())
+            ->select('id', 'surname', 'first_name', 'last_name', 'username')
+            ->get()
+            ->mapWithKeys(function ($user) {
+                $label = trim(implode(' ', array_filter([
+                    $user->surname ?? null,
+                    $user->first_name ?? null,
+                    $user->last_name ?? null,
+                ])));
+                $label = $label !== '' ? $label : trim((string) ($user->username ?? ''));
+
+                return [(int) $user->id => $label !== '' ? $label : ('User #' . (int) $user->id)];
             })
             ->all();
     }

@@ -246,8 +246,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-integrations-runs-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-integrations-runs-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.integrations.run_queue.table.type') }}</th>
@@ -294,8 +297,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-integrations-snapshots-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-integrations-snapshots-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.snapshot') }}</th>
@@ -337,8 +343,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-integrations-failures-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-integrations-failures-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.source') }}</th>
@@ -380,8 +389,11 @@
                     </div>
                 </div>
                 <div class="card-body pt-0">
+                    @include('vasaccounting::partials.workspace.table_toolbar', [
+                        'searchId' => 'vas-integrations-webhooks-search',
+                    ])
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-7 gy-4">
+                        <table class="table align-middle table-row-dashed fs-7 gy-4" id="vas-integrations-webhooks-table">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>{{ __('vasaccounting::lang.views.shared.provider') }}</th>
@@ -414,4 +426,51 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('javascript')
+    @include('vasaccounting::partials.workspace_scripts')
+    <script>
+        $(document).ready(function () {
+            const runsTable = window.VasWorkspace?.initLocalDataTable('#vas-integrations-runs-table', {
+                order: [[4, 'desc']],
+                pageLength: 10
+            });
+            if (runsTable) {
+                $('#vas-integrations-runs-search').on('keyup', function () {
+                    runsTable.search(this.value).draw();
+                });
+            }
+
+            const snapshotsTable = window.VasWorkspace?.initLocalDataTable('#vas-integrations-snapshots-table', {
+                order: [[2, 'desc']],
+                pageLength: 10
+            });
+            if (snapshotsTable) {
+                $('#vas-integrations-snapshots-search').on('keyup', function () {
+                    snapshotsTable.search(this.value).draw();
+                });
+            }
+
+            const failuresTable = window.VasWorkspace?.initLocalDataTable('#vas-integrations-failures-table', {
+                order: [[1, 'desc']],
+                pageLength: 10
+            });
+            if (failuresTable) {
+                $('#vas-integrations-failures-search').on('keyup', function () {
+                    failuresTable.search(this.value).draw();
+                });
+            }
+
+            const webhooksTable = window.VasWorkspace?.initLocalDataTable('#vas-integrations-webhooks-table', {
+                order: [[3, 'desc']],
+                pageLength: 10
+            });
+            if (webhooksTable) {
+                $('#vas-integrations-webhooks-search').on('keyup', function () {
+                    webhooksTable.search(this.value).draw();
+                });
+            }
+        });
+    </script>
 @endsection

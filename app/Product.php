@@ -31,8 +31,9 @@ class Product extends Model
      */
     public function getImageUrlAttribute()
     {
-        if (! empty($this->image)) {
-            $image_url = asset('/uploads/img/'.rawurlencode($this->image));
+        $image_name = ! empty($this->image) ? basename(str_replace('\\', '/', $this->image)) : null;
+        if (! empty($image_name)) {
+            $image_url = asset('/uploads/img/'.rawurlencode($image_name));
         } else {
             $image_url = asset('/img/default.png');
         }
@@ -47,8 +48,9 @@ class Product extends Model
      */
     public function getImagePathAttribute()
     {
-        if (! empty($this->image)) {
-            $image_path = public_path('uploads').'/'.config('constants.product_img_path').'/'.$this->image;
+        $image_name = ! empty($this->image) ? basename(str_replace('\\', '/', $this->image)) : null;
+        if (! empty($image_name)) {
+            $image_path = public_path('uploads').'/'.config('constants.product_img_path').'/'.$image_name;
         } else {
             $image_path = null;
         }

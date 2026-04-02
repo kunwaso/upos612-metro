@@ -1,9 +1,9 @@
-<div class="modal fade reminder" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade reminder" id="reminderCreateModal" tabindex="-1" role="dialog" aria-labelledby="reminderCreateModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
   {!! Form::open(['url' => action([\Modules\Essentials\Http\Controllers\ReminderController::class, 'store']), 'id' => 'reminder_form']) !!}
       <div class="modal-content">
         <div class="modal-header">
-          <h4 class="modal-title" id="exampleModalCenterTitle">
+          <h4 class="modal-title" id="reminderCreateModalTitle">
             @lang('essentials::lang.add_reminder')
           </h4>
           <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')">

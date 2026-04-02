@@ -1,36 +1,36 @@
 @extends('layouts.app')
 
-@section('title', 'Invoice')
+@section('title', __('vasaccounting::lang.views.invoices.show.page_title'))
 
 @section('content')
     @php($invoiceMeta = (array) data_get($voucher->meta, 'invoice', []))
 
     @include('vasaccounting::partials.header', [
         'title' => $voucher->voucher_no,
-        'subtitle' => $voucher->description ?: 'Native invoice document',
+        'subtitle' => $voucher->description ?: __('vasaccounting::lang.views.invoices.show.subtitle_fallback'),
     ])
 
     <div class="row g-5 g-xl-10 mb-8">
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">Type</div><div class="fw-bold fs-4">{{ str_replace('_', ' ', $voucher->voucher_type) }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">Status</div><div class="fw-bold fs-4">{{ str_replace('_', ' ', $voucher->status) }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">Reference</div><div class="fw-bold fs-4">{{ $voucher->reference ?: '-' }}</div></div></div></div>
-        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">Amount</div><div class="fw-bold fs-4">{{ number_format((float) max($voucher->total_debit, $voucher->total_credit), 2) }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.summary.type') }}</div><div class="fw-bold fs-4">{{ str_replace('_', ' ', $voucher->voucher_type) }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.summary.status') }}</div><div class="fw-bold fs-4">{{ str_replace('_', ' ', $voucher->status) }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.summary.reference') }}</div><div class="fw-bold fs-4">{{ $voucher->reference ?: '-' }}</div></div></div></div>
+        <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.summary.amount') }}</div><div class="fw-bold fs-4">{{ number_format((float) max($voucher->total_debit, $voucher->total_credit), 2) }}</div></div></div></div>
     </div>
 
     <div class="row g-5 g-xl-10">
         <div class="col-xl-8">
             <div class="card card-flush mb-5">
-                <div class="card-header"><div class="card-title">Journal lines</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.invoices.show.journal_lines_title') }}</div></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-6 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>#</th>
-                                    <th>Account</th>
-                                    <th>Description</th>
-                                    <th class="text-end">Debit</th>
-                                    <th class="text-end">Credit</th>
+                                    <th>{{ __('vasaccounting::lang.views.invoices.show.line_no') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.invoices.show.account') }}</th>
+                                    <th>{{ __('vasaccounting::lang.views.invoices.show.description') }}</th>
+                                    <th class="text-end">{{ __('vasaccounting::lang.views.invoices.show.debit') }}</th>
+                                    <th class="text-end">{{ __('vasaccounting::lang.views.invoices.show.credit') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -50,24 +50,24 @@
             </div>
 
             <div class="card card-flush">
-                <div class="card-header"><div class="card-title">Invoice meta</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.invoices.show.invoice_meta_title') }}</div></div>
                 <div class="card-body">
                     <div class="row g-5">
                         <div class="col-md-6">
-                            <div class="mb-4"><span class="text-muted fs-7">Counterparty</span><div class="fw-semibold">{{ data_get($invoiceMeta, 'counterparty_id', $voucher->contact_id) ?: '-' }}</div></div>
+                            <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.counterparty') }}</span><div class="fw-semibold">{{ data_get($invoiceMeta, 'counterparty_id', $voucher->contact_id) ?: '-' }}</div></div>
                             @if (!empty($publicInvoiceUrl))
-                                <div class="mb-4"><span class="text-muted fs-7">Public invoice URL</span><div class="fw-semibold"><a href="{{ $publicInvoiceUrl }}" target="_blank">{{ $publicInvoiceUrl }}</a></div></div>
+                                <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.public_invoice_url') }}</span><div class="fw-semibold"><a href="{{ $publicInvoiceUrl }}" target="_blank">{{ $publicInvoiceUrl }}</a></div></div>
                             @endif
                             @if (!empty($publicPaymentUrl))
-                                <div class="mb-4"><span class="text-muted fs-7">Public payment URL</span><div class="fw-semibold"><a href="{{ $publicPaymentUrl }}" target="_blank">{{ $publicPaymentUrl }}</a></div></div>
+                                <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.public_payment_url') }}</span><div class="fw-semibold"><a href="{{ $publicPaymentUrl }}" target="_blank">{{ $publicPaymentUrl }}</a></div></div>
                             @endif
-                            <div class="mb-4"><span class="text-muted fs-7">Due date</span><div class="fw-semibold">{{ data_get($invoiceMeta, 'due_date') ?: '-' }}</div></div>
-                            <div><span class="text-muted fs-7">External reference</span><div class="fw-semibold">{{ $voucher->external_reference ?: '-' }}</div></div>
+                            <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.due_date') }}</span><div class="fw-semibold">{{ data_get($invoiceMeta, 'due_date') ?: '-' }}</div></div>
+                            <div><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.external_reference') }}</span><div class="fw-semibold">{{ $voucher->external_reference ?: '-' }}</div></div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-4"><span class="text-muted fs-7">Tax amount</span><div class="fw-semibold">{{ number_format((float) data_get($invoiceMeta, 'tax_summary.tax_amount', 0), 2) }}</div></div>
-                            <div class="mb-4"><span class="text-muted fs-7">Legacy transaction</span><div class="fw-semibold">{{ data_get($voucher->meta, 'legacy_links.transaction_id') ?: '-' }}</div></div>
-                            <div><span class="text-muted fs-7">Currency</span><div class="fw-semibold">{{ $voucher->currency_code }}</div></div>
+                            <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.tax_amount') }}</span><div class="fw-semibold">{{ number_format((float) data_get($invoiceMeta, 'tax_summary.tax_amount', 0), 2) }}</div></div>
+                            <div class="mb-4"><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.legacy_transaction') }}</span><div class="fw-semibold">{{ data_get($voucher->meta, 'legacy_links.transaction_id') ?: '-' }}</div></div>
+                            <div><span class="text-muted fs-7">{{ __('vasaccounting::lang.views.invoices.show.currency') }}</span><div class="fw-semibold">{{ $voucher->currency_code }}</div></div>
                         </div>
                     </div>
                 </div>
@@ -76,28 +76,28 @@
 
         <div class="col-xl-4">
             <div class="card card-flush mb-5">
-                <div class="card-header"><div class="card-title">Actions</div></div>
+                <div class="card-header"><div class="card-title">{{ __('vasaccounting::lang.views.invoices.show.actions_title') }}</div></div>
                 <div class="card-body d-flex flex-column gap-3">
                     @if ($voucher->status === 'draft')
-                        <a href="{{ route('vasaccounting.invoices.edit', $voucher->id) }}" class="btn btn-light-primary btn-sm">Edit draft</a>
-                        <form method="POST" action="{{ route('vasaccounting.invoices.submit', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-warning btn-sm w-100">Submit</button></form>
-                        <form method="POST" action="{{ route('vasaccounting.invoices.post', $voucher->id) }}">@csrf<button type="submit" class="btn btn-primary btn-sm w-100">Post</button></form>
+                        <a href="{{ route('vasaccounting.invoices.edit', $voucher->id) }}" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.invoices.show.edit_draft') }}</a>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.submit', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-warning btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.submit') }}</button></form>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.post', $voucher->id) }}">@csrf<button type="submit" class="btn btn-primary btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.post') }}</button></form>
                     @endif
                     @if ($voucher->status === 'pending_approval')
-                        <form method="POST" action="{{ route('vasaccounting.invoices.approve', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-success btn-sm w-100">Approve</button></form>
-                        <form method="POST" action="{{ route('vasaccounting.invoices.reject', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-danger btn-sm w-100">Reject</button></form>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.approve', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-success btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.approve') }}</button></form>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.reject', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-danger btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.reject') }}</button></form>
                     @endif
                     @if (in_array($voucher->status, ['draft', 'pending_approval', 'approved'], true))
-                        <form method="POST" action="{{ route('vasaccounting.invoices.cancel', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light btn-sm w-100">Cancel</button></form>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.cancel', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.cancel') }}</button></form>
                     @endif
                     @if ($voucher->status === 'approved')
-                        <form method="POST" action="{{ route('vasaccounting.invoices.post', $voucher->id) }}">@csrf<button type="submit" class="btn btn-primary btn-sm w-100">Post approved invoice</button></form>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.post', $voucher->id) }}">@csrf<button type="submit" class="btn btn-primary btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.post_approved_invoice') }}</button></form>
                     @endif
                     @if ($voucher->status === 'posted')
-                        <a href="{{ $createPaymentUrl }}" class="btn btn-light-primary btn-sm">{{ $createPaymentLabel ?? 'Create settlement' }}</a>
-                        <form method="POST" action="{{ route('vasaccounting.invoices.reverse', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-danger btn-sm w-100">Reverse</button></form>
+                        <a href="{{ $createPaymentUrl }}" class="btn btn-light-primary btn-sm">{{ $createPaymentLabel ?? __('vasaccounting::lang.views.invoices.show.create_settlement') }}</a>
+                        <form method="POST" action="{{ route('vasaccounting.invoices.reverse', $voucher->id) }}">@csrf<button type="submit" class="btn btn-light-danger btn-sm w-100">{{ __('vasaccounting::lang.views.invoices.show.reverse') }}</button></form>
                     @endif
-                    <a href="{{ route('vasaccounting.invoices.index') }}" class="btn btn-light btn-sm">Back to register</a>
+                    <a href="{{ route('vasaccounting.invoices.index') }}" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.invoices.show.back_to_register') }}</a>
                 </div>
             </div>
         </div>

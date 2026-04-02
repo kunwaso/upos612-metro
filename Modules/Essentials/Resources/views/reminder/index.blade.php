@@ -34,7 +34,7 @@
 	@include('essentials::reminder.create')
 </section>
 <!-- show reminder modal -->
-<div class="modal fade view_reminder" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true"></div>
+<div class="modal fade view_reminder" id="reminderViewModal" tabindex="-1" role="dialog" aria-labelledby="reminderViewModalTitle" aria-hidden="true"></div>
 @endsection
 
 @section('javascript')
@@ -85,8 +85,11 @@
 		//saving reminder
 		$(document).on("submit", "form#reminder_form", function(e){
 			e.preventDefault();
-			var data = $("form#reminder_form").serialize();
-			var url = $("form#reminder_form").attr("action");
+			var $form = $(this);
+			var $submit_btn = $form.find('button[type="submit"]');
+			var data = $form.serialize();
+			var url = $form.attr("action");
+			$submit_btn.prop('disabled', true);
 			$.ajax({
 				method: "POST",
 				url: url,
@@ -100,6 +103,18 @@
 					} else {
 						toastr.error(result.msg);
 					}
+				},
+				error: function(xhr){
+					var error_msg = (typeof LANG !== 'undefined' && LANG.something_went_wrong)
+						? LANG.something_went_wrong
+						: 'Something went wrong';
+					if (xhr && xhr.responseJSON && xhr.responseJSON.msg) {
+						error_msg = xhr.responseJSON.msg;
+					}
+					toastr.error(error_msg);
+				},
+				complete: function(){
+					$submit_btn.prop('disabled', false);
 				}
 			});
 		});
