@@ -58,7 +58,27 @@
             <div class="card-title">
                 <h3 class="fw-bold m-0">{{ __('vasaccounting::lang.views.report_table.dataset_title') }}</h3>
             </div>
-            <div class="card-toolbar">
+            <div class="card-toolbar d-flex gap-2 flex-wrap">
+                @foreach (($actions ?? []) as $action)
+                    @if (($action['method'] ?? 'GET') === 'POST')
+                        <form method="POST" action="{{ $action['url'] }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-{{ $action['style'] ?? 'light-primary' }}"
+                                @if (!empty($action['confirm']))
+                                    onclick="return confirm(@js($action['confirm']));"
+                                @endif
+                            >
+                                {{ $action['label'] }}
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ $action['url'] }}" class="btn btn-sm btn-{{ $action['style'] ?? 'light-primary' }}">
+                            {{ $action['label'] }}
+                        </a>
+                    @endif
+                @endforeach
                 <a href="{{ route('vasaccounting.reports.index') }}" class="btn btn-sm btn-light-primary">{{ $vasAccountingUtil->actionLabel('back_to_reports') }}</a>
             </div>
         </div>

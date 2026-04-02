@@ -25,6 +25,7 @@ use App\Utils\BusinessUtil;
 use App\Utils\ModuleUtil;
 use App\Utils\ProductUtil;
 use App\Utils\TransactionUtil;
+use App\Utils\Util;
 use App\Variation;
 use Datatables;
 use DB;
@@ -365,8 +366,9 @@ class ReportController extends Controller
             //To show stock details on view product modal
             if ($for == 'view_product' && ! empty(request()->input('product_id'))) {
                 $product_stock_details = $products;
+                $can_direct_edit_stock = app(Util::class)->is_admin(auth()->user(), (int) $business_id);
 
-                return view('product.partials.product_stock_details')->with(compact('product_stock_details'));
+                return view('product.partials.product_stock_details')->with(compact('product_stock_details', 'can_direct_edit_stock'));
             }
 
             $datatable = Datatables::of($products)

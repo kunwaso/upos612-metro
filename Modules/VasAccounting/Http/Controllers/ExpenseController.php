@@ -13,6 +13,7 @@ use Modules\VasAccounting\Application\DTOs\ActionContext;
 use Modules\VasAccounting\Application\DTOs\DocumentCreateData;
 use Modules\VasAccounting\Application\DTOs\PostingContext;
 use Modules\VasAccounting\Application\DTOs\ReversalContext;
+use Modules\VasAccounting\Contracts\ApprovalWorkflowServiceInterface;
 use Modules\VasAccounting\Contracts\ExpenseSettlementServiceInterface;
 use Modules\VasAccounting\Contracts\FinanceDocumentServiceInterface;
 use Modules\VasAccounting\Contracts\PostingRuleEngineInterface;
@@ -24,6 +25,8 @@ use Modules\VasAccounting\Entities\VasProject;
 use Modules\VasAccounting\Entities\VasTaxCode;
 use Modules\VasAccounting\Http\Requests\FinanceDocumentActionRequest;
 use Modules\VasAccounting\Http\Requests\StoreExpenseFinanceDocumentRequest;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalEscalationDispatchService;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
 class ExpenseController extends VasBaseController
@@ -32,7 +35,10 @@ class ExpenseController extends VasBaseController
         protected VasAccountingUtil $vasUtil,
         protected FinanceDocumentServiceInterface $financeDocumentService,
         protected PostingRuleEngineInterface $postingRuleEngine,
-        protected ExpenseSettlementServiceInterface $expenseSettlementService
+        protected ApprovalWorkflowServiceInterface $approvalWorkflowService,
+        protected ExpenseSettlementServiceInterface $expenseSettlementService,
+        protected ExpenseApprovalMonitorService $expenseApprovalMonitorService,
+        protected ExpenseApprovalEscalationDispatchService $expenseApprovalEscalationDispatchService
     ) {
     }
 
@@ -68,14 +74,33 @@ class ExpenseController extends VasBaseController
                     ->whereNotIn('workflow_status', ['cancelled', 'reversed', 'closed']))
                 ->latest('document_date')
                 ->latest('id')
-                ->take(20)
+                ->take($workspaceFocus === 'escalated_approvals' ? 80 : 20)
                 ->get()
             : collect();
+
+        $approvalInsights = $this->expenseApprovalMonitorService->buildInsights($expenseDocuments);
+
+        if ($workspaceFocus === 'escalated_approvals') {
+            $expenseDocuments = $expenseDocuments
+                ->filter(fn (FinanceDocument $document) => data_get($approvalInsights, $document->id . '.sla_state') === 'overdue')
+                ->values()
+                ->take(20);
+
+            $approvalInsights = array_intersect_key(
+                $approvalInsights,
+                array_flip($expenseDocuments->pluck('id')->all())
+            );
+        }
+
+        $escalatedWorkflowCount = collect($approvalInsights)->where('sla_state', 'overdue')->count();
+        $highValueDocumentCount = collect($approvalInsights)->filter(fn (array $insight) => (bool) ($insight['is_high_value'] ?? false))->count();
 
         $summary = [
             'documents' => $expenseDocuments->count(),
             'open_workflow' => $expenseDocuments->whereIn('workflow_status', ['draft', 'submitted', 'approved'])->count(),
             'posted_documents' => $expenseDocuments->where('workflow_status', 'posted')->count(),
+            'escalated_workflow' => $escalatedWorkflowCount,
+            'high_value_documents' => $highValueDocumentCount,
             'gross_amount' => round((float) $expenseDocuments->sum(fn (FinanceDocument $document) => (float) $document->gross_amount), 4),
         ];
 
@@ -97,6 +122,7 @@ class ExpenseController extends VasBaseController
 
         return view('vasaccounting::expenses.index', [
             'summary' => $summary,
+            'approvalInsights' => $approvalInsights,
             'documentTypeCounts' => $documentTypeCounts,
             'expenseDocuments' => $expenseDocuments,
             'employeeOptions' => User::forDropdown($businessId, true, false, false, true),
@@ -245,6 +271,117 @@ class ExpenseController extends VasBaseController
         }
     }
 
+    public function reject(FinanceDocumentActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.expenses.manage');
+
+        $reason = trim((string) $request->input('reason', ''));
+        if ($reason === '') {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => __('vasaccounting::lang.expense_document_rejection_reason_required')]);
+        }
+
+        try {
+            $documentModel = $this->expenseDocumentOrFail($this->businessId($request), $document);
+            $this->financeDocumentService->reject($documentModel->id, $this->actionContext($request, 'Expense document rejected'));
+
+            return $this->redirectBackToExpenses($request, [
+                'success' => true,
+                'msg' => __('vasaccounting::lang.expense_document_rejected'),
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function escalate(FinanceDocumentActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.expenses.manage');
+
+        $reason = trim((string) $request->input('reason', ''));
+        if ($reason === '') {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => __('vasaccounting::lang.expense_document_escalation_reason_required')]);
+        }
+
+        try {
+            $documentModel = $this->expenseDocumentOrFail($this->businessId($request), $document)->loadMissing('approvalInstances.steps');
+            $approvalInsight = $this->expenseApprovalMonitorService->buildInsight($documentModel);
+
+            if (($approvalInsight['sla_state'] ?? null) !== 'overdue') {
+                throw new \RuntimeException('Only overdue expense approvals can be escalated from the expense workspace.');
+            }
+
+            $this->approvalWorkflowService->escalate(
+                $documentModel,
+                new ActionContext(
+                    (int) auth()->id(),
+                    $this->businessId($request),
+                    $reason,
+                    $request->input('request_id') ?: (string) Str::uuid(),
+                    $request->ip(),
+                    $request->userAgent(),
+                    array_merge((array) $request->input('meta', []), [
+                        'source' => 'expense_workspace',
+                        'document_family' => 'expense_management',
+                    ])
+                )
+            );
+
+            return $this->redirectBackToExpenses($request, [
+                'success' => true,
+                'msg' => __('vasaccounting::lang.expense_document_escalated'),
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
+    public function retryEscalationDispatch(FinanceDocumentActionRequest $request, int $document): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.expenses.manage');
+
+        $reason = trim((string) $request->input('reason', ''));
+        if ($reason === '') {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => __('vasaccounting::lang.expense_document_escalation_reason_required')]);
+        }
+
+        try {
+            $documentModel = $this->expenseDocumentOrFail($this->businessId($request), $document)->loadMissing('approvalInstances.steps');
+            $approvalInsight = $this->expenseApprovalMonitorService->buildInsight($documentModel);
+
+            if ($documentModel->workflow_status !== 'submitted') {
+                throw new \RuntimeException('Only submitted expense approvals can retry escalation dispatch.');
+            }
+
+            if (($approvalInsight['dispatch_status'] ?? null) !== 'failed') {
+                throw new \RuntimeException('Only failed escalation dispatches can be retried from the expense workspace.');
+            }
+
+            $this->expenseApprovalEscalationDispatchService->retryDispatch(
+                $documentModel,
+                new ActionContext(
+                    (int) auth()->id(),
+                    $this->businessId($request),
+                    $reason,
+                    $request->input('request_id') ?: (string) Str::uuid(),
+                    $request->ip(),
+                    $request->userAgent(),
+                    array_merge((array) $request->input('meta', []), [
+                        'source' => 'expense_workspace',
+                        'document_family' => 'expense_management',
+                        'retry_dispatch' => true,
+                    ])
+                )
+            );
+
+            return $this->redirectBackToExpenses($request, [
+                'success' => true,
+                'msg' => __('vasaccounting::lang.expense_document_escalation_dispatch_requeued'),
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->redirectBackToExpenses($request, ['success' => false, 'msg' => $exception->getMessage()]);
+        }
+    }
+
     public function post(FinanceDocumentActionRequest $request, int $document): RedirectResponse
     {
         $this->authorizePermission('vas_accounting.expenses.manage');
@@ -381,7 +518,7 @@ class ExpenseController extends VasBaseController
     {
         $focus = (string) $request->query('focus', '');
 
-        return in_array($focus, ['pending_documents', 'outstanding_balances'], true) ? $focus : null;
+        return in_array($focus, ['pending_documents', 'outstanding_balances', 'escalated_approvals'], true) ? $focus : null;
     }
 
     protected function applyDocumentDateScope($query, ?string $periodStart, ?string $periodEnd)
@@ -401,3 +538,4 @@ class ExpenseController extends VasBaseController
         return $query;
     }
 }
+

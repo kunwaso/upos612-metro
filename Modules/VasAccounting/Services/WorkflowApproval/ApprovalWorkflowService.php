@@ -16,7 +16,8 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
 {
     public function __construct(
         protected MakerCheckerGuard $makerCheckerGuard,
-        protected ExpenseApprovalPolicyResolver $expenseApprovalPolicyResolver
+        protected ExpenseApprovalPolicyResolver $expenseApprovalPolicyResolver,
+        protected ExpenseApprovalEscalationDispatchService $expenseApprovalEscalationDispatchService
     )
     {
     }
@@ -65,6 +66,10 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
                     'meta' => [
                         'submitted_by' => $context->userId(),
                         'label' => $step['label'],
+                        'sla_hours' => $step['sla_hours'] ?? null,
+                        'warning_hours' => $step['warning_hours'] ?? null,
+                        'escalation_role' => $step['escalation_role'] ?? null,
+                        'pending_started_at' => $index === 0 ? now()->toDateTimeString() : null,
                     ],
                 ]);
             }
@@ -113,7 +118,11 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
             $nextStep = $instance->steps->firstWhere('status', 'queued');
 
             if ($nextStep) {
+                $nextStepMeta = (array) $nextStep->meta;
                 $nextStep->status = 'pending';
+                $nextStep->meta = array_merge($nextStepMeta, [
+                    'pending_started_at' => now()->toDateTimeString(),
+                ]);
                 $nextStep->save();
 
                 $instance->status = 'in_progress';
@@ -136,6 +145,138 @@ class ApprovalWorkflowService implements ApprovalWorkflowServiceInterface
                 'approved_step_no' => $step->step_no,
                 'next_step_no' => $nextStep?->step_no,
             ]);
+
+            return $instance->fresh('steps');
+        });
+    }
+
+    public function reject(FinanceDocument $document, ActionContext $context): FinanceApprovalInstance
+    {
+        return DB::transaction(function () use ($document, $context) {
+            $document = FinanceDocument::query()->findOrFail($document->id);
+            $instance = FinanceApprovalInstance::query()
+                ->with('steps')
+                ->where('document_id', $document->id)
+                ->latest('id')
+                ->first();
+
+            if (! $instance) {
+                throw new RuntimeException('Finance document approval has not been started.');
+            }
+
+            if (in_array($instance->status, ['approved', 'rejected'], true)) {
+                return $instance;
+            }
+
+            $step = $instance->steps->firstWhere('status', 'pending');
+            if (! $step) {
+                throw new RuntimeException('Finance document does not have a pending approval step to reject.');
+            }
+
+            $step->status = 'rejected';
+            $step->decision = 'rejected';
+            $step->reason = $context->reason();
+            $step->acted_at = now();
+            $step->approver_user_id = $step->approver_user_id ?: $context->userId();
+            $step->save();
+
+            $instance->steps
+                ->filter(fn (FinanceApprovalStep $queuedStep) => $queuedStep->status === 'queued')
+                ->each(function (FinanceApprovalStep $queuedStep) {
+                    $queuedStep->status = 'cancelled';
+                    $queuedStep->decision = 'cancelled';
+                    $queuedStep->acted_at = now();
+                    $queuedStep->save();
+                });
+
+            $instance->status = 'rejected';
+            $instance->current_step_no = $step->step_no;
+            $instance->completed_at = now();
+            $instance->meta = array_merge((array) $instance->meta, [
+                'last_rejected_step_no' => $step->step_no,
+                'last_rejected_by' => $context->userId(),
+                'last_rejected_reason' => $context->reason(),
+            ]);
+            $instance->save();
+
+            $this->recordAudit($document, 'workflow.rejected', $context, [
+                'approval_instance_id' => $instance->id,
+                'previous_status' => 'in_progress',
+            ], [
+                'approval_instance_id' => $instance->id,
+                'status' => 'rejected',
+                'rejected_step_no' => $step->step_no,
+                'reason' => $context->reason(),
+            ]);
+
+            return $instance->fresh('steps');
+        });
+    }
+
+    public function escalate(FinanceDocument $document, ActionContext $context): FinanceApprovalInstance
+    {
+        return DB::transaction(function () use ($document, $context) {
+            $document = FinanceDocument::query()->findOrFail($document->id);
+            $instance = FinanceApprovalInstance::query()
+                ->with('steps')
+                ->where('document_id', $document->id)
+                ->latest('id')
+                ->first();
+
+            if (! $instance) {
+                throw new RuntimeException('Finance document approval has not been started.');
+            }
+
+            if (! in_array($instance->status, ['pending', 'in_progress'], true)) {
+                throw new RuntimeException('Only active approval workflows can be escalated.');
+            }
+
+            $step = $instance->steps->firstWhere('status', 'pending');
+            if (! $step) {
+                throw new RuntimeException('Finance document does not have a pending approval step to escalate.');
+            }
+
+            $stepMeta = (array) $step->meta;
+            $escalationCount = (int) ($stepMeta['escalation_count'] ?? 0) + 1;
+            $step->meta = array_merge($stepMeta, [
+                'escalation_count' => $escalationCount,
+                'last_escalated_at' => now()->toDateTimeString(),
+                'last_escalated_by' => $context->userId(),
+                'last_escalation_reason' => $context->reason(),
+                'escalation_status' => 'manual_escalation_requested',
+                'escalation_dispatch_status' => 'queued',
+                'last_dispatch_attempt_at' => null,
+                'last_dispatch_recipient_count' => 0,
+                'last_dispatch_reason' => $context->reason(),
+            ]);
+            $step->save();
+
+            $instance->meta = array_merge((array) $instance->meta, [
+                'last_escalated_step_no' => $step->step_no,
+                'last_escalated_at' => now()->toDateTimeString(),
+                'last_escalated_by' => $context->userId(),
+                'last_escalation_reason' => $context->reason(),
+            ]);
+            $instance->save();
+
+            $this->recordAudit($document, 'workflow.escalated', $context, [
+                'approval_instance_id' => $instance->id,
+                'step_no' => $step->step_no,
+                'previous_escalation_count' => $escalationCount - 1,
+            ], [
+                'approval_instance_id' => $instance->id,
+                'step_no' => $step->step_no,
+                'escalation_count' => $escalationCount,
+                'escalation_role' => data_get($step->meta, 'escalation_role'),
+                'reason' => $context->reason(),
+            ]);
+
+            $this->expenseApprovalEscalationDispatchService->queueEscalation(
+                $document,
+                $instance,
+                $step,
+                $context
+            );
 
             return $instance->fresh('steps');
         });

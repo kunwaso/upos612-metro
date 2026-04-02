@@ -3,16 +3,21 @@
 namespace Modules\VasAccounting\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
+use Modules\VasAccounting\Application\DTOs\ActionContext;
 use Modules\VasAccounting\Entities\VasReportSnapshot;
 use Modules\VasAccounting\Http\Requests\GenerateReportSnapshotRequest;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalEscalationDispatchService;
 
 class ReportController extends VasBaseController
 {
     public function __construct(
         protected EnterpriseReportingService $enterpriseReportingService,
-        protected ReportSnapshotService $reportSnapshotService
+        protected ReportSnapshotService $reportSnapshotService,
+        protected ExpenseApprovalEscalationDispatchService $expenseApprovalEscalationDispatchService
     ) {
     }
 
@@ -74,6 +79,26 @@ class ReportController extends VasBaseController
         return $this->renderReport($request, 'invoice_register');
     }
 
+    public function purchaseRegister(Request $request)
+    {
+        return $this->renderReport($request, 'purchase_register');
+    }
+
+    public function goodsReceiptRegister(Request $request)
+    {
+        return $this->renderReport($request, 'goods_receipt_register');
+    }
+
+    public function procurementDiscrepancies(Request $request)
+    {
+        return $this->renderReport($request, 'procurement_discrepancies');
+    }
+
+    public function procurementAging(Request $request)
+    {
+        return $this->renderReport($request, 'procurement_aging');
+    }
+
     public function expenseOutstanding(Request $request)
     {
         return $this->renderReport($request, 'expense_outstanding');
@@ -82,6 +107,40 @@ class ReportController extends VasBaseController
     public function expenseRegister(Request $request)
     {
         return $this->renderReport($request, 'expense_register');
+    }
+
+    public function expenseEscalationAudit(Request $request)
+    {
+        return $this->renderReport($request, 'expense_escalation_audit');
+    }
+
+    public function retryFailedExpenseEscalationDispatches(Request $request): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.expenses.manage');
+
+        $retried = $this->expenseApprovalEscalationDispatchService->retryFailedDispatchesForBusiness(
+            $this->businessId($request),
+            new ActionContext(
+                (int) auth()->id(),
+                $this->businessId($request),
+                (string) ($request->input('reason') ?: 'Batch retry from expense escalation audit'),
+                $request->input('request_id') ?: (string) Str::uuid(),
+                $request->ip(),
+                $request->userAgent(),
+                array_merge((array) $request->input('meta', []), [
+                    'source' => 'report_hub',
+                    'report_key' => 'expense_escalation_audit',
+                    'batch_retry' => true,
+                ])
+            )
+        );
+
+        return redirect()
+            ->route('vasaccounting.reports.expense_escalation_audit')
+            ->with('status', [
+                'success' => true,
+                'msg' => __('vasaccounting::lang.expense_escalation_dispatch_batch_requeued', ['count' => $retried]),
+            ]);
     }
 
     public function inventory(Request $request)

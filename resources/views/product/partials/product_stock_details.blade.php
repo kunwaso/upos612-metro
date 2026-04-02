@@ -1,7 +1,5 @@
 @php
-    $canDirectEditStock = !empty($is_org_admin)
-        && auth()->user()->can('product.update')
-        && (auth()->user()->can('product.opening_stock') || auth()->user()->can('stock_adjustment.create'));
+    $canDirectEditStock = (bool) ($can_direct_edit_stock ?? (!empty($is_org_admin)));
 @endphp
 
 <div class="row">

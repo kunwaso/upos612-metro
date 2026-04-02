@@ -2994,63 +2994,16 @@ class ProductController extends Controller
                 ]);
             }
 
-            $base_note = $this->buildDirectStockEditNote(
-                $current_stock,
-                $target_stock,
-                $delta,
-                $reason,
-                $location->name ?? ('#' . $location_id)
-            );
-
-            $mapped_qty = 0.0;
-            $unmapped_qty = 0.0;
-            $activity_transaction_type = null;
-            $activity_transaction_id = null;
-
-            if ($delta > 0) {
-                if (! auth()->user()->can('product.opening_stock')) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => 0,
-                        'msg' => __('product.unauthorized_action'),
-                    ], 403);
-                }
-
-                $opening_stock_transaction = $this->createDirectOpeningStockTransaction(
-                    $business_id,
-                    $user_id,
-                    $product,
-                    $variation,
-                    $location_id,
-                    $delta,
-                    $base_note
-                );
-                $activity_transaction_type = 'opening_stock';
-                $activity_transaction_id = (int) $opening_stock_transaction->id;
+            if ($stock_row) {
+                $stock_row->qty_available = $target_stock;
+                $stock_row->save();
             } else {
-                if (! auth()->user()->can('stock_adjustment.create')) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => 0,
-                        'msg' => __('product.unauthorized_action'),
-                    ], 403);
-                }
-
-                $decrease_qty = abs($delta);
-                $adjustment_result = $this->createDirectStockAdjustmentTransaction(
-                    $business_id,
-                    $user_id,
-                    $product,
-                    $variation,
-                    $location_id,
-                    $decrease_qty,
-                    $base_note
-                );
-
-                $mapped_qty = (float) ($adjustment_result['mapped_qty'] ?? 0);
-                $unmapped_qty = (float) ($adjustment_result['unmapped_qty'] ?? 0);
-                $activity_transaction_type = 'stock_adjustment';
-                $activity_transaction_id = (int) ($adjustment_result['transaction_id'] ?? 0);
+                VariationLocationDetails::create([
+                    'variation_id' => $variation_id,
+                    'product_id' => (int) $product->id,
+                    'location_id' => $location_id,
+                    'qty_available' => $target_stock,
+                ]);
             }
 
             $variation_name = trim((string) ($variation->name ?? ''));
@@ -3095,10 +3048,10 @@ class ProductController extends Controller
                     'after_stock' => $target_stock,
                     'delta' => $delta,
                     'reason' => $reason,
-                    'mapped_qty' => $mapped_qty,
-                    'unmapped_qty' => $unmapped_qty,
-                    'transaction_type' => $activity_transaction_type,
-                    'transaction_id' => $activity_transaction_id ?: null,
+                    'mapped_qty' => 0,
+                    'unmapped_qty' => 0,
+                    'transaction_type' => 'direct_admin_edit',
+                    'transaction_id' => null,
                 ]
             );
 
@@ -3111,8 +3064,8 @@ class ProductController extends Controller
                     'before_stock' => $current_stock,
                     'after_stock' => $target_stock,
                     'delta' => $delta,
-                    'mapped_qty' => $mapped_qty,
-                    'unmapped_qty' => $unmapped_qty,
+                    'mapped_qty' => 0,
+                    'unmapped_qty' => 0,
                 ],
             ]);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
@@ -3144,8 +3097,7 @@ class ProductController extends Controller
             return false;
         }
 
-        return $user->can('product.update')
-            && ($user->can('product.opening_stock') || $user->can('stock_adjustment.create'));
+        return true;
     }
 
     private function buildDirectStockActivityDescription(

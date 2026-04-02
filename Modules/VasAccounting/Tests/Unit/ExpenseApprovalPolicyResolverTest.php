@@ -23,6 +23,9 @@ class ExpenseApprovalPolicyResolverTest extends TestCase
         $this->assertTrue($policy['maker_checker']);
         $this->assertCount(1, $policy['steps']);
         $this->assertSame('branch_manager', $policy['steps'][0]['approver_role']);
+        $this->assertSame(24, $policy['steps'][0]['sla_hours']);
+        $this->assertSame(4, $policy['steps'][0]['warning_hours']);
+        $this->assertSame('finance_manager', $policy['steps'][0]['escalation_role']);
         $this->assertSame(5000000.0, $policy['threshold_max_amount']);
     }
 
@@ -41,6 +44,8 @@ class ExpenseApprovalPolicyResolverTest extends TestCase
         $this->assertCount(2, $policy['steps']);
         $this->assertSame('branch_manager', $policy['steps'][0]['approver_role']);
         $this->assertSame('finance_manager', $policy['steps'][1]['approver_role']);
+        $this->assertSame(8, $policy['steps'][0]['sla_hours']);
+        $this->assertSame(12, $policy['steps'][1]['sla_hours']);
         $this->assertSame(10000000.0001, $policy['threshold_min_amount']);
         $this->assertNull($policy['threshold_max_amount']);
     }

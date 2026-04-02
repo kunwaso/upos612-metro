@@ -85,7 +85,7 @@ class StockAdjustmentController extends Controller
             $end_date = request()->get('end_date');
             if (! empty($start_date) && ! empty($end_date)) {
                 $stock_adjustments->whereBetween(DB::raw('date(transaction_date)'), [$start_date, $end_date]);
-                $hide = 'hide';
+                $hide = 'd-none';
             }
             $location_id = request()->get('location_id');
             if (! empty($location_id)) {
@@ -97,7 +97,7 @@ class StockAdjustmentController extends Controller
             }
 
             if(! auth()->user()->can('stock_adjustment.delete')){
-                $hide = 'hide';
+                $hide = 'd-none';
             }
 
             return Datatables::of($stock_adjustments)
@@ -350,6 +350,7 @@ class StockAdjustmentController extends Controller
                                     ->first();
 
                 if (empty($stock_adjustment)) {
+                    $output['msg'] = __('stock_adjustment.stock_adjustment_does_not_exist');
                     return $output;
                 }
 
@@ -372,19 +373,25 @@ class StockAdjustmentController extends Controller
                     $this->transactionUtil->mapPurchaseQuantityForDeleteStockAdjustment($line_ids);
                 }
                 $stock_adjustment->delete();
-
-                event( new StockAdjustmentCreatedOrModified($stock_adjustment, 'deleted'));
-
+                DB::commit();
 
                 //Remove Mapping between stock adjustment & purchase.
-
                 $output = ['success' => 1,
                     'msg' => __('stock_adjustment.delete_success'),
                 ];
 
-                DB::commit();
+                // Deletion should succeed even if async accounting integrations fail.
+                try {
+                    event(new StockAdjustmentCreatedOrModified($stock_adjustment, 'deleted'));
+                } catch (\Throwable $e) {
+                    \Log::warning('Stock adjustment delete event failed after commit', [
+                        'transaction_id' => $id,
+                        'business_id' => $business_id,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }

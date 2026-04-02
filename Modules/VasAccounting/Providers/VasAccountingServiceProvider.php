@@ -45,6 +45,8 @@ use Modules\VasAccounting\Services\Subledger\OpenItemService;
 use Modules\VasAccounting\Services\Treasury\TreasuryReconciliationService;
 use Modules\VasAccounting\Services\Treasury\TreasuryExceptionService;
 use Modules\VasAccounting\Services\WorkflowApproval\ApprovalWorkflowService;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalEscalationDispatchService;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService;
 use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalPolicyResolver;
 use Modules\VasAccounting\Services\WorkflowApproval\MakerCheckerGuard;
 use Modules\VasAccounting\Services\BudgetControlService;
@@ -180,6 +182,8 @@ class VasAccountingServiceProvider extends ServiceProvider
         $this->app->singleton(DocumentTraceService::class);
         $this->app->singleton(DocumentWorkflowService::class);
         $this->app->singleton(ExpenseSettlementService::class);
+        $this->app->singleton(ExpenseApprovalEscalationDispatchService::class);
+        $this->app->singleton(ExpenseApprovalMonitorService::class);
         $this->app->singleton(ExpenseApprovalPolicyResolver::class);
         $this->app->singleton(MakerCheckerGuard::class);
         $this->app->singleton(ApprovalWorkflowService::class);
@@ -263,7 +267,16 @@ class VasAccountingServiceProvider extends ServiceProvider
                 ];
             }
 
-            app(VasPostingService::class)->queueSourceDocument('stock_adjustment', $stockAdjustment, $context);
+            try {
+                app(VasPostingService::class)->queueSourceDocument('stock_adjustment', $stockAdjustment, $context);
+            } catch (\Throwable $e) {
+                \Log::warning('VAS stock adjustment posting queue failed', [
+                    'transaction_id' => (int) ($stockAdjustment->id ?? 0),
+                    'business_id' => (int) ($stockAdjustment->business_id ?? 0),
+                    'action' => $action,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         });
 
         Event::listen(StockTransferCreatedOrModified::class, function (StockTransferCreatedOrModified $event) {

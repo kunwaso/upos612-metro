@@ -3,6 +3,7 @@
 namespace Modules\VasAccounting\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Entities\VasApprovalRule;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
@@ -74,6 +75,10 @@ class ApprovalRuleService
 
     public function resolveRule(int $businessId, string $documentFamily, array $context = []): ?VasApprovalRule
     {
+        if (! Schema::hasTable('vas_approval_rules') || ! Schema::hasTable('vas_approval_rule_steps')) {
+            return null;
+        }
+
         $amount = round((float) ($context['amount'] ?? 0), 4);
         $sourceType = $this->nullableString($context['source_type'] ?? null);
         $moduleArea = $this->nullableString($context['module_area'] ?? null);

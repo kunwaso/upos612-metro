@@ -13,5 +13,9 @@ interface ApprovalWorkflowServiceInterface
 
     public function approve(FinanceDocument $document, ActionContext $context): FinanceApprovalInstance;
 
+    public function reject(FinanceDocument $document, ActionContext $context): FinanceApprovalInstance;
+
+    public function escalate(FinanceDocument $document, ActionContext $context): FinanceApprovalInstance;
+
     public function currentState(FinanceDocument $document): ApprovalStateView;
 }

@@ -26,6 +26,7 @@ class FinanceCoreConfigTest extends TestCase
         $this->assertSame('manual', data_get(config('vasaccounting.finance_document_blueprints'), 'expense_management.expense_claim.posting_mode'));
         $this->assertContains('advance_settlement', data_get(config('vasaccounting.finance_document_blueprints'), 'expense_management.advance_request.allowed_child_types'));
         $this->assertSame('EXPENSE_CLAIM_STANDARD', data_get(config('vasaccounting.approval_defaults.expense_document_policies'), 'expense_claim.tiers.0.policy_code'));
+        $this->assertSame(24, data_get(config('vasaccounting.approval_defaults.expense_document_policies'), 'expense_claim.tiers.0.steps.0.sla_hours'));
         $this->assertSame('finance_manager', data_get(config('vasaccounting.approval_defaults.expense_document_policies'), 'advance_request.tiers.1.steps.1.approver_role'));
         $this->assertContains('purchase_order', data_get(config('vasaccounting.finance_document_blueprints'), 'procurement.purchase_requisition.allowed_child_types'));
         $this->assertTrue(config('vasaccounting.approval_defaults.finance_document_defaults.maker_checker'));

@@ -7,6 +7,7 @@ use Modules\VasAccounting\Services\BankStatementImportAdapterManager;
 use Modules\VasAccounting\Services\EInvoiceAdapterManager;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
 use Modules\VasAccounting\Services\IntegrationHubService;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService;
 use Modules\VasAccounting\Services\TaxExportAdapterManager;
 use Modules\VasAccounting\Contracts\TreasuryExceptionServiceInterface;
 use Modules\VasAccounting\Services\VasInventoryValuationService;
@@ -28,15 +29,29 @@ class PhaseSevenServicesTest extends TestCase
             Mockery::mock(EnterpriseFinanceReportUtil::class),
             Mockery::mock(OperationsAssetReportUtil::class),
             Mockery::mock(EnterprisePlanningReportUtil::class),
-            Mockery::mock(VasPeriodCloseService::class)
+            Mockery::mock(VasPeriodCloseService::class),
+            Mockery::mock(ExpenseApprovalMonitorService::class)
         );
 
         $this->assertTrue($service->supports('close_packet'));
         $this->assertTrue($service->supports('operational_health'));
         $this->assertTrue($service->supports('expense_register'));
         $this->assertTrue($service->supports('expense_outstanding'));
+        $this->assertTrue($service->supports('expense_escalation_audit'));
+        $this->assertTrue($service->supports('purchase_register'));
+        $this->assertTrue($service->supports('goods_receipt_register'));
+        $this->assertTrue($service->supports('procurement_discrepancies'));
+        $this->assertTrue($service->supports('procurement_aging'));
         $this->assertSame('Close Packet', $service->definition('close_packet')['title']);
         $this->assertSame('Expense Register', $service->definition('expense_register')['title']);
+        $this->assertSame('Expense Escalation Audit', $service->definition('expense_escalation_audit')['title']);
+        $this->assertSame('vasaccounting.reports.expense_escalation_audit', $service->definition('expense_escalation_audit')['route']);
+        $this->assertSame('Purchase Register', $service->definition('purchase_register')['title']);
+        $this->assertSame('vasaccounting.reports.purchase_register', $service->definition('purchase_register')['route']);
+        $this->assertSame('Procurement Discrepancies', $service->definition('procurement_discrepancies')['title']);
+        $this->assertSame('vasaccounting.reports.procurement_discrepancies', $service->definition('procurement_discrepancies')['route']);
+        $this->assertSame('Procurement Aging', $service->definition('procurement_aging')['title']);
+        $this->assertSame('vasaccounting.reports.procurement_aging', $service->definition('procurement_aging')['route']);
     }
 
     public function test_integration_hub_service_parses_bank_statement_lines(): void

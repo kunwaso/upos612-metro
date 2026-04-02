@@ -28,6 +28,7 @@ class VasAccountingPageRenderContractTest extends TestCase
         return [
             'core dashboard' => ['vasaccounting.dashboard.index', 'core', true],
             'operations cash bank' => ['vasaccounting.cash_bank.index', 'operations', true],
+            'operations procurement' => ['vasaccounting.procurement.index', 'operations', true],
             'operations expenses' => ['vasaccounting.expenses.index', 'operations', true],
             'operations assets' => ['vasaccounting.assets.index', 'operations', true],
             'planning contracts' => ['vasaccounting.contracts.index', 'planning', true],

@@ -17,6 +17,8 @@ interface FinanceDocumentServiceInterface
 
     public function approve(int $documentId, ActionContext $context): FinanceDocument;
 
+    public function reject(int $documentId, ActionContext $context): FinanceDocument;
+
     public function match(int $documentId, ActionContext $context): FinanceDocument;
 
     public function fulfill(int $documentId, ActionContext $context): FinanceDocument;

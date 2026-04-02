@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument;
+use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchRun;
 
 class EnterpriseFinanceReportUtil
 {
@@ -182,6 +183,132 @@ class EnterpriseFinanceReportUtil
             });
     }
 
+    public function purchaseRegisterRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->with(['lines', 'parentLinks.parentDocument'])
+            ->where('business_id', $businessId)
+            ->whereIn('document_type', ['purchase_requisition', 'purchase_order', 'supplier_invoice'])
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'net_amount',
+                'tax_amount',
+                'counterparty_id',
+                'currency_code',
+                'meta',
+            ]);
+    }
+
+    public function goodsReceiptRegisterRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->with(['lines', 'parentLinks.parentDocument', 'childLinks.childDocument'])
+            ->where('business_id', $businessId)
+            ->where('document_type', 'goods_receipt')
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'net_amount',
+                'tax_amount',
+                'counterparty_id',
+                'currency_code',
+                'meta',
+            ]);
+    }
+
+    public function procurementDiscrepancyRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->with(['lines', 'matchRuns.exceptions.documentLine', 'matchRuns.lines'])
+            ->where('business_id', $businessId)
+            ->where('document_type', 'supplier_invoice')
+            ->whereHas('matchRuns.exceptions', function ($query) {
+                $query->where('status', 'open');
+            })
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'counterparty_id',
+                'currency_code',
+                'meta',
+            ])
+            ->flatMap(function (FinanceDocument $document) {
+                $matchRun = $this->latestMatchRun($document);
+                if (! $matchRun) {
+                    return collect();
+                }
+
+                return $matchRun->exceptions
+                    ->where('status', 'open')
+                    ->map(function ($exception) use ($document, $matchRun) {
+                        return (object) [
+                            'document_id' => $document->id,
+                            'document_no' => $document->document_no ?: ('#' . $document->id),
+                            'document_date' => optional($document->document_date)->format('Y-m-d') ?: '-',
+                            'workflow_status' => (string) $document->workflow_status,
+                            'counterparty_id' => $document->counterparty_id,
+                            'currency_code' => $document->currency_code,
+                            'gross_amount' => (float) $document->gross_amount,
+                            'match_status' => (string) $matchRun->status,
+                            'blocking_exception_count' => (int) $matchRun->blocking_exception_count,
+                            'warning_count' => (int) $matchRun->warning_count,
+                            'severity' => (string) $exception->severity,
+                            'code' => (string) $exception->code,
+                            'message' => (string) $exception->message,
+                            'line_no' => (int) optional($exception->documentLine)->line_no,
+                            'product_id' => (int) optional($exception->documentLine)->product_id,
+                            'meta' => (array) ($exception->meta ?? []),
+                        ];
+                    });
+            })
+            ->sortBy([
+                fn ($row) => $row->severity === 'blocking' ? 0 : 1,
+                fn ($row) => $row->document_date,
+                fn ($row) => $row->document_no,
+            ])
+            ->values();
+    }
+
     public function expenseRegisterRows(int $businessId, int $limit = 250): Collection
     {
         if (! Schema::hasTable('vas_fin_documents')) {
@@ -240,6 +367,58 @@ class EnterpriseFinanceReportUtil
                 'currency_code',
                 'meta',
             ]);
+    }
+
+    public function expenseEscalationAuditRows(int $businessId, int $limit = 250): Collection
+    {
+        if (! Schema::hasTable('vas_fin_documents')) {
+            return collect();
+        }
+
+        return FinanceDocument::query()
+            ->with(['approvalInstances.steps'])
+            ->where('business_id', $businessId)
+            ->where('document_family', 'expense_management')
+            ->whereIn('document_type', ['expense_claim', 'advance_request', 'advance_settlement', 'reimbursement_voucher'])
+            ->whereHas('approvalInstances.steps', function ($query) {
+                $query->where(function ($stepQuery) {
+                    $stepQuery->where('status', 'pending')
+                        ->orWhereNotNull(DB::raw("JSON_EXTRACT(meta, '$.last_escalated_at')"))
+                        ->orWhereNotNull(DB::raw("JSON_EXTRACT(meta, '$.escalation_dispatch_status')"));
+                });
+            })
+            ->orderByDesc(DB::raw('COALESCE(posting_date, document_date)'))
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get([
+                'id',
+                'document_no',
+                'document_type',
+                'document_date',
+                'posting_date',
+                'workflow_status',
+                'accounting_status',
+                'gross_amount',
+                'open_amount',
+                'currency_code',
+                'meta',
+            ]);
+    }
+
+    protected function latestMatchRun(FinanceDocument $document): ?FinanceMatchRun
+    {
+        $latestRunId = (int) data_get($document->meta, 'matching.latest_run_id', 0);
+
+        if ($latestRunId > 0) {
+            $run = $document->matchRuns->firstWhere('id', $latestRunId);
+            if ($run instanceof FinanceMatchRun) {
+                return $run;
+            }
+        }
+
+        $run = $document->matchRuns->first();
+
+        return $run instanceof FinanceMatchRun ? $run : null;
     }
 
     public function salesVatBook(int $businessId): Collection

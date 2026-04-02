@@ -112,6 +112,7 @@
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_depreciation') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.unreconciled_bank') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_treasury_docs') }}</th>
+                            <th>{{ __('vasaccounting::lang.views.closing.control_board.table.procurement_blockers') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.expense_blockers') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_approvals') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.checklist') }}</th>
@@ -124,7 +125,8 @@
                                 $periodChecklists = $checklists[$period->id];
                                 $completedChecklistCount = $periodChecklists->where('status', 'completed')->count();
                                 $periodTreasury = $treasuryInsights[$period->id] ?? ['pending_documents' => collect(), 'exceptions' => collect()];
-                                $periodExpense = $expenseInsights[$period->id] ?? ['pending_documents' => collect(), 'outstanding_documents' => collect()];
+                                $periodProcurement = $procurementInsights[$period->id] ?? ['pending_documents' => collect(), 'receiving_documents' => collect(), 'matching_documents' => collect()];
+                                $periodExpense = $expenseInsights[$period->id] ?? ['pending_documents' => collect(), 'outstanding_documents' => collect(), 'escalated_approvals' => collect()];
                             @endphp
                             <tr>
                                 <td>{{ $vasAccountingUtil->localizedPeriodName($period->name) }}</td>
@@ -138,7 +140,8 @@
                                 <td>{{ $blockers[$period->id]['pending_depreciation'] }}</td>
                                 <td>{{ $blockers[$period->id]['unreconciled_bank_lines'] }}</td>
                                 <td>{{ $blockers[$period->id]['pending_treasury_documents'] }}</td>
-                                <td>{{ $blockers[$period->id]['pending_expense_documents'] + $blockers[$period->id]['outstanding_expense_documents'] }}</td>
+                                <td>{{ $blockers[$period->id]['pending_procurement_documents'] + $blockers[$period->id]['receiving_procurement_documents'] + $blockers[$period->id]['matching_procurement_documents'] }}</td>
+                                <td>{{ $blockers[$period->id]['pending_expense_documents'] + $blockers[$period->id]['outstanding_expense_documents'] + $blockers[$period->id]['escalated_expense_approvals'] }}</td>
                                 <td>{{ $blockers[$period->id]['pending_approvals'] }}</td>
                                 <td>{{ $completedChecklistCount }}/{{ $periodChecklists->count() }}</td>
                                 <td class="text-end">
@@ -173,7 +176,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="11" class="bg-light-secondary">
+                                <td colspan="12" class="bg-light-secondary">
                                     <div class="d-flex flex-wrap gap-2">
                                         @foreach ($periodChecklists as $item)
                                             <span class="badge {{ $item->status === 'completed' ? 'badge-light-success' : 'badge-light-danger' }}">
@@ -245,7 +248,105 @@
                                     </div>
 
                                     <div class="row g-5 mt-1">
-                                        <div class="col-xl-6">
+                                        <div class="col-xl-4">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.procurement.pending_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.pending_subtitle') }}</div>
+                                                    </div>
+                                                    <a href="{{ route('vasaccounting.procurement.index', ['period_id' => $period->id, 'focus' => 'pending_documents']) }}#procurement-register" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.review_pending') }}</a>
+                                                </div>
+
+                                                @forelse ($periodProcurement['pending_documents'] as $document)
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $document->document_no ?: ('#' . $document->id) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ \Illuminate\Support\Str::headline((string) $document->document_type) }}
+                                                                |
+                                                                {{ optional($document->posting_date ?: $document->document_date)->format('Y-m-d') ?: '-' }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">{{ number_format((float) $document->gross_amount, 2) }} {{ $document->currency_code }}</div>
+                                                            <span class="badge badge-light-warning mt-1">{{ $vasAccountingUtil->genericStatusLabel((string) $document->workflow_status) }}</span>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.pending_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-4">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.procurement.receiving_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.receiving_subtitle') }}</div>
+                                                    </div>
+                                                    <a href="{{ route('vasaccounting.procurement.index', ['period_id' => $period->id, 'focus' => 'receiving_queue']) }}#procurement-register" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.review_receiving') }}</a>
+                                                </div>
+
+                                                @forelse ($periodProcurement['receiving_documents'] as $document)
+                                                    @php($childReceiptCount = $document->childLinks->pluck('childDocument')->filter(fn ($child) => $child && $child->document_type === 'goods_receipt')->count())
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $document->document_no ?: ('#' . $document->id) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ \Illuminate\Support\Str::headline((string) $document->workflow_status) }}
+                                                                |
+                                                                {{ optional($document->document_date)->format('Y-m-d') ?: '-' }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">{{ $childReceiptCount }}</div>
+                                                            <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.receipts_recorded') }}</div>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.receiving_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-4">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.procurement.matching_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.matching_subtitle') }}</div>
+                                                    </div>
+                                                    <a href="{{ route('vasaccounting.procurement.index', ['period_id' => $period->id, 'focus' => 'pending_matching']) }}#procurement-register" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.procurement.review_matching') }}</a>
+                                                </div>
+
+                                                @forelse ($periodProcurement['matching_documents'] as $document)
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $document->document_no ?: ('#' . $document->id) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ data_get($document->meta, 'matching.latest_status')
+                                                                    ? strtoupper((string) data_get($document->meta, 'matching.latest_status'))
+                                                                    : __('vasaccounting::lang.views.closing.control_board.procurement.awaiting_match') }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">
+                                                                {{ (int) data_get($document->meta, 'matching.blocking_exception_count', 0) }}
+                                                                /
+                                                                {{ (int) data_get($document->meta, 'matching.warning_count', 0) }}
+                                                            </div>
+                                                            <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.match_exception_counts') }}</div>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.procurement.matching_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-5 mt-1">
+                                        <div class="col-xl-4">
                                             <div class="border border-gray-300 rounded p-4 bg-white">
                                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                                     <div>
@@ -274,7 +375,7 @@
                                                 @endforelse
                                             </div>
                                         </div>
-                                        <div class="col-xl-6">
+                                        <div class="col-xl-4">
                                             <div class="border border-gray-300 rounded p-4 bg-white">
                                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                                     <div>
@@ -301,6 +402,38 @@
                                                     </div>
                                                 @empty
                                                     <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.expenses.outstanding_empty') }}</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-4">
+                                            <div class="border border-gray-300 rounded p-4 bg-white">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <div class="fw-bold text-gray-900">{{ __('vasaccounting::lang.views.closing.control_board.expenses.escalated_title') }}</div>
+                                                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.expenses.escalated_subtitle') }}</div>
+                                                    </div>
+                                                    <a href="{{ route('vasaccounting.expenses.index', ['period_id' => $period->id, 'focus' => 'escalated_approvals']) }}#expense-register" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.closing.control_board.expenses.review_escalated') }}</a>
+                                                </div>
+
+                                                @forelse ($periodExpense['escalated_approvals'] as $document)
+                                                    <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-gray-200">
+                                                        <div>
+                                                            <div class="fw-semibold text-gray-900">{{ $document->document_no ?: ('#' . $document->id) }}</div>
+                                                            <div class="text-muted fs-8">
+                                                                {{ \Illuminate\Support\Str::headline((string) $document->document_type) }}
+                                                                |
+                                                                {{ data_get($document, 'approval_close_insight.current_step_role_label')
+                                                                    ?: data_get($document, 'approval_close_insight.current_step_label')
+                                                                    ?: __('vasaccounting::lang.views.closing.control_board.expenses.pending_reviewer') }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-gray-900">{{ data_get($document, 'approval_close_insight.sla_label', __('vasaccounting::lang.views.closing.control_board.expenses.no_sla')) }}</div>
+                                                            <div class="text-muted fs-8">{{ data_get($document, 'approval_close_insight.escalation_message', __('vasaccounting::lang.views.closing.control_board.expenses.no_escalation_path')) }}</div>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.closing.control_board.expenses.escalated_empty') }}</div>
                                                 @endforelse
                                             </div>
                                         </div>

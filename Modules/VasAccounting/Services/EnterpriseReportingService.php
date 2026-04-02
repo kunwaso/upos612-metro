@@ -9,6 +9,7 @@ use Modules\VasAccounting\Entities\VasIntegrationRun;
 use Modules\VasAccounting\Entities\VasIntegrationWebhook;
 use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Entities\VasReportSnapshot;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService;
 use Modules\VasAccounting\Utils\EnterpriseFinanceReportUtil;
 use Modules\VasAccounting\Utils\EnterprisePlanningReportUtil;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
@@ -20,7 +21,8 @@ class EnterpriseReportingService
         protected EnterpriseFinanceReportUtil $enterpriseReportUtil,
         protected OperationsAssetReportUtil $operationsAssetReportUtil,
         protected EnterprisePlanningReportUtil $planningReportUtil,
-        protected VasPeriodCloseService $periodCloseService
+        protected VasPeriodCloseService $periodCloseService,
+        protected ExpenseApprovalMonitorService $expenseApprovalMonitorService
     ) {
     }
 
@@ -37,8 +39,13 @@ class EnterpriseReportingService
             'receivables' => ['title' => 'Receivables Aging', 'route' => 'vasaccounting.reports.receivables', 'description' => 'Outstanding customer invoices and aging.', 'group' => 'Subledger'],
             'payables' => ['title' => 'Payables Aging', 'route' => 'vasaccounting.reports.payables', 'description' => 'Outstanding vendor bills and aging.', 'group' => 'Subledger'],
             'invoice_register' => ['title' => 'Invoice Register', 'route' => 'vasaccounting.reports.invoice_register', 'description' => 'Sales and purchase invoice register with e-invoice status.', 'group' => 'Subledger'],
+            'purchase_register' => ['title' => 'Purchase Register', 'route' => 'vasaccounting.reports.purchase_register', 'description' => 'Canonical purchase requisitions, orders, and supplier invoices.', 'group' => 'Operations'],
+            'goods_receipt_register' => ['title' => 'Goods Receipt Register', 'route' => 'vasaccounting.reports.goods_receipt_register', 'description' => 'Canonical goods receipts with linked PO and invoice visibility.', 'group' => 'Operations'],
+            'procurement_discrepancies' => ['title' => 'Procurement Discrepancies', 'route' => 'vasaccounting.reports.procurement_discrepancies', 'description' => 'Latest supplier invoice matching exceptions and mismatch backlog.', 'group' => 'Operations'],
+            'procurement_aging' => ['title' => 'Procurement Aging', 'route' => 'vasaccounting.reports.procurement_aging', 'description' => 'Open procurement workflow aging across requisitions, orders, and supplier invoices.', 'group' => 'Operations'],
             'expense_outstanding' => ['title' => 'Expense Outstanding', 'route' => 'vasaccounting.reports.expense_outstanding', 'description' => 'Open employee advances and unresolved expense claims.', 'group' => 'Subledger'],
             'expense_register' => ['title' => 'Expense Register', 'route' => 'vasaccounting.reports.expense_register', 'description' => 'Native expense claims, advances, settlements, and reimbursements.', 'group' => 'Operations'],
+            'expense_escalation_audit' => ['title' => 'Expense Escalation Audit', 'route' => 'vasaccounting.reports.expense_escalation_audit', 'description' => 'Overdue, escalated, failed, and retried expense approval dispatch controls.', 'group' => 'Operations'],
             'inventory' => ['title' => 'Inventory Valuation', 'route' => 'vasaccounting.reports.inventory', 'description' => 'Weighted-average inventory reporting.', 'group' => 'Operations'],
             'fixed_assets' => ['title' => 'Fixed Asset Register', 'route' => 'vasaccounting.reports.fixed_assets', 'description' => 'Capitalized assets and depreciation.', 'group' => 'Operations'],
             'payroll_bridge' => ['title' => 'Payroll Bridge', 'route' => 'vasaccounting.reports.payroll_bridge', 'description' => 'Essentials payroll groups and bridge status.', 'group' => 'Planning'],
@@ -83,8 +90,13 @@ class EnterpriseReportingService
             'receivables' => $this->receivables($businessId),
             'payables' => $this->payables($businessId),
             'invoice_register' => $this->invoiceRegister($businessId),
+            'purchase_register' => $this->purchaseRegister($businessId),
+            'goods_receipt_register' => $this->goodsReceiptRegister($businessId),
+            'procurement_discrepancies' => $this->procurementDiscrepancies($businessId),
+            'procurement_aging' => $this->procurementAging($businessId),
             'expense_outstanding' => $this->expenseOutstanding($businessId),
             'expense_register' => $this->expenseRegister($businessId),
+            'expense_escalation_audit' => $this->expenseEscalationAudit($businessId),
             'inventory' => $this->inventory($businessId),
             'fixed_assets' => $this->fixedAssets($businessId),
             'payroll_bridge' => $this->payrollBridge($businessId),
@@ -225,6 +237,255 @@ class EnterpriseReportingService
         );
     }
 
+    protected function purchaseRegister(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->purchaseRegisterRows($businessId);
+        $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+
+        return $this->dataset(
+            'Purchase Register',
+            ['Document', 'Type', 'Supplier', 'Parent', 'Document Date', 'Quantity', 'Gross Amount', 'Workflow', 'Match'],
+            $rows->map(function ($document) use ($supplierLabels) {
+                $parentDocument = optional($document->parentLinks->first())->parentDocument;
+
+                return [
+                    $document->document_no ?: ('#' . $document->id),
+                    $document->document_type,
+                    $supplierLabels[(int) $document->counterparty_id] ?? ('Supplier #' . (int) $document->counterparty_id),
+                    $parentDocument?->document_no ?: '-',
+                    optional($document->document_date)->format('Y-m-d') ?: '-',
+                    $document->lines->sum(fn ($line) => (float) $line->quantity),
+                    $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                    ucfirst((string) $document->workflow_status),
+                    data_get($document->meta, 'matching.latest_status') ?: '-',
+                ];
+            }),
+            [
+                ['label' => 'Documents', 'value' => $rows->count()],
+                ['label' => 'Supplier invoices', 'value' => $rows->where('document_type', 'supplier_invoice')->count()],
+                ['label' => 'Posted docs', 'value' => $rows->where('workflow_status', 'posted')->count()],
+                ['label' => 'Gross total', 'value' => $this->money($rows->sum('gross_amount'))],
+            ],
+            [
+                [
+                    'title' => 'Purchase Document Mix',
+                    'subtitle' => 'See how requisitions, orders, and supplier invoices are moving through the canonical procurement workspace.',
+                    'columns' => ['Type', 'Documents', 'Gross Total', 'Quantity'],
+                    'rows' => $rows
+                        ->groupBy('document_type')
+                        ->map(function ($documents, $documentType) {
+                            return [
+                                $documentType,
+                                $documents->count(),
+                                $this->money($documents->sum('gross_amount')),
+                                $documents->sum(fn ($document) => $document->lines->sum(fn ($line) => (float) $line->quantity)),
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No canonical procurement documents have been recorded yet.',
+                ],
+            ],
+            [
+                [
+                    'label' => 'Open procurement workspace',
+                    'url' => route('vasaccounting.procurement.index'),
+                    'style' => 'light-primary',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Review matching queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'pending_matching']),
+                    'style' => 'light-warning',
+                    'method' => 'GET',
+                ],
+            ]
+        );
+    }
+
+    protected function goodsReceiptRegister(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->goodsReceiptRegisterRows($businessId);
+        $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+
+        return $this->dataset(
+            'Goods Receipt Register',
+            ['Receipt', 'Supplier', 'Parent PO', 'Posting Date', 'Quantity', 'Gross Amount', 'Workflow', 'Child Invoices'],
+            $rows->map(function ($document) use ($supplierLabels) {
+                $parentDocument = optional($document->parentLinks->first())->parentDocument;
+                $childInvoiceCount = $document->childLinks
+                    ->pluck('childDocument')
+                    ->filter(fn ($child) => $child && $child->document_type === 'supplier_invoice')
+                    ->count();
+
+                return [
+                    $document->document_no ?: ('#' . $document->id),
+                    $supplierLabels[(int) $document->counterparty_id] ?? ('Supplier #' . (int) $document->counterparty_id),
+                    $parentDocument?->document_no ?: '-',
+                    optional($document->posting_date)->format('Y-m-d') ?: optional($document->document_date)->format('Y-m-d') ?: '-',
+                    $document->lines->sum(fn ($line) => (float) $line->quantity),
+                    $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                    ucfirst((string) $document->workflow_status),
+                    $childInvoiceCount,
+                ];
+            }),
+            [
+                ['label' => 'Receipts', 'value' => $rows->count()],
+                ['label' => 'Posted receipts', 'value' => $rows->where('workflow_status', 'posted')->count()],
+                ['label' => 'Total quantity', 'value' => $rows->sum(fn ($document) => $document->lines->sum(fn ($line) => (float) $line->quantity))],
+                ['label' => 'Gross total', 'value' => $this->money($rows->sum('gross_amount'))],
+            ],
+            [],
+            [
+                [
+                    'label' => 'Open procurement workspace',
+                    'url' => route('vasaccounting.procurement.index'),
+                    'style' => 'light-primary',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Review receiving queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'receiving_queue']),
+                    'style' => 'light-warning',
+                    'method' => 'GET',
+                ],
+            ]
+        );
+    }
+
+    protected function procurementDiscrepancies(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->procurementDiscrepancyRows($businessId);
+        $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+
+        return $this->dataset(
+            'Procurement Discrepancies',
+            ['Invoice', 'Supplier', 'Severity', 'Code', 'Message', 'Line', 'Match Summary', 'Amount'],
+            $rows->map(function ($row) use ($supplierLabels) {
+                return [
+                    $row->document_no,
+                    $supplierLabels[(int) $row->counterparty_id] ?? ('Supplier #' . (int) $row->counterparty_id),
+                    strtoupper((string) $row->severity),
+                    $row->code,
+                    $row->message,
+                    $row->line_no > 0 ? ('Line #' . $row->line_no) : 'Header',
+                    str($row->match_status)->replace('_', ' ')->title() . ' | B' . $row->blocking_exception_count . ' / W' . $row->warning_count,
+                    $this->money($row->gross_amount) . ' ' . $row->currency_code,
+                ];
+            }),
+            [
+                ['label' => 'Open discrepancies', 'value' => $rows->count()],
+                ['label' => 'Blocking', 'value' => $rows->where('severity', 'blocking')->count()],
+                ['label' => 'Warnings', 'value' => $rows->where('severity', 'warning')->count()],
+                ['label' => 'Affected invoices', 'value' => $rows->pluck('document_id')->unique()->count()],
+            ],
+            [
+                [
+                    'title' => 'Discrepancy Code Mix',
+                    'subtitle' => 'See which procurement mismatch types are driving the current supplier-invoice exception queue.',
+                    'columns' => ['Code', 'Severity', 'Rows'],
+                    'rows' => $rows
+                        ->groupBy(fn ($row) => $row->code . '|' . $row->severity)
+                        ->map(function ($group, $key) {
+                            [$code, $severity] = explode('|', (string) $key, 2);
+
+                            return [$code, strtoupper($severity), $group->count()];
+                        })
+                        ->values()
+                        ->all(),
+                    'empty' => 'No open procurement discrepancies are currently queued.',
+                ],
+            ],
+            [
+                [
+                    'label' => 'Open discrepancy queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'discrepancy_queue']),
+                    'style' => 'light-danger',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Open matching queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'pending_matching']),
+                    'style' => 'light-warning',
+                    'method' => 'GET',
+                ],
+            ]
+        );
+    }
+
+    protected function procurementAging(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->purchaseRegisterRows($businessId)
+            ->filter(fn ($document) => ! in_array((string) $document->workflow_status, ['closed', 'cancelled', 'posted'], true))
+            ->values();
+        $supplierLabels = $this->contactLabels($rows->pluck('counterparty_id')->filter()->all());
+
+        $agingRows = $rows->map(function ($document) use ($supplierLabels) {
+            $ageDate = $document->posting_date ?: $document->document_date;
+            $ageDays = $ageDate ? $ageDate->diffInDays(now()) : 0;
+
+            return (object) [
+                'document_no' => $document->document_no ?: ('#' . $document->id),
+                'document_type' => (string) $document->document_type,
+                'supplier' => $supplierLabels[(int) $document->counterparty_id] ?? ('Supplier #' . (int) $document->counterparty_id),
+                'workflow_status' => (string) $document->workflow_status,
+                'age_days' => $ageDays,
+                'age_bucket' => $this->agingBucketLabel($ageDays),
+                'gross_amount' => (float) $document->gross_amount,
+                'currency_code' => (string) $document->currency_code,
+                'matching_status' => (string) (data_get($document->meta, 'matching.latest_status') ?: '-'),
+            ];
+        })->values();
+
+        return $this->dataset(
+            'Procurement Aging',
+            ['Document', 'Type', 'Supplier', 'Workflow', 'Age (Days)', 'Aging Bucket', 'Match', 'Gross Amount'],
+            $agingRows->map(fn ($row) => [
+                $row->document_no,
+                $row->document_type,
+                $row->supplier,
+                ucfirst($row->workflow_status),
+                $row->age_days,
+                $row->age_bucket,
+                $row->matching_status !== '-' ? str($row->matching_status)->replace('_', ' ')->title() : '-',
+                $this->money($row->gross_amount) . ' ' . $row->currency_code,
+            ]),
+            [
+                ['label' => 'Open workflow docs', 'value' => $agingRows->count()],
+                ['label' => 'Older than 7 days', 'value' => $agingRows->where('age_days', '>', 7)->count()],
+                ['label' => 'Supplier invoices', 'value' => $agingRows->where('document_type', 'supplier_invoice')->count()],
+                ['label' => 'Gross total', 'value' => $this->money($agingRows->sum('gross_amount'))],
+            ],
+            [
+                [
+                    'title' => 'Aging Bucket Mix',
+                    'subtitle' => 'See how much of the procurement workflow is current versus drifting into stale operational backlog.',
+                    'columns' => ['Aging Bucket', 'Documents'],
+                    'rows' => $agingRows
+                        ->groupBy('age_bucket')
+                        ->map(fn ($group, $bucket) => [$bucket, $group->count()])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No open procurement workflow items are aging right now.',
+                ],
+            ],
+            [
+                [
+                    'label' => 'Review procurement queue',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'pending_documents']),
+                    'style' => 'light-primary',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Review discrepancies',
+                    'url' => route('vasaccounting.procurement.index', ['focus' => 'discrepancy_queue']),
+                    'style' => 'light-warning',
+                    'method' => 'GET',
+                ],
+            ]
+        );
+    }
+
     protected function expenseOutstanding(int $businessId): array
     {
         $rows = $this->enterpriseReportUtil->expenseOutstandingRows($businessId);
@@ -302,6 +563,73 @@ class EnterpriseReportingService
                         ->values()
                         ->all(),
                     'empty' => 'No expense documents have been posted into the native register yet.',
+                ],
+            ]
+        );
+    }
+
+    protected function expenseEscalationAudit(int $businessId): array
+    {
+        $rows = $this->enterpriseReportUtil->expenseEscalationAuditRows($businessId);
+        $insights = $this->expenseApprovalMonitorService->buildInsights($rows);
+        $filteredRows = $rows->filter(function ($document) use ($insights) {
+            $insight = $insights[$document->id] ?? [];
+
+            return ($insight['sla_state'] ?? null) === 'overdue'
+                || (int) ($insight['escalation_count'] ?? 0) > 0
+                || filled($insight['dispatch_status'] ?? null);
+        })->values();
+
+        return $this->dataset(
+            'Expense Escalation Audit',
+            ['Document', 'Type', 'Claimant', 'Current Approver', 'SLA', 'Escalations', 'Dispatch', 'Dispatch Error'],
+            $filteredRows->map(function ($document) use ($insights) {
+                $insight = $insights[$document->id] ?? [];
+                $expense = (array) data_get($document->meta, 'expense', []);
+
+                return [
+                    $document->document_no ?: ('#' . $document->id),
+                    $document->document_type,
+                    $expense['claimant_name'] ?? 'Unassigned',
+                    $insight['current_step_role_label'] ?? $insight['current_step_label'] ?? 'Pending review',
+                    $insight['sla_label'] ?? 'No SLA',
+                    (int) ($insight['escalation_count'] ?? 0),
+                    $insight['dispatch_status_label'] ?? 'No dispatch',
+                    $insight['dispatch_error'] ?? '-',
+                ];
+            }),
+            [
+                ['label' => 'Documents in audit', 'value' => $filteredRows->count()],
+                ['label' => 'Overdue approvals', 'value' => collect($insights)->where('sla_state', 'overdue')->count()],
+                ['label' => 'Failed dispatches', 'value' => collect($insights)->where('dispatch_status', 'failed')->count()],
+                ['label' => 'Queued dispatches', 'value' => collect($insights)->where('dispatch_status', 'queued')->count()],
+            ],
+            [
+                [
+                    'title' => 'Dispatch Status Mix',
+                    'subtitle' => 'Monitor whether escalation notifications are queued, delivered, or failing by active approval document.',
+                    'columns' => ['Dispatch Status', 'Documents'],
+                    'rows' => collect($insights)
+                        ->groupBy(fn ($insight) => $insight['dispatch_status_label'] ?? 'No dispatch')
+                        ->map(fn ($group, $label) => [$label, count($group)])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No escalation dispatch activity has been recorded yet.',
+                ],
+            ],
+            [
+                [
+                    'label' => 'Open escalated approvals',
+                    'url' => route('vasaccounting.expenses.index', ['focus' => 'escalated_approvals']),
+                    'style' => 'light-primary',
+                    'method' => 'GET',
+                ],
+                [
+                    'label' => 'Retry failed dispatches',
+                    'url' => route('vasaccounting.reports.expense_escalation_audit.retry_failed_dispatches'),
+                    'style' => 'light-warning',
+                    'method' => 'POST',
+                    'confirm' => 'Retry all failed escalation dispatches from this audit report?',
                 ],
             ]
         );
@@ -419,6 +747,7 @@ class EnterpriseReportingService
         $blockers = $this->periodCloseService->blockers($businessId, $period);
         $checklists = $this->periodCloseService->checklistForPeriod($businessId, $period);
         $treasuryInsights = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
+        $procurementInsights = $this->periodCloseService->procurementCloseInsights($businessId, $period);
         $expenseInsights = $this->periodCloseService->expenseCloseInsights($businessId, $period);
         $blockedCount = collect($blockers)->reduce(function ($carry, $value, $key) {
             if ($key === 'posting_map_incomplete') {
@@ -438,8 +767,12 @@ class EnterpriseReportingService
                 ['label' => 'Blocked items', 'value' => $blockedCount],
                 ['label' => 'Pending treasury docs', 'value' => $blockers['pending_treasury_documents']],
                 ['label' => 'Treasury exceptions', 'value' => $blockers['unreconciled_bank_lines']],
+                ['label' => 'Pending procurement docs', 'value' => $blockers['pending_procurement_documents']],
+                ['label' => 'Receiving backlog', 'value' => $blockers['receiving_procurement_documents']],
+                ['label' => 'Matching backlog', 'value' => $blockers['matching_procurement_documents']],
                 ['label' => 'Pending expense docs', 'value' => $blockers['pending_expense_documents']],
                 ['label' => 'Outstanding expense balances', 'value' => $blockers['outstanding_expense_documents']],
+                ['label' => 'Escalated expense approvals', 'value' => $blockers['escalated_expense_approvals']],
             ],
             [
                 [
@@ -472,6 +805,55 @@ class EnterpriseReportingService
                     'empty' => 'No treasury reconciliation exceptions are blocking close for this period.',
                 ],
                 [
+                    'title' => 'Pending Procurement Documents',
+                    'subtitle' => 'Procurement workflow items that still need draft, approval, or posting readiness work before close.',
+                    'columns' => ['Document', 'Type', 'Workflow', 'Accounting', 'Amount'],
+                    'rows' => $procurementInsights['pending_documents']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            $document->document_type,
+                            ucfirst((string) $document->workflow_status),
+                            ucfirst((string) $document->accounting_status),
+                            $this->money($document->gross_amount) . ' ' . $document->currency_code,
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No procurement workflow documents are blocking close for this period.',
+                ],
+                [
+                    'title' => 'Receiving Backlog',
+                    'subtitle' => 'Approved or partially received purchase orders that still require operational receiving progression.',
+                    'columns' => ['Purchase Order', 'Workflow', 'Document Date', 'Receipts Recorded'],
+                    'rows' => $procurementInsights['receiving_documents']->map(function ($document) {
+                        $childReceiptCount = $document->childLinks
+                            ->pluck('childDocument')
+                            ->filter(fn ($child) => $child && $child->document_type === 'goods_receipt')
+                            ->count();
+
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            ucfirst((string) $document->workflow_status),
+                            optional($document->document_date)->format('Y-m-d') ?: '-',
+                            $childReceiptCount,
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No purchase orders remain in the receiving backlog for this period.',
+                ],
+                [
+                    'title' => 'Supplier Invoice Matching Backlog',
+                    'subtitle' => 'Supplier invoices that still need clean 2-way or 3-way matching before close readiness is achieved.',
+                    'columns' => ['Invoice', 'Workflow', 'Match Status', 'Blocking Exceptions', 'Warnings'],
+                    'rows' => $procurementInsights['matching_documents']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            ucfirst((string) $document->workflow_status),
+                            data_get($document->meta, 'matching.latest_status') ?: 'awaiting_match',
+                            (int) data_get($document->meta, 'matching.blocking_exception_count', 0),
+                            (int) data_get($document->meta, 'matching.warning_count', 0),
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No supplier invoices are blocking close with matching backlog for this period.',
+                ],
+                [
                     'title' => 'Pending Expense Documents',
                     'subtitle' => 'Native expense documents in the close period that still need workflow or posting action.',
                     'columns' => ['Document', 'Type', 'Workflow', 'Accounting', 'Amount'],
@@ -500,6 +882,23 @@ class EnterpriseReportingService
                         ];
                     })->values()->all(),
                     'empty' => 'No expense advances or claims remain outstanding through the period end.',
+                ],
+                [
+                    'title' => 'Escalated Expense Approvals',
+                    'subtitle' => 'Expense documents whose active approval step has already breached its configured SLA and needs escalation attention.',
+                    'columns' => ['Document', 'Type', 'Current Approver', 'SLA', 'Escalation'],
+                    'rows' => $expenseInsights['escalated_approvals']->map(function ($document) {
+                        return [
+                            $document->document_no ?: ('#' . $document->id),
+                            $document->document_type,
+                            data_get($document, 'approval_close_insight.current_step_role_label')
+                                ?: data_get($document, 'approval_close_insight.current_step_label')
+                                ?: 'Pending review',
+                            data_get($document, 'approval_close_insight.sla_label', 'No SLA'),
+                            data_get($document, 'approval_close_insight.escalation_message', 'Escalation path not configured'),
+                        ];
+                    })->values()->all(),
+                    'empty' => 'No escalated expense approvals are blocking close for this period.',
                 ],
             ]
         );
@@ -535,7 +934,17 @@ class EnterpriseReportingService
         );
     }
 
-    protected function dataset(string $title, array $columns, Collection $rows, array $summary = [], array $sections = []): array
+    protected function agingBucketLabel(int $ageDays): string
+    {
+        return match (true) {
+            $ageDays <= 3 => '0-3 days',
+            $ageDays <= 7 => '4-7 days',
+            $ageDays <= 14 => '8-14 days',
+            default => '15+ days',
+        };
+    }
+
+    protected function dataset(string $title, array $columns, Collection $rows, array $summary = [], array $sections = [], array $actions = []): array
     {
         return [
             'title' => $title,
@@ -543,7 +952,31 @@ class EnterpriseReportingService
             'rows' => $rows->values()->all(),
             'summary' => $summary,
             'sections' => $sections,
+            'actions' => $actions,
         ];
+    }
+
+    protected function contactLabels(array $contactIds): array
+    {
+        $ids = collect($contactIds)->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('contacts')
+            ->whereIn('id', $ids->all())
+            ->select('id', 'name', 'supplier_business_name')
+            ->get()
+            ->mapWithKeys(function ($contact) {
+                $label = trim((string) ($contact->name ?? ''));
+                $supplierBusinessName = trim((string) ($contact->supplier_business_name ?? ''));
+                if ($supplierBusinessName !== '') {
+                    $label = trim($label . ' (' . $supplierBusinessName . ')');
+                }
+
+                return [(int) $contact->id => $label !== '' ? $label : ('Contact #' . (int) $contact->id)];
+            })
+            ->all();
     }
 
     protected function money($value): string

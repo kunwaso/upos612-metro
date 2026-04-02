@@ -77,8 +77,8 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
             $document = FinanceDocument::query()->findOrFail($documentId);
             $before = $document->toArray();
 
-            if (! in_array($document->workflow_status, ['draft', 'submitted'], true)) {
-                throw new RuntimeException('Only draft finance documents can be submitted for approval.');
+            if (! in_array($document->workflow_status, ['draft', 'submitted', 'rejected'], true)) {
+                throw new RuntimeException('Only draft or rejected finance documents can be submitted for approval.');
             }
 
             $oldWorkflowStatus = $document->workflow_status;
@@ -132,6 +132,32 @@ class FinanceDocumentCommandService implements FinanceDocumentServiceInterface
                 );
                 $this->recordAudit($document, 'document.approval_progressed', $context, $before, $document->fresh()->toArray());
             }
+
+            return $document->fresh(['lines', 'statusHistory', 'approvalInstances.steps']);
+        });
+    }
+
+    public function reject(int $documentId, ActionContext $context): FinanceDocument
+    {
+        return DB::transaction(function () use ($documentId, $context) {
+            $document = FinanceDocument::query()->findOrFail($documentId);
+            $before = $document->toArray();
+
+            if ($document->workflow_status !== 'submitted') {
+                throw new RuntimeException('Only submitted finance documents can be rejected.');
+            }
+
+            $this->approvalWorkflowService->reject($document, $context);
+
+            $oldWorkflowStatus = $document->workflow_status;
+            $oldAccountingStatus = $document->accounting_status;
+            $document->workflow_status = 'rejected';
+            $document->accounting_status = 'rejected';
+            $document->save();
+
+            $this->recordHistory($document, 'rejected', $oldWorkflowStatus, 'rejected', $oldAccountingStatus, 'rejected', $context);
+            $this->recordAudit($document, 'document.rejected', $context, $before, $document->fresh()->toArray());
+            $this->expenseSettlementService->syncDocumentChain($document, $context);
 
             return $document->fresh(['lines', 'statusHistory', 'approvalInstances.steps']);
         });

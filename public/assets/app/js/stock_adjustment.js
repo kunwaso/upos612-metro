@@ -134,7 +134,7 @@ $(document).ready(function() {
     });
     var detailRows = [];
 
-    $(document).on('click', 'button.delete_stock_adjustment', function(e) {
+    $(document).on('click', '.delete_stock_adjustment', function(e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -145,7 +145,12 @@ $(document).ready(function() {
             dangerMode: true,
         }).then(willDelete => {
             if (willDelete) {
-                var href = $(this).data('href');
+                var href = $(this).data('href') || $(this).attr('href');
+                if (!href) {
+                    toastr.error(LANG.something_went_wrong);
+                    return;
+                }
+
                 $.ajax({
                     method: 'DELETE',
                     url: href,
@@ -157,6 +162,12 @@ $(document).ready(function() {
                         } else {
                             toastr.error(result.msg);
                         }
+                    },
+                    error: function(xhr) {
+                        var msg =
+                            (xhr.responseJSON && (xhr.responseJSON.msg || xhr.responseJSON.message)) ||
+                            LANG.something_went_wrong;
+                        toastr.error(msg);
                     },
                 });
             }

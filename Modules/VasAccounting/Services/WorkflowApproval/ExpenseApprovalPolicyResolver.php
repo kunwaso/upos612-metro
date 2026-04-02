@@ -73,6 +73,13 @@ class ExpenseApprovalPolicyResolver
                 'approver_role' => $step['approver_role'] ?? null,
                 'permission_code' => $step['permission_code'] ?? null,
                 'label' => $step['label'] ?? null,
+                'sla_hours' => array_key_exists('sla_hours', $step) && $step['sla_hours'] !== null
+                    ? (int) $step['sla_hours']
+                    : null,
+                'warning_hours' => array_key_exists('warning_hours', $step) && $step['warning_hours'] !== null
+                    ? (int) $step['warning_hours']
+                    : null,
+                'escalation_role' => $step['escalation_role'] ?? null,
             ];
         }
 

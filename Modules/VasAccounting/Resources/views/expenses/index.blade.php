@@ -65,6 +65,30 @@
             </div>
         </div>
         <div class="col-md-3">
+            <div class="card card-flush h-100 border border-danger">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.expenses.cards.escalated_workflow') }}</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['escalated_workflow']) }}</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.expenses.cards.escalated_workflow_help') }}</div>
+                    <a
+                        href="{{ route('vasaccounting.expenses.index', array_filter(['location_id' => $selectedLocationId, 'period_id' => $closePeriod?->id, 'focus' => 'escalated_approvals'])) }}"
+                        class="btn btn-light-danger btn-sm mt-4"
+                    >
+                        {{ __('vasaccounting::lang.views.expenses.cards.review_escalated') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-flush h-100">
+                <div class="card-body">
+                    <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.expenses.cards.high_value_documents') }}</span>
+                    <div class="text-gray-900 fw-bold fs-2 mt-2">{{ number_format((int) $summary['high_value_documents']) }}</div>
+                    <div class="text-muted fs-8 mt-1">{{ __('vasaccounting::lang.views.expenses.cards.high_value_documents_help') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card card-flush h-100">
                 <div class="card-body">
                     <span class="text-muted fw-semibold fs-7">{{ __('vasaccounting::lang.views.expenses.cards.gross_amount') }}</span>
@@ -281,6 +305,9 @@
                                     @php($claimant = data_get($document->meta, 'expense.claimant_name'))
                                     @php($approvalInstance = $document->approvalInstances->first())
                                     @php($pendingApprovalStep = $approvalInstance?->steps->firstWhere('status', 'pending'))
+                                    @php($approvalSteps = collect($approvalInstance?->steps ?? []))
+                                    @php($rejectedApprovalStep = $approvalSteps->firstWhere('status', 'rejected'))
+                                    @php($approvalInsight = $approvalInsights[$document->id] ?? [])
                                     @php($expenseChain = (array) data_get($document->meta, 'expense_chain', []))
                                     <tr>
                                         <td>
@@ -306,12 +333,79 @@
                                                         {{ __('vasaccounting::lang.views.expenses.table.approval_policy') }}:
                                                         {{ $approvalInstance->policy_code ?: __('vasaccounting::lang.views.expenses.table.no_policy') }}
                                                     </span>
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.approval_progress') }}:
+                                                        {{ (int) ($approvalInstance->current_step_no ?: 1) }}/{{ max(1, $approvalSteps->count()) }}
+                                                    </span>
+                                                    @if (! empty($approvalInsight['threshold_label']))
+                                                        <span class="text-muted fs-8">
+                                                            {{ __('vasaccounting::lang.views.expenses.table.threshold') }}:
+                                                            {{ $approvalInsight['threshold_label'] }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                                 @if ($pendingApprovalStep)
                                                     <span class="text-muted fs-8">
                                                         {{ __('vasaccounting::lang.views.expenses.table.waiting_on') }}:
-                                                        {{ $pendingApprovalStep->approver_role ?: __('vasaccounting::lang.views.expenses.table.manual_reviewer') }}
+                                                        {{ $approvalInsight['current_step_role_label'] ?? ($pendingApprovalStep->approver_role ?: __('vasaccounting::lang.views.expenses.table.manual_reviewer')) }}
                                                     </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['current_step_label']))
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.current_step') }}:
+                                                        {{ $approvalInsight['current_step_label'] }}
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['sla_label']) && ($approvalInsight['sla_state'] ?? 'not_applicable') !== 'not_applicable')
+                                                    <span class="fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.approval_sla') }}:
+                                                        <span class="badge {{ $approvalInsight['sla_badge_class'] ?? 'badge-light-secondary' }}">{{ $approvalInsight['sla_label'] }}</span>
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['escalation_message']))
+                                                    <span class="text-danger fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.escalation') }}:
+                                                        {{ $approvalInsight['escalation_message'] }}
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['last_escalated_at']))
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.last_escalated') }}:
+                                                        {{ \Carbon\Carbon::parse($approvalInsight['last_escalated_at'])->format('Y-m-d H:i') }}
+                                                        @if (! empty($approvalInsight['escalation_count']))
+                                                            ({{ __('vasaccounting::lang.views.expenses.table.escalation_count', ['count' => $approvalInsight['escalation_count']]) }})
+                                                        @endif
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['last_escalation_reason']))
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.last_escalation_reason') }}:
+                                                        {{ $approvalInsight['last_escalation_reason'] }}
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['dispatch_status_label']))
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.escalation_dispatch') }}:
+                                                        {{ $approvalInsight['dispatch_status_label'] }}
+                                                    </span>
+                                                @endif
+                                                @if (! empty($approvalInsight['dispatch_error']))
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.escalation_dispatch_error') }}:
+                                                        {{ $approvalInsight['dispatch_error'] }}
+                                                    </span>
+                                                @endif
+                                                @if ($rejectedApprovalStep)
+                                                    <span class="text-muted fs-8">
+                                                        {{ __('vasaccounting::lang.views.expenses.table.rejected_by') }}:
+                                                        {{ $rejectedApprovalStep->approver_role ?: __('vasaccounting::lang.views.expenses.table.manual_reviewer') }}
+                                                    </span>
+                                                    @if ($rejectedApprovalStep->reason)
+                                                        <span class="text-muted fs-8">
+                                                            {{ __('vasaccounting::lang.views.expenses.table.rejection_reason') }}:
+                                                            {{ $rejectedApprovalStep->reason }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                                 @if (! empty($expenseChain['linked_advance_document_no']))
                                                     <span class="text-muted fs-8">
@@ -347,10 +441,12 @@
                                         </td>
                                         <td>
                                             <div class="d-flex gap-2 flex-wrap">
-                                                @if ($document->workflow_status === 'draft')
+                                                @if (in_array($document->workflow_status, ['draft', 'rejected'], true))
                                                     <form method="POST" action="{{ route('vasaccounting.expenses.submit', $document->id) }}">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-light-primary btn-sm">{{ __('vasaccounting::lang.views.expenses.actions.submit') }}</button>
+                                                        <button type="submit" class="btn btn-light-primary btn-sm">
+                                                            {{ $document->workflow_status === 'rejected' ? __('vasaccounting::lang.views.expenses.actions.resubmit') : __('vasaccounting::lang.views.expenses.actions.submit') }}
+                                                        </button>
                                                     </form>
                                                 @endif
                                                 @if ($document->workflow_status === 'submitted')
@@ -358,6 +454,43 @@
                                                         @csrf
                                                         <button type="submit" class="btn btn-light-success btn-sm">{{ __('vasaccounting::lang.views.expenses.actions.approve') }}</button>
                                                     </form>
+                                                    <form method="POST" action="{{ route('vasaccounting.expenses.reject', $document->id) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="reason" value="">
+                                                        <button
+                                                            type="submit"
+                                                            class="btn btn-light-danger btn-sm"
+                                                            onclick="var reason = prompt('{{ __('vasaccounting::lang.views.expenses.actions.reject_prompt') }}'); if (!reason) { return false; } this.form.querySelector('input[name=&quot;reason&quot;]').value = reason;"
+                                                        >
+                                                            {{ __('vasaccounting::lang.views.expenses.actions.reject') }}
+                                                        </button>
+                                                    </form>
+                                                    @if (($approvalInsight['sla_state'] ?? null) === 'overdue')
+                                                        <form method="POST" action="{{ route('vasaccounting.expenses.escalate', $document->id) }}">
+                                                            @csrf
+                                                            <input type="hidden" name="reason" value="">
+                                                            <button
+                                                                type="submit"
+                                                                class="btn btn-light-warning btn-sm"
+                                                                onclick="var reason = prompt('{{ __('vasaccounting::lang.views.expenses.actions.escalate_prompt') }}'); if (!reason) { return false; } this.form.querySelector('input[name=&quot;reason&quot;]').value = reason;"
+                                                            >
+                                                                {{ !empty($approvalInsight['escalation_count']) ? __('vasaccounting::lang.views.expenses.actions.escalate_again') : __('vasaccounting::lang.views.expenses.actions.escalate') }}
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                    @if (($approvalInsight['dispatch_status'] ?? null) === 'failed')
+                                                        <form method="POST" action="{{ route('vasaccounting.expenses.retry_escalation_dispatch', $document->id) }}">
+                                                            @csrf
+                                                            <input type="hidden" name="reason" value="">
+                                                            <button
+                                                                type="submit"
+                                                                class="btn btn-light-warning btn-sm"
+                                                                onclick="var reason = prompt('{{ __('vasaccounting::lang.views.expenses.actions.retry_dispatch_prompt') }}'); if (!reason) { return false; } this.form.querySelector('input[name=&quot;reason&quot;]').value = reason;"
+                                                            >
+                                                                {{ __('vasaccounting::lang.views.expenses.actions.retry_dispatch') }}
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 @endif
                                                 @if ($document->workflow_status === 'approved' && $document->accounting_status === 'ready_to_post')
                                                     <form method="POST" action="{{ route('vasaccounting.expenses.post', $document->id) }}">

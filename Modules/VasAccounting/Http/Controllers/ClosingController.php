@@ -30,11 +30,13 @@ class ClosingController extends VasBaseController
         $blockers = [];
         $checklists = [];
         $treasuryInsights = [];
+        $procurementInsights = [];
         $expenseInsights = [];
         foreach ($periods as $period) {
             $blockers[$period->id] = $this->periodCloseService->blockers($businessId, $period);
             $checklists[$period->id] = $this->periodCloseService->checklistForPeriod($businessId, $period);
             $treasuryInsights[$period->id] = $this->periodCloseService->treasuryCloseInsights($businessId, $period);
+            $procurementInsights[$period->id] = $this->periodCloseService->procurementCloseInsights($businessId, $period);
             $expenseInsights[$period->id] = $this->periodCloseService->expenseCloseInsights($businessId, $period);
         }
 
@@ -43,6 +45,7 @@ class ClosingController extends VasBaseController
             'blockers' => $blockers,
             'checklists' => $checklists,
             'treasuryInsights' => $treasuryInsights,
+            'procurementInsights' => $procurementInsights,
             'expenseInsights' => $expenseInsights,
             'recentPackets' => $this->reportSnapshotService->recentSnapshots($businessId, 10)->where('report_key', 'close_packet'),
         ]);

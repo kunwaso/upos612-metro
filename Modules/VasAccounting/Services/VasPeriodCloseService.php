@@ -11,6 +11,7 @@ use Modules\VasAccounting\Entities\VasCloseChecklist;
 use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Entities\VasVoucher;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceTreasuryException;
+use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 use RuntimeException;
@@ -19,7 +20,8 @@ class VasPeriodCloseService
 {
     public function __construct(
         protected VasAccountingUtil $vasUtil,
-        protected ?OperationsAssetReportUtil $operationsAssetReportUtil = null
+        protected ?OperationsAssetReportUtil $operationsAssetReportUtil = null,
+        protected ?ExpenseApprovalMonitorService $expenseApprovalMonitorService = null
     )
     {
     }
@@ -68,12 +70,28 @@ class VasPeriodCloseService
             ? $this->pendingTreasuryDocumentsQuery($businessId, $periodEnd)->count()
             : 0;
 
+        $pendingProcurementDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->pendingProcurementDocumentsQuery($businessId, $periodEnd)->count()
+            : 0;
+
+        $receivingProcurementDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->receivingProcurementDocumentsQuery($businessId, $periodEnd)->count()
+            : 0;
+
+        $matchingProcurementDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->matchingProcurementDocumentsQuery($businessId, $periodEnd)->count()
+            : 0;
+
         $pendingExpenseDocuments = Schema::hasTable('vas_fin_documents')
             ? $this->pendingExpenseDocumentsQuery($businessId, $periodEnd)->count()
             : 0;
 
         $outstandingExpenseDocuments = Schema::hasTable('vas_fin_documents')
             ? $this->outstandingExpenseDocumentsQuery($businessId, $periodEnd)->count()
+            : 0;
+
+        $escalatedExpenseApprovals = Schema::hasTable('vas_fin_documents')
+            ? $this->escalatedExpenseApprovalDocuments($businessId, $periodEnd)->count()
             : 0;
 
         $pendingApprovals = Schema::hasTable('vas_document_approvals')
@@ -92,8 +110,12 @@ class VasPeriodCloseService
             'pending_depreciation' => $pendingDepreciation,
             'unreconciled_bank_lines' => $unreconciledBankLines,
             'pending_treasury_documents' => (int) $pendingTreasuryDocuments,
+            'pending_procurement_documents' => (int) $pendingProcurementDocuments,
+            'receiving_procurement_documents' => (int) $receivingProcurementDocuments,
+            'matching_procurement_documents' => (int) $matchingProcurementDocuments,
             'pending_expense_documents' => (int) $pendingExpenseDocuments,
             'outstanding_expense_documents' => (int) $outstandingExpenseDocuments,
+            'escalated_expense_approvals' => (int) $escalatedExpenseApprovals,
             'pending_approvals' => $pendingApprovals,
             'unposted_inventory_documents' => (int) ($warehouseSummary['unposted_documents'] ?? 0),
             'warehouse_discrepancies' => (int) ($warehouseSummary['warehouse_discrepancies'] ?? 0),
@@ -136,12 +158,87 @@ class VasPeriodCloseService
         ];
     }
 
+    public function procurementCloseInsights(int $businessId, VasAccountingPeriod $period): array
+    {
+        $periodEnd = optional($period->end_date)->toDateString();
+
+        $pendingDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->pendingProcurementDocumentsQuery($businessId, $periodEnd)
+                ->with(['parentLinks.parentDocument'])
+                ->orderByDesc('document_date')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get([
+                    'id',
+                    'document_no',
+                    'document_family',
+                    'document_type',
+                    'workflow_status',
+                    'accounting_status',
+                    'gross_amount',
+                    'currency_code',
+                    'document_date',
+                    'posting_date',
+                    'meta',
+                ])
+            : collect();
+
+        $receivingDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->receivingProcurementDocumentsQuery($businessId, $periodEnd)
+                ->with(['childLinks.childDocument'])
+                ->orderByDesc('document_date')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get([
+                    'id',
+                    'document_no',
+                    'document_family',
+                    'document_type',
+                    'workflow_status',
+                    'accounting_status',
+                    'gross_amount',
+                    'currency_code',
+                    'document_date',
+                    'posting_date',
+                    'meta',
+                ])
+            : collect();
+
+        $matchingDocuments = Schema::hasTable('vas_fin_documents')
+            ? $this->matchingProcurementDocumentsQuery($businessId, $periodEnd)
+                ->with(['parentLinks.parentDocument', 'childLinks.childDocument'])
+                ->orderByDesc('document_date')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get([
+                    'id',
+                    'document_no',
+                    'document_family',
+                    'document_type',
+                    'workflow_status',
+                    'accounting_status',
+                    'gross_amount',
+                    'currency_code',
+                    'document_date',
+                    'posting_date',
+                    'meta',
+                ])
+            : collect();
+
+        return [
+            'pending_documents' => $pendingDocuments,
+            'receiving_documents' => $receivingDocuments,
+            'matching_documents' => $matchingDocuments,
+        ];
+    }
+
     public function expenseCloseInsights(int $businessId, VasAccountingPeriod $period): array
     {
         $periodEnd = optional($period->end_date)->toDateString();
 
         $pendingDocuments = Schema::hasTable('vas_fin_documents')
             ? $this->pendingExpenseDocumentsQuery($businessId, $periodEnd)
+                ->with('approvalInstances.steps')
                 ->orderByDesc('document_date')
                 ->orderByDesc('id')
                 ->limit(5)
@@ -180,9 +277,14 @@ class VasPeriodCloseService
                 ])
             : collect();
 
+        $escalatedApprovals = Schema::hasTable('vas_fin_documents')
+            ? $this->escalatedExpenseApprovalDocuments($businessId, $periodEnd, 5)
+            : collect();
+
         return [
             'pending_documents' => $pendingDocuments,
             'outstanding_documents' => $outstandingDocuments,
+            'escalated_approvals' => $escalatedApprovals,
         ];
     }
 
@@ -232,11 +334,22 @@ class VasPeriodCloseService
                 'status' => $blockers['pending_treasury_documents'] > 0 ? 'blocked' : 'completed',
                 'notes' => $blockers['pending_treasury_documents'] > 0 ? $blockers['pending_treasury_documents'] . ' native treasury documents still need posting or reversal review.' : 'All native treasury documents through the period end are posted or reversed.',
             ],
+            'procurement' => [
+                'title' => 'Procurement workflow and matching cleared',
+                'status' => ($blockers['pending_procurement_documents'] + $blockers['receiving_procurement_documents'] + $blockers['matching_procurement_documents']) > 0 ? 'blocked' : 'completed',
+                'notes' => ($blockers['pending_procurement_documents'] + $blockers['receiving_procurement_documents'] + $blockers['matching_procurement_documents']) > 0
+                    ? $blockers['pending_procurement_documents'] . ' procurement documents still need workflow action, '
+                        . $blockers['receiving_procurement_documents'] . ' purchase orders still need receiving progression, and '
+                        . $blockers['matching_procurement_documents'] . ' supplier invoices still need matching attention.'
+                    : 'Procurement workflow backlog is clear and supplier invoice matching is ready through period end.',
+            ],
             'expenses' => [
                 'title' => 'Expense advances and claims resolved',
-                'status' => ($blockers['pending_expense_documents'] + $blockers['outstanding_expense_documents']) > 0 ? 'blocked' : 'completed',
-                'notes' => ($blockers['pending_expense_documents'] + $blockers['outstanding_expense_documents']) > 0
-                    ? $blockers['pending_expense_documents'] . ' expense documents still need workflow action and ' . $blockers['outstanding_expense_documents'] . ' posted advances or claims remain open.'
+                'status' => ($blockers['pending_expense_documents'] + $blockers['outstanding_expense_documents'] + $blockers['escalated_expense_approvals']) > 0 ? 'blocked' : 'completed',
+                'notes' => ($blockers['pending_expense_documents'] + $blockers['outstanding_expense_documents'] + $blockers['escalated_expense_approvals']) > 0
+                    ? $blockers['pending_expense_documents'] . ' expense documents still need workflow action, '
+                        . $blockers['outstanding_expense_documents'] . ' posted advances or claims remain open, and '
+                        . $blockers['escalated_expense_approvals'] . ' approvals are overdue.'
                     : 'Expense workflow backlog is clear and no advances or claims remain outstanding through period end.',
             ],
             'approvals' => [
@@ -308,8 +421,12 @@ class VasPeriodCloseService
             || $blockers['pending_depreciation'] > 0
             || $blockers['unreconciled_bank_lines'] > 0
             || $blockers['pending_treasury_documents'] > 0
+            || $blockers['pending_procurement_documents'] > 0
+            || $blockers['receiving_procurement_documents'] > 0
+            || $blockers['matching_procurement_documents'] > 0
             || $blockers['pending_expense_documents'] > 0
             || $blockers['outstanding_expense_documents'] > 0
+            || $blockers['escalated_expense_approvals'] > 0
             || $blockers['pending_approvals'] > 0
             || $blockers['unposted_inventory_documents'] > 0
             || $blockers['warehouse_discrepancies'] > 0;
@@ -405,6 +522,74 @@ class VasPeriodCloseService
             });
     }
 
+    protected function pendingProcurementDocumentsQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where(function ($query) {
+                $query->where(function ($documentQuery) {
+                    $documentQuery->where('document_type', 'purchase_requisition')
+                        ->whereIn('workflow_status', ['draft', 'submitted', 'approved']);
+                })->orWhere(function ($documentQuery) {
+                    $documentQuery->where('document_type', 'purchase_order')
+                        ->whereIn('workflow_status', ['draft', 'submitted']);
+                })->orWhere(function ($documentQuery) {
+                    $documentQuery->where('document_type', 'goods_receipt')
+                        ->whereIn('workflow_status', ['draft', 'submitted', 'approved']);
+                })->orWhere(function ($documentQuery) {
+                    $documentQuery->where('document_type', 'supplier_invoice')
+                        ->whereIn('workflow_status', ['draft', 'submitted']);
+                });
+            })
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->where(function ($dateQuery) use ($periodEnd) {
+                    $dateQuery->whereDate('posting_date', '<=', $periodEnd)
+                        ->orWhere(function ($fallbackQuery) use ($periodEnd) {
+                            $fallbackQuery->whereNull('posting_date')
+                                ->whereDate('document_date', '<=', $periodEnd);
+                        });
+                });
+            });
+    }
+
+    protected function receivingProcurementDocumentsQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'purchase_order')
+            ->whereIn('workflow_status', ['approved', 'ordered', 'partially_received'])
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->where(function ($dateQuery) use ($periodEnd) {
+                    $dateQuery->whereDate('posting_date', '<=', $periodEnd)
+                        ->orWhere(function ($fallbackQuery) use ($periodEnd) {
+                            $fallbackQuery->whereNull('posting_date')
+                                ->whereDate('document_date', '<=', $periodEnd);
+                        });
+                });
+            });
+    }
+
+    protected function matchingProcurementDocumentsQuery(int $businessId, ?string $periodEnd)
+    {
+        return FinanceDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'supplier_invoice')
+            ->where(function ($query) {
+                $query->where('workflow_status', 'approved')
+                    ->orWhereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.matching.blocking_exception_count')), '0') + 0 > 0")
+                    ->orWhereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.matching.warning_count')), '0') + 0 > 0");
+            })
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->where(function ($dateQuery) use ($periodEnd) {
+                    $dateQuery->whereDate('posting_date', '<=', $periodEnd)
+                        ->orWhere(function ($fallbackQuery) use ($periodEnd) {
+                            $fallbackQuery->whereNull('posting_date')
+                                ->whereDate('document_date', '<=', $periodEnd);
+                        });
+                });
+            });
+    }
+
     protected function outstandingExpenseDocumentsQuery(int $businessId, ?string $periodEnd)
     {
         return FinanceDocument::query()
@@ -422,5 +607,55 @@ class VasPeriodCloseService
                         });
                 });
             });
+    }
+
+    protected function escalatedExpenseApprovalDocuments(int $businessId, ?string $periodEnd, ?int $limit = null)
+    {
+        $documents = $this->pendingExpenseDocumentsQuery($businessId, $periodEnd)
+            ->with('approvalInstances.steps')
+            ->orderByDesc('document_date')
+            ->orderByDesc('id');
+
+        if ($limit !== null) {
+            $documents->limit($limit * 4);
+        }
+
+        $documents = $documents->get([
+            'id',
+            'document_no',
+            'document_type',
+            'workflow_status',
+            'accounting_status',
+            'gross_amount',
+            'open_amount',
+            'currency_code',
+            'document_date',
+            'posting_date',
+            'meta',
+        ]);
+
+        $insights = $this->expenseApprovalMonitorService()->buildInsights($documents);
+
+        $documents = $documents
+            ->filter(function (FinanceDocument $document) use ($insights) {
+                return data_get($insights, $document->id . '.sla_state') === 'overdue';
+            })
+            ->values()
+            ->map(function (FinanceDocument $document) use ($insights) {
+                $document->setAttribute('approval_close_insight', $insights[$document->id] ?? []);
+
+                return $document;
+            });
+
+        if ($limit !== null) {
+            return $documents->take($limit)->values();
+        }
+
+        return $documents;
+    }
+
+    protected function expenseApprovalMonitorService(): ExpenseApprovalMonitorService
+    {
+        return $this->expenseApprovalMonitorService ?: app(ExpenseApprovalMonitorService::class);
     }
 }
