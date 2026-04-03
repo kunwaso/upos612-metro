@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\Route;
 use Modules\VasAccounting\Entities\VasAccount;
 use Modules\VasAccounting\Entities\VasWarehouse;
 use Modules\VasAccounting\Entities\VasInventoryDocument;
+use Modules\VasAccounting\Http\Requests\DestroyInventoryDocumentRequest;
 use Modules\VasAccounting\Http\Requests\StoreInventoryDocumentRequest;
 use Modules\VasAccounting\Http\Requests\StoreWarehouseRequest;
 use Modules\VasAccounting\Services\VasInventoryValuationService;
 use Modules\VasAccounting\Services\VasWarehouseDocumentService;
+use Modules\VasAccounting\Utils\InventoryDocumentLifecycleUtil;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 use RuntimeException;
@@ -26,7 +28,8 @@ class InventoryController extends VasBaseController
         protected VasInventoryValuationService $inventoryValuationService,
         protected VasAccountingUtil $vasUtil,
         protected OperationsAssetReportUtil $operationsAssetReportUtil,
-        protected VasWarehouseDocumentService $warehouseDocumentService
+        protected VasWarehouseDocumentService $warehouseDocumentService,
+        protected InventoryDocumentLifecycleUtil $inventoryDocumentLifecycleUtil
     ) {
     }
 
@@ -195,12 +198,23 @@ class InventoryController extends VasBaseController
 
         $canViewStorageManager = (bool) optional($request->user())->can('storage_manager.view');
         $canOpenStorageDocument = $canViewStorageManager && Route::has('storage-manager.documents.show');
+        $canManageDraftDelete = (bool) optional($request->user())->can('vas_accounting.inventory.destroy_draft');
+        $deleteEligibility = $canManageDraftDelete
+            ? $this->inventoryDocumentLifecycleUtil->deleteEligibility($inventoryDocument)
+            : ['allowed' => false, 'reason' => null];
 
         return view('vasaccounting::inventory.show_document', [
             'inventoryDocument' => $inventoryDocument,
             'storageDocumentLinks' => $storageDocumentLinks,
             'storageSyncLogs' => $storageSyncLogs,
             'canOpenStorageDocument' => $canOpenStorageDocument,
+            'can_admin_delete' => $canManageDraftDelete && (bool) ($deleteEligibility['allowed'] ?? false),
+            'admin_delete_block_reason' => $canManageDraftDelete && ! ($deleteEligibility['allowed'] ?? false)
+                ? (string) ($deleteEligibility['reason'] ?? __('vasaccounting::lang.inventory_document_delete_not_allowed'))
+                : null,
+            'admin_delete_route' => $canManageDraftDelete
+                ? route('vasaccounting.inventory.documents.destroy', $inventoryDocument->id)
+                : null,
         ]);
     }
 
@@ -244,5 +258,28 @@ class InventoryController extends VasBaseController
         return redirect()
             ->route('vasaccounting.inventory.index')
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_reversed')]);
+    }
+
+    public function destroyDocument(DestroyInventoryDocumentRequest $request, int $document): RedirectResponse
+    {
+        $inventoryDocument = $request->inventoryDocument();
+
+        try {
+            $this->inventoryDocumentLifecycleUtil->deleteDraftDocument($inventoryDocument, (int) $request->user()->id);
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('vasaccounting.inventory.documents.show', $inventoryDocument->id)
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('vasaccounting.inventory.documents.show', $inventoryDocument->id)
+                ->with('status', ['success' => false, 'msg' => __('messages.something_went_wrong')]);
+        }
+
+        return redirect()
+            ->route('vasaccounting.inventory.index')
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_deleted')]);
     }
 }

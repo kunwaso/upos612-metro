@@ -58,6 +58,7 @@
         "barryvdh/laravel-debugbar": "^3.6",
         "fakerphp/faker": "^1.9.1",
         "knuckleswtf/scribe": "^4.14",
+        "larastan/larastan": "^2.9",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^6.3",
         "phpunit/phpunit": "^9.5.10",
@@ -121,6 +122,21 @@
         ],
         "test:clean:aichat": [
             "@php -d error_reporting=8191 vendor/bin/phpunit Modules/Aichat/Tests"
+        ],
+        "agents:compliance": [
+            "@php scripts/check-agents-compliance.php"
+        ],
+        "agents:compliance:full": [
+            "@php scripts/check-agents-compliance.php --full"
+        ],
+        "agents:tenant": [
+            "@php scripts/check-tenant-scope.php"
+        ],
+        "phpstan": [
+            "vendor/bin/phpstan analyse --memory-limit=512M"
+        ],
+        "phpstan:baseline": [
+            "vendor/bin/phpstan analyse --memory-limit=512M --generate-baseline"
         ]
     },
     "config": {

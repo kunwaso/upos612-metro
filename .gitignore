@@ -1,5 +1,6 @@
 /.cache
 /node_modules
+/agent-policy.local.md
 /mcp/**/node_modules/
 /output
 /vendor

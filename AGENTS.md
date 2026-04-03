@@ -587,6 +587,30 @@ $this->respondWentWrong($exception)
 $this->respondUnauthorized()
 ```
 
+### 2.11 Destructive Command Policy (Pre-Mutation Gate)
+
+Before running any **destructive or hard-to-reverse** command, apply this gate:
+
+**Always forbidden (never run without explicit user instruction):**
+- `migrate:fresh`, `migrate:reset`, `db:wipe`, `db:seed --class=...` on production-like data
+- `rm -rf` or `Remove-Item -Recurse` on directories outside the agent's own output (e.g. `vendor/`, `node_modules/`, `storage/`, `public/assets/`)
+- `git push --force`, `git reset --hard` to a remote-tracking branch
+- Any command that drops tables, truncates tenant data, or deletes uploaded files
+
+**Require explicit user confirmation before running:**
+- `migrate:rollback` (state: "This will roll back the last N migration(s): [list]. Proceed?")
+- `composer remove <package>` (state which package and callers affected)
+- `php artisan module:disable <Module>` (state downstream impact)
+- Mass-update or mass-delete queries run via `tinker` or raw SQL
+
+**Safe by default (run without asking):**
+- `php artisan migrate` (forward-only, additive)
+- `php artisan cache:clear`, `config:clear`, `view:clear`, `route:clear`, `permission:cache-reset`
+- `composer dump-autoload`
+- `php artisan test`, `php -l`, lints, and other read-only verification commands
+
+If in doubt, **state what the command will do and ask** before executing.
+
 ---
 
 ## 3. UI Development Workflow
@@ -1044,7 +1068,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (16832 symbols, 35990 relationships, 88 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (17172 symbols, 37548 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

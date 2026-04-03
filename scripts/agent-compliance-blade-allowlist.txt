@@ -1,0 +1,28 @@
+# Agent Compliance — Blade Allowlist
+#
+# Files listed here are GRANDFATHERED for the --full scan mode.
+# They contain legacy @php patterns that pre-date the constitution and have
+# not yet been refactored. Adding a file here does NOT mean it is correct —
+# it means the team has consciously deferred the refactor.
+#
+# Format: one path per line, relative to repo root, forward-slashes.
+# Lines starting with # are comments; blank lines are ignored.
+#
+# Process:
+#   1. Run: php scripts/check-agents-compliance.php --full
+#   2. For each grandfathered legacy file that you do NOT want to fix now,
+#      add it here.
+#   3. When you refactor a file, remove it from this list.
+#
+# Note: diff-mode CI does NOT use this allowlist. A violation in a changed
+# file will always fail CI regardless of this list.
+#
+# Example entries (remove when the files are refactored):
+# Modules/VasAccounting/Resources/views/inventory/show_document.blade.php
+# Modules/VasAccounting/Resources/views/cash_bank/index.blade.php
+# Modules/StorageManager/Resources/views/control_tower/index.blade.php
+# Modules/StorageManager/Resources/views/index.blade.php
+# Modules/VasAccounting/Resources/views/inventory/index.blade.php
+# Modules/VasAccounting/Resources/views/vouchers/index.blade.php
+# Modules/VasAccounting/Resources/views/vouchers/show.blade.php
+# Modules/StorageManager/Resources/views/documents/show.blade.php

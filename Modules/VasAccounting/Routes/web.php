@@ -120,6 +120,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::get('/inventory/documents/{document}', [InventoryController::class, 'showDocument'])->whereNumber('document')->name('inventory.documents.show');
         Route::post('/inventory/documents/{document}/post', [InventoryController::class, 'postDocument'])->whereNumber('document')->name('inventory.documents.post');
         Route::post('/inventory/documents/{document}/reverse', [InventoryController::class, 'reverseDocument'])->whereNumber('document')->name('inventory.documents.reverse');
+        Route::delete('/inventory/documents/{document}', [InventoryController::class, 'destroyDocument'])->whereNumber('document')->name('inventory.documents.destroy');
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
         Route::post('/expenses/{document}/submit', [ExpenseController::class, 'submit'])->whereNumber('document')->name('expenses.submit');

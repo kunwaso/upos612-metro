@@ -312,6 +312,7 @@ return [
     'slot_updated' => 'Khe lưu trữ được cập nhật thành công.',
     'slot_deleted' => 'Khe lưu trữ đã bị xóa.',
     'no_slots_defined' => 'Không có khe lưu trữ nào được xác định cho vị trí này.',
+    'warehouse_map_no_slot_cells' => 'Khu vực này chưa có khe lưu trữ. Thêm khe để hiển thị ô trên bản đồ kho.',
     'occupied_of' => 'Đã sử dụng :đã sử dụng :đơn vị công suất',
     'running_out_of_stock' => 'Hết hàng',
     'expiring_products' => 'Sản phẩm sắp hết hạn',

@@ -314,29 +314,38 @@ class VasPostingService
         }
 
         DB::transaction(function () use ($voucher) {
-            $businessId = (int) $voucher->business_id;
-            $voucherId = (int) $voucher->id;
-
-            VasDocumentApproval::query()
-                ->where('business_id', $businessId)
-                ->where('entity_type', VasVoucher::class)
-                ->where('entity_id', $voucherId)
-                ->delete();
-
-            VasDocumentAuditLog::query()
-                ->where('business_id', $businessId)
-                ->where('entity_type', VasVoucher::class)
-                ->where('entity_id', $voucherId)
-                ->delete();
-
-            VasDocumentAttachment::query()
-                ->where('business_id', $businessId)
-                ->where('entity_type', VasVoucher::class)
-                ->where('entity_id', $voucherId)
-                ->delete();
-
-            $voucher->delete();
+            $this->deleteVoucherRecords($voucher);
         });
+    }
+
+    public function deleteDraftSourceVouchers(string $sourceType, int $sourceId, int $businessId): int
+    {
+        $vouchers = VasVoucher::query()
+            ->where('business_id', $businessId)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->orderByDesc('version_no')
+            ->get();
+
+        if ($vouchers->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($vouchers as $voucher) {
+            $status = $this->draftSourceVoucherDeletionStatus($voucher, $sourceType, $sourceId);
+
+            if (! ($status['allowed'] ?? false)) {
+                throw new RuntimeException((string) ($status['reason'] ?? __('vasaccounting::lang.inventory_document_delete_not_allowed')));
+            }
+        }
+
+        DB::transaction(function () use ($vouchers) {
+            foreach ($vouchers as $voucher) {
+                $this->deleteVoucherRecords($voucher);
+            }
+        });
+
+        return $vouchers->count();
     }
 
     public function replayFailure(VasPostingFailure $failure): ?VasVoucher
@@ -592,6 +601,58 @@ class VasPostingService
         }
 
         return $query->exists();
+    }
+
+    protected function draftSourceVoucherDeletionStatus(VasVoucher $voucher, string $sourceType, int $sourceId): array
+    {
+        if ((string) $voucher->source_type !== $sourceType || (int) $voucher->source_id !== $sourceId) {
+            return $this->blockedDeletionStatus('source_mismatch', __('vasaccounting::lang.inventory_document_delete_gl_linked'));
+        }
+
+        if ((string) $voucher->status !== 'draft') {
+            return $this->blockedDeletionStatus('status_not_draft', __('vasaccounting::lang.inventory_document_delete_gl_linked'));
+        }
+
+        if (! empty($voucher->posted_at) || ! empty($voucher->posted_by) || ! empty($voucher->reversed_at) || ! empty($voucher->reversed_by)) {
+            return $this->blockedDeletionStatus('already_processed', __('vasaccounting::lang.inventory_document_delete_gl_linked'));
+        }
+
+        if ($voucher->journals()->exists()) {
+            return $this->blockedDeletionStatus('journal_linked', __('vasaccounting::lang.inventory_document_delete_gl_linked'));
+        }
+
+        return [
+            'allowed' => true,
+            'code' => null,
+            'reason' => null,
+            'meta' => [],
+        ];
+    }
+
+    protected function deleteVoucherRecords(VasVoucher $voucher): void
+    {
+        $businessId = (int) $voucher->business_id;
+        $voucherId = (int) $voucher->id;
+
+        VasDocumentApproval::query()
+            ->where('business_id', $businessId)
+            ->where('entity_type', VasVoucher::class)
+            ->where('entity_id', $voucherId)
+            ->delete();
+
+        VasDocumentAuditLog::query()
+            ->where('business_id', $businessId)
+            ->where('entity_type', VasVoucher::class)
+            ->where('entity_id', $voucherId)
+            ->delete();
+
+        VasDocumentAttachment::query()
+            ->where('business_id', $businessId)
+            ->where('entity_type', VasVoucher::class)
+            ->where('entity_id', $voucherId)
+            ->delete();
+
+        $voucher->delete();
     }
 
     protected function blockedDeletionStatus(string $code, string $reason, array $meta = []): array

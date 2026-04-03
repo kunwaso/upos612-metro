@@ -28,3 +28,5 @@ Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps
   - README: [mcp/semantic-code-search-mcp/README.md](./semantic-code-search-mcp/README.md)
 
 When the exact symbol is known, prefer `grep` + `read_file_cache` + `laravel_mysql`. Reach for GitNexus before shared-code edits or unfamiliar execution flows, and reach for semantic search when the question is behavioral or architectural and exact strings are not enough.
+
+**Team policy (approved servers, data-handling rules, CI expectations):** [`ai/agent-team-policy.md`](../ai/agent-team-policy.md)

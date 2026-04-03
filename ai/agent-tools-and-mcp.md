@@ -260,7 +260,27 @@ For tasks like **auditing a module**, **cloning/porting code**, or **understandi
 
 This keeps analysis fast: **grep → targeted/parallel reads → full read only when editing**.
 
-### 2.9 External repo intake and deep research
+### 2.9 Read-then-write batching (tool phase discipline)
+
+Inspired by production agent runtimes that partition tool calls into parallel-safe reads vs exclusive serial writes:
+
+**Phase 1 — Discover (parallel-safe reads):**
+Run grep, read_file, search_code, project_map, and GitNexus queries in parallel when they are independent. Issue 3–5 independent reads in one turn when possible.
+
+**Phase 2 — Mutate (serial writes):**
+Edits, migrations, artisan commands, and file writes run serially, one area at a time. Never interleave a write into a read batch — finish discovery, then start mutations.
+
+**Phase 3 — Verify (parallel-safe reads again):**
+After edits, run Read lints, tests, and grep checks. These are reads and can run in parallel.
+
+Rules:
+- Do not write to a file you have not read in the current session (or confirmed via grep).
+- Do not edit two files that share a direct call boundary (e.g. Util + its controller caller) in parallel workers — those are sequential by definition.
+- If a mutation reveals missing context (e.g. a column doesn't exist yet), return to Phase 1 for that gap before continuing Phase 2.
+
+This keeps the same split as `AGENTS.md` §0.1e worker policy but applies it **within a single agent's turn**, not only across workers.
+
+### 2.10 External repo intake and deep research
 
 Use this workflow when evaluating a GitHub repository, trending library, or external example:
 
@@ -271,6 +291,24 @@ Use this workflow when evaluating a GitHub repository, trending library, or exte
 5. **Finish with a decision** — `adopt`, `adapt`, or `reject`, plus landing files, verification, and rollback notes.
 
 If exact or semantic search becomes degraded during this workflow, fall back immediately instead of retrying in a loop; external-repo work already spans local and web context, so repeated tool retries waste time fastest here.
+
+### 2.11 Concurrency caps and degraded-tool discipline
+
+**Parallel read cap:** Issue at most **5 independent reads or searches per turn**. Beyond that, results become noisy and the agent is likely scanning too broadly — narrow the scope with grep first.
+
+**MCP health confirmation for long sessions:** For implement sessions longer than ~10 tool rounds, re-confirm tool health before the next batch of edits if any MCP returned degraded or empty results earlier in the session. One lightweight probe (e.g. a small grep or `index_status`) is enough.
+
+**Degraded-tool escalation path:**
+
+| Signal | Action |
+|--------|--------|
+| Tool times out once | Retry once; if it fails again, mark degraded and fall back |
+| Tool returns empty/partial content | Mark degraded immediately; fall back |
+| Semantic index reports `STALE` or `NOT_INDEXED` | Skip semantic for remaining session; use grep + read_file_cache |
+| GitNexus reports stale index | Note in output; if possible refresh (`npx gitnexus analyze`); otherwise skip impact checks and state the gap |
+| Multiple tools degraded simultaneously | Stop and report health status to user before continuing |
+
+**Discard rule:** If a tool call fails mid-batch (e.g. one of 3 parallel reads times out), use results from the successful calls and note the gap rather than retrying the entire batch.
 
 ---
 

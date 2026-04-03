@@ -67,8 +67,9 @@ class StorageSlotController extends Controller
         $locations   = $this->util->getLocationsDropdown($business_id);
         $categories  = $this->util->getCategoriesDropdown($business_id);
         $areas       = $this->util->getAreasDropdown($business_id);
+        $prefill_location_id = (int) request('location_id', 0);
 
-        return view('storagemanager::slots.create', compact('locations', 'categories', 'areas'));
+        return view('storagemanager::slots.create', compact('locations', 'categories', 'areas', 'prefill_location_id'));
     }
 
     /**

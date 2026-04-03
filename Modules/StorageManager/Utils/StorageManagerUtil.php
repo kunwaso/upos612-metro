@@ -12,6 +12,7 @@ use App\VariationLocationDetails;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Entities\StorageSlot;
 
@@ -21,43 +22,138 @@ class StorageManagerUtil
     public const DEFAULT_EXPIRY_ALERT_DAYS = 30;
 
     /**
-     * Return all slots for a given warehouse location, grouped by category.
-     * Each group carries the category model, the slots (with occupancy), and zone totals.
+     * Return zone cards for the Warehouse Map.
+     *
+     * Strategy (area-first):
+     *  1. Load all StorageAreas for the location — one card per area, in sort_order order.
+     *  2. For each area, attach the slots that belong to it (area_id = area.id).
+     *  3. Any slots without an area_id are grouped by category_id and appended as legacy cards.
+     *
+     * This ensures every area always appears on the map regardless of whether it has slots yet.
      *
      * @param  int  $business_id
      * @param  int  $location_id
-     * @return array  [ ['category' => Category, 'slots' => Collection<StorageSlot+occupancy>, 'occupied' => int, 'capacity' => int], ... ]
+     * @return array<int, array{category: ?Category, label: string, slots: Collection, occupied: int, capacity: int, placeholder: bool, area_id: ?int}>
      */
     public function getSlotsForLocation(int $business_id, int $location_id): array
     {
-        $slots = StorageSlot::forBusiness($business_id)
+        $hasAreaId = Schema::hasColumn((new StorageSlot)->getTable(), 'area_id');
+
+        // Load all areas for this location
+        $areas = StorageArea::query()
+            ->forBusiness($business_id)
+            ->forLocation($location_id)
+            ->with('category')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        // Load all slots for this location
+        $slotsQuery = StorageSlot::forBusiness($business_id)
             ->forLocation($location_id)
             ->with('category')
             ->withCount('productRacks as occupancy')
-            ->orderBy('category_id')
             ->orderBy('row')
-            ->orderBy('position')
-            ->get();
+            ->orderBy('position');
+
+        if ($hasAreaId) {
+            $slotsQuery->with('area');
+        }
+
+        $slots = $slotsQuery->get();
+
+        $slots->each(function (StorageSlot $slot) {
+            $slot->setAttribute('is_full', $slot->max_capacity > 0 && $slot->occupancy >= $slot->max_capacity);
+        });
 
         $zones = [];
-        foreach ($slots->groupBy('category_id') as $categoryId => $categorySlots) {
-            $category = $categorySlots->first()->category;
-            $totalCapacity = $categorySlots->sum('max_capacity');
-            $totalOccupied = $categorySlots->sum('occupancy');
 
-            $categorySlots->each(function (StorageSlot $slot) {
-                $slot->setAttribute('is_full', $slot->max_capacity > 0 && $slot->occupancy >= $slot->max_capacity);
-            });
+        // --- Area-driven cards (always one per area) ---
+        $coveredSlotIds = [];
+        foreach ($areas as $area) {
+            if ($hasAreaId) {
+                $areaSlots = $slots->where('area_id', $area->id)->values();
+            } else {
+                $areaSlots = collect();
+            }
+
+            foreach ($areaSlots as $slot) {
+                $coveredSlotIds[] = $slot->id;
+            }
+
+            $label = $this->warehouseMapAreaTitle($area);
 
             $zones[] = [
-                'category'  => $category,
-                'slots'     => $categorySlots,
-                'occupied'  => $totalOccupied,
-                'capacity'  => $totalCapacity,
+                'area_id'     => (int) $area->id,
+                'area_type'   => (string) $area->area_type,
+                'category'    => $area->category,
+                'label'       => $label,
+                'slots'       => $areaSlots,
+                'occupied'    => $areaSlots->sum('occupancy'),
+                'capacity'    => $areaSlots->sum('max_capacity'),
+                'placeholder' => $areaSlots->isEmpty(),
+            ];
+        }
+
+        // --- Legacy cards: slots not linked to any area, grouped by category ---
+        $remainingSlots = $slots->whereNotIn('id', $coveredSlotIds)->values();
+
+        foreach ($remainingSlots->groupBy('category_id') as $categoryId => $categorySlots) {
+            $category     = $categorySlots->first()->category;
+            $categoryName = trim((string) optional($category)->name);
+
+            $areaTypeForGroup = null;
+
+            if ($categoryName === '') {
+                // last resort: humanise area_type from the slot's area relation
+                $areaTypeForGroup = $categorySlots
+                    ->map(fn (StorageSlot $s) => optional($s->area)->area_type)
+                    ->filter()
+                    ->first();
+
+                $label = $areaTypeForGroup
+                    ? ucwords(str_replace('_', ' ', (string) $areaTypeForGroup))
+                    : '—';
+            } else {
+                $label = $categoryName;
+            }
+
+            $zones[] = [
+                'area_id'     => null,
+                'area_type'   => $areaTypeForGroup ? (string) $areaTypeForGroup : null,
+                'category'    => $category,
+                'label'       => $label,
+                'slots'       => $categorySlots,
+                'occupied'    => $categorySlots->sum('occupancy'),
+                'capacity'    => $categorySlots->sum('max_capacity'),
+                'placeholder' => false,
             ];
         }
 
         return $zones;
+    }
+
+    /**
+     * Card heading for a warehouse area: name only, else code, else humanised area_type.
+     */
+    protected function warehouseMapAreaTitle(StorageArea $area): string
+    {
+        $name = trim((string) $area->name);
+        if ($name !== '') {
+            return $name;
+        }
+
+        $code = trim((string) $area->code);
+        if ($code !== '') {
+            return $code;
+        }
+
+        $areaType = trim((string) $area->area_type);
+        if ($areaType !== '') {
+            return ucwords(str_replace('_', ' ', $areaType));
+        }
+
+        return '—';
     }
 
     /**

@@ -321,6 +321,7 @@ return [
     'slot_updated' => 'Storage slot updated successfully.',
     'slot_deleted' => 'Storage slot deleted.',
     'no_slots_defined' => 'No storage slots defined for this location.',
+    'warehouse_map_no_slot_cells' => 'No storage slots in this area yet. Add slots to show pick cells on the map.',
     'occupied_of' => 'Occupied :occupied of :capacity units',
     'running_out_of_stock' => 'Running Out of Stock',
     'expiring_products' => 'Expiring Products',

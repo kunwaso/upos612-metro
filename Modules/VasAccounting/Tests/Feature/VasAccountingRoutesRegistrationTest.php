@@ -82,6 +82,7 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.inventory.documents.show'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.post'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.reverse'));
+        $this->assertTrue($router->has('vasaccounting.inventory.documents.destroy'));
         $this->assertTrue($router->has('vasaccounting.expenses.index'));
         $this->assertTrue($router->has('vasaccounting.expenses.store'));
         $this->assertTrue($router->has('vasaccounting.expenses.submit'));
@@ -458,6 +459,10 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertSame(
             'vas-accounting/inventory/documents/{document}/post',
             $routes->getByName('vasaccounting.inventory.documents.post')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/inventory/documents/{document}',
+            $routes->getByName('vasaccounting.inventory.documents.destroy')->uri()
         );
         $this->assertSame(
             'vas-accounting/vouchers/{voucher}',

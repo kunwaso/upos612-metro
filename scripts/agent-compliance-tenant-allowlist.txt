@@ -1,0 +1,20 @@
+# Agent Compliance — Tenant Scope Heuristic Allowlist
+#
+# Files listed here are skipped by the tenant-scope heuristic checker.
+# Use this for non-tenant models (User, SuperAdmin, system models) where
+# findOrFail/find without business_id is intentional and correct.
+#
+# Format: one path per line, relative to repo root, forward-slashes.
+# Lines starting with # are comments; blank lines are ignored.
+#
+# Process:
+#   1. Run: php scripts/check-tenant-scope.php
+#   2. For each false positive (e.g. a User lookup, a system config fetch),
+#      add the file here with a comment explaining why it is exempt.
+#   3. For individual lines within a file, prefer inline suppression:
+#         $user = User::findOrFail($id); // agent-compliance:ignore-business_id
+#
+# Example entries:
+# app/Http/Controllers/Auth/LoginController.php
+# app/Http/Controllers/SuperAdmin/UserController.php
+# Modules/Superadmin/Http/Controllers/SuperAdminController.php

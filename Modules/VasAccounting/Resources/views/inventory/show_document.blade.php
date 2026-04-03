@@ -48,8 +48,32 @@
                 @elseif ($document->status === 'posted')
                     <span class="text-warning fs-8">{{ __('vasaccounting::lang.inventory_reverse_requires_posted_voucher') }}</span>
                 @endif
+
+                @if ($can_admin_delete)
+                    <form method="POST" action="{{ $admin_delete_route }}" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm('{{ __('vasaccounting::lang.inventory_document_delete_confirm') }}')">
+                            {{ __('vasaccounting::lang.inventory_document_delete_button') }}
+                        </button>
+                    </form>
+                @elseif ($admin_delete_route && $admin_delete_block_reason)
+                    <button type="button" class="btn btn-sm btn-light-danger" disabled>
+                        {{ __('vasaccounting::lang.inventory_document_delete_button') }}
+                    </button>
+                @endif
             </div>
         </div>
+        @if ($admin_delete_route)
+            <div class="card-footer py-4">
+                <div class="text-muted fs-8">{{ __('vasaccounting::lang.inventory_document_delete_operator_note') }}</div>
+                @if ($admin_delete_block_reason)
+                    <div class="text-warning fs-8 mt-1">{{ $admin_delete_block_reason }}</div>
+                @endif
+            </div>
+        @endif
     </div>
 
     <div class="row g-5 g-xl-10 mb-8">

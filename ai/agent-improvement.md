@@ -94,13 +94,62 @@ Overlap map for this repo:
 
 If you improve one workflow rule, update the primary home first, then trim or relink any overlapping summary.
 
+### 2.8 Session memory vs repo truth (knowledge tiers)
+
+Keep a clear boundary between ephemeral session context and durable repo knowledge:
+
+| Tier | Where | Lifespan | Examples |
+|------|-------|----------|----------|
+| **Session scratch** | Agent's working memory, `.cursor/plans/*.plan.md` | One task or session | Current investigation state, partial findings, intermediate grep results |
+| **Durable knowledge** | `ai/*.md`, `ai/known-issues.md`, `ai/entrypoints/*.md` | Permanent (reviewed) | Diagnosed root causes, new conventions, module traps, schema notes |
+| **Repo code** | Source files, migrations, tests | Permanent (versioned) | The actual fix, feature, or test |
+
+Rules:
+- Plans (`.cursor/plans/`) are **ephemeral** — do not treat plan-file notes as lasting project truth.
+- If a session reveals a new trap, convention, or root-cause pattern that would help future sessions, **promote it** to the appropriate `ai/` doc (see §2.9).
+- Do not let durable docs accumulate stale session artifacts (e.g. "we tried X and it didn't work" with no resolution).
+
+### 2.9 Promoting session learnings to durable knowledge
+
+When a session produces a reusable insight, promote it so the next agent (or the same agent in a new session) does not re-derive it:
+
+**When to promote:**
+- A non-obvious bug diagnosis that took multiple investigation steps
+- A new "avoid this pattern" rule discovered during implementation
+- A module-specific trap not yet in `ai/known-issues.md`
+- A convention decision made during a task (e.g. "we chose X over Y because Z")
+
+**Where to promote:**
+
+| Insight type | Target doc |
+|-------------|-----------|
+| Bug trap, anti-pattern, or gotcha | `ai/known-issues.md` (add under the relevant section) |
+| Schema or relationship discovery | `ai/database-map.md` |
+| UI pattern or component note | `ai/ui-components.md` |
+| Convention or code-style decision | `ai/laravel-conventions.md` |
+| Module entry-point or wiring note | `ai/entrypoints/module-<Name>.md` |
+| Workflow or agent behavior improvement | `ai/agent-improvement.md` (this file) |
+| Security or auth discovery | `ai/security-and-auth.md` |
+
+**How to promote:**
+1. State the finding in one or two sentences.
+2. Include the evidence (file path, line, or grep pattern that reveals it).
+3. Place it in the correct section of the target doc.
+4. If fixing a documented known issue, update or remove that entry in `ai/known-issues.md`.
+
+**When not to promote:**
+- Temporary investigation state ("we grepped for X and found 3 files") — this is session scratch.
+- Findings specific to one user's local environment (e.g. "PHP 8.0 on Ray's laptop doesn't support X").
+- Speculative ideas that were not validated.
+
 ---
 
 ## 3. Summary
 
 | Goal | In-repo approach | Not in-repo |
 |------|------------------|-------------|
-| **Faster workflow** | Capture reasoning in `ai/`, document preferences, distill solutions into `ai/`, use the right platform tools and MCP, **minimize tool calls** (plan first, one Write per file, dirs up front), keep AGENTS.md process strict. | DPO, RLHF, reward models, LoRA, pruning, KL distillation. |
-| **More consistent behavior** | Same: preferences + reasoning patterns in `ai/`; five checks and verification in AGENTS.md. | Temperature (set in the client/platform if available). |
+| **Faster workflow** | Capture reasoning in `ai/`, document preferences, distill solutions into `ai/`, use the right platform tools and MCP, **minimize tool calls** (plan first, one Write per file, dirs up front), **read-then-write batching** (§2.9 in agent-tools-and-mcp.md), keep AGENTS.md process strict. | DPO, RLHF, reward models, LoRA, pruning, KL distillation. |
+| **More consistent behavior** | Same: preferences + reasoning patterns in `ai/`; five checks and verification in AGENTS.md; **session-to-durable promotion** (§2.9 above). | Temperature (set in the client/platform if available). |
+| **Knowledge compounding** | Separate session scratch from durable knowledge (§2.8); promote reusable insights to the right `ai/` doc (§2.9); keep `.cursor/plans/` ephemeral. | Persistent agent memory across sessions (requires platform support). |
 
-Use `ai/` to **capture reasoning**, **document preferences**, **distill knowledge**, **minimize tool calls**, and **document tool choice**. Read `ai/agent-tools-and-mcp.md` for the full tool list and when to use Fetch URL, subagents, and MCP for faster answers and implementation.
+Use `ai/` to **capture reasoning**, **document preferences**, **distill knowledge**, **minimize tool calls**, **promote session learnings**, and **document tool choice**. Read `ai/agent-tools-and-mcp.md` for the full tool list and when to use Fetch URL, subagents, and MCP for faster answers and implementation.

@@ -1,12 +1,13 @@
 {{-- Shared form fields for create / edit storage slot --}}
 @php($slot = $slot ?? null)
+@php($prefill_location_id = $prefill_location_id ?? 0)
 <div class="row gy-5">
     <div class="col-md-6">
         <label class="form-label required fw-semibold fs-6">@lang('business.location')</label>
         <select name="location_id" id="storage_slot_location_id" class="form-select form-select-solid @error('location_id') is-invalid @enderror" required>
             <option value="">— @lang('messages.select') —</option>
             @foreach($locations as $id => $name)
-                <option value="{{ $id }}" @selected(old('location_id', data_get($slot, 'location_id')) == $id)>{{ $name }}</option>
+                <option value="{{ $id }}" @selected(old('location_id', data_get($slot, 'location_id') ?: $prefill_location_id) == $id)>{{ $name }}</option>
             @endforeach
         </select>
         @error('location_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

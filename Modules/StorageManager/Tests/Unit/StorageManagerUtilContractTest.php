@@ -40,8 +40,8 @@ class StorageManagerUtilContractTest extends TestCase
         $this->assertTrue(method_exists(StorageManagerUtil::class, 'getAreasDropdown'));
     }
 
-    public function test_warehouse_map_card_builder_exists_for_area_aware_rendering(): void
+    public function test_warehouse_map_loads_slots_grouped_by_category(): void
     {
-        $this->assertTrue(method_exists(StorageManagerUtil::class, 'getWarehouseMapCardsForLocation'));
+        $this->assertTrue(method_exists(StorageManagerUtil::class, 'getSlotsForLocation'));
     }
 }

@@ -1,0 +1,37 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+
+    # --- Scope ---
+    # Start narrow: app/ plus Modules/ only. Expand after baseline stabilises.
+    paths:
+        - app/
+        - Modules/
+
+    # Exclude generated / vendor-adjacent paths within Modules
+    excludePaths:
+        - Modules/*/node_modules
+        - Modules/*/Database/Migrations
+        - Modules/*/Database/Seeders
+        - Modules/*/Database/Factories
+        - Modules/Projectauto/node_modules
+
+    # --- Level ---
+    # Level 0 = basic type mistakes; increase incrementally once a baseline exists.
+    # Run "composer phpstan:baseline" to capture current errors and ratchet from there.
+    level: 0
+
+    # --- Laravel ---
+    # Required by Larastan to locate the application bootstrap
+    bootstrapFiles: []
+
+    # Suppress noisy errors that come from generated code or legacy patterns
+    # until the baseline is introduced. Remove once phpstan-baseline.neon exists.
+    ignoreErrors:
+        # Ignore missing model relations / dynamic properties until level is raised
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Property [A-Za-z\\]+::\$[a-zA-Z]+ does not exist#'
+
+    # --- Universally suppress ---
+    reportUnmatchedIgnoredErrors: false

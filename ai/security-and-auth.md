@@ -162,6 +162,9 @@ Permissions follow pattern `module.action`:
 | `opening_stock.access` | Access opening stock |
 | `cash_register.view` | View cash registers |
 
+VAS note:
+`vas_accounting.inventory.destroy_draft` is reserved for admin roles and only allows deleting unposted warehouse documents. Posted warehouse documents must still be reversed.
+
 ### 3.5 Permission Caching
 
 Spatie caches permissions. After any permission/role change, reset the cache:

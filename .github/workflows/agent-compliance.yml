@@ -1,0 +1,130 @@
+name: Agent Compliance
+
+# Checks two things on every PR and push to main:
+#   1. Blade constitution (diff-only): no @php view-data defaults in changed files
+#   2. Tenant-scope heuristic (diff-only): no bare findOrFail without business_id
+#   3. PHPStan (level 0, app/ + Modules/): type-checking baseline (runs on PRs)
+#
+# Full-repo Blade scan runs weekly on main (nightly cadence would be slow).
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    # Weekly full Blade scan — every Sunday 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: 'Run full Blade scan (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Blade constitution — diff-only on PRs / pushes; full scan on schedule
+  # ---------------------------------------------------------------------------
+  blade-constitution:
+    name: Blade constitution check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # needed so git merge-base works for diff mode
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Resolve base SHA for diff mode
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Blade compliance check (diff)
+        if: github.event_name != 'schedule' && github.event.inputs.full_scan != 'true'
+        env:
+          COMPLIANCE_BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: php scripts/check-agents-compliance.php
+
+      - name: Run Blade compliance check (full + allowlist)
+        if: github.event_name == 'schedule' || github.event.inputs.full_scan == 'true'
+        run: php scripts/check-agents-compliance.php --full
+
+  # ---------------------------------------------------------------------------
+  # 2. Tenant-scope heuristic — diff-only (WARN-only, exits 0 for WARNs)
+  # ---------------------------------------------------------------------------
+  tenant-scope:
+    name: Tenant scope heuristic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Resolve base SHA
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tenant-scope heuristic
+        env:
+          COMPLIANCE_BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: php scripts/check-tenant-scope.php
+
+  # ---------------------------------------------------------------------------
+  # 3. PHPStan — only on pull_request and workflow_dispatch
+  #    Requires "composer install" with dev dependencies.
+  # ---------------------------------------------------------------------------
+  phpstan:
+    name: PHPStan (level 0)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies (with dev)
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPStan
+        run: composer phpstan

@@ -123,13 +123,30 @@
                                     <div class="card card-flush h-100">
                                         {{-- Decorative hatched header strip (matches mockup) --}}
                                         <div class="card-header pt-4 pb-0 border-0">
+                                            @if(($zone['category'] ?? null) === 'damaged')
+                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#ff6262,#e10e0e0 4px,#ffcc0a 4px,#d8ff00 10px);"></div>
+                                            @elseif (($zone['area_type'] ?? null) === 'staging_in')
+                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#91ff01,#007a25 4px,#76ff05 4px,#1df5d1 10px);"></div>
+                                            @else
                                             <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
+                                            @endif
+
                                         </div>
                                         <div class="card-body pt-2 pb-4">
-                                            <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ optional($zone['category'])->name ?? '—' }}</h4>
+                                            <h4 class="fw-bold text-gray-800 fs-5 mb-5">{{ $zone['label'] ?? '—' }}</h4>
 
                                             {{-- Slot cells --}}
                                             <div class="d-flex flex-column gap-3 mb-4">
+                                                @if($slots->isEmpty())
+                                                    <div class="text-center py-6">
+                                                        <p class="text-muted fw-semibold fs-7 mb-3">@lang('lang_v1.warehouse_map_no_slot_cells')</p>
+                                                        @can('storage_manager.manage')
+                                                        <a href="{{ route('storage-manager.slots.create', ['location_id' => $location_id]) }}" class="btn btn-sm btn-primary">
+                                                            @lang('lang_v1.add_storage_slot')
+                                                        </a>
+                                                        @endcan
+                                                    </div>
+                                                @else
                                                 @foreach($slotsByRow as $rowSlots)
                                                     <div class="d-flex flex-wrap gap-3">
                                                         @foreach($rowSlots as $slot)
@@ -145,8 +162,8 @@
                                                                 data-is-full="{{ $isFull ? '1' : '0' }}"
                                                                 data-capacity="{{ $slot->max_capacity }}"
                                                                 data-occupancy="{{ $slot->occupancy }}"
-                                                                data-zone="{{ optional($zone['category'])->name }}"
-                                                                data-slot-context="{{ optional($zone['category'])->name }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
+                                                                data-zone="{{ $zone['label'] ?? '—' }}"
+                                                                data-slot-context="{{ $zone['label'] ?? '—' }} › @lang('lang_v1.row') {{ $slot->row }} › @lang('lang_v1.position') {{ $slot->position }}">
                                                                 {{ $label }}
                                                             </button>
                                                         @endforeach
@@ -158,6 +175,7 @@
                                                         onclick="window.location='{{ route('storage-manager.slots.index', ['location_id' => $location_id]) }}&category_id={{ optional($zone['category'])->id }}'">
                                                         +{{ $overflow }}
                                                     </button>
+                                                @endif
                                                 @endif
                                             </div>
 

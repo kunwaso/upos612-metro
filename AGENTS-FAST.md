@@ -70,6 +70,30 @@ Pick one lane first:
 
 Use full `AGENTS.md` process for multi-file or higher-risk work.
 
+### 3.2) Lane → Expected Artifact
+
+Each lane should produce a specific output shape so "done" is unambiguous:
+
+| Lane | Expected artifact on completion |
+|------|--------------------------------|
+| `tiny` | Code change + one verification note (lint or smoke check) |
+| `explain` | Answer with evidence (file refs or reasoning) and stated caveats |
+| `analyze` | Structured findings list with file paths and evidence per finding |
+| `implement` | Code + tests/lints result + what changed and what was verified |
+| `investigate` | Root-cause diagnosis with evidence chain (file:line, flow, reproduction) |
+| `review` | Numbered findings with severity, evidence, and optional fix suggestions |
+| `log-scan` | Log excerpt per issue + fix location + verification result |
+| `lint-fix` | Clean lint output (or list of unfixable items with reasons) |
+| `test-fix` | Green test output (or list of remaining failures with diagnosis) |
+| `tenant-audit` | Checklist with pass/fail per item + grep evidence per finding |
+| `execute-plan` | Phase checkboxes from `.cursor/plans/` + per-phase verification |
+| `web-audit` | Persisted report + fix list + re-audit verification |
+| `dependency-eval` | Adopt / adapt / reject decision with comparison evidence |
+| `external-adapt` | Landing file list + adapted code + verification |
+| `design-audit` | Checklist (focus, contrast, structure, assets) with pass/fail per item |
+
+If the final output does not match the expected artifact shape, the lane is not complete.
+
 Stop conditions for the most common lanes:
 
 1. Conceptual question: answer from reasoning first; only add repo grounding if it changes the answer.
