@@ -110,6 +110,12 @@
         "translation:audit": [
             "@php scripts/translation-audit.php"
         ],
+        "entrypoints:generate": [
+            "@php scripts/generate-entrypoint-maps.php"
+        ],
+        "entrypoints:check": [
+            "@php scripts/generate-entrypoint-maps.php --check"
+        ],
         "test:clean:aichat": [
             "@php -d error_reporting=8191 vendor/bin/phpunit Modules/Aichat/Tests"
         ]

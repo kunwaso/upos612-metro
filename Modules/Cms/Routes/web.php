@@ -27,7 +27,10 @@ Route::get('shop/about-us', [Modules\Cms\Http\Controllers\CmsController::class, 
 // decor-store static storefront (reference HTML clones)
 Route::get('shop/catalog', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCatalog'])->name('cms.store.shop');
 Route::get('shop/collections', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCollections'])->name('cms.store.collections');
-Route::get('shop/product', [Modules\Cms\Http\Controllers\CmsController::class, 'shopProduct'])->name('cms.store.product');
+Route::redirect('shop/product', '/shop/catalog', 301);
+Route::get('shop/product/{id}', [Modules\Cms\Http\Controllers\CmsController::class, 'shopProductShow'])
+    ->whereNumber('id')
+    ->name('cms.store.product.show');
 Route::get('shop/cart', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCart'])->name('cms.store.cart');
 Route::get('shop/checkout', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCheckout'])->name('cms.store.checkout');
 Route::get('shop/account', [Modules\Cms\Http\Controllers\CmsController::class, 'shopAccount'])->name('cms.store.account');

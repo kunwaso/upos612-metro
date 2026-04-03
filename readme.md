@@ -34,8 +34,13 @@ Use these docs in this order when working with Codex or Cursor in this repo:
 
 1. `AGENTS-FAST.md` for the short lane picker and day-to-day execution defaults
 2. `AGENTS.md` for the canonical workflow, tool-depth policy, and five checks
-3. `ai/agent-tools-and-mcp.md` for exact tool choice, MCP fallback, and startup behavior
-4. `.cursor/plans/README.md` for phased implementation plans with verification and todo lists
+3. `ai/entrypoints/INDEX.md` when the correct root or module entry point is unclear
+4. `ai/agent-tools-and-mcp.md` for exact tool choice, MCP fallback, and startup behavior
+5. `.cursor/plans/README.md` for phased implementation plans with verification and todo lists
+
+### CMS public storefront catalog
+
+The CMS shop at `/shop/catalog` lists **`App\Product`** rows for the business id set in **`.env`** as **`CMS_STOREFRONT_BUSINESS_ID`** (integer). If unset, the catalog renders empty. After changing `.env`, run `php artisan config:clear` if config is cached.
 
 README is only the entry point. It should link to the canonical docs above instead of duplicating policy.
 
@@ -68,6 +73,5 @@ php artisan vendor:publish --tag=cms-assets --force
 ./warm-and-index.bat --skip-gitnexus --no-pause
 
 php mcp/semantic-code-search-mcp/bin/index-codebase --force
-
 
 

@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Modules\Cms\Entities\CmsPage;
 use Modules\Cms\Entities\CmsSiteDetail;
 use Modules\Cms\Notifications\NewLeadGeneratedNotification;
+use Modules\Cms\Utils\CmsStorefrontCatalogUtil;
 use Modules\Cms\Utils\CmsUtil;
 use Notification;
 
@@ -21,11 +22,12 @@ class CmsController extends Controller
     /**
      * Constructor
      *
-     * @param  ProductUtils  $product
      * @return void
      */
-    public function __construct(CmsUtil $cmsUtil)
-    {
+    public function __construct(
+        CmsUtil $cmsUtil,
+        protected CmsStorefrontCatalogUtil $storefrontCatalogUtil
+    ) {
         $this->cmsUtil = $cmsUtil;
     }
 
@@ -41,8 +43,24 @@ class CmsController extends Controller
         $faqs = CmsSiteDetail::getValue('faqs');
         $statistics = CmsSiteDetail::getValue('statistics');
 
+        $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
+        $homeProducts = $this->storefrontCatalogUtil->getHomeProducts(12);
+        $homeProductCards = $homeProducts->map(function ($product) use ($business) {
+            return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
+        })->values();
+        $homeSliderCards = $homeProducts->take(3)->map(function ($product) use ($business) {
+            return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
+        })->values();
+
         return view('cms::frontend.pages.home')
-            ->with(compact('testimonials', 'faqs', 'statistics', 'page'));
+            ->with(compact(
+                'testimonials',
+                'faqs',
+                'statistics',
+                'page',
+                'homeProductCards',
+                'homeSliderCards'
+            ));
     }
 
     public function baobicuon()
@@ -187,9 +205,26 @@ class CmsController extends Controller
             ->with(compact('page'));
     }
 
-    public function shopCatalog()
+    public function shopCatalog(\Illuminate\Http\Request $request)
     {
-        return view('cms::frontend.pages.shop');
+        $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
+        $products = $this->storefrontCatalogUtil->paginateCatalog($request, 12);
+        $products = $products->through(function ($product) use ($business) {
+            return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
+        });
+        $resultsSummary = $this->storefrontCatalogUtil->buildResultsSummary($products);
+        $catalogSort = $request->query('sort');
+        if (! in_array($catalogSort, ['latest', 'name'], true)) {
+            $catalogSort = 'latest';
+        }
+        $sidebarProducts = $this->storefrontCatalogUtil->getSidebarPreviewProducts(9);
+        $sidebarCards = $sidebarProducts->map(function ($product) use ($business) {
+            return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
+        })->values();
+        $sidebarSlides = $sidebarCards->chunk(3);
+
+        return view('cms::frontend.pages.shop')
+            ->with(compact('products', 'resultsSummary', 'catalogSort', 'sidebarSlides'));
     }
 
     public function shopCollections()
@@ -197,9 +232,25 @@ class CmsController extends Controller
         return view('cms::frontend.pages.collections');
     }
 
-    public function shopProduct()
+    public function shopProductShow(int $id)
     {
-        return view('cms::frontend.pages.single_product');
+        $businessId = $this->storefrontCatalogUtil->getStorefrontBusinessId();
+        if ($businessId === null) {
+            abort(404);
+        }
+        $product = $this->storefrontCatalogUtil->findProductForStorefront($businessId, $id);
+        if ($product === null) {
+            abort(404);
+        }
+        $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
+        $detail = $this->storefrontCatalogUtil->buildDetailPresentation($product, $business);
+        $galleryUrls = $this->storefrontCatalogUtil->buildGalleryUrls($product);
+        $relatedProductCards = $this->storefrontCatalogUtil->getRelatedProductCards($product, 4);
+        $pageTitle = $detail['title'];
+        $metaDescription = \Illuminate\Support\Str::limit($detail['description_plain'] ?? '', 160);
+
+        return view('cms::frontend.pages.single_product')
+            ->with(compact('detail', 'galleryUrls', 'relatedProductCards', 'pageTitle', 'metaDescription'));
     }
 
     public function shopCart()

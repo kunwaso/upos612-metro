@@ -177,6 +177,12 @@ This keeps external evaluation grounded in local repo truth instead of drifting 
 - Use **semantic search** for “where is X done?” or “how does this flow work?” when the exact symbol is unknown.
 - Use **grep or semantic search first**, then read only the narrowed files or line ranges.
 
+### 2.1a Entry maps narrow the first read
+
+- When the repo area is unclear, start with `ai/entrypoints/INDEX.md`, then open one root or module map before widening search.
+- Treat entry maps as a checkout-aware narrowing layer for route files, controller roots, and primary view directories.
+- Entry maps do **not** replace grep, semantic search, GitNexus, or repo-aware MCP tools; they only reduce blind first-pass reads.
+
 ### 2.2 File reading
 
 - When `read_file_cache` is enabled and healthy, use it for workspace text-file reads.

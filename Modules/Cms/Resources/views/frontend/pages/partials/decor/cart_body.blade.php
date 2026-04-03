@@ -34,62 +34,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr> 
-                                            <td class="product-remove">
-                                                <a href="#" class="fs-20 fw-500">×</a>
+                                        <tr>
+                                            <td colspan="6" class="text-center py-50px alt-font text-dark-gray">
+                                                <p class="mb-15px">{{ __('cms::lang.storefront_empty_cart') }}</p>
+                                                <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-medium btn-switch-text btn-round-edge btn-box-shadow">
+                                                    <span><span class="btn-double-text" data-text="{{ __('cms::lang.storefront_browse_shop') }}">{{ __('cms::lang.storefront_browse_shop') }}</span></span>
+                                                </a>
                                             </td>
-                                            <td class="product-thumbnail"><a href="{{ route('cms.store.product') }}"><img class="cart-product-image" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-01.jpg') }}" alt=""></a></td>
-                                            <td class="product-name">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Table clock</a> 
-                                                <span class="fs-14">Color: Pink</span>
-                                            </td>
-                                            <td class="product-price" data-title="Price">$23.00</td>
-                                            <td class="product-quantity" data-title="Quantity">
-                                                <div class="quantity">
-                                                    <button type="button" class="qty-minus">-</button>
-                                                    <input class="qty-text" type="text" id="1" value="1" aria-label="qty-text">
-                                                    <button type="button" class="qty-plus">+</button>
-                                                </div>
-                                            </td> 
-                                            <td class="product-subtotal" data-title="Total">$23.00</td> 
-                                        </tr>
-                                        <tr> 
-                                            <td class="product-remove">
-                                                <a href="#" class="fs-20 fw-500">×</a>
-                                            </td>
-                                            <td class="product-thumbnail"><a href="{{ route('cms.store.product') }}"><img class="cart-product-image" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-09.jpg') }}" alt=""></a></td>
-                                            <td class="product-name">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Designer pot</a> 
-                                                <span class="fs-14">Color: Brown</span>
-                                            </td>
-                                            <td class="product-price" data-title="Price">$35.00</td>
-                                            <td class="product-quantity" data-title="Quantity">
-                                                <div class="quantity">
-                                                    <button type="button" class="qty-minus">-</button>
-                                                    <input class="qty-text" type="text" id="2" value="1" aria-label="qty-text">
-                                                    <button type="button" class="qty-plus">+</button>
-                                                </div>
-                                            </td> 
-                                            <td class="product-subtotal" data-title="Total">$70.00</td> 
-                                        </tr>
-                                        <tr> 
-                                            <td class="product-remove">
-                                                <a href="#" class="fs-20 fw-500">×</a>
-                                            </td>
-                                            <td class="product-thumbnail"><a href="{{ route('cms.store.product') }}"><img class="cart-product-image" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-03.jpg') }}" alt=""></a></td>
-                                            <td class="product-name">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Ceramic mug</a> 
-                                                <span class="fs-14">Color: White</span>
-                                            </td>
-                                            <td class="product-price" data-title="Price">$15.00</td>
-                                            <td class="product-quantity" data-title="Quantity">
-                                                <div class="quantity">
-                                                    <button type="button" class="qty-minus">-</button>
-                                                    <input class="qty-text" type="text" id="3" value="1" aria-label="qty-text">
-                                                    <button type="button" class="qty-plus">+</button>
-                                                </div>
-                                            </td> 
-                                            <td class="product-subtotal" data-title="Total">$15.00</td> 
                                         </tr>
                                     </tbody>
                                 </table>
@@ -115,7 +66,7 @@
                                 <tbody>
                                     <tr>
                                         <th class="w-45 fw-600 text-dark-gray alt-font">Subtotal</th>
-                                        <td class="text-dark-gray fw-600">$405.00</td>
+                                        <td class="text-dark-gray fw-600">—</td>
                                     </tr>
                                     <tr class="shipping">
                                         <th class="fw-600 text-dark-gray alt-font">Shipping</th>
@@ -406,8 +357,8 @@
                                     <tr class="total-amount">
                                         <th class="fw-600 text-dark-gray alt-font pb-0">Total</th>
                                         <td class="pb-0" data-title="Total">
-                                            <h6 class="d-block fw-700 mb-0 text-dark-gray alt-font">$405.00</h6>
-                                            <span class="fs-14">(Includes $19.29 tax)</span>
+                                            <h6 class="d-block fw-700 mb-0 text-dark-gray alt-font">—</h6>
+                                            <span class="fs-14"></span>
                                         </td>
                                     </tr>
                                 </tbody>

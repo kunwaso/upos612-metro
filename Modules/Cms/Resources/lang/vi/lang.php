@@ -91,4 +91,13 @@ return [
     'storefront_cart' => 'Giỏ hàng',
     'storefront_checkout' => 'Thanh toán',
     'storefront_wishlist' => 'Danh sách yêu thích',
+    'storefront_product' => 'Sản phẩm',
+    'storefront_no_products' => 'Chưa có sản phẩm.',
+    'storefront_no_results' => 'Không có kết quả',
+    'storefront_showing_results' => 'Hiển thị :from–:to trong :total kết quả',
+    'storefront_price_on_request' => 'Liên hệ báo giá',
+    'storefront_price_from' => 'Từ :price',
+    'storefront_empty_cart' => 'Giỏ hàng của bạn đang trống.',
+    'storefront_empty_wishlist' => 'Danh sách yêu thích đang trống.',
+    'storefront_browse_shop' => 'Xem cửa hàng',
 ];

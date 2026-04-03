@@ -27,287 +27,31 @@
                                 <a href="#" class="me-10px"><img src="{{ asset('modules/cms/assets/images/shop-four-column.svg') }}" class="opacity-5" alt="" /></a>
                                 <a href="#"><img src="{{ asset('modules/cms/assets/images/shop-list.svg') }}" class="opacity-5" alt="" /></a>
                             </div>
-                            <div class="ms-20px xs-ms-0">Showing 1–12 of 48 results</div>
+                            <div class="ms-20px xs-ms-0">{{ $resultsSummary ?? '' }}</div>
                             <div class="mx-auto me-sm-0">
-                                <select class="form-select border-0 background-position-right" aria-label="Default sorting">
-                                    <option selected>Default sorting</option>
-                                    <option value="1">Sort by popularity</option>
-                                    <option value="2">Sort by average rating</option>
-                                    <option value="3">Sort by latest</option>
-                                    <option value="4">Sort by price: low to high</option>
-                                    <option value="5">Sort by price: high to low</option>
-                                </select>
+                                <form method="get" action="{{ route('cms.store.shop') }}" class="d-inline-block">
+                                    <select name="sort" class="form-select border-0 background-position-right" aria-label="Sorting" onchange="this.form.submit()">
+                                        <option value="latest" @selected(($catalogSort ?? 'latest') === 'latest')>Sort by latest</option>
+                                        <option value="name" @selected(($catalogSort ?? '') === 'name')>Sort by name</option>
+                                    </select>
+                                </form>
                             </div>
                         </div>
                         <ul class="shop-boxed shop-wrapper grid-loading grid grid-4col xxl-grid-4col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center" data-anime='{ "el": "childs", "translateY": [50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
                             <li class="grid-sizer"></li>
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-01.jpg') }}" alt="" />
-                                            <span class="lable new">New</span>
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$23.00</div>
-                                    </div>
-                                </div>
+                            @forelse($products ?? [] as $card)
+                            @include('cms::frontend.pages.partials.storefront.product_card', ['card' => $card])
+                            @empty
+                            <li class="grid-item w-100">
+                                <p class="text-center alt-font text-dark-gray py-5 mb-0">{{ __('cms::lang.storefront_no_products') }}</p>
                             </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-14.jpg') }}" alt="" /> 
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
-                                        <div class="fw-500 fs-15 lh-normal">$54.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <span class="lable new">New</span>
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-12.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$20.00</del>$15.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-05.jpg') }}" alt="" /> 
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$35.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-06.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
-                                        <div class="fw-500 fs-15 lh-normal">$23.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-13.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$25.00</del>$15.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-09.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
-                                        <div class="fw-500 fs-15 lh-normal">$35.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-10.jpg') }}" alt="" />
-                                            <span class="lable hot">Hot</span>
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
-                                        <div class="fw-500 fs-15 lh-normal">$19.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-11.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Watch box</a>
-                                        <div class="fw-500 fs-15 lh-normal">$22.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <span class="lable new">New</span>
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-02.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Modern stool</a>
-                                        <div class="fw-500 fs-15 lh-normal">$19.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-03.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Nutcracker</a>
-                                        <div class="fw-500 fs-15 lh-normal">$28.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-15.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decor lamp</a>
-                                        <div class="fw-500 fs-15 lh-normal">$12.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
+                            @endforelse
                         </ul>
+                        @if(isset($products) && $products->hasPages())
                         <div class="w-100 d-flex mt-3 justify-content-center" data-anime='{ "translateY": [0, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
-                            <ul class="pagination pagination-style-01 fs-13 fw-500 mb-0">
-                                <li class="page-item"><a class="page-link" href="#"><i class="feather icon-feather-arrow-left fs-18 d-xs-none"></i></a></li>
-                                <li class="page-item"><a class="page-link" href="#">01</a></li>
-                                <li class="page-item active"><a class="page-link" href="#">02</a></li>
-                                <li class="page-item"><a class="page-link" href="#">03</a></li>
-                                <li class="page-item"><a class="page-link" href="#">04</a></li>
-                                <li class="page-item"><a class="page-link" href="#"><i class="feather icon-feather-arrow-right fs-18 d-xs-none"></i></a></li>
-                            </ul>
+                            {{ $products->links() }}
                         </div>
+                        @endif
                     </div>
                     <div class="col-xxl-2 col-lg-3 shop-sidebar">
                         <div class="mb-30px">
@@ -336,10 +80,10 @@
                         <div class="mb-30px">
                             <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by fabric</span>
                             <ul class="fs-15 shop-filter fabric-filter">
-                                <li><a href="#"><span class="product-cb product-fabric-cb"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-listing-fabric-01.jpg') }}" alt=""/></span>Polyolefin</a><span class="item-qty">08</span></li> 
-                                <li><a href="#"><span class="product-cb product-fabric-cb"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-listing-fabric-02.jpg') }}" alt=""/></span>Jute fabric</a><span class="item-qty">03</span></li>
-                                <li><a href="#"><span class="product-cb product-fabric-cb"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-listing-fabric-03.jpg') }}" alt=""/></span>Crepe fabric</a><span class="item-qty">20</span></li>
-                                <li><a href="#"><span class="product-cb product-fabric-cb"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-listing-fabric-04.jpg') }}" alt=""/></span>Wollen fabric</a><span class="item-qty">08</span></li>
+                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Polyolefin</a><span class="item-qty">08</span></li> 
+                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Jute fabric</a><span class="item-qty">03</span></li>
+                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Crepe fabric</a><span class="item-qty">20</span></li>
+                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Wollen fabric</a><span class="item-qty">08</span></li>
                             </ul>
                         </div>
                         <div class="mb-30px">
@@ -364,87 +108,33 @@
                             </div>
                             <div class="swiper slider-one-slide" data-slider-options='{ "slidesPerView": 1, "loop": true, "autoplay": { "delay": 5000, "disableOnInteraction": false }, "navigation": { "nextEl": ".slider-one-slide-next-1", "prevEl": ".slider-one-slide-prev-1" }, "keyboard": { "enabled": true, "onlyInViewport": true }, "effect": "slide" }'>
                                 <div class="swiper-wrapper">
-                                    <!-- start text slider item -->
+                                    @forelse(($sidebarSlides ?? collect()) as $slideRow)
                                     <div class="swiper-slide">
-                                        <div class="shop-filter new-arribals"> 
-                                            <div class="d-flex align-items-center mb-20px">
+                                        <div class="shop-filter new-arribals">
+                                            @foreach($slideRow as $row)
+                                            <div class="d-flex align-items-center {{ !$loop->last ? 'mb-20px' : '' }}">
                                                 <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-01.jpg') }}" alt="">
+                                                    <a href="{{ $row['url'] }}">
+                                                        <img class="border-radius-4px w-80px" src="{{ $row['image_url'] }}" alt="{{ $row['name'] }}">
                                                     </a>
                                                 </figure>
                                                 <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Table clock</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$30.00</del>$23.00</div>
+                                                    <a href="{{ $row['url'] }}" class="text-dark-gray alt-font fw-600">{{ $row['name'] }}</a>
+                                                    <div class="fw-500 fs-14 lh-normal">{{ $row['price_label'] }}</div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex align-items-center mb-20px">
-                                                <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-14.jpg') }}" alt="">
-                                                    </a>
-                                                </figure>
-                                                <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Wood stool</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$50.00</del>$43.00</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-12.jpg') }}" alt="">
-                                                    </a>
-                                                </figure>
-                                                <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Wall clock</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$20.00</del>$15.00</div>
-                                                </div>
-                                            </div>
+                                            @endforeach
                                         </div>
                                     </div>
-                                    <!-- end text slider item -->
-                                    <!-- start text slider item -->
+                                    @empty
                                     <div class="swiper-slide">
-                                        <div class="shop-filter new-arribals"> 
-                                            <div class="d-flex align-items-center mb-20px">
-                                                <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-06.jpg') }}" alt="">
-                                                    </a>
-                                                </figure>
-                                                <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Ceramic pot</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$15.00</del>$10.00</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center mb-20px">
-                                                <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-09.jpg') }}" alt="">
-                                                    </a>
-                                                </figure>
-                                                <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Ceramic jar</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$35.00</del>$30.00</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <figure class="mb-0">
-                                                    <a href="{{ route('cms.store.product') }}">
-                                                        <img class="border-radius-4px w-80px" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-13.jpg') }}" alt="">
-                                                    </a>
-                                                </figure>
-                                                <div class="col ps-25px">
-                                                    <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fw-600">Classic stool</a>
-                                                    <div class="fw-500 fs-14 lh-normal"><del class="me-5px">$20.00</del>$15.00</div>
-                                                </div>
-                                            </div>
+                                        <div class="shop-filter new-arribals">
+                                            <p class="text-dark-gray alt-font fs-14 mb-0">{{ __('cms::lang.storefront_no_products') }}</p>
                                         </div>
                                     </div>
-                                    <!-- end text slider item -->
+                                    @endforelse
                                 </div>
-                                <!-- start slider navigation --> 
-                            </div> 
+                            </div>
                         </div>
                         <div>
                             <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by tags</span>

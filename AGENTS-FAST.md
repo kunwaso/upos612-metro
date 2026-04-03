@@ -48,14 +48,14 @@ Pick one lane first:
 
 | Intent | Use when | Default flow |
 |---|---|---|
-| `tiny` | Single file or tightly scoped change | restate -> grep/read smallest target -> edit -> verify changed scope |
+| `tiny` | Single file or tightly scoped change | restate -> if location unknown open `ai/entrypoints/INDEX.md` -> grep/read smallest target -> edit -> verify changed scope |
 | `explain` | User wants understanding only | reasoning or grep -> targeted read -> answer; stop before heavy repo tools unless repo truth is required |
 | `analyze` | Audit module, clone, or understand codebase | project_map/filesystem -> grep first -> targeted/parallel reads -> full read only when editing |
 | `dependency-eval` | Evaluate a GitHub repo, library, or dependency before adoption | project_map -> composer/manifests -> fetch upstream docs -> compare -> adopt/adapt/reject |
 | `external-adapt` | Adapt a pattern or example from an external repo | project_map -> closest local example -> fetch upstream docs -> map into route/Form Request/Util/controller/view/module |
 | `investigate` | "doesn't work", "stops after X" | restate flow -> grep exact identifier -> targeted read -> compare bind vs DOM update -> fix or answer |
 | `review` | User asks for review/audit | findings first -> evidence -> brief summary |
-| `implement` | Default for fix/feature | inspect -> plan with files/verification -> edit -> verify changed scope first, then broader checks if needed |
+| `implement` | Default for fix/feature | if location unknown open `ai/entrypoints/INDEX.md` -> inspect -> plan with files/verification -> edit -> verify changed scope first, then broader checks if needed |
 | `log-scan` | User asks to scan/fix Laravel log or fix issues from `storage/logs` | glob latest `storage/logs/laravel-*.log` -> read -> parse errors -> investigate -> fix -> verify |
 | `lint-fix` | User asks to fix linter errors, IDE diagnostics, or "fix lint" | Read lints (scope) -> fix each finding -> re-run lints |
 | `test-fix` | User asks to fix failing tests or pastes test output | parse output -> locate failure -> fix test or code -> re-run tests |
@@ -98,11 +98,12 @@ For multi-file work, name the target files or scopes, ownership split, no-change
 For single-file or very small changes:
 
 1. Restate the goal in one sentence.
-2. Narrow target with grep/semantic search.
-3. Read only the required file or line range.
-4. Make minimal edit.
-5. Run closest validation on the narrowed scope. For PHP syntax issues, use grep/read first and run `php -l` only on the suspected or changed file.
-6. Report what changed and what was verified.
+2. If location is unknown, open `ai/entrypoints/INDEX.md` and one area map first.
+3. Narrow target with grep/semantic search.
+4. Read only the required file or line range.
+5. Make minimal edit.
+6. Run closest validation on the narrowed scope. For PHP syntax issues, use grep/read first and run `php -l` only on the suspected or changed file.
+7. Report what changed and what was verified.
 
 **Analyze/scan (module audit, clone, codebase understanding):** Grep (or glob) first to list files and find references; read only flagged files or line ranges, in parallel when independent (3–5 per turn); full-file read only when editing. See `ai/agent-tools-and-mcp.md` §2.8.
 
@@ -192,6 +193,7 @@ Read only the domain doc(s) you touch:
 | Architecture conventions | `ai/laravel-conventions.md` |
 | DB queries/migrations | `ai/database-map.md` |
 | Auth/security/permissions | `ai/security-and-auth.md` |
+| Unclear entry points / where to start reading | `ai/entrypoints/INDEX.md` first, then one area map, then the relevant domain doc(s) below |
 | Existing bug-prone areas | `ai/known-issues.md` |
 | MCP/tool choice | `ai/agent-tools-and-mcp.md` |
 | External repo / GitHub / trending evaluation | `ai/external-adoption.md` |

@@ -93,4 +93,13 @@ return [
     'storefront_cart' => 'Cart',
     'storefront_checkout' => 'Checkout',
     'storefront_wishlist' => 'Wishlist',
+    'storefront_product' => 'Product',
+    'storefront_no_products' => 'No products to show yet.',
+    'storefront_no_results' => 'No results',
+    'storefront_showing_results' => 'Showing :from–:to of :total results',
+    'storefront_price_on_request' => 'Price on request',
+    'storefront_price_from' => 'From :price',
+    'storefront_empty_cart' => 'Your cart is empty.',
+    'storefront_empty_wishlist' => 'Your wishlist is empty.',
+    'storefront_browse_shop' => 'Browse shop',
 ];

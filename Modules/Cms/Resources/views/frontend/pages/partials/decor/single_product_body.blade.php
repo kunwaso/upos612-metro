@@ -6,7 +6,7 @@
                         <ul>
                             <li><a href="{{ route('cms.home') }}">Home</a></li>
                             <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
-                            <li>Minimalist wooden chair</li>
+                            <li>{{ $detail['title'] ?? '' }}</li>
                         </ul>
                     </div>
                 </div>
@@ -22,72 +22,34 @@
                             <div class="col-12 position-relative product-image">
                                 <div class="swiper product-image-slider" data-slider-options='{ "spaceBetween": 0, "watchOverflow": true, "navigation": { "nextEl": ".slider-product-next", "prevEl": ".slider-product-prev" }, "thumbs": { "swiper": { "el": ".product-image-thumb", "slidesPerView": "5", "spaceBetween": 15 } } }' data-swiper-thumb-click="1">
                                     <div class="swiper-wrapper">
-                                        <!-- start slider item -->
+                                        @foreach(($galleryUrls ?? []) as $url)
                                         <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01.jpg') }}" alt="">
+                                            <a href="{{ $url }}" data-group="lightbox-gallery" title="{{ $detail['title'] ?? '' }}">
+                                                <img class="w-100" src="{{ $url }}" alt="{{ $detail['title'] ?? '' }}">
                                             </a>
                                         </div>
-                                        <!-- end slider item -->
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-a.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-a.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item -->
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-b.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-b.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item -->
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-c.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-c.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item -->
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-d.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item --> 
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-d.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item --> 
-                                        <div class="swiper-slide gallery-box">
-                                            <a href="images/demo-decor-store-product-detail-01-d.jpg" data-group="lightbox-gallery" title="Minimalist wooden chair">
-                                                <img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- end slider item --> 
+                                        @endforeach
                                     </div>
                                 </div>
                                 <div class="slider-product-next swiper-button-next border-radius-100 border border-1 border-color-extra-medium-gray"><i class="fa fa-chevron-right text-dark-gray icon-very-small"></i></div>
                                 <div class="slider-product-prev swiper-button-prev border-radius-100 border border-1 border-color-extra-medium-gray"><i class="fa fa-chevron-left text-dark-gray icon-very-small"></i></div>
                             </div>
+                            @if(count($galleryUrls ?? []) > 1)
                             <div class="col-12 position-relative">
                                 <div class="swiper-container product-image-thumb">
                                     <div class="swiper-wrapper">
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01.jpg') }}" alt=""></div>
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-a.jpg') }}" alt=""></div>
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-b.jpg') }}" alt=""></div>
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-c.jpg') }}" alt=""></div> 
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt=""></div>
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt=""></div>
-                                        <div class="swiper-slide"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-01-d.jpg') }}" alt=""></div>
+                                        @foreach(($galleryUrls ?? []) as $url)
+                                        <div class="swiper-slide"><img class="w-100" src="{{ $url }}" alt="{{ $detail['title'] ?? '' }}"></div>
+                                        @endforeach
                                     </div>
-                                </div> 
+                                </div>
                             </div>
+                            @endif
                         </div>
                     </div>
                     <div class="col-lg-5 offset-lg-1 product-info" data-anime='{ "translate": [0, 0], "opacity": [0,1], "duration": 600, "delay": 100, "staggervalue": 150, "easing": "easeOutQuad" }'>
-                        <span class="fw-500 text-dark-gray d-block">Interio</span>
-                        <h5 class="alt-font text-dark-gray fw-700 mb-10px">Minimalist wooden chair</h5>
+                        <span class="fw-500 text-dark-gray d-block">{{ config('app.name') }}</span>
+                        <h5 class="alt-font text-dark-gray fw-700 mb-10px">{{ $detail['title'] ?? '' }}</h5>
                         <div class="d-block d-sm-flex align-items-center mb-20px">
                             <div class="me-10px xs-me-0">
                                 <a href="#tab" class="section-link ls-minus-1px icon-small">
@@ -99,12 +61,16 @@
                                 </a>
                             </div>
                             <a href="#tab" class="me-25px text-dark-gray fw-500 section-link xs-me-0">165 Reviews</a>
-                            <div><span class="text-dark-gray fw-500">SKU: </span>M492300</div>
+                            @if(! empty($detail['sku']))
+                            <div><span class="text-dark-gray fw-500">SKU: </span>{{ $detail['sku'] }}</div>
+                            @endif
                         </div>
                         <div class="product-price mb-10px">
-                            <span class="text-dark-gray fs-28 xs-fs-24 fw-700 ls-minus-1px"><del class="text-medium-gray me-10px fw-500">$85.00</del>$65.00</span>
+                            <span class="text-dark-gray fs-28 xs-fs-24 fw-700 ls-minus-1px">{{ $detail['price_label'] ?? '' }}</span>
                         </div>
-                        <p>Lorem ipsum is simply dummy text of the printing and typesetting industry lorem ipsum standard.</p>
+                        @if(! empty($detail['description_plain']))
+                        <p>{{ $detail['description_plain'] }}</p>
+                        @endif
                         <div class="d-flex align-items-center mb-35px">
                             <label class="text-dark-gray alt-font me-15px fw-500">Color</label>
                             <ul class="shop-color mb-0">
@@ -232,93 +198,9 @@
                         <div class="tab-content">
                             <!-- start tab content -->
                             <div class="tab-pane fade in active show" id="tab_five1">
-                                <div class="row align-items-center justify-content-center mb-5 sm-mb-10">
-                                    <div class="col-xl-4 col-lg-5 md-mb-40px">
-                                        <div class="d-flex align-items-center mb-10px">
-                                            <div class="col-auto pe-5px"><i class="bi bi-heart-fill text-red fs-14"></i></div> 
-                                            <div class="col alt-font fs-15 fw-500 text-dark-gray">Designer thoughts</div>
-                                        </div>
-                                        <h4 class="alt-font text-dark-gray fw-700 mb-20px">Minimalist design and modern chair.</h4>
-                                        <p>Lorem ipsum is simply dummy text of the printing and typesetting industry lorem ipsum has been the standard dummy text typesetting.</p>
-                                        <div>
-                                            <div class="feature-box feature-box-left-icon-middle mb-10px">
-                                                <div class="feature-box-icon feature-box-icon-rounded w-30px h-30px rounded-circle bg-very-light-gray me-10px">
-                                                    <i class="fa-solid fa-check fs-12 text-dark-gray"></i>
-                                                </div>
-                                                <div class="feature-box-content"> 
-                                                    <span class="d-block text-dark-gray fw-500">FSC certified natural wood teak product.</span>
-                                                </div>
-                                            </div>
-                                            <div class="feature-box feature-box-left-icon-middle mb-10px">
-                                                <div class="feature-box-icon feature-box-icon-rounded w-30px h-30px rounded-circle bg-very-light-gray me-10px">
-                                                    <i class="fa-solid fa-check fs-12 text-dark-gray"></i>
-                                                </div>
-                                                <div class="feature-box-content"> 
-                                                    <span class="d-block text-dark-gray fw-500">Removable cushion with polypropylene.</span>
-                                                </div>
-                                            </div>
-                                            <div class="feature-box feature-box-left-icon-middle mb-10px">
-                                                <div class="feature-box-icon feature-box-icon-rounded w-30px h-30px rounded-circle bg-very-light-gray me-10px">
-                                                    <i class="fa-solid fa-check fs-12 text-dark-gray"></i>
-                                                </div>
-                                                <div class="feature-box-content"> 
-                                                    <span class="d-block text-dark-gray fw-500">Durability wood & lightweight modern.</span>
-                                                </div>
-                                            </div>
-                                            <div class="feature-box feature-box-left-icon-middle">
-                                                <div class="feature-box-icon feature-box-icon-rounded w-30px h-30px rounded-circle bg-very-light-gray me-10px">
-                                                    <i class="fa-solid fa-check fs-12 text-dark-gray"></i>
-                                                </div>
-                                                <div class="feature-box-content"> 
-                                                    <span class="d-block text-dark-gray fw-500">Topstitch detailing along back of seat.</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-7 offset-xl-1">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-01.jpg') }}" alt="" class="w-100" />
-                                    </div>
-                                </div>
-                                <div class="row mb-6 sm-mb-10">
-                                    <div class="col-12">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-03.jpg') }}" alt="" class="w-100" />
-                                    </div>
-                                </div>
-                                <div class="row mb-6 sm-mb-10">
-                                    <div class="co-12 col-md-4 sm-mb-35px">
-                                        <h5 class="text-dark-gray alt-font mb-0 fw-700">The dining chair design for those looking for a new level of comfort.</h5>
-                                    </div>
-                                    <div class="co-12 col-md-4 sm-mb-35px outside-box-top-18 sm-outside-box-top-0"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-04.png') }}" alt=""/></div> 
-                                    <div class="co-12 col-md-4 last-paragraph-no-margin">
-                                        <p>Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has been standard dummy text lorem ipsum.</p>
-                                    </div>
-                                </div>
-                                <div class="row row-cols-1 row-cols-lg-4 row-cols-sm-2 mb-5 sm-mb-10 border border-1 border-color-extra-medium-gray g-0">
-                                    <div class="col border-end xs-border-end-0 md-border-bottom border-color-extra-medium-gray last-paragraph-no-margin text-center ps-3 pe-3 pt-4 pb-4 xl-ps-2 xl-pe-2 md-p-30px">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-05.jpg') }}" alt="" class="border-radius-100 box-shadow-quadruple-large mb-30px" />
-                                        <span class="d-block fs-15 fw-700 text-dark-gray text-uppercase ls-05px mb-5px">Wooden</span>
-                                        <p>Lorem ipsum simply dummy text printing typesetting.</p>
-                                    </div>
-                                    <div class="col border-end md-border-end-0 md-border-bottom border-color-extra-medium-gray last-paragraph-no-margin text-center ps-3 pe-3 pt-4 pb-4 xl-ps-2 xl-pe-2 md-p-30px">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-06.jpg') }}" alt="" class="border-radius-100 box-shadow-quadruple-large mb-30px" />
-                                        <span class="d-block fs-15 fw-700 text-dark-gray text-uppercase ls-05px mb-5px">Fabric</span>
-                                        <p>Lorem ipsum simply dummy text printing typesetting.</p>
-                                    </div>
-                                    <div class="col border-end xs-border-end-0 xs-border-bottom border-color-extra-medium-gray last-paragraph-no-margin text-center ps-3 pe-3 pt-4 pb-4 xl-ps-2 xl-pe-2 md-p-30px">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-07.jpg') }}" alt="" class="border-radius-100 box-shadow-quadruple-large mb-30px" />
-                                        <span class="d-block fs-15 fw-700 text-dark-gray text-uppercase ls-05px mb-5px">Strength</span>
-                                        <p>Lorem ipsum simply dummy text printing typesetting.</p>
-                                    </div>
-                                    <div class="col text-center last-paragraph-no-margin ps-3 pe-3 pt-4 pb-4 xl-ps-2 xl-pe-2 md-p-30px">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-08.jpg') }}" alt="" class="border-radius-100 box-shadow-quadruple-large mb-30px" />
-                                        <span class="d-block fs-15 fw-700 text-dark-gray text-uppercase ls-05px mb-5px">Comfort</span>
-                                        <p>Lorem ipsum simply dummy text printing typesetting.</p>
-                                    </div>
-                                </div>
                                 <div class="row justify-content-center">
-                                    <div class="col-auto text-center last-paragraph-no-margin">
-                                        <div class="d-inline-block align-middle me-10px"><i class="bi bi-patch-check-fill icon-extra-medium text-dark-gray"></i></div>
-                                        <div class="d-inline-block text-dark-gray text-uppercase fs-15 fw-600 ls-05px align-middle">Premium quality solid wood finish product materials.</div>
+                                    <div class="col-lg-10 last-paragraph-no-margin">
+                                        <p class="mb-0 text-dark-gray">{{ $detail['description_plain'] ?? '' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -347,11 +229,6 @@
                                             <div class="col-lg-2 col-md-3 col-sm-4 pt-10px pb-10px xs-pb-0 text-dark-gray alt-font fw-600">Material:</div>
                                             <div class="col-lg-10 col-md-9 col-sm-8 pt-10px pb-10px xs-pt-0">Solid wood, Fabric, Soft cotton</div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="row mt-6">
-                                    <div class="col-12 text-center">
-                                        <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-detail-tab-02.jpg') }}" alt="" />
                                     </div>
                                 </div>
                             </div>
@@ -619,90 +496,13 @@
                     <div class="col-12 px-0 sm-ps-15px sm-pe-15px">
                         <ul class="shop-boxed shop-wrapper grid grid-4col xxl-grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center" data-anime='{ "el": "childs", "translateY": [50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
                             <li class="grid-sizer"></li>
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-01.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$23.00</div>
-                                    </div>
-                                </div>
+                            @forelse(($relatedProductCards ?? collect()) as $card)
+                            @include('cms::frontend.pages.partials.storefront.product_card', ['card' => $card])
+                            @empty
+                            <li class="grid-item w-100">
+                                <p class="text-center alt-font text-dark-gray py-4 mb-0">{{ __('cms::lang.storefront_no_products') }}</p>
                             </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-14.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
-                                        <div class="fw-500 fs-15 lh-normal">$54.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-12.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$20.00</del>$15.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
-                            <!-- start shop item -->
-                            <li class="grid-item">
-                                <div class="shop-box pb-25px">
-                                    <div class="shop-image">
-                                        <a href="{{ route('cms.store.product') }}">
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-product-05.jpg') }}" alt="" />
-                                            <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                        </a>
-                                        <div class="shop-hover d-flex justify-content-center">
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                            <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="shop-footer text-center pt-20px">
-                                        <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
-                                        <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$35.00</div>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- end shop item -->
+                            @endforelse
                         </ul>
                     </div>
                 </div>

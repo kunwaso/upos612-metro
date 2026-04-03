@@ -1315,177 +1315,9 @@
                             <div class="col-12 filter-content">
                                 <ul class="shop-boxed shop-wrapper grid grid-4col xxl-grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center" data-anime='{ "el": "childs", "translateY": [50, 0], "opacity": [0,1], "duration": 600, "delay":150, "staggervalue": 150, "easing": "easeOutQuad" }'>
                                     <li class="grid-sizer"></li>
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a> 
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
-                                                <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$23.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <span class="lable new">New</span>
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
-                                                <div class="fw-500 fs-15 lh-normal">$54.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
-                                                <div class="fw-500 fs-15 lh-normal"><del>$20.00</del>$15.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
-                                                <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$35.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <span class="lable new">New</span>
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
-                                                <div class="fw-500 fs-15 lh-normal">$23.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
-                                                <div class="fw-500 fs-15 lh-normal"><del>$25.00</del>$15.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
-                                                <div class="fw-500 fs-15 lh-normal">$35.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <span class="lable hot">Hot</span>
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
-                                                <div class="fw-500 fs-15 lh-normal">$19.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
+                                    @foreach(($homeProductCards ?? collect()) as $card)
+                                    @include('cms::frontend.pages.partials.storefront.product_card', ['card' => $card])
+                                    @endforeach
                                 </ul>
                             </div>
                         </div>
@@ -1497,176 +1329,9 @@
                             <div class="col-12 filter-content">
                                 <ul class="shop-boxed shop-wrapper grid grid-4col xxl-grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center">
                                     <li class="grid-sizer"></li>
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
-                                                <div class="fw-500 fs-15 lh-normal">$23.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
-                                                <div class="fw-500 fs-15 lh-normal">$15.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <span class="lable new">New</span>
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
-                                                <div class="fw-500 fs-15 lh-normal">$35.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
-                                                <div class="fw-500 fs-15 lh-normal">$19.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
-                                                <div class="fw-500 fs-15 lh-normal">$23.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" />
-                                                    <span class="lable new">New</span>
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
-                                                <div class="fw-500 fs-15 lh-normal">$54.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
-                                                <div class="fw-500 fs-15 lh-normal">$15.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
-                                    <!-- start shop item -->
-                                    <li class="grid-item">
-                                        <div class="shop-box pb-25px">
-                                            <div class="shop-image">
-                                                <a href="{{ route('cms.store.product') }}">
-                                                    <img src="https://placehold.co/600x700" alt="" /> 
-                                                    <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
-                                                </a>
-                                                <div class="shop-hover d-flex justify-content-center">
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to wishlist"><i class="feather icon-feather-heart fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Add to cart"><i class="feather icon-feather-shopping-bag fs-15"></i></a>
-                                                    <a href="#" class="bg-white w-45px h-45px text-dark-gray d-flex flex-column align-items-center justify-content-center rounded-circle ms-5px me-5px box-shadow-medium-bottom" data-bs-toggle="tooltip" data-bs-placement="top" title="Quick shop"><i class="feather icon-feather-eye fs-15"></i></a>
-                                                </div>
-                                            </div>
-                                            <div class="shop-footer text-center pt-20px">
-                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
-                                                <div class="fw-500 fs-15 lh-normal">$35.00</div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <!-- end shop item -->
+                                    @foreach(($homeProductCards ?? collect()) as $card)
+                                    @include('cms::frontend.pages.partials.storefront.product_card', ['card' => $card])
+                                    @endforeach
                                 </ul>
                             </div>
                         </div>
@@ -1738,45 +1403,23 @@
             <div class="col-md-4" data-anime='{ "translateX": [50, 0], "opacity": [0,1], "duration": 600, "delay":150, "staggervalue": 150, "easing": "easeOutQuad" }'>
                 <div class="swiper position-relative h-100" data-slider-options='{ "slidesPerView": 1, "loop": true, "allowTouchMove": true, "autoplay": { "delay": 3000, "disableOnInteraction": false }, "navigation": { "nextEl": ".slider-one-slide-next-1", "prevEl": ".slider-one-slide-prev-1" }, "effect": "fade" }'>
                     <div class="swiper-wrapper">
-                        <!-- start text slider item -->
-                        <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="{{ route('cms.store.product') }}">
-                                <img src="https://placehold.co/640x640" alt=""/>
+                        @forelse(($homeSliderCards ?? collect()) as $card)
+                        <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-title-bg.jpg') }}')">
+                            <a href="{{ $card['url'] }}">
+                                <img src="{{ $card['image_url'] }}" alt="{{ $card['name'] }}"/>
                             </a>
                             <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font d-inline-block fs-20 fw-600">Wooden cabinet</a>
+                                <a href="{{ $card['url'] }}" class="text-dark-gray alt-font d-inline-block fs-20 fw-600">{{ $card['name'] }}</a>
                                 <div class="d-block">
-                                    <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$50.00</del>$23.00</div>
+                                    <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray">{{ $card['price_label'] }}</div>
                                 </div>
                             </div>
                         </div>
-                        <!-- end text slider item -->
-                        <!-- start text slider item -->
-                        <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="{{ route('cms.store.product') }}">
-                                <img src="https://placehold.co/640x640" alt=""/>
-                            </a>
-                            <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fs-20 fw-600">Modern chair</a>
-                                <div class="d-block">
-                                    <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$40.00</del>$18.00</div>
-                                </div>
-                            </div>
+                        @empty
+                        <div class="swiper-slide cover-background h-100 text-center d-flex align-items-center justify-content-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-title-bg.jpg') }}')">
+                            <p class="text-dark-gray alt-font mb-0 px-3">{{ __('cms::lang.storefront_no_products') }}</p>
                         </div>
-                        <!-- end text slider item -->
-                        <!-- start text slider item -->
-                        <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="{{ route('cms.store.product') }}">
-                                <img src="https://placehold.co/640x640" alt=""/>
-                            </a>
-                            <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fs-20 fw-600">Classic stools</a>
-                                <div class="d-block">
-                                    <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$56.00</del>$24.00</div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- end text slider item -->
+                        @endforelse
                     </div>
                     <!-- start slider navigation -->
                     <div class="slider-one-slide-prev-1 swiper-button-prev slider-navigation-style-06"><i class="bi bi-arrow-left icon-extra-medium text-dark-gray"></i></div>

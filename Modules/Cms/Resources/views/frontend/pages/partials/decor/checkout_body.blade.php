@@ -673,29 +673,16 @@
                                         <td class="fw-600 text-dark-gray alt-font">Total</td>
                                     </tr>
                                     <tr class="product">
-                                        <td class="product-thumbnail">
-                                            <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Table clock x 1</a>
-                                            <span class="fs-14 d-block">Color: Pink</span>
+                                        <td colspan="2" class="text-center py-30px alt-font text-dark-gray">
+                                            <p class="mb-15px">{{ __('cms::lang.storefront_empty_cart') }}</p>
+                                            <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-small btn-switch-text btn-round-edge btn-box-shadow">
+                                                <span><span class="btn-double-text" data-text="{{ __('cms::lang.storefront_browse_shop') }}">{{ __('cms::lang.storefront_browse_shop') }}</span></span>
+                                            </a>
                                         </td>
-                                        <td class="product-price" data-title="Price">$23.00</td>
-                                    </tr>
-                                    <tr class="product">
-                                        <td class="product-thumbnail">
-                                            <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Decorative pot x 2</a>
-                                            <span class="fs-14 d-block">Color: Brown</span>
-                                        </td>
-                                        <td class="product-price" data-title="Price">$70.00</td>
-                                    </tr>
-                                    <tr class="product">
-                                        <td class="product-thumbnail">
-                                            <a href="{{ route('cms.store.product') }}" class="text-dark-gray fw-500 d-block lh-initial">Ceramic mug x 1</a>
-                                            <span class="fs-14 d-block">Color: White</span>
-                                        </td>
-                                        <td class="product-price" data-title="Price">$15.00</td>
                                     </tr>
                                     <tr>
                                         <th class="w-50 fw-600 text-dark-gray alt-font">Subtotal</th>
-                                        <td class="text-dark-gray fw-600">$405.00</td>
+                                        <td class="text-dark-gray fw-600">—</td>
                                     </tr>
                                     <tr class="shipping">
                                         <th class="fw-600 text-dark-gray alt-font">Shipping</th>
@@ -719,8 +706,8 @@
                                     <tr class="total-amount">
                                         <th class="fw-600 text-dark-gray alt-font">Total</th>
                                         <td data-title="Total">
-                                            <h6 class="d-block fw-700 mb-0 text-dark-gray alt-font">$405.00</h6>
-                                            <span class="fs-14">(Includes $19.29 tax)</span>
+                                            <h6 class="d-block fw-700 mb-0 text-dark-gray alt-font">—</h6>
+                                            <span class="fs-14"></span>
                                         </td>
                                     </tr>
                                 </tbody>
