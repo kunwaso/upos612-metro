@@ -1819,5 +1819,14 @@ return [
     'planning_advisories' => 'Planning Advisories',
     'external_shortage_qty' => 'External Shortage Qty',
     'no_planning_advisories' => 'No planning advisories right now.',
+    'purchasing_advisories' => 'Purchasing Advisories',
+    'purchasing_review_rows' => 'Purchasing Review Rows',
+    'open_purchase_requisitions' => 'Open Purchase Requisitions',
+    'purchase_requisition_feature_disabled' => 'Purchase requisition is disabled for this business. Enable it in purchase settings before creating requisitions from warehouse advisories.',
+    'purchase_requisition_created_from_advisory' => 'Purchase requisition :ref created from warehouse advisory.',
+    'purchasing_advisory_help' => 'Use this queue to raise standard purchase requisitions only when internal replenishment cannot cover the forward-pick shortage.',
+    'no_purchasing_advisories' => 'No purchasing advisories right now.',
+    'requisition_already_open' => 'Requisition already open',
+    'notes_optional' => 'Notes (optional)',
 
 ];

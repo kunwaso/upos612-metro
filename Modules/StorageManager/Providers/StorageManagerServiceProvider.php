@@ -9,6 +9,7 @@ use Modules\StorageManager\Services\CycleCountService;
 use Modules\StorageManager\Services\DamageQuarantineService;
 use Modules\StorageManager\Services\InventoryMovementService;
 use Modules\StorageManager\Services\OutboundExecutionService;
+use Modules\StorageManager\Services\PurchasingAdvisoryService;
 use Modules\StorageManager\Services\PutawayService;
 use Modules\StorageManager\Services\ReconciliationService;
 use Modules\StorageManager\Services\ReplenishmentService;
@@ -43,6 +44,7 @@ class StorageManagerServiceProvider extends ServiceProvider
         $this->app->singleton(DamageQuarantineService::class);
         $this->app->singleton(InventoryMovementService::class);
         $this->app->singleton(OutboundExecutionService::class);
+        $this->app->singleton(PurchasingAdvisoryService::class);
         $this->app->singleton(PutawayService::class);
         $this->app->singleton(ReconciliationService::class);
         $this->app->singleton(ReplenishmentService::class);

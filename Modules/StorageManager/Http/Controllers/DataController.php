@@ -134,6 +134,14 @@ class DataController extends Controller
                             __('lang_v1.control_tower'),
                             ['icon' => '', 'active' => request()->routeIs('storage-manager.control-tower.*')]
                         );
+
+                        if (auth()->user()->can('purchase_requisition.view_all') || auth()->user()->can('purchase_requisition.view_own') || auth()->user()->can('purchase_requisition.create')) {
+                            $sub->url(
+                                route('storage-manager.planning.index'),
+                                __('lang_v1.purchasing_advisories'),
+                                ['icon' => '', 'active' => request()->routeIs('storage-manager.planning.*')]
+                            );
+                        }
                     }
                 },
                 [

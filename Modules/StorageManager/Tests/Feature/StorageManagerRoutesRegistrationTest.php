@@ -20,6 +20,8 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('storage-manager.areas.edit'));
         $this->assertTrue($router->has('storage-manager.areas.update'));
         $this->assertTrue($router->has('storage-manager.control-tower.index'));
+        $this->assertTrue($router->has('storage-manager.planning.index'));
+        $this->assertTrue($router->has('storage-manager.planning.store'));
         $this->assertTrue($router->has('storage-manager.inbound.index'));
         $this->assertTrue($router->has('storage-manager.inbound.show'));
         $this->assertTrue($router->has('storage-manager.inbound.confirm'));
@@ -77,6 +79,8 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertSame('storage-manager/areas/create', $routes->getByName('storage-manager.areas.create')->uri());
         $this->assertSame('storage-manager/areas/{id}/edit', $routes->getByName('storage-manager.areas.edit')->uri());
         $this->assertSame('storage-manager/control-tower', $routes->getByName('storage-manager.control-tower.index')->uri());
+        $this->assertSame('storage-manager/planning/purchasing', $routes->getByName('storage-manager.planning.index')->uri());
+        $this->assertSame('storage-manager/planning/purchasing/{rule}/purchase-requisition', $routes->getByName('storage-manager.planning.store')->uri());
         $this->assertSame('storage-manager/inbound/expected-receipts', $routes->getByName('storage-manager.inbound.index')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{sourceType}/{sourceId}', $routes->getByName('storage-manager.inbound.show')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/confirm', $routes->getByName('storage-manager.inbound.confirm')->uri());

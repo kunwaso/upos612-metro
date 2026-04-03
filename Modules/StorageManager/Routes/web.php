@@ -10,6 +10,7 @@ use Modules\StorageManager\Http\Controllers\CycleCountController;
 use Modules\StorageManager\Http\Controllers\DamageQuarantineController;
 use Modules\StorageManager\Http\Controllers\InboundController;
 use Modules\StorageManager\Http\Controllers\OutboundExecutionController;
+use Modules\StorageManager\Http\Controllers\PurchasingAdvisoryController;
 use Modules\StorageManager\Http\Controllers\PutawayController;
 use Modules\StorageManager\Http\Controllers\ReplenishmentController;
 use Modules\StorageManager\Http\Controllers\TransferExecutionController;
@@ -42,6 +43,11 @@ Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezo
         });
 
         Route::get('/control-tower', [ControlTowerController::class, 'index'])->name('control-tower.index');
+
+        Route::prefix('planning')->name('planning.')->group(function () {
+            Route::get('/purchasing', [PurchasingAdvisoryController::class, 'index'])->name('index');
+            Route::post('/purchasing/{rule}/purchase-requisition', [PurchasingAdvisoryController::class, 'store'])->name('store');
+        });
 
         Route::prefix('inbound')->name('inbound.')->group(function () {
             Route::get('/expected-receipts', [InboundController::class, 'index'])->name('index');

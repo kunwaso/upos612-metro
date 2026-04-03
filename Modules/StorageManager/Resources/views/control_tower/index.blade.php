@@ -17,6 +17,7 @@
             <div class="d-flex align-items-center gap-2 gap-lg-3">
                 <a href="{{ route('storage-manager.settings.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.warehouse_settings')</a>
                 <a href="{{ route('storage-manager.areas.index') }}" class="btn btn-sm btn-light-primary">@lang('lang_v1.warehouse_areas')</a>
+                <a href="{{ route('storage-manager.planning.index', ['location_id' => $locationId]) }}" class="btn btn-sm btn-light-primary">@lang('lang_v1.purchasing_advisories')</a>
             </div>
         </div>
     </div>
@@ -45,6 +46,12 @@
                 <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.bin_occupancy')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.occupancy_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.occupancy_rate.detail', '—') }}</div></div></div></div>
                 <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.count_accuracy')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.count_accuracy_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.count_accuracy_rate.detail', '—') }}</div></div></div></div>
                 <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.damage_rate')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.damage_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.damage_rate.detail', '—') }}</div></div></div></div>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-6">
+                <div class="col-md-4"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.purchasing_review_rows')</div><div class="fs-2hx fw-bold">{{ (int) data_get($purchasingSummary, 'summary.shortage_count', 0) }}</div></div></div></div>
+                <div class="col-md-4"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.external_shortage_qty')</div><div class="fs-2hx fw-bold">{{ format_quantity_value(data_get($purchasingSummary, 'summary.total_external_shortage_qty', 0)) }}</div></div></div></div>
+                <div class="col-md-4"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.open_purchase_requisitions')</div><div class="fs-2hx fw-bold">{{ (int) data_get($purchasingSummary, 'summary.open_requisitions', 0) }}</div></div></div></div>
             </div>
 
             <div class="row g-5 g-xl-8 mb-6">
@@ -282,7 +289,7 @@
                         <div class="card-body pt-0">
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle">
-                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('product.product')</th><th>@lang('lang_v1.type')</th><th>@lang('lang_v1.source_slot')</th><th>@lang('lang_v1.destination_slot')</th><th>@lang('lang_v1.recommended_qty')</th><th>@lang('lang_v1.external_shortage_qty')</th></tr></thead>
+                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('product.product')</th><th>@lang('lang_v1.type')</th><th>@lang('lang_v1.source_slot')</th><th>@lang('lang_v1.destination_slot')</th><th>@lang('lang_v1.recommended_qty')</th><th>@lang('lang_v1.external_shortage_qty')</th><th class="text-end">@lang('messages.action')</th></tr></thead>
                                     <tbody>
                                         @forelse(($dashboard['planningRows'] ?? collect()) as $row)
                                             <tr>
@@ -292,9 +299,16 @@
                                                 <td>{{ $row['destination_label'] ?? '-' }}</td>
                                                 <td>{{ @format_quantity($row['recommended_qty'] ?? 0) }}</td>
                                                 <td>{{ @format_quantity($row['external_shortage_qty'] ?? 0) }}</td>
+                                                <td class="text-end">
+                                                    @if(($row['advisory_type'] ?? '') === 'purchasing_review')
+                                                        <a href="{{ route('storage-manager.planning.index', ['location_id' => $row['location_id'] ?? 0]) }}" class="btn btn-sm btn-light-primary">@lang('messages.view')</a>
+                                                    @else
+                                                        <span class="text-muted fs-8">—</span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @empty
-                                            <tr><td colspan="6" class="text-center text-muted py-8">@lang('lang_v1.no_planning_advisories')</td></tr>
+                                            <tr><td colspan="7" class="text-center text-muted py-8">@lang('lang_v1.no_planning_advisories')</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>

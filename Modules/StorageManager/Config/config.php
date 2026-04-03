@@ -2,7 +2,7 @@
 
 return [
     'name' => 'StorageManager',
-    'module_version' => '1.6.0',
+    'module_version' => '1.7.0',
     'execution_modes' => [
         'off',
         'advisory',
@@ -40,6 +40,7 @@ return [
         'quarantine',
         'cycle_count',
         'replenishment',
+        'purchase_requisition_advisory',
     ],
     'task_statuses' => [
         'open',

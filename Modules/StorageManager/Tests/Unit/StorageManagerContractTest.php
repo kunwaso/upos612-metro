@@ -10,10 +10,11 @@ class StorageManagerContractTest extends TestCase
     public function test_module_config_exposes_expected_identity(): void
     {
         $this->assertSame('StorageManager', (string) config('storagemanager.name'));
-        $this->assertSame('1.6.0', (string) config('storagemanager.module_version'));
+        $this->assertSame('1.7.0', (string) config('storagemanager.module_version'));
         $this->assertContains('receipt', (array) config('storagemanager.document_types'));
         $this->assertContains('transfer_dispatch', (array) config('storagemanager.document_types'));
         $this->assertContains('replenishment', (array) config('storagemanager.document_types'));
+        $this->assertContains('purchase_requisition_advisory', (array) config('storagemanager.document_types'));
         $this->assertContains('damage', (array) config('storagemanager.document_types'));
         $this->assertContains('cycle_count', (array) config('storagemanager.document_types'));
         $this->assertContains('posted', (array) config('storagemanager.sync_statuses'));
