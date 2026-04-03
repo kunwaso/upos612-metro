@@ -1,5 +1,5 @@
 @extends('cms::frontend.layouts.app')
-@section('title', 'Home')
+@section('title', __('cms::lang.home'))
 @section('meta')
     <meta name="description" content="{{ $page->meta_description ?? '' }}">
 @endsection
@@ -212,7 +212,7 @@
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
-                                    <a href="demo-decor-store-shop.html" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
+                                    <a href="{{ route('cms.store.shop') }}" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
                                        id="slide-1-layer-09"
                                        data-x="['left','left','left','left']" data-hoffset="['0','0','0','0']" 
                                        data-y="['middle','middle','middle','middle']" data-voffset="['0','0','0','0']" 
@@ -592,7 +592,7 @@
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
-                                    <a href="demo-decor-store-shop.html" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
+                                    <a href="{{ route('cms.store.shop') }}" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
                                        id="slide-2-layer-09"
                                        data-x="['left','left','left','left']" data-hoffset="['0','0','0','0']" 
                                        data-y="['middle','middle','middle','middle']" data-voffset="['0','0','0','0']" 
@@ -972,7 +972,7 @@
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
-                                    <a href="demo-decor-store-shop.html" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
+                                    <a href="{{ route('cms.store.shop') }}" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
                                        id="slide-3-layer-09"
                                        data-x="['left','left','left','left']" data-hoffset="['0','0','0','0']" 
                                        data-y="['middle','middle','middle','middle']" data-voffset="['0','0','0','0']" 
@@ -1178,55 +1178,55 @@
                     <div class="col categories-style-01 text-center sm-mb-30px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">02</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Lamp</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Lamp</a>
                         </div>
                     </div>
                     <div class="col categories-style-01 text-center sm-mb-30px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Stool</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Stool</a>
                         </div>
                     </div>
                     <div class="col categories-style-01 text-center sm-mb-30px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">05</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Chair</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Chair</a>
                         </div>
                     </div>
                     <div class="col categories-style-01 text-center xs-mb-30px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Cabinet</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Cabinet</a>
                         </div>
                     </div>
                     <div class="col categories-style-01 text-center">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">08</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Light</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Light</a>
                         </div>
                     </div>
                     <div class="col categories-style-01 text-center">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="demo-decor-store-shop.html"><img src="https://placehold.co/65x65" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">04</div>
                             </div>
-                            <a href="demo-decor-store-shop.html" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Sofa</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Sofa</a>
                         </div>
                     </div>
                 </div>
@@ -1245,7 +1245,7 @@
                             <div class="position-absolute top-0 left-0 w-100 h-100 d-flex align-items-end justify-content-start text-start">
                                 <div class="p-14 sm-p-10 w-80 lg-w-90 md-w-65 xs-w-300px">
                                     <h3 class="alt-font text-dark-gray ls-minus-1px mb-30px xs-mb-25px">Wooden <span class="fw-700">classic table</span></h3>
-                                    <a href="demo-decor-store-shop.html" class="btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow">
+                                    <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow">
                                         <span>
                                             <span class="btn-double-text" data-text="Explore category">Explore category</span>
                                         </span>
@@ -1264,7 +1264,7 @@
                             <div class="position-absolute top-0 left-0 w-100 h-100 d-flex align-items-center justify-content-start text-start">
                                 <div class="p-11 xs-p-8 w-60 md-w-50 xs-w-230px">
                                     <h5 class="alt-font text-dark-gray ls-minus-1px mb-25px xs-mb-20px">Pottery <span class="fw-700">products</span></h5>
-                                    <a href="demo-decor-store-shop.html" class="btn btn-dark-gray btn-small btn-switch-text btn-round-edge btn-box-shadow">
+                                    <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-small btn-switch-text btn-round-edge btn-box-shadow">
                                         <span>
                                             <span class="btn-double-text" data-text="Explore category">Explore category</span> 
                                         </span>
@@ -1283,7 +1283,7 @@
                             <div class="position-absolute top-0 left-0 w-100 h-100 d-flex align-items-center justify-content-end text-start">
                                 <div class="p-11 xs-p-5 w-55 md-w-50 xs-w-200px">
                                     <h5 class="alt-font text-dark-gray ls-minus-1px mb-25px xs-mb-20px">Florence <span class="fw-700">compact</span></h5>
-                                    <a href="demo-decor-store-shop.html" class="btn btn-dark-gray btn-small btn-switch-text btn-round-edge btn-box-shadow">
+                                    <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-small btn-switch-text btn-round-edge btn-box-shadow">
                                         <span>
                                             <span class="btn-double-text" data-text="Explore category">Explore category</span> 
                                         </span>
@@ -1319,7 +1319,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a> 
@@ -1330,7 +1330,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
                                                 <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$23.00</div>
                                             </div>
                                         </div>
@@ -1340,7 +1340,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <span class="lable new">New</span>
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
@@ -1352,7 +1352,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
                                                 <div class="fw-500 fs-15 lh-normal">$54.00</div>
                                             </div>
                                         </div>
@@ -1362,7 +1362,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1373,7 +1373,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
                                                 <div class="fw-500 fs-15 lh-normal"><del>$20.00</del>$15.00</div>
                                             </div>
                                         </div>
@@ -1383,7 +1383,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1394,7 +1394,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
                                                 <div class="fw-500 fs-15 lh-normal"><del>$30.00</del>$35.00</div>
                                             </div>
                                         </div>
@@ -1404,7 +1404,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <span class="lable new">New</span>
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
@@ -1416,7 +1416,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
                                                 <div class="fw-500 fs-15 lh-normal">$23.00</div>
                                             </div>
                                         </div>
@@ -1426,7 +1426,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1437,7 +1437,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
                                                 <div class="fw-500 fs-15 lh-normal"><del>$25.00</del>$15.00</div>
                                             </div>
                                         </div>
@@ -1447,7 +1447,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1458,7 +1458,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
                                                 <div class="fw-500 fs-15 lh-normal">$35.00</div>
                                             </div>
                                         </div>
@@ -1468,7 +1468,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <span class="lable hot">Hot</span>
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
@@ -1480,7 +1480,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
                                                 <div class="fw-500 fs-15 lh-normal">$19.00</div>
                                             </div>
                                         </div>
@@ -1501,7 +1501,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1512,7 +1512,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic pot</a>
                                                 <div class="fw-500 fs-15 lh-normal">$23.00</div>
                                             </div>
                                         </div>
@@ -1522,7 +1522,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1533,7 +1533,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic plate</a>
                                                 <div class="fw-500 fs-15 lh-normal">$15.00</div>
                                             </div>
                                         </div>
@@ -1543,7 +1543,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <span class="lable new">New</span>
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
@@ -1555,7 +1555,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic container</a>
                                                 <div class="fw-500 fs-15 lh-normal">$35.00</div>
                                             </div>
                                         </div>
@@ -1565,7 +1565,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
                                                 </a>
@@ -1576,7 +1576,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Design wall clock</a>
                                                 <div class="fw-500 fs-15 lh-normal">$19.00</div>
                                             </div>
                                         </div>
@@ -1586,7 +1586,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
                                                 </a>
@@ -1597,7 +1597,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Table clock</a>
                                                 <div class="fw-500 fs-15 lh-normal">$23.00</div>
                                             </div>
                                         </div>
@@ -1607,7 +1607,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" />
                                                     <span class="lable new">New</span>
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div> 
@@ -1619,7 +1619,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Wood stool</a>
                                                 <div class="fw-500 fs-15 lh-normal">$54.00</div>
                                             </div>
                                         </div>
@@ -1629,7 +1629,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1640,7 +1640,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Ceramic mug</a>
                                                 <div class="fw-500 fs-15 lh-normal">$15.00</div>
                                             </div>
                                         </div>
@@ -1650,7 +1650,7 @@
                                     <li class="grid-item">
                                         <div class="shop-box pb-25px">
                                             <div class="shop-image">
-                                                <a href="demo-decor-store-single-product.html">
+                                                <a href="{{ route('cms.store.product') }}">
                                                     <img src="https://placehold.co/600x700" alt="" /> 
                                                     <div class="product-overlay bg-gradient-extra-midium-gray-transparent"></div>
                                                 </a>
@@ -1661,7 +1661,7 @@
                                                 </div>
                                             </div>
                                             <div class="shop-footer text-center pt-20px">
-                                                <a href="demo-decor-store-single-product.html" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
+                                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray fs-17 alt-font fw-600">Decorative plants</a>
                                                 <div class="fw-500 fs-15 lh-normal">$35.00</div>
                                             </div>
                                         </div>
@@ -1728,7 +1728,7 @@
                 <div class="pt-13 pb-13 pe-5 w-40 xl-w-45 lg-w-55 md-w-65 sm-w-50 xs-w-270px float-end">
                     <span class="fs-15 fw-700 text-dark-gray text-uppercase mb-20px xs-mb-15px d-inline-block text-decoration-line-bottom-medium">Save up to 50% off</span>
                     <h1 class="alt-font fw-400 text-dark-gray mb-40px lg-mb-35px xs-mb-25px ls-minus-1px">Lounge <span class="fw-700">collection</span></h1>
-                    <a href="demo-decor-store-shop.html" class="btn btn-dark-gray btn-extra-large btn-switch-text btn-round-edge btn-box-shadow">
+                    <a href="{{ route('cms.store.shop') }}" class="btn btn-dark-gray btn-extra-large btn-switch-text btn-round-edge btn-box-shadow">
                         <span>
                             <span class="btn-double-text" data-text="Explore category">Explore category</span>
                         </span>
@@ -1740,11 +1740,11 @@
                     <div class="swiper-wrapper">
                         <!-- start text slider item -->
                         <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="demo-decor-store-single-product.html">
+                            <a href="{{ route('cms.store.product') }}">
                                 <img src="https://placehold.co/640x640" alt=""/>
                             </a>
                             <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="demo-decor-store-single-product.html" class="text-dark-gray alt-font d-inline-block fs-20 fw-600">Wooden cabinet</a>
+                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font d-inline-block fs-20 fw-600">Wooden cabinet</a>
                                 <div class="d-block">
                                     <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$50.00</del>$23.00</div>
                                 </div>
@@ -1753,11 +1753,11 @@
                         <!-- end text slider item -->
                         <!-- start text slider item -->
                         <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="demo-decor-store-single-product.html">
+                            <a href="{{ route('cms.store.product') }}">
                                 <img src="https://placehold.co/640x640" alt=""/>
                             </a>
                             <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="demo-decor-store-single-product.html" class="text-dark-gray alt-font fs-20 fw-600">Modern chair</a>
+                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fs-20 fw-600">Modern chair</a>
                                 <div class="d-block">
                                     <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$40.00</del>$18.00</div>
                                 </div>
@@ -1766,11 +1766,11 @@
                         <!-- end text slider item -->
                         <!-- start text slider item -->
                         <div class="swiper-slide cover-background h-100 text-center" style="background-image: url('{{ asset('modules/cms/assets/images/demo-decor-store-product-slider-bg-img.jpg') }}')">
-                            <a href="demo-decor-store-single-product.html">
+                            <a href="{{ route('cms.store.product') }}">
                                 <img src="https://placehold.co/640x640" alt=""/>
                             </a>
                             <div class="position-absolute bottom-70px xs-bottom-25px w-100 left-0 text-center ls-minus-05px">
-                                <a href="demo-decor-store-single-product.html" class="text-dark-gray alt-font fs-20 fw-600">Classic stools</a>
+                                <a href="{{ route('cms.store.product') }}" class="text-dark-gray alt-font fs-20 fw-600">Classic stools</a>
                                 <div class="d-block">
                                     <div class="d-inline-block align-middle fs-18 fw-600 text-dark-gray"><del class="me-10px">$56.00</del>$24.00</div>
                                 </div>
@@ -1857,11 +1857,11 @@
                     <li class="grid-item">
                         <div class="card bg-transparent border-0 h-100">
                             <div class="blog-image position-relative overflow-hidden border-radius-4px">
-                                <a href="demo-decor-store-blog-single-classic.html"><img src="https://placehold.co/600x445" alt="" /></a>
+                                <a href="{{ route('cms.blogs.index') }}"><img src="https://placehold.co/600x445" alt="" /></a>
                             </div>
                             <div class="card-body px-0 pt-30px pb-30px xs-pb-15px">
-                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="demo-decor-store-blog.html" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">08 August 2023</a></span>
-                                <a href="demo-decor-store-blog-single-classic.html" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">The best influencers to follow for sartorial inspiration</a>
+                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="{{ route('cms.blogs.index') }}" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">08 August 2023</a></span>
+                                <a href="{{ route('cms.blogs.index') }}" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">The best influencers to follow for sartorial inspiration</a>
                             </div>
                         </div>
                     </li>
@@ -1870,11 +1870,11 @@
                     <li class="grid-item">
                         <div class="card bg-transparent border-0 h-100">
                             <div class="blog-image position-relative overflow-hidden border-radius-4px">
-                                <a href="demo-decor-store-blog-single-classic.html"><img src="https://placehold.co/600x445" alt="" /></a>
+                                <a href="{{ route('cms.blogs.index') }}"><img src="https://placehold.co/600x445" alt="" /></a>
                             </div>
                             <div class="card-body px-0 pt-30px pb-30px xs-pb-15px">
-                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="demo-decor-store-blog.html" class="text-dark-gray fw-700 categories-text">Design</a><a href="#" class="blog-date">12 August 2023</a></span>
-                                <a href="demo-decor-store-blog-single-classic.html" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">Everything you need to know about decor's big night out</a>
+                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="{{ route('cms.blogs.index') }}" class="text-dark-gray fw-700 categories-text">Design</a><a href="#" class="blog-date">12 August 2023</a></span>
+                                <a href="{{ route('cms.blogs.index') }}" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">Everything you need to know about decor's big night out</a>
                             </div>
                         </div>
                     </li>
@@ -1883,11 +1883,11 @@
                     <li class="grid-item">
                         <div class="card bg-transparent border-0 h-100">
                             <div class="blog-image position-relative overflow-hidden border-radius-4px">
-                                <a href="demo-decor-store-blog-single-classic.html"><img src="https://placehold.co/600x445" alt="" /></a>
+                                <a href="{{ route('cms.blogs.index') }}"><img src="https://placehold.co/600x445" alt="" /></a>
                             </div>
                             <div class="card-body px-0 pt-30px pb-30px xs-pb-15px">
-                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="demo-decor-store-blog.html" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">20 August 2023</a></span>
-                                <a href="demo-decor-store-blog-single-classic.html" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">All the best looks & moments from the met gala 2023</a>
+                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="{{ route('cms.blogs.index') }}" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">20 August 2023</a></span>
+                                <a href="{{ route('cms.blogs.index') }}" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">All the best looks & moments from the met gala 2023</a>
                             </div>
                         </div>
                     </li>
@@ -1896,11 +1896,11 @@
                     <li class="grid-item">
                         <div class="card bg-transparent border-0 h-100">
                             <div class="blog-image position-relative overflow-hidden border-radius-4px">
-                                <a href="demo-decor-store-blog-single-classic.html"><img src="https://placehold.co/600x445" alt="" /></a>
+                                <a href="{{ route('cms.blogs.index') }}"><img src="https://placehold.co/600x445" alt="" /></a>
                             </div>
                             <div class="card-body px-0 pt-30px pb-30px xs-pb-15px">
-                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="demo-decor-store-blog.html" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">26 August 2023</a></span>
-                                <a href="demo-decor-store-blog-single-classic.html" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">Find a colour palettes that reflects your passion</a>
+                                <span class="fs-13 text-uppercase d-block mb-5px fw-500"><a href="{{ route('cms.blogs.index') }}" class="text-dark-gray fw-700 categories-text">Decor</a><a href="#" class="blog-date">26 August 2023</a></span>
+                                <a href="{{ route('cms.blogs.index') }}" class="card-title alt-font fw-600 fs-17 lh-30 text-dark-gray d-inline-block w-95 sm-w-100">Find a colour palettes that reflects your passion</a>
                             </div>
                         </div>
                     </li>

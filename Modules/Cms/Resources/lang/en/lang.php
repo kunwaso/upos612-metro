@@ -86,4 +86,11 @@ return [
     'contact_us' => 'Contact us',
     'chat_with_us' => 'Chat with us',
     'mail_us' => 'Mail us',
+    'about_us' => 'About us',
+    'storefront_shop' => 'Shop',
+    'storefront_collections' => 'Collections',
+    'storefront_account' => 'Account',
+    'storefront_cart' => 'Cart',
+    'storefront_checkout' => 'Checkout',
+    'storefront_wishlist' => 'Wishlist',
 ];

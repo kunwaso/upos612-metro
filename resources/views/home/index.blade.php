@@ -2,6 +2,71 @@
 @section('title', __('home.home'))
 
 @section('content')
+@php
+    $dashboard_currency = session('currency', []);
+    $dashboard_decimal_separator = $dashboard_currency['decimal_separator'] ?? '.';
+    $dashboard_thousand_separator = $dashboard_currency['thousand_separator'] ?? ',';
+
+    $dashboard_compact_number = function ($number, $compact_decimals = 2) use ($dashboard_decimal_separator, $dashboard_thousand_separator) {
+        $value = (float) $number;
+        $abs = abs($value);
+        $divisor = 1;
+        $suffix = '';
+
+        if ($abs >= 1000000000000) {
+            $divisor = 1000000000000;
+            $suffix = 'T';
+        } elseif ($abs >= 1000000000) {
+            $divisor = 1000000000;
+            $suffix = 'B';
+        } elseif ($abs >= 1000000) {
+            $divisor = 1000000;
+            $suffix = 'M';
+        } elseif ($abs >= 1000) {
+            $divisor = 1000;
+            $suffix = 'K';
+        }
+
+        if ($divisor === 1) {
+            return number_format($value, 0, $dashboard_decimal_separator, $dashboard_thousand_separator);
+        }
+
+        $formatted = number_format(
+            $value / $divisor,
+            $compact_decimals,
+            $dashboard_decimal_separator,
+            $dashboard_thousand_separator
+        );
+
+        $formatted = rtrim($formatted, '0');
+        $formatted = rtrim($formatted, $dashboard_decimal_separator);
+
+        return $formatted.$suffix;
+    };
+
+    $dashboard_primary_amount = function ($number) use ($dashboard_compact_number, $dashboard_decimal_separator, $dashboard_thousand_separator) {
+        $value = (float) $number;
+        if (abs($value) >= 1000000) {
+            return $dashboard_compact_number($value, 2);
+        }
+
+        return number_format(
+            $value,
+            0,
+            $dashboard_decimal_separator,
+            $dashboard_thousand_separator
+        );
+    };
+
+    $dashboard_money_amount = function ($number) use ($dashboard_compact_number) {
+        $value = (float) $number;
+        if (abs($value) >= 1000000) {
+            return $dashboard_compact_number($value, 2);
+        }
+
+        return num_format_value($value);
+    };
+@endphp
 <div class="content flex-row-fluid" id="kt_content">
     <div class="row gx-5 gx-xl-10 mb-5">
         <div class="col-12">
@@ -68,7 +133,7 @@
                             <span class="fs-4 fw-semibold text-gray-500 me-1 align-self-start">{{ data_get($dashboardMeta, 'currency.symbol', '$') }}</span>
                             <!--end::Currency-->
                             <!--begin::Amount-->
-                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ num_format_value(data_get($dashboardKpis, 'sales_summary.value', 0)) }}</span>
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ $dashboard_primary_amount(data_get($dashboardKpis, 'sales_summary.value', 0)) }}</span>
                             <!--end::Amount-->
                             <!--begin::Badge-->
                             <span class="badge {{ data_get($dashboardKpis, 'sales_summary.is_positive_delta', true) ? 'badge-light-success' : 'badge-light-danger' }} fs-base">
@@ -104,7 +169,7 @@
                             <div class="text-gray-500 flex-grow-1 me-4">{{ data_get($dashboardKpis, 'sales_summary.breakdown.0.label', __('home.total_purchase')) }}</div>
                             <!--end::Label-->
                             <!--begin::Stats-->
-                            <div class="fw-bolder text-gray-700 text-xxl-end">@format_currency(data_get($dashboardKpis, 'sales_summary.breakdown.0.value', 0))</div>
+                            <div class="fw-bolder text-gray-700 text-xxl-end">{{ $dashboard_money_amount(data_get($dashboardKpis, 'sales_summary.breakdown.0.value', 0)) }}</div>
                             <!--end::Stats-->
                         </div>
                         <!--end::Label-->
@@ -117,7 +182,7 @@
                             <div class="text-gray-500 flex-grow-1 me-4">{{ data_get($dashboardKpis, 'sales_summary.breakdown.1.label', __('home.invoice_due')) }}</div>
                             <!--end::Label-->
                             <!--begin::Stats-->
-                            <div class="fw-bolder text-gray-700 text-xxl-end">@format_currency(data_get($dashboardKpis, 'sales_summary.breakdown.1.value', 0))</div>
+                            <div class="fw-bolder text-gray-700 text-xxl-end">{{ $dashboard_money_amount(data_get($dashboardKpis, 'sales_summary.breakdown.1.value', 0)) }}</div>
                             <!--end::Stats-->
                         </div>
                         <!--end::Label-->
@@ -130,7 +195,7 @@
                             <div class="text-gray-500 flex-grow-1 me-4">{{ data_get($dashboardKpis, 'sales_summary.breakdown.2.label', __('lang_v1.total_sell_return')) }}</div>
                             <!--end::Label-->
                             <!--begin::Stats-->
-                            <div class="fw-bolder text-gray-700 text-xxl-end">@format_currency(data_get($dashboardKpis, 'sales_summary.breakdown.2.value', 0))</div>
+                            <div class="fw-bolder text-gray-700 text-xxl-end">{{ $dashboard_money_amount(data_get($dashboardKpis, 'sales_summary.breakdown.2.value', 0)) }}</div>
                             <!--end::Stats-->
                         </div>
                         <!--end::Label-->
@@ -200,7 +265,7 @@
                             <span class="fs-4 fw-semibold text-gray-500 me-1 align-self-start">{{ data_get($dashboardMeta, 'currency.symbol', '$') }}</span>
                             <!--end::Currency-->
                             <!--begin::Amount-->
-                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ num_format_value(data_get($dashboardKpis, 'average_daily_sales.value', 0)) }}</span>
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ $dashboard_primary_amount(data_get($dashboardKpis, 'average_daily_sales.value', 0)) }}</span>
                             <!--end::Amount-->
                             <!--begin::Badge-->
                             <span class="badge {{ data_get($dashboardKpis, 'average_daily_sales.is_positive_delta', true) ? 'badge-light-success' : 'badge-light-danger' }} fs-base">
@@ -289,11 +354,11 @@
                         <!--begin::Statistics-->
                         <div class="d-flex mb-2">
                             <span class="fs-4 fw-semibold text-gray-500 me-1">{{ data_get($dashboardMeta, 'currency.symbol', '$') }}</span>
-                            <span class="fs-2hx fw-bold text-gray-800 me-2 lh-1 ls-n2">{{ num_format_value(data_get($dashboardKpis, 'sales_this_month.value', 0)) }}</span>
+                            <span class="fs-2hx fw-bold text-gray-800 me-2 lh-1 ls-n2">{{ $dashboard_primary_amount(data_get($dashboardKpis, 'sales_this_month.value', 0)) }}</span>
                         </div>
                         <!--end::Statistics-->
                         <!--begin::Description-->
-                        <span class="fs-6 fw-semibold text-gray-500">Another @format_currency(data_get($dashboardKpis, 'sales_this_month.goal_gap', 0)) to Goal</span>
+                        <span class="fs-6 fw-semibold text-gray-500">Another {{ $dashboard_money_amount(data_get($dashboardKpis, 'sales_this_month.goal_gap', 0)) }} to Goal</span>
                         <!--end::Description-->
                     </div>
                     <!--end::Statistics-->
@@ -599,7 +664,7 @@
                             <span class="fs-4 fw-semibold text-gray-500 align-self-start me-1">{{ data_get($dashboardMeta, 'currency.symbol', '$') }}</span>
                             <!--end::Currency-->
                             <!--begin::Value-->
-                            <span class="fs-2hx fw-bold text-gray-800 me-2 lh-1 ls-n2">{{ num_format_value(data_get($dashboardKpis, 'discounted_product_sales.value', 0)) }}</span>
+                            <span class="fs-2hx fw-bold text-gray-800 me-2 lh-1 ls-n2">{{ $dashboard_primary_amount(data_get($dashboardKpis, 'discounted_product_sales.value', 0)) }}</span>
                             <!--end::Value-->
                             <!--begin::Label-->
                             <span class="badge {{ data_get($dashboardKpis, 'discounted_product_sales.is_positive_delta', true) ? 'badge-light-success' : 'badge-light-danger' }} fs-base">
@@ -1197,6 +1262,60 @@
     <style>
         .select2-container {
             width: 100% !important;
+        }
+
+        #kt_content [data-dashboard-widget] .card-header .d-flex.align-items-center {
+            flex-wrap: wrap;
+            row-gap: 0.35rem;
+        }
+
+        #kt_content [data-dashboard-widget] .card-header .fs-2hx,
+        #kt_content [data-dashboard-widget] .px-9 .fs-2hx {
+            font-size: clamp(1.7rem, 2.7vw, 2.45rem) !important;
+            line-height: 1.1;
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        #kt_content [data-dashboard-widget] .card-header .badge {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        #kt_content [data-dashboard-widget="sales-summary"] .card-body {
+            padding-right: 1rem;
+            overflow: hidden;
+        }
+
+        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center {
+            display: grid;
+            grid-template-columns: 8px minmax(0, 1fr) minmax(0, 8.75rem);
+            column-gap: 0.5rem;
+            align-items: center;
+        }
+
+        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .bullet {
+            margin-right: 0 !important;
+        }
+
+        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .text-gray-500 {
+            min-width: 0;
+            margin-right: 0 !important;
+            line-height: 1.2;
+        }
+
+        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .fw-bolder.text-gray-700 {
+            min-width: 0;
+            text-align: right;
+            line-height: 1.15;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            font-size: 0.95rem;
+        }
+
+        #kt_content [data-dashboard-widget="average-daily-sales"] .card-body,
+        #kt_content [data-dashboard-widget="sales-chart"] .card-body {
+            overflow: hidden;
         }
     </style>
 @endsection

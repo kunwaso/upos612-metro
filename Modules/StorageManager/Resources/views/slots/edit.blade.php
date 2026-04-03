@@ -43,3 +43,7 @@
     </div>
 </div>
 @endsection
+
+@section('javascript')
+    @stack('javascript')
+@endsection

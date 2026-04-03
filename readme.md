@@ -66,15 +66,8 @@ Useful repo commands that are worth keeping visible:
 php artisan vendor:publish --tag=cms-assets --force
 ./warm-and-index.bat
 ./warm-and-index.bat --skip-gitnexus --no-pause
-```
 
-## Installation & Documentation
+php mcp/semantic-code-search-mcp/bin/index-codebase --force
 
-You will find installation guide and documentation in the downloaded zip file.
-Also, For complete updated documentation of the ultimate pos please visit online [documentation guide](http://ultimatefosters.com/ultimate-pos/).
 
-The Ultimate POS software is licensed under the [Codecanyon license](https://codecanyon.net/licenses/standard).
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within ultimate POS, please send an e-mail to support at [thewebfosters@gmail.com](mailto:thewebfosters@gmail.com). All security vulnerabilities will be promptly addressed.

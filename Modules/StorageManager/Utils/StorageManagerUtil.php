@@ -12,6 +12,7 @@ use App\VariationLocationDetails;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Entities\StorageSlot;
 
 class StorageManagerUtil
@@ -142,6 +143,37 @@ class StorageManagerUtil
             ->where('parent_id', 0)
             ->orderBy('name')
             ->pluck('name', 'id');
+    }
+
+    /**
+     * Get storage areas for dropdown usage.
+     *
+     * @param  int  $business_id
+     * @param  int|null  $location_id
+     * @return \Illuminate\Support\Collection
+     */
+    public function getAreasDropdown(int $business_id, ?int $location_id = null): Collection
+    {
+        return StorageArea::query()
+            ->forBusiness($business_id)
+            ->when($location_id, fn ($query) => $query->forLocation((int) $location_id))
+            ->orderBy('location_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'location_id', 'code', 'name', 'area_type'])
+            ->map(function (StorageArea $area) {
+                $labelParts = array_filter([
+                    $area->code,
+                    $area->name,
+                    '[' . ucwords(str_replace('_', ' ', (string) $area->area_type)) . ']',
+                ]);
+
+                return [
+                    'id' => (int) $area->id,
+                    'location_id' => (int) $area->location_id,
+                    'label' => implode(' - ', $labelParts),
+                ];
+            });
     }
 
     /**

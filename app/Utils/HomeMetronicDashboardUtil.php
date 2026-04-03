@@ -599,14 +599,16 @@ class HomeMetronicDashboardUtil extends Util
         $previous_days = max((int) $previous_range['start']->copy()->startOfDay()->diffInDays($previous_range['end']->copy()->startOfDay()) + 1, 1);
         $previous_average_daily = $previous_total / $previous_days;
 
-        $label_format = $this->resolveSalesChartLabelFormat($range, $current_start, $current_end);
+        $bucket_strategy = $this->resolveSalesChartBucketStrategy($range, $current_start, $current_end);
+        $label_format = $this->resolveSalesChartLabelFormat($range, $current_start, $current_end, $bucket_strategy);
         $current_chart = $this->getDailySellSeries(
             $business_id,
             $current_start,
             $current_end,
             $location_id,
             $permitted_locations,
-            $label_format
+            $label_format,
+            $bucket_strategy
         );
 
         $delta_percent = $this->calculateDeltaPercent($average_daily, $previous_average_daily);
@@ -706,14 +708,16 @@ class HomeMetronicDashboardUtil extends Util
         $range = 'month',
         $range_label = 'This month'
     ) {
-        $label_format = $this->resolveSalesChartLabelFormat($range, $current_period_start, $current_period_end);
+        $bucket_strategy = $this->resolveSalesChartBucketStrategy($range, $current_period_start, $current_period_end);
+        $label_format = $this->resolveSalesChartLabelFormat($range, $current_period_start, $current_period_end, $bucket_strategy);
         $mtd_chart = $this->getDailySellSeries(
             $business_id,
             $current_period_start,
             $current_period_end,
             $location_id,
             $permitted_locations,
-            $label_format
+            $label_format,
+            $bucket_strategy
         );
 
         $previous_month_query = Transaction::where('transactions.business_id', $business_id)
@@ -834,8 +838,15 @@ class HomeMetronicDashboardUtil extends Util
      * @param  \Carbon\Carbon  $end
      * @return string
      */
-    protected function resolveSalesChartLabelFormat($range, Carbon $start, Carbon $end)
+    protected function resolveSalesChartLabelFormat($range, Carbon $start, Carbon $end, $bucket_strategy = 'day')
     {
+        if ($bucket_strategy === 'month') {
+            return 'M Y';
+        }
+        if ($bucket_strategy === 'week') {
+            return 'j M';
+        }
+
         if ($range === 'week') {
             return 'D';
         }
@@ -848,6 +859,35 @@ class HomeMetronicDashboardUtil extends Util
 
         $days = (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1;
         return $days <= 14 ? 'D' : 'j M';
+    }
+
+    /**
+     * @param  string  $range
+     * @param  \Carbon\Carbon  $start
+     * @param  \Carbon\Carbon  $end
+     * @return string
+     */
+    protected function resolveSalesChartBucketStrategy($range, Carbon $start, Carbon $end)
+    {
+        if ($range === 'year') {
+            return 'month';
+        }
+        if ($range === 'quarter') {
+            return 'week';
+        }
+        if ($range === 'week' || $range === 'month') {
+            return 'day';
+        }
+
+        $days = (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1;
+        if ($days <= 31) {
+            return 'day';
+        }
+        if ($days <= 120) {
+            return 'week';
+        }
+
+        return 'month';
     }
 
     /**
@@ -890,14 +930,16 @@ class HomeMetronicDashboardUtil extends Util
         $range = 'month',
         $range_label = 'This month'
     ) {
-        $label_format = $this->resolveSalesChartLabelFormat($range, $current_start, $current_end);
+        $bucket_strategy = $this->resolveSalesChartBucketStrategy($range, $current_start, $current_end);
+        $label_format = $this->resolveSalesChartLabelFormat($range, $current_start, $current_end, $bucket_strategy);
         $current_discount_chart = $this->getDailyDiscountSeries(
             $business_id,
             $current_start,
             $current_end,
             $location_id,
             $permitted_locations,
-            $label_format
+            $label_format,
+            $bucket_strategy
         );
 
         $previous_discount_query = Transaction::where('transactions.business_id', $business_id)
@@ -1609,9 +1651,10 @@ class HomeMetronicDashboardUtil extends Util
      * @param  int|null  $location_id
      * @param  array<int>|string  $permitted_locations
      * @param  string  $label_format
+     * @param  string  $bucket_strategy
      * @return array<string, mixed>
      */
-    protected function getDailySellSeries($business_id, Carbon $start, Carbon $end, $location_id, $permitted_locations, $label_format = 'j M')
+    protected function getDailySellSeries($business_id, Carbon $start, Carbon $end, $location_id, $permitted_locations, $label_format = 'j M', $bucket_strategy = 'day')
     {
         $query = Transaction::where('transactions.business_id', $business_id)
             ->where('transactions.type', 'sell')
@@ -1627,26 +1670,7 @@ class HomeMetronicDashboardUtil extends Util
 
         $totals = $query->pluck('day_total', 'bucket_date')->toArray();
 
-        $labels = [];
-        $series = [];
-        $total = 0.0;
-        $cursor = $start->copy()->startOfDay();
-        $end_cursor = $end->copy()->startOfDay();
-
-        while ($cursor->lte($end_cursor)) {
-            $bucket = $cursor->toDateString();
-            $value = $this->toFloat($totals[$bucket] ?? 0);
-            $labels[] = $cursor->format($label_format);
-            $series[] = $value;
-            $total += $value;
-            $cursor->addDay();
-        }
-
-        return [
-            'labels' => $labels,
-            'series' => $series,
-            'total' => $total,
-        ];
+        return $this->buildBucketedSeries($start, $end, $totals, $label_format, $bucket_strategy);
     }
 
     /**
@@ -1656,9 +1680,10 @@ class HomeMetronicDashboardUtil extends Util
      * @param  int|null  $location_id
      * @param  array<int>|string  $permitted_locations
      * @param  string  $label_format
+     * @param  string  $bucket_strategy
      * @return array<string, mixed>
      */
-    protected function getDailyDiscountSeries($business_id, Carbon $start, Carbon $end, $location_id, $permitted_locations, $label_format = 'j M')
+    protected function getDailyDiscountSeries($business_id, Carbon $start, Carbon $end, $location_id, $permitted_locations, $label_format = 'j M', $bucket_strategy = 'day')
     {
         $query = Transaction::where('transactions.business_id', $business_id)
             ->where('transactions.type', 'sell')
@@ -1674,6 +1699,21 @@ class HomeMetronicDashboardUtil extends Util
 
         $totals = $query->pluck('day_total', 'bucket_date')->toArray();
 
+        return $this->buildBucketedSeries($start, $end, $totals, $label_format, $bucket_strategy);
+    }
+
+    /**
+     * @param  \Carbon\Carbon  $start
+     * @param  \Carbon\Carbon  $end
+     * @param  array<string, mixed>  $daily_totals
+     * @param  string  $label_format
+     * @param  string  $bucket_strategy
+     * @return array<string, mixed>
+     */
+    protected function buildBucketedSeries(Carbon $start, Carbon $end, array $daily_totals, $label_format = 'j M', $bucket_strategy = 'day')
+    {
+        $bucket_strategy = in_array($bucket_strategy, ['day', 'week', 'month'], true) ? $bucket_strategy : 'day';
+
         $labels = [];
         $series = [];
         $total = 0.0;
@@ -1681,12 +1721,31 @@ class HomeMetronicDashboardUtil extends Util
         $end_cursor = $end->copy()->startOfDay();
 
         while ($cursor->lte($end_cursor)) {
-            $bucket = $cursor->toDateString();
-            $value = $this->toFloat($totals[$bucket] ?? 0);
-            $labels[] = $cursor->format($label_format);
+            $bucket_start = $cursor->copy();
+            $bucket_end = $cursor->copy();
+
+            if ($bucket_strategy === 'week') {
+                $bucket_end = $bucket_end->endOfWeek();
+            } elseif ($bucket_strategy === 'month') {
+                $bucket_end = $bucket_end->endOfMonth();
+            }
+
+            if ($bucket_end->gt($end_cursor)) {
+                $bucket_end = $end_cursor->copy();
+            }
+
+            $value = 0.0;
+            $scan_cursor = $bucket_start->copy();
+            while ($scan_cursor->lte($bucket_end)) {
+                $bucket_key = $scan_cursor->toDateString();
+                $value += $this->toFloat($daily_totals[$bucket_key] ?? 0);
+                $scan_cursor->addDay();
+            }
+
+            $labels[] = $bucket_start->format($label_format);
             $series[] = $value;
             $total += $value;
-            $cursor->addDay();
+            $cursor = $bucket_end->copy()->addDay();
         }
 
         return [

@@ -3,7 +3,7 @@
         <div class="row justify-content-center">
             <!-- start footer column -->
             <div class="col-6 col-lg-3 last-paragraph-no-margin order-sm-1 md-mb-50px xs-mb-30px">
-                <a href="demo-decor-store.html" class="footer-logo mb-15px d-inline-block"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white@2x.png') }}" alt=""></a>
+                <a href="{{ route('cms.home') }}" class="footer-logo mb-15px d-inline-block"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white@2x.png') }}" alt=""></a>
                 <p class="w-80 sm-w-100">Lorem ipsum amet adipiscing elit to eiusmod ad tempor.</p>
                 <div class="elements-social social-icon-style-02 mt-15px">
                     <ul class="small-icon light">
@@ -19,10 +19,10 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Categories</span>
                 <ul>
-                    <li><a href="demo-decor-store-shop.html">Bed room</a></li>
-                    <li><a href="demo-decor-store-shop.html">Living room</a></li>
-                    <li><a href="demo-decor-store-shop.html">Lightning</a></li>
-                    <li><a href="demo-decor-store-shop.html">Fabrics sofa</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Bed room</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Living room</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Lightning</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Fabrics sofa</a></li>
                 </ul>
             </div>
             <!-- end footer column -->
@@ -30,10 +30,10 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Information</span>
                 <ul>
-                    <li><a href="demo-decor-store-about.html">About us</a></li>
-                    <li><a href="demo-decor-store-contact.html">Contact us</a></li>
-                    <li><a href="demo-decor-store-faq.html">FAQs</a></li>
-                    <li><a href="demo-decor-store-faq.html">Payment</a></li>
+                    <li><a href="{{ route('cms.about.us') }}">About us</a></li>
+                    <li><a href="{{ route('cms.contact.us') }}">Contact us</a></li>
+                    <li><a href="{{ route('cms.store.faq') }}">FAQs</a></li>
+                    <li><a href="{{ route('cms.store.faq') }}">Payment</a></li>
                 </ul>
             </div>
             <!-- end footer column -->
@@ -41,10 +41,10 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Account</span>
                 <ul>
-                    <li><a href="demo-decor-store-account.html">My account</a></li>
-                    <li><a href="demo-decor-store-cart.html">Orders</a></li>
-                    <li><a href="demo-decor-store-checkout.html">Checkout</a></li>
-                    <li><a href="#">My wishlists</a></li>
+                    <li><a href="{{ route('cms.store.account') }}">My account</a></li>
+                    <li><a href="{{ route('cms.store.cart') }}">Orders</a></li>
+                    <li><a href="{{ route('cms.store.checkout') }}">Checkout</a></li>
+                    <li><a href="{{ route('cms.store.wishlist') }}">My wishlists</a></li>
                 </ul>
             </div>
             <!-- end footer column -->  

@@ -28,6 +28,16 @@
                     <i class="ki-duotone ki-element-11 fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
                     @lang('lang_v1.storage_slots')
                 </a>
+                @can('storage_manager.manage')
+                <a href="{{ route('storage-manager.areas.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.warehouse_areas')</a>
+                <a href="{{ route('storage-manager.settings.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.warehouse_settings')</a>
+                @endcan
+                @canany(['storage_manager.view', 'storage_manager.operate'])
+                <a href="{{ route('storage-manager.inbound.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.expected_receipts')</a>
+                <a href="{{ route('storage-manager.putaway.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.putaway_queue')</a>
+                <a href="{{ route('storage-manager.outbound.index') }}" class="btn btn-sm btn-light">@lang('lang_v1.outbound_execution')</a>
+                @endcanany
+                <a href="{{ route('storage-manager.control-tower.index') }}" class="btn btn-sm btn-light-primary">@lang('lang_v1.control_tower')</a>
             </div>
         </div>
     </div>

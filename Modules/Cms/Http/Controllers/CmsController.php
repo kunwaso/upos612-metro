@@ -152,6 +152,7 @@ class CmsController extends Controller
         $blogs = CmsPage::where('type', 'blog')
                     ->orderBy('priority', 'asc')
                     ->where('is_enabled', 1)
+                    ->with('createdBy')
                     ->get();
 
         return view('cms::frontend.blogs.index')
@@ -164,6 +165,7 @@ class CmsController extends Controller
 
         $blog = CmsPage::where('type', 'blog')
                     ->where('is_enabled', 1)
+                    ->with('createdBy')
                     ->findOrFail($id);
 
         return view('cms::frontend.blogs.show')
@@ -183,6 +185,46 @@ class CmsController extends Controller
         $page = $this->cmsUtil->getPageByLayout('pages.about_us');
         return view('cms::frontend.pages.about_us')
             ->with(compact('page'));
+    }
+
+    public function shopCatalog()
+    {
+        return view('cms::frontend.pages.shop');
+    }
+
+    public function shopCollections()
+    {
+        return view('cms::frontend.pages.collections');
+    }
+
+    public function shopProduct()
+    {
+        return view('cms::frontend.pages.single_product');
+    }
+
+    public function shopCart()
+    {
+        return view('cms::frontend.pages.cart');
+    }
+
+    public function shopCheckout()
+    {
+        return view('cms::frontend.pages.checkout');
+    }
+
+    public function shopAccount()
+    {
+        return view('cms::frontend.pages.account');
+    }
+
+    public function shopWishlist()
+    {
+        return view('cms::frontend.pages.wishlist');
+    }
+
+    public function shopFaq()
+    {
+        return view('cms::frontend.pages.faq');
     }
 
     public function postContactForm(Request $request)
@@ -208,7 +250,7 @@ class CmsController extends Controller
                     'success' => true,
                     'msg' => __('cms::lang.we_will_contact_soon'),
                 ];
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
                 $output = [
                     'success' => false,

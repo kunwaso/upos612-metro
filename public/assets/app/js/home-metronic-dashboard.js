@@ -487,6 +487,63 @@
             return this.formatNumber(Math.abs(this.toNumber(value)), 1) + '%';
         },
 
+        formatCompactNumber: function (value, decimals) {
+            var amount = this.toNumber(value);
+            var abs = Math.abs(amount);
+            var divisor = 1;
+            var suffix = '';
+
+            if (abs >= 1000000000000) {
+                divisor = 1000000000000;
+                suffix = 'T';
+            } else if (abs >= 1000000000) {
+                divisor = 1000000000;
+                suffix = 'B';
+            } else if (abs >= 1000000) {
+                divisor = 1000000;
+                suffix = 'M';
+            } else if (abs >= 1000) {
+                divisor = 1000;
+                suffix = 'K';
+            }
+
+            if (divisor === 1) {
+                return this.formatNumber(amount, typeof decimals === 'number' ? decimals : 0);
+            }
+
+            var compactValue = amount / divisor;
+            var precision = typeof decimals === 'number' ? decimals : 2;
+            var formatted = '';
+            try {
+                formatted = new Intl.NumberFormat(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: precision
+                }).format(compactValue);
+            } catch (e) {
+                formatted = compactValue.toFixed(precision);
+            }
+
+            return formatted + suffix;
+        },
+
+        formatDashboardPrimaryAmount: function (value) {
+            var amount = this.toNumber(value);
+            if (Math.abs(amount) >= 1000000) {
+                return this.formatCompactNumber(amount, 2);
+            }
+
+            return this.formatNumber(amount, 0);
+        },
+
+        formatDashboardMoneyAmount: function (value) {
+            var amount = this.toNumber(value);
+            if (Math.abs(amount) >= 1000000) {
+                return this.formatCompactNumber(amount, 2);
+            }
+
+            return this.formatCurrency(amount, false);
+        },
+
         toNumber: function (value) {
             var parsed = parseFloat(value);
             return isNaN(parsed) ? 0 : parsed;
@@ -591,15 +648,26 @@
             this.destroyChart(containerId);
             el.innerHTML = '';
 
+            var chartHeight = parseInt(height, 10);
+            if (isNaN(chartHeight) || chartHeight <= 0) {
+                chartHeight = 300;
+            }
+
+            var safeLabels = Array.isArray(labels) ? labels : [];
+            var safeSeries = Array.isArray(series) ? series : [];
+            var isCompactChart = chartHeight <= 120;
+            var maxTicks = isCompactChart ? 0 : (chartHeight >= 260 ? 10 : 6);
+            var tickAmount = maxTicks > 0 ? Math.min(maxTicks, Math.max(2, safeLabels.length)) : undefined;
+
             var chart = new window.ApexCharts(el, {
                 chart: {
                     type: 'area',
-                    height: height || 300,
+                    height: chartHeight,
                     toolbar: {
                         show: false
                     },
                     sparkline: {
-                        enabled: false
+                        enabled: isCompactChart
                     }
                 },
                 dataLabels: {
@@ -607,7 +675,7 @@
                 },
                 stroke: {
                     curve: 'smooth',
-                    width: 3
+                    width: isCompactChart ? 2 : 3
                 },
                 fill: {
                     type: 'gradient',
@@ -620,12 +688,22 @@
                 },
                 series: [{
                     name: 'Amount',
-                    data: series || []
+                    data: safeSeries
                 }],
                 xaxis: {
-                    categories: labels || [],
+                    categories: safeLabels,
+                    tickAmount: tickAmount,
                     labels: {
-                        show: true
+                        show: !isCompactChart,
+                        rotate: -35,
+                        rotateAlways: false,
+                        hideOverlappingLabels: true,
+                        trim: true,
+                        minHeight: 30,
+                        maxHeight: 70,
+                        style: {
+                            fontSize: '10px'
+                        }
                     },
                     axisBorder: {
                         show: false
@@ -636,6 +714,7 @@
                 },
                 yaxis: {
                     labels: {
+                        show: !isCompactChart,
                         formatter: function (value) {
                             return Dashboard.formatCurrency(value, false);
                         }
@@ -650,8 +729,13 @@
                     }
                 },
                 grid: {
+                    show: !isCompactChart,
                     borderColor: '#f1f1f2',
-                    strokeDashArray: 4
+                    strokeDashArray: 4,
+                    padding: {
+                        left: isCompactChart ? 0 : 6,
+                        right: isCompactChart ? 0 : 6
+                    }
                 }
             });
 
@@ -680,7 +764,7 @@
                 $card.find('.card-header .fs-4.fw-semibold.text-gray-500').first().text(currency);
             }
 
-            $card.find('.card-header .fs-2hx').first().text(this.formatNumber(kpi.value || 0, 0));
+            $card.find('.card-header .fs-2hx').first().text(this.formatDashboardPrimaryAmount(kpi.value || 0));
             this.applyTrendBadge(
                 $card.find('.card-header .badge').first(),
                 kpi.delta_percent || 0,
@@ -701,7 +785,7 @@
                 var row = breakdown[i] || {};
                 var $row = $rows.eq(i);
                 $row.find('.text-gray-500').first().text(row.label || '-');
-                $row.find('.fw-bolder').first().html(this.formatCurrency(row.value || 0));
+                $row.find('.fw-bolder').first().html(this.formatDashboardMoneyAmount(row.value || 0));
             }
 
             var donutLabels = [];
@@ -751,7 +835,7 @@
             if (currency) {
                 $card.find('.card-header .fs-4.fw-semibold.text-gray-500').first().text(currency);
             }
-            $card.find('.card-header .fs-2hx').first().text(this.formatNumber(kpi.value || 0, 0));
+            $card.find('.card-header .fs-2hx').first().text(this.formatDashboardPrimaryAmount(kpi.value || 0));
             this.applyTrendBadge(
                 $card.find('.card-header .badge').first(),
                 kpi.delta_percent || 0,
@@ -814,8 +898,8 @@
             if (currency) {
                 $card.find('.px-9 .fs-4.fw-semibold.text-gray-500').first().text(currency);
             }
-            $card.find('.px-9 .fs-2hx').first().text(this.formatNumber(kpi.value || 0, 0));
-            $card.find('.px-9 .fs-6').first().html('Another ' + this.formatCurrency(kpi.goal_gap || 0) + ' to Goal');
+            $card.find('.px-9 .fs-2hx').first().text(this.formatDashboardPrimaryAmount(kpi.value || 0));
+            $card.find('.px-9 .fs-6').first().html('Another ' + this.formatDashboardMoneyAmount(kpi.goal_gap || 0) + ' to Goal');
             var label = kpi.range_label || this.getSalesChartRangeLabel(this.salesChartFilter.range, this.salesChartFilter.startDate, this.salesChartFilter.endDate);
             $card.find('[data-sales-chart-card-range-label]').first().text(label);
 
@@ -838,7 +922,7 @@
                 return;
             }
 
-            $card.find('.px-9 .fs-2hx').first().text(this.formatNumber(kpi.value || 0, 0));
+            $card.find('.px-9 .fs-2hx').first().text(this.formatDashboardPrimaryAmount(kpi.value || 0));
             this.applyTrendBadge(
                 $card.find('.px-9 .badge').first(),
                 kpi.delta_percent || 0,

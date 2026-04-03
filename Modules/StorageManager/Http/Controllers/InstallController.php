@@ -145,6 +145,9 @@ class InstallController extends Controller
         $permissions = [
             'storage_manager.view',
             'storage_manager.manage',
+            'storage_manager.operate',
+            'storage_manager.approve',
+            'storage_manager.count',
         ];
 
         foreach ($permissions as $permissionName) {

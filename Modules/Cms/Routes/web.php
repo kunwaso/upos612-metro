@@ -14,15 +14,25 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('/', [Modules\Cms\Http\Controllers\CmsController::class, 'index']);
+Route::get('/', [Modules\Cms\Http\Controllers\CmsController::class, 'index'])->name('cms.home');
 Route::get('shop/page/{page}', [Modules\Cms\Http\Controllers\CmsPageController::class, 'showPage']);
-Route::get('shop/blogs', [Modules\Cms\Http\Controllers\CmsController::class, 'getBlogList']);
-Route::get('shop/blog/{slug}-{id}', [Modules\Cms\Http\Controllers\CmsController::class, 'viewBlog']);
+Route::get('shop/blogs', [Modules\Cms\Http\Controllers\CmsController::class, 'getBlogList'])->name('cms.blogs.index');
+Route::get('shop/blog/{slug}-{id}', [Modules\Cms\Http\Controllers\CmsController::class, 'viewBlog'])->name('cms.blog.show');
 Route::get('shop/contact-us', [Modules\Cms\Http\Controllers\CmsController::class, 'contactUs'])->name('cms.contact.us');
 Route::post('shop/submit-contact-form', [Modules\Cms\Http\Controllers\CmsController::class, 'postContactForm'])->name('cms.submit.contact.form');
 
 // about us routes
 Route::get('shop/about-us', [Modules\Cms\Http\Controllers\CmsController::class, 'aboutUs'])->name('cms.about.us');
+
+// decor-store static storefront (reference HTML clones)
+Route::get('shop/catalog', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCatalog'])->name('cms.store.shop');
+Route::get('shop/collections', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCollections'])->name('cms.store.collections');
+Route::get('shop/product', [Modules\Cms\Http\Controllers\CmsController::class, 'shopProduct'])->name('cms.store.product');
+Route::get('shop/cart', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCart'])->name('cms.store.cart');
+Route::get('shop/checkout', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCheckout'])->name('cms.store.checkout');
+Route::get('shop/account', [Modules\Cms\Http\Controllers\CmsController::class, 'shopAccount'])->name('cms.store.account');
+Route::get('shop/wishlist', [Modules\Cms\Http\Controllers\CmsController::class, 'shopWishlist'])->name('cms.store.wishlist');
+Route::get('shop/faq', [Modules\Cms\Http\Controllers\CmsController::class, 'shopFaq'])->name('cms.store.faq');
 
 // products routes
 Route::get('shop/products/bao-bi-cuon', [Modules\Cms\Http\Controllers\CmsController::class, 'baobicuon'])->name('cms.products.baobicuon');

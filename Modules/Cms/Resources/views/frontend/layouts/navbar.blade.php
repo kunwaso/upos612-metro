@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg header-light bg-transparent disable-fixed" data-header-hover="light">
     <div class="container-fluid">
         <div class="col-auto">
-            <a class="navbar-brand" href="demo-decor-store.html">
+            <a class="navbar-brand" href="{{ route('cms.home') }}">
                 <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="default-logo">
                 <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="alt-logo">
                 <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="mobile-logo"> 
@@ -16,9 +16,9 @@
             </button>
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav"> 
                 <ul class="navbar-nav alt-font"> 
-                    <li class="nav-item"><a href="demo-decor-store.html" class="nav-link">Home</a></li>
+                    <li class="nav-item"><a href="{{ route('cms.home') }}" class="nav-link">Home</a></li>
                     <li class="nav-item dropdown submenu">
-                        <a href="demo-decor-store-shop.html" class="nav-link">Sản phẩm<span class="label bg-base-color text-white text-uppercase border-radius-26px">Hot</span></a>
+                        <a href="{{ route('cms.store.shop') }}" class="nav-link">Sản phẩm<span class="label bg-base-color text-white text-uppercase border-radius-26px">Hot</span></a>
                         <i class="fa-solid fa-angle-down dropdown-toggle" id="navbarDropdownMenuLink1" role="button" data-bs-toggle="dropdown" aria-expanded="false"></i>
                         <div class="dropdown-menu submenu-content" aria-labelledby="navbarDropdownMenuLink1"> 
                             <div class="d-lg-flex mega-menu m-auto flex-column">
@@ -64,26 +64,26 @@
                                 </div>
                                 <div class="row row-cols-1 row-cols-md-2">
                                     <div class="col">
-                                        <a href="demo-decor-store-shop.html"><img class="w-100" src="https://placehold.co/580x175" alt=""></a>
+                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-01.jpg') }}" alt=""></a>
                                     </div>
                                     <div class="col">
-                                        <a href="demo-decor-store-shop.html"><img class="w-100" src="https://placehold.co/580x175" alt=""></a>
+                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-02.jpg') }}" alt=""></a>
                                     </div>
                                 </div>
                             </div> 
                         </div>
                     </li> 
                     <li class="nav-item dropdown submenu">
-                        <a href="demo-decor-store-collections.html" class="nav-link">Danh mục sản phẩm</a>
+                        <a href="{{ route('cms.store.collections') }}" class="nav-link">Danh mục sản phẩm</a>
                         <i class="fa-solid fa-angle-down dropdown-toggle" id="navbarDropdownMenuLink2" role="button" data-bs-toggle="dropdown" aria-expanded="false"></i>
                         <div class="dropdown-menu submenu-content" aria-labelledby="navbarDropdownMenuLink2"> 
                             <div class="d-lg-flex mega-menu m-auto flex-column">
                                 <div class="row row-cols-2 row-cols-lg-6 row-cols-sm-3 md-pt-15px align-items-center justify-content-center mb-60px md-mb-30px sm-mb-0">
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-01.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Bao Bì dạng cuộn</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
@@ -91,10 +91,10 @@
                                         </a> 
                                     </div>
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-02.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Thùng - hộp</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
@@ -102,10 +102,10 @@
                                         </a>
                                     </div>
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-03.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Dây dai - cuộn</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
@@ -113,10 +113,10 @@
                                         </a> 
                                     </div>
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-04.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Chống sốc - Gel</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
@@ -124,10 +124,10 @@
                                         </a> 
                                     </div>
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-05.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Bao bì khác</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
@@ -135,10 +135,10 @@
                                         </a>
                                     </div>
                                     <div class="col md-mb-30px">
-                                        <a href="demo-decor-store-collections.html" class="text-center"> 
-                                            <img src="https://placehold.co/170x165" alt="">  
+                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
+                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-06.jpg') }}" alt="">  
                                         </a>
-                                        <a href="demo-decor-store-collections.html" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
+                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
                                                 <span class="btn-text text-dark-gray fs-16">Dụng cụ đóng gói</span> 
                                                 <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span> 
@@ -148,10 +148,10 @@
                                 </div>
                                 <div class="row row-cols-1 row-cols-md-2">
                                     <div class="col">
-                                        <a href="demo-decor-store-collections.html"><img src="https://placehold.co/580x240" alt=""></a>
+                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-03.jpg') }}" alt=""></a>
                                     </div>
                                     <div class="col">
-                                        <a href="demo-decor-store-collections.html"><img src="https://placehold.co/580x240" alt=""></a>
+                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-04.jpg') }}" alt=""></a>
                                     </div>
                                 </div>
                             </div> 
@@ -161,12 +161,16 @@
                         <a href="javascript:void(0);" class="nav-link">Pages</a>
                         <i class="fa-solid fa-angle-down dropdown-toggle" id="navbarDropdownMenuLink3" role="button" data-bs-toggle="dropdown" aria-expanded="false"></i>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink3"> 
-                            <li><a href="demo-decor-store-about.html">About</a></li>
-                            <li><a href="demo-decor-store-faq.html">FAQs</a></li>
+                            <li><a href="{{ route('cms.about.us') }}">About</a></li>
+                            <li><a href="{{ route('cms.store.faq') }}">FAQs</a></li>
+                            <li><a href="{{ route('cms.store.wishlist') }}">Wishlist</a></li>
+                            <li><a href="{{ route('cms.store.account') }}">Account</a></li>
+                            <li><a href="{{ route('cms.store.cart') }}">Cart</a></li>
+                            <li><a href="{{ route('cms.store.checkout') }}">Checkout</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item"><a href="demo-decor-store-blog.html" class="nav-link">Blog</a></li>
-                    <li class="nav-item"><a href="demo-decor-store-contact.html" class="nav-link">Contact</a></li>
+                    <li class="nav-item"><a href="{{ route('cms.blogs.index') }}" class="nav-link">Blog</a></li>
+                    <li class="nav-item"><a href="{{ route('cms.contact.us') }}" class="nav-link">Contact</a></li>
                 </ul>
             </div>
         </div>
@@ -176,7 +180,7 @@
                     <a href="javascript:void(0)" class="search-form-icon header-search-form"><i class="feather icon-feather-search"></i></a> 
                     <div class="search-form-wrapper">
                         <button title="Close" type="button" class="search-close alt-font">×</button>
-                        <form id="search-form" role="search" method="get" class="search-form bg-white" action="search-result.html">
+                        <form id="search-form" role="search" method="get" class="search-form bg-white" action="#">
                             <div class="search-form-box">
                                 <h2 class="text-dark-gray text-center mb-7 alt-font fw-700 ls-minus-1px">What are you looking for?</h2>
                                 <input class="search-input alt-font" id="search-form-input5e219ef164995" placeholder="Enter your keywords..." name="s" value="" type="text" autocomplete="off">

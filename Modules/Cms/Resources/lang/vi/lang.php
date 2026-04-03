@@ -84,4 +84,11 @@ return [
     'fb_messanger_link' => 'Facebook liên kết tin nhắn',
     'chat_with_us' => 'Trò chuyện với chúng tôi',
     'mail_us' => 'Gửi thư cho chúng tôi',
+    'about_us' => 'Về chúng tôi',
+    'storefront_shop' => 'Cửa hàng',
+    'storefront_collections' => 'Bộ sưu tập',
+    'storefront_account' => 'Tài khoản',
+    'storefront_cart' => 'Giỏ hàng',
+    'storefront_checkout' => 'Thanh toán',
+    'storefront_wishlist' => 'Danh sách yêu thích',
 ];

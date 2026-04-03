@@ -2,7 +2,10 @@
 
 namespace Modules\StorageManager\Http\Controllers;
 
+use App\Category;
 use App\Http\Controllers\Controller;
+use Illuminate\Validation\ValidationException;
+use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Entities\StorageSlot;
 use Modules\StorageManager\Http\Requests\StoreStorageSlotRequest;
 use Modules\StorageManager\Http\Requests\UpdateStorageSlotRequest;
@@ -29,20 +32,26 @@ class StorageSlotController extends Controller
         $business_id = request()->session()->get('user.business_id');
         $locations   = $this->util->getLocationsDropdown($business_id);
         $categories  = $this->util->getCategoriesDropdown($business_id);
+        $areas = $this->util->getAreasDropdown($business_id);
 
         $location_id = (int) request('location_id', 0);
+        $category_id = (int) request('category_id', 0);
 
         $query = StorageSlot::forBusiness($business_id)
-            ->with('location', 'category')
+            ->with('location', 'category', 'area')
             ->withCount('productRacks as occupancy');
 
         if ($location_id) {
             $query->forLocation($location_id);
         }
 
+        if ($category_id) {
+            $query->where('category_id', $category_id);
+        }
+
         $slots = $query->orderBy('location_id')->orderBy('category_id')->orderBy('row')->orderBy('position')->paginate(50);
 
-        return view('storagemanager::slots.index', compact('slots', 'locations', 'categories', 'location_id'));
+        return view('storagemanager::slots.index', compact('slots', 'locations', 'categories', 'areas', 'location_id', 'category_id'));
     }
 
     /**
@@ -57,8 +66,9 @@ class StorageSlotController extends Controller
         $business_id = request()->session()->get('user.business_id');
         $locations   = $this->util->getLocationsDropdown($business_id);
         $categories  = $this->util->getCategoriesDropdown($business_id);
+        $areas       = $this->util->getAreasDropdown($business_id);
 
-        return view('storagemanager::slots.create', compact('locations', 'categories'));
+        return view('storagemanager::slots.create', compact('locations', 'categories', 'areas'));
     }
 
     /**
@@ -72,11 +82,13 @@ class StorageSlotController extends Controller
 
         // Auto-generate slot code if not provided
         if (empty($data['slot_code'])) {
-            $category = \App\Category::find($data['category_id']);
+            $category = Category::find($data['category_id']);
             if ($category) {
                 $data['slot_code'] = $this->util->generateSlotCode($category, $data['row'], $data['position']);
             }
         }
+
+        $this->assertAreaMatchesLocation($business_id, $data['area_id'] ?? null, (int) $data['location_id']);
 
         StorageSlot::create($data);
 
@@ -102,8 +114,9 @@ class StorageSlotController extends Controller
         $slot        = StorageSlot::forBusiness($business_id)->with('category')->findOrFail($id);
         $locations   = $this->util->getLocationsDropdown($business_id);
         $categories  = $this->util->getCategoriesDropdown($business_id);
+        $areas       = $this->util->getAreasDropdown($business_id);
 
-        return view('storagemanager::slots.edit', compact('slot', 'locations', 'categories'));
+        return view('storagemanager::slots.edit', compact('slot', 'locations', 'categories', 'areas'));
     }
 
     /**
@@ -116,12 +129,13 @@ class StorageSlotController extends Controller
         $data        = $request->validated();
 
         if (empty($data['slot_code'])) {
-            $category = \App\Category::find($data['category_id']);
+            $category = Category::find($data['category_id']);
             if ($category) {
                 $data['slot_code'] = $this->util->generateSlotCode($category, $data['row'], $data['position']);
             }
         }
 
+        $this->assertAreaMatchesLocation($business_id, $data['area_id'] ?? null, (int) $data['location_id']);
         $slot->update($data);
 
         $output = [
@@ -157,5 +171,24 @@ class StorageSlotController extends Controller
 
         return redirect()->route('storage-manager.slots.index')
             ->with('status', $output);
+    }
+
+    protected function assertAreaMatchesLocation(int $businessId, $areaId, int $locationId): void
+    {
+        if (empty($areaId)) {
+            return;
+        }
+
+        $exists = StorageArea::query()
+            ->forBusiness($businessId)
+            ->forLocation($locationId)
+            ->where('id', (int) $areaId)
+            ->exists();
+
+        if (! $exists) {
+            throw ValidationException::withMessages([
+                'area_id' => __('lang_v1.storage_area_location_mismatch'),
+            ]);
+        }
     }
 }

@@ -63,7 +63,7 @@ Pick one lane first:
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area -> apply mitigations/fixes |
 | `full-autofix` | "run all autofixes", "check project", "health check", "autofix everything" | log-scan -> lint-fix -> optional tenant-audit / known-issues-fix |
 | `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome -> interactive `audit_web` -> read persisted report -> optional Chrome DevTools escalation -> fix -> Playwright + `audit_web` verify |
-| `product-copilot-eval` | User asks about an in-app assistant, guided UI helper, or ERP copilot | read product-copilot patterns -> read security/ui/Aichat docs -> define safe first use case |
+| `product-copilot-eval` | User asks about an in-app assistant, guided UI helper, or ERP copilot | read `ai/product-copilot-patterns.md` -> `ai/security-and-auth.md` -> `ai/ui-components.md` -> `ai/aichat-authz-baseline.md` + `Modules/Aichat/README.md` when Aichat is in scope -> define safe first use case |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade -> checklist (focus, contrast, structure, assets) -> report (and fix within Metronic if implement mode) |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components -> improve hierarchy, spacing, copy within Metronic only; no new classes |
 | `design-critique` | User asks for UX/review of a screen or flow | read view -> assess clarity, hierarchy, empty/error states -> short critique + Metronic-safe suggestions |
@@ -197,6 +197,8 @@ Read only the domain doc(s) you touch:
 | External repo / GitHub / trending evaluation | `ai/external-adoption.md` |
 | Deep research / bounded delegation | `ai/research-and-delegation.md` |
 | In-app agent / product copilot evaluation | `ai/product-copilot-patterns.md` + `Modules/Aichat/README.md` |
+| Aichat module (authz, capabilities, entry points) | `ai/aichat-authz-baseline.md` + `Modules/Aichat/README.md` |
+| Contact Feeds (Feeds tab, providers, env) | `ai/contact-feeds.md` |
 | Browser audit workflow | `ai/browser-audit-workflow.md` |
 | ProjectAuto wizard workflow | `ai/projectauto-workflow-wizard.md` |
 | Workflow tuning | `ai/agent-improvement.md` |
@@ -206,7 +208,9 @@ Read order for new lanes:
 
 1. `dependency-eval`: `ai/external-adoption.md` -> `ai/agent-tools-and-mcp.md` -> relevant domain docs
 2. `external-adapt`: `ai/research-and-delegation.md` -> `ai/external-adoption.md` -> closest local feature/docs
-3. `product-copilot-eval`: `ai/product-copilot-patterns.md` -> `ai/security-and-auth.md` -> `ai/ui-components.md` -> `Modules/Aichat/README.md`
+3. `product-copilot-eval`: `ai/product-copilot-patterns.md` -> `ai/security-and-auth.md` -> `ai/ui-components.md` -> `ai/aichat-authz-baseline.md` -> `Modules/Aichat/README.md`
+4. Aichat code changes (authz/capabilities): `ai/aichat-authz-baseline.md` -> `Modules/Aichat/README.md` -> `ai/security-and-auth.md`
+5. Contact Feeds: `ai/contact-feeds.md` -> `ai/security-and-auth.md` (if exposing tenant data)
 
 ---
 

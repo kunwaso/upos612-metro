@@ -42,12 +42,19 @@
             {{-- Location filter --}}
             <div class="card card-flush mb-6">
                 <div class="card-body py-4">
-                    <form method="GET" action="{{ route('storage-manager.slots.index') }}" class="d-flex align-items-center gap-3">
+                    <form method="GET" action="{{ route('storage-manager.slots.index') }}" class="d-flex align-items-center gap-3 flex-wrap">
                         <label class="fw-semibold text-gray-700 fs-6">@lang('business.location')</label>
                         <select name="location_id" class="form-select form-select-sm w-250px" onchange="this.form.submit()">
                             <option value="">@lang('messages.all')</option>
                             @foreach($locations as $id => $name)
                                 <option value="{{ $id }}" @selected($location_id == $id)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        <label class="fw-semibold text-gray-700 fs-6">@lang('lang_v1.zone')</label>
+                        <select name="category_id" class="form-select form-select-sm w-250px" onchange="this.form.submit()">
+                            <option value="">@lang('messages.all')</option>
+                            @foreach($categories as $id => $name)
+                                <option value="{{ $id }}" @selected(($category_id ?? 0) == $id)>{{ $name }}</option>
                             @endforeach
                         </select>
                     </form>
@@ -67,9 +74,11 @@
                                     <th class="min-w-100px">@lang('lang_v1.storage_slot_code')</th>
                                     <th class="min-w-150px">@lang('business.location')</th>
                                     <th class="min-w-150px">@lang('lang_v1.zone')</th>
+                                    <th class="min-w-150px">@lang('lang_v1.storage_area')</th>
                                     <th class="min-w-80px">@lang('lang_v1.row')</th>
                                     <th class="min-w-80px">@lang('lang_v1.position')</th>
                                     <th class="min-w-100px">@lang('lang_v1.max_capacity')</th>
+                                    <th class="min-w-100px">@lang('lang_v1.status')</th>
                                     <th class="min-w-80px">@lang('lang_v1.occupied')</th>
                                     <th class="min-w-80px">@lang('lang_v1.available')</th>
                                     <th class="min-w-100px text-end">@lang('messages.action')</th>
@@ -91,9 +100,15 @@
                                         </td>
                                         <td class="text-gray-700">{{ optional($slot->location)->name ?? '—' }}</td>
                                         <td class="text-gray-700">{{ optional($slot->category)->name ?? '—' }}</td>
+                                        <td class="text-gray-700">{{ optional($slot->area)->name ?? '—' }}</td>
                                         <td class="text-gray-700">{{ $slot->row }}</td>
                                         <td class="text-gray-700">{{ $slot->position }}</td>
                                         <td class="text-gray-700">{{ $slot->max_capacity ?: '∞' }}</td>
+                                        <td>
+                                            <span class="badge {{ $slot->status === 'active' ? 'badge-light-success' : 'badge-light-secondary' }}">
+                                                {{ $slot->status ?? __('lang_v1.active') }}
+                                            </span>
+                                        </td>
                                         <td class="text-gray-700">{{ $slot->occupancy }}</td>
                                         <td>
                                             @if($isFull)
@@ -120,7 +135,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-6">@lang('lang_v1.no_slots_defined')</td>
+                                        <td colspan="11" class="text-center text-muted py-6">@lang('lang_v1.no_slots_defined')</td>
                                     </tr>
                                 @endforelse
                             </tbody>
