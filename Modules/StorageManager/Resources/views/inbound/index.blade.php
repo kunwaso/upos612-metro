@@ -112,7 +112,7 @@
                                                     @lang('messages.view')
                                                 </a>
                                             @else
-                                                <span class="text-muted fs-8">Not openable</span>
+                                                <span class="text-muted fs-8">{{ $row['action_note'] ?? 'Not openable' }}</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -170,7 +170,7 @@
                                                     @lang('messages.view')
                                                 </a>
                                             @else
-                                                <span class="text-muted fs-8">Planning Only</span>
+                                                <span class="text-muted fs-8">{{ $row['action_note'] ?? 'Planning Only' }}</span>
                                             @endif
                                         </td>
                                     </tr>

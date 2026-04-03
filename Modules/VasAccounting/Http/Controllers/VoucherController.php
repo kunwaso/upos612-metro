@@ -8,6 +8,8 @@ use Modules\VasAccounting\Entities\VasVoucher;
 use Modules\VasAccounting\Http\Requests\StoreManualVoucherRequest;
 use Modules\VasAccounting\Services\VasPostingService;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
+use RuntimeException;
+use Throwable;
 
 class VoucherController extends VasBaseController
 {
@@ -82,7 +84,10 @@ class VoucherController extends VasBaseController
             ->with(['lines.account', 'period'])
             ->findOrFail($voucher);
 
-        return view('vasaccounting::vouchers.show', compact('voucher'));
+        $deleteDraftEligibility = $this->postingService->draftVoucherDeletionStatus($voucher);
+        $reversalEligibility = $this->postingService->voucherReversalStatus($voucher);
+
+        return view('vasaccounting::vouchers.show', compact('voucher', 'deleteDraftEligibility', 'reversalEligibility'));
     }
 
     public function post(Request $request, int $voucher): RedirectResponse
@@ -110,10 +115,49 @@ class VoucherController extends VasBaseController
             ->with('lines')
             ->findOrFail($voucher);
 
-        $reversal = $this->postingService->reverseVoucher($voucherModel, (int) auth()->id());
+        try {
+            $reversal = $this->postingService->reverseVoucher($voucherModel, (int) auth()->id());
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('vasaccounting.vouchers.show', $voucherModel->id)
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('vasaccounting.vouchers.show', $voucherModel->id)
+                ->with('status', ['success' => false, 'msg' => __('messages.something_went_wrong')]);
+        }
 
         return redirect()
             ->route('vasaccounting.vouchers.show', $reversal->id)
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.manual_voucher_reversed')]);
+    }
+
+    public function destroy(Request $request, int $voucher): RedirectResponse
+    {
+        $this->authorizePermission('vas_accounting.vouchers.manage');
+
+        $voucherModel = VasVoucher::query()
+            ->where('business_id', $this->businessId($request))
+            ->findOrFail($voucher);
+
+        try {
+            $this->postingService->deleteDraftVoucher($voucherModel);
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('vasaccounting.vouchers.show', $voucherModel->id)
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('vasaccounting.vouchers.show', $voucherModel->id)
+                ->with('status', ['success' => false, 'msg' => __('messages.something_went_wrong')]);
+        }
+
+        return redirect()
+            ->route('vasaccounting.vouchers.index')
+            ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.manual_voucher_deleted')]);
     }
 }

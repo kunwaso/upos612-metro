@@ -118,6 +118,25 @@ class VasPostingServiceLifecycleTest extends TestCase
         $this->assertSame($reversal, $result);
     }
 
+    public function test_reverse_voucher_refuses_to_reverse_reversal_voucher(): void
+    {
+        $service = new VasPostingService(
+            Mockery::mock(SourceDocumentAdapterManager::class),
+            Mockery::mock(VasAccountingUtil::class),
+            Mockery::mock(LedgerPostingUtil::class),
+            Mockery::mock(DocumentApprovalService::class)
+        );
+
+        $voucher = $this->fakeVoucher('posted', 'JV-00006');
+        $voucher->is_reversal = true;
+        $voucher->source_type = 'inventory_document_reversal';
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('cannot be reversed again');
+
+        $service->reverseVoucher($voucher, 21);
+    }
+
     public function test_post_existing_voucher_rejects_when_approval_is_still_required(): void
     {
         $approvalService = Mockery::mock(DocumentApprovalService::class);

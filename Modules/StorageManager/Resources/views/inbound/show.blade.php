@@ -19,6 +19,18 @@
             <div class="d-flex align-items-center gap-2 gap-lg-3">
                 <a href="{{ route('storage-manager.inbound.index') }}" class="btn btn-sm btn-light">@lang('messages.back')</a>
                 <a href="{{ route('storage-manager.putaway.index') }}" class="btn btn-sm btn-light-primary">Putaway Queue</a>
+                @if(auth()->user()->can('storage_manager.operate') && in_array((string) ($document->status ?? ''), ['completed', 'closed'], true))
+                    <form method="POST" action="{{ route('storage-manager.inbound.reopen', $document->id) }}" class="d-inline-block">
+                        @csrf
+                        <button type="submit"
+                                class="btn btn-sm btn-light-danger"
+                                {{ empty($sourceSummary['can_reopen']) ? 'disabled' : '' }}
+                                @if(!empty($sourceSummary['reopen_reason'])) title="{{ $sourceSummary['reopen_reason'] }}" @endif
+                                onclick="return confirm('Reverse this receipt and reopen receiving lines for editing?');">
+                            Reverse Receipt
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>
@@ -28,6 +40,12 @@
             @if(session('status'))
                 <div class="alert alert-{{ session('status.success') ? 'success' : 'danger' }} mb-6">
                     {{ session('status.msg') }}
+                </div>
+            @endif
+
+            @if(!empty($sourceSummary['reopen_reason']) && auth()->user()->can('storage_manager.operate') && in_array((string) ($document->status ?? ''), ['completed', 'closed'], true))
+                <div class="alert alert-warning mb-6">
+                    {{ $sourceSummary['reopen_reason'] }}
                 </div>
             @endif
 
@@ -100,6 +118,13 @@
                             <div class="text-gray-500 fs-7">Putaway Document</div>
                             <div class="fw-semibold text-gray-900">
                                 {{ !empty($sourceSummary['putaway_document_id']) ? $sourceSummary['putaway_document_id'] : __('lang_v1.none') }}
+                                @if(!empty($sourceSummary['putaway_document_id']))
+                                    <div class="mt-2">
+                                        <a href="{{ route('storage-manager.putaway.show', $sourceSummary['putaway_document_id']) }}" class="btn btn-sm btn-light-primary">
+                                            Open Putaway
+                                        </a>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -154,7 +179,19 @@
                                                     <input type="text" name="lines[{{ $line['id'] }}][lot_number]" class="form-control form-control-sm form-control-solid" value="{{ $line['lot_number'] ?? '' }}">
                                                 </td>
                                                 <td>
-                                                    <input type="text" name="lines[{{ $line['id'] }}][expiry_date]" class="form-control form-control-sm form-control-solid" value="{{ $line['expiry_date'] ?? '' }}" placeholder="YYYY-MM-DD">
+                                                    <div class="position-relative">
+                                                        <i class="ki-duotone ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500">
+                                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                            <span class="path4"></span><span class="path5"></span><span class="path6"></span>
+                                                        </i>
+                                                        <input type="text"
+                                                               name="lines[{{ $line['id'] }}][expiry_date]"
+                                                               class="form-control form-control-sm form-control-solid ps-12 js-storage-expiry-datepicker"
+                                                               value="{{ $line['expiry_date'] ?? '' }}"
+                                                               data-date-format="Y-m-d"
+                                                               autocomplete="off"
+                                                               placeholder="YYYY-MM-DD">
+                                                    </div>
                                                 </td>
                                                 <td>{{ $line['staging_area_label'] ?? '—' }}</td>
                                                 <td>
@@ -179,9 +216,15 @@
                     </div>
                 </form>
             @else
-                <div class="alert alert-info">
-                    Receipt not ready for confirmation.
-                </div>
+                @if(!empty($sourceSummary['planning_only']))
+                    <div class="alert alert-info">
+                        This purchase order is planning-only in this phase. Inbound confirmation and putaway become available after creating/receiving the purchase from this PO.
+                    </div>
+                @else
+                    <div class="alert alert-info">
+                        Receipt not ready for confirmation.
+                    </div>
+                @endif
                 <div class="card card-flush">
                     <div class="card-body pt-0">
                         <div class="table-responsive">
@@ -224,4 +267,43 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('javascript')
+<script>
+    (function () {
+        const selector = '.js-storage-expiry-datepicker';
+        const inputs = document.querySelectorAll(selector);
+        if (!inputs.length) {
+            return;
+        }
+
+        if (typeof window.flatpickr === 'function') {
+            inputs.forEach(function (input) {
+                if (input.dataset.pickerReady === '1') {
+                    return;
+                }
+
+                window.flatpickr(input, {
+                    altInput: true,
+                    altFormat: 'd M, Y',
+                    dateFormat: input.dataset.dateFormat || 'Y-m-d',
+                    allowInput: true
+                });
+
+                input.dataset.pickerReady = '1';
+            });
+
+            return;
+        }
+
+        if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.datepicker === 'function') {
+            window.jQuery(selector).datepicker({
+                autoclose: true,
+                todayHighlight: true,
+                format: 'yyyy-mm-dd'
+            });
+        }
+    })();
+</script>
 @endsection

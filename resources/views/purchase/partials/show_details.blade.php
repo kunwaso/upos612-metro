@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary no-print" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></button>
     @php
       $title = $purchase->type == 'purchase_order' ? __('lang_v1.purchase_order_details') : __('purchase.purchase_details');
       $custom_labels = json_decode(session('business.custom_labels'), true);

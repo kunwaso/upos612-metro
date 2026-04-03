@@ -1,0 +1,170 @@
+{
+    "kind": "core",
+    "title": "Core HTTP Controllers",
+    "purpose": "Verified controller index for root files in `app/Http/Controllers/*.php` plus `Auth/`, `Install/`, and `Restaurant/`.",
+    "triggers": [
+        "Auth controller",
+        "Install controller",
+        "Restaurant controller",
+        "root controller edits"
+    ],
+    "verified_paths": {
+        "routes": [
+            {
+                "path": "routes/web.php",
+                "summary": "primary root route declarations",
+                "exists": true
+            },
+            {
+                "path": "routes/api.php",
+                "summary": "root API route declarations",
+                "exists": true
+            }
+        ],
+        "controllers": [
+            "app/Http/Controllers",
+            "app/Http/Controllers/AccountController.php",
+            "app/Http/Controllers/AccountReportsController.php",
+            "app/Http/Controllers/AccountTypeController.php",
+            "app/Http/Controllers/Auth",
+            "app/Http/Controllers/Auth/ConfirmPasswordController.php",
+            "app/Http/Controllers/Auth/ForgotPasswordController.php",
+            "app/Http/Controllers/Auth/LoginController.php",
+            "app/Http/Controllers/Auth/RegisterController.php",
+            "app/Http/Controllers/Auth/ResetPasswordController.php",
+            "app/Http/Controllers/Auth/VerificationController.php",
+            "app/Http/Controllers/BackUpController.php",
+            "app/Http/Controllers/BarcodeController.php",
+            "app/Http/Controllers/BrandController.php",
+            "app/Http/Controllers/BusinessController.php",
+            "app/Http/Controllers/BusinessLocationController.php",
+            "app/Http/Controllers/CalendarController.php",
+            "app/Http/Controllers/CashRegisterController.php",
+            "app/Http/Controllers/CombinedPurchaseReturnController.php",
+            "app/Http/Controllers/ContactController.php",
+            "app/Http/Controllers/Controller.php",
+            "app/Http/Controllers/CustomerGroupController.php",
+            "app/Http/Controllers/DashboardConfiguratorController.php",
+            "app/Http/Controllers/DiscountController.php",
+            "app/Http/Controllers/DocumentAndNoteController.php",
+            "app/Http/Controllers/ExpenseCategoryController.php",
+            "app/Http/Controllers/ExpenseController.php",
+            "app/Http/Controllers/GlobalSearchController.php",
+            "app/Http/Controllers/GroupTaxController.php",
+            "app/Http/Controllers/HomeController.php",
+            "app/Http/Controllers/ImportOpeningStockController.php",
+            "app/Http/Controllers/ImportProductsController.php",
+            "app/Http/Controllers/ImportSalesController.php",
+            "app/Http/Controllers/Install",
+            "app/Http/Controllers/Install/InstallController.php",
+            "app/Http/Controllers/Install/ModulesController.php",
+            "app/Http/Controllers/InvoiceLayoutController.php",
+            "app/Http/Controllers/InvoiceSchemeController.php",
+            "app/Http/Controllers/LabelsController.php",
+            "app/Http/Controllers/LedgerDiscountController.php",
+            "app/Http/Controllers/LocationSettingsController.php",
+            "app/Http/Controllers/ManageUserController.php",
+            "app/Http/Controllers/MyFatoorahController.php",
+            "app/Http/Controllers/NotificationController.php",
+            "app/Http/Controllers/NotificationTemplateController.php",
+            "app/Http/Controllers/OpeningStockController.php",
+            "app/Http/Controllers/PesaPalController.php",
+            "app/Http/Controllers/PrinterController.php",
+            "app/Http/Controllers/ProductController.php",
+            "app/Http/Controllers/ProductQuoteController.php",
+            "app/Http/Controllers/ProductSalesOrderController.php",
+            "app/Http/Controllers/PublicQuoteController.php",
+            "app/Http/Controllers/PurchaseController.php",
+            "app/Http/Controllers/PurchaseOrderController.php",
+            "app/Http/Controllers/PurchaseRequisitionController.php",
+            "app/Http/Controllers/PurchaseReturnController.php",
+            "app/Http/Controllers/ReportController.php",
+            "app/Http/Controllers/Restaurant",
+            "app/Http/Controllers/Restaurant/BookingController.php",
+            "app/Http/Controllers/Restaurant/DataController.php",
+            "app/Http/Controllers/Restaurant/KitchenController.php",
+            "app/Http/Controllers/Restaurant/ModifierSetsController.php",
+            "app/Http/Controllers/Restaurant/OrderController.php",
+            "app/Http/Controllers/Restaurant/ProductModifierSetController.php",
+            "app/Http/Controllers/Restaurant/RestaurantController.php",
+            "app/Http/Controllers/Restaurant/TableController.php",
+            "app/Http/Controllers/RoleController.php",
+            "app/Http/Controllers/SalesCommissionAgentController.php",
+            "app/Http/Controllers/SalesOrderController.php",
+            "app/Http/Controllers/SellController.php",
+            "app/Http/Controllers/SellingPriceGroupController.php",
+            "app/Http/Controllers/SellPosController.php",
+            "app/Http/Controllers/SellReturnController.php",
+            "app/Http/Controllers/StockAdjustmentController.php",
+            "app/Http/Controllers/StockTransferController.php",
+            "app/Http/Controllers/TaxonomyController.php",
+            "app/Http/Controllers/TaxRateController.php",
+            "app/Http/Controllers/TransactionPaymentController.php",
+            "app/Http/Controllers/TypesOfServiceController.php",
+            "app/Http/Controllers/UnifiedQuoteController.php",
+            "app/Http/Controllers/UnitController.php",
+            "app/Http/Controllers/UserController.php",
+            "app/Http/Controllers/VariationTemplateController.php",
+            "app/Http/Controllers/WarrantyController.php"
+        ],
+        "views": [],
+        "requests": [
+            "app/Http/Requests"
+        ],
+        "services": [],
+        "utils": [],
+        "models": [],
+        "jobs": [],
+        "notifications": [],
+        "assets": [],
+        "tests": [
+            "tests/Feature"
+        ]
+    },
+    "route_prefixes": [],
+    "search_keywords": [
+        "Auth",
+        "Controller.php",
+        "Install",
+        "Restaurant"
+    ],
+    "related_docs": [
+        "ai/laravel-conventions.md",
+        "ai/security-and-auth.md"
+    ],
+    "workflows": [
+        {
+            "name": "Controller ownership check",
+            "paths": [
+                "app/Http/Controllers",
+                "routes/api.php",
+                "routes/web.php"
+            ],
+            "notes": "Confirm owning route first, then open only the target controller."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Controller + route bundle",
+            "paths": [
+                "app/Http/Controllers",
+                "routes/api.php",
+                "routes/web.php"
+            ],
+            "notes": "When action signatures change, update route wiring in the same pass."
+        }
+    ],
+    "dependencies": {
+        "requests": [],
+        "services": [],
+        "utils": [],
+        "models": []
+    },
+    "tests": [
+        "tests/Feature"
+    ],
+    "verify_commands": [
+        "php artisan test --filter=Feature"
+    ],
+    "last_reviewed": "2026-04-03"
+}

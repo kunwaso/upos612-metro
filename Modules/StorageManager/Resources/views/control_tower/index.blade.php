@@ -114,8 +114,8 @@
                                     <tr>
                                         <td class="fw-semibold text-gray-900">{{ $row['location_name'] ?: ('#' . $row['location_id']) }}</td>
                                         <td>{{ ucwords(str_replace('_', ' ', $row['execution_mode'])) }}</td>
-                                        <td>{{ @format_quantity($row['slot_total']) }}</td>
-                                        <td>{{ @format_quantity($row['source_total']) }}</td>
+                                        <td>@format_quantity($row['slot_total'])</td>
+                                        <td>@format_quantity($row['source_total'])</td>
                                         <td>
                                             <span class="badge {{ $row['mismatch_count'] > 0 ? 'badge-light-danger' : 'badge-light-success' }}">
                                                 {{ $row['mismatch_count'] }}
@@ -205,7 +205,14 @@
                                     <tbody>
                                         @forelse($recentDocuments as $document)
                                             <tr>
-                                                <td class="fw-semibold text-gray-900">{{ $document->document_no }}</td>
+                                                <td class="fw-semibold text-gray-900">
+                                                    <a href="#"
+                                                        class="btn-modal text-primary"
+                                                        data-container=".view_modal"
+                                                        data-href="{{ route('storage-manager.documents.show', $document->id) }}">
+                                                        {{ $document->document_no }}
+                                                    </a>
+                                                </td>
                                                 <td>{{ ucwords(str_replace('_', ' ', $document->document_type)) }}</td>
                                                 <td>{{ $document->status }}</td>
                                                 <td>{{ $document->sync_status }}</td>
@@ -217,7 +224,12 @@
                                                             <button type="submit" class="btn btn-sm btn-light-primary">@lang('lang_v1.retry_sync')</button>
                                                         </form>
                                                     @else
-                                                        <span class="text-muted fs-8">—</span>
+                                                        <a href="#"
+                                                            class="btn-modal btn btn-sm btn-light-primary"
+                                                            data-container=".view_modal"
+                                                            data-href="{{ route('storage-manager.documents.show', $document->id) }}">
+                                                            @lang('messages.view')
+                                                        </a>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -236,18 +248,31 @@
                         <div class="card-body pt-0">
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle">
-                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('lang_v1.source')</th><th>@lang('lang_v1.type')</th><th>@lang('lang_v1.reason')</th><th>@lang('sale.qty')</th><th>@lang('lang_v1.status')</th></tr></thead>
+                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('sale.ref_no')</th><th>@lang('lang_v1.source')</th><th>@lang('lang_v1.type')</th><th>@lang('lang_v1.reason')</th><th>@lang('lang_v1.actor')</th><th>@lang('sale.qty')</th><th>@lang('lang_v1.status')</th></tr></thead>
                                     <tbody>
                                         @forelse($movementRows as $row)
                                             <tr>
+                                                <td class="fw-semibold text-gray-900">
+                                                    @if(!empty($row->document_id))
+                                                        <a href="#"
+                                                            class="btn-modal text-primary"
+                                                            data-container=".view_modal"
+                                                            data-href="{{ route('storage-manager.documents.show', $row->document_id) }}">
+                                                            {{ optional($row->document)->document_no ?: ('#' . $row->document_id) }}
+                                                        </a>
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </td>
                                                 <td class="fw-semibold text-gray-900">{{ $row->source_type ?? '—' }}</td>
                                                 <td>{{ $row->movement_type }}</td>
                                                 <td>{{ $row->reason_code ?? '—' }}</td>
-                                                <td>{{ @format_quantity($row->quantity) }}</td>
+                                                <td>{{ $row->actor_label }}</td>
+                                                <td>@format_quantity($row->quantity)</td>
                                                 <td>{{ trim(collect([$row->from_status, $row->to_status])->filter()->implode(' -> ')) ?: '—' }}</td>
                                             </tr>
                                         @empty
-                                            <tr><td colspan="5" class="text-center text-muted py-8">@lang('lang_v1.no_movement_events_yet')</td></tr>
+                                            <tr><td colspan="7" class="text-center text-muted py-8">@lang('lang_v1.no_movement_events_yet')</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
@@ -297,8 +322,8 @@
                                                 <td>{{ ucwords(str_replace('_', ' ', (string) ($row['advisory_type'] ?? '-'))) }}</td>
                                                 <td>{{ $row['source_label'] ?? '-' }}</td>
                                                 <td>{{ $row['destination_label'] ?? '-' }}</td>
-                                                <td>{{ @format_quantity($row['recommended_qty'] ?? 0) }}</td>
-                                                <td>{{ @format_quantity($row['external_shortage_qty'] ?? 0) }}</td>
+                                                <td>@format_quantity($row['recommended_qty'] ?? 0)</td>
+                                                <td>@format_quantity($row['external_shortage_qty'] ?? 0)</td>
                                                 <td class="text-end">
                                                     @if(($row['advisory_type'] ?? '') === 'purchasing_review')
                                                         <a href="{{ route('storage-manager.planning.index', ['location_id' => $row['location_id'] ?? 0]) }}" class="btn btn-sm btn-light-primary">@lang('messages.view')</a>
@@ -325,18 +350,31 @@
                 <div class="card-body pt-0">
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle">
-                            <thead><tr class="fw-bold text-gray-800"><th>@lang('lang_v1.system')</th><th>@lang('lang_v1.action')</th><th>@lang('lang_v1.status')</th><th>@lang('lang_v1.message')</th><th>@lang('lang_v1.date')</th></tr></thead>
+                            <thead><tr class="fw-bold text-gray-800"><th>@lang('sale.ref_no')</th><th>@lang('lang_v1.system')</th><th>@lang('lang_v1.action')</th><th>@lang('lang_v1.status')</th><th>@lang('lang_v1.actor')</th><th>@lang('lang_v1.message')</th><th>@lang('lang_v1.date')</th></tr></thead>
                             <tbody>
                                 @forelse($recentSyncLogs as $log)
                                     <tr>
+                                        <td>
+                                            @if(!empty($log->document_id))
+                                                <a href="#"
+                                                    class="btn-modal text-primary"
+                                                    data-container=".view_modal"
+                                                    data-href="{{ route('storage-manager.documents.show', $log->document_id) }}">
+                                                    {{ optional($log->document)->document_no ?: ('#' . $log->document_id) }}
+                                                </a>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
                                         <td>{{ strtoupper($log->linked_system) }}</td>
                                         <td>{{ $log->action }}</td>
                                         <td>{{ $log->status }}</td>
+                                        <td>{{ $log->actor_label }}</td>
                                         <td class="text-gray-700">{{ $log->message ?: '—' }}</td>
                                         <td>{{ optional($log->created_at)->format('Y-m-d H:i') }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-center text-muted py-8">@lang('lang_v1.no_sync_logs_yet')</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted py-8">@lang('lang_v1.no_sync_logs_yet')</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

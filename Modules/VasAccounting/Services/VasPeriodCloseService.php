@@ -102,7 +102,7 @@ class VasPeriodCloseService
                 ->count()
             : 0;
 
-        $warehouseSummary = $this->operationsAssetReportUtil()?->warehouseSummary($businessId) ?? [];
+        $warehouseSummary = $this->operationsAssetReportUtil()?->warehouseSummary($businessId, $periodEnd) ?? [];
 
         return [
             'posting_map_incomplete' => ! $this->vasUtil->isPostingMapComplete($settings),
@@ -120,6 +120,9 @@ class VasPeriodCloseService
             'pending_approvals' => $pendingApprovals,
             'unposted_inventory_documents' => (int) ($warehouseSummary['unposted_documents'] ?? 0),
             'warehouse_discrepancies' => (int) ($warehouseSummary['warehouse_discrepancies'] ?? 0),
+            'storage_sync_pending' => (int) ($warehouseSummary['storage_sync_pending'] ?? 0),
+            'storage_sync_errors' => (int) ($warehouseSummary['storage_sync_errors'] ?? 0),
+            'storage_reconcile_errors' => (int) ($warehouseSummary['storage_reconcile_errors'] ?? 0),
         ];
     }
 
@@ -369,6 +372,12 @@ class VasPeriodCloseService
     public function syncChecklist(int $businessId, VasAccountingPeriod $period, ?int $userId = null)
     {
         $blockers = $this->blockers($businessId, $period);
+        $warehouseSyncBlockers = (int) $blockers['storage_sync_pending']
+            + (int) $blockers['storage_sync_errors']
+            + (int) $blockers['storage_reconcile_errors'];
+        $warehouseBlockers = (int) $blockers['unposted_inventory_documents']
+            + (int) $blockers['warehouse_discrepancies']
+            + $warehouseSyncBlockers;
 
         $definitions = [
             'posting_map' => [
@@ -426,10 +435,12 @@ class VasPeriodCloseService
             ],
             'warehouse' => [
                 'title' => 'Warehouse documents posted and reconciled',
-                'status' => ($blockers['unposted_inventory_documents'] + $blockers['warehouse_discrepancies']) > 0 ? 'blocked' : 'completed',
-                'notes' => ($blockers['unposted_inventory_documents'] + $blockers['warehouse_discrepancies']) > 0
-                    ? $blockers['unposted_inventory_documents'] . ' warehouse documents still need posting and ' . $blockers['warehouse_discrepancies'] . ' warehouse discrepancies remain.'
-                    : 'Warehouse documents and warehouse coverage checks are clear.',
+                'status' => $warehouseBlockers > 0 ? 'blocked' : 'completed',
+                'notes' => $warehouseBlockers > 0
+                    ? $blockers['unposted_inventory_documents'] . ' warehouse documents still need posting, '
+                        . $blockers['warehouse_discrepancies'] . ' warehouse discrepancies remain, and '
+                        . $warehouseSyncBlockers . ' storage execution sync/reconciliation blockers remain.'
+                    : 'Warehouse documents, sync checks, and warehouse coverage checks are clear.',
             ],
         ];
 
@@ -496,7 +507,10 @@ class VasPeriodCloseService
             || $blockers['escalated_expense_approvals'] > 0
             || $blockers['pending_approvals'] > 0
             || $blockers['unposted_inventory_documents'] > 0
-            || $blockers['warehouse_discrepancies'] > 0;
+            || $blockers['warehouse_discrepancies'] > 0
+            || $blockers['storage_sync_pending'] > 0
+            || $blockers['storage_sync_errors'] > 0
+            || $blockers['storage_reconcile_errors'] > 0;
 
         if ($hasBlockers) {
             throw new RuntimeException('VAS accounting period cannot be closed while close-center blockers remain.');

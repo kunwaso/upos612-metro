@@ -126,6 +126,11 @@
                     <div class="card-title">{{ __('vasaccounting::lang.views.vouchers.show.actions.title') }}</div>
                 </div>
                 <div class="card-body d-flex flex-column gap-3">
+                    @php
+                        $deleteDraftEligibility = $deleteDraftEligibility ?? ['allowed' => false, 'reason' => null];
+                        $reversalEligibility = $reversalEligibility ?? ['allowed' => false, 'reason' => null];
+                    @endphp
+
                     @if ($voucher->status !== 'posted')
                         <form method="POST" action="{{ route('vasaccounting.vouchers.post', $voucher->id) }}">
                             @csrf
@@ -133,11 +138,27 @@
                         </form>
                     @endif
 
-                    @if ($voucher->status === 'posted')
+                    @if ($voucher->status === 'posted' && ($reversalEligibility['allowed'] ?? false))
                         <form method="POST" action="{{ route('vasaccounting.vouchers.reverse', $voucher->id) }}">
                             @csrf
                             <button type="submit" class="btn btn-light-danger btn-sm w-100">{{ __('vasaccounting::lang.views.vouchers.show.actions.reverse_voucher') }}</button>
                         </form>
+                    @elseif ($voucher->status === 'posted' && ! empty($reversalEligibility['reason']))
+                        <div class="alert alert-light-warning py-3 px-4 mb-0">
+                            {{ $reversalEligibility['reason'] }}
+                        </div>
+                    @endif
+
+                    @if ($voucher->status === 'draft' && ($deleteDraftEligibility['allowed'] ?? false))
+                        <form method="POST" action="{{ route('vasaccounting.vouchers.destroy', $voucher->id) }}" onsubmit="return confirm('{{ __('vasaccounting::lang.views.vouchers.show.actions.delete_draft_confirm') }}')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-light-danger btn-sm w-100">{{ __('vasaccounting::lang.views.vouchers.show.actions.delete_draft_voucher') }}</button>
+                        </form>
+                    @elseif ($voucher->status === 'draft' && ! empty($deleteDraftEligibility['reason']))
+                        <div class="alert alert-light-warning py-3 px-4 mb-0">
+                            {{ $deleteDraftEligibility['reason'] }}
+                        </div>
                     @endif
 
                     <a href="{{ route('vasaccounting.vouchers.create') }}" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.vouchers.show.actions.create_new_voucher') }}</a>

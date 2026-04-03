@@ -12,4 +12,12 @@ return [
     'storefront_business_id' => env('CMS_STOREFRONT_BUSINESS_ID') !== null && env('CMS_STOREFRONT_BUSINESS_ID') !== ''
         ? (int) env('CMS_STOREFRONT_BUSINESS_ID')
         : null,
+
+    /*
+    | Optional: user id (must belong to the storefront business) to assign Essentials To Dos
+    | created from storefront RFQ. If unset, business owner_id is used, then first business user.
+    */
+    'storefront_rfq_todo_user_id' => env('CMS_STOREFRONT_RFQ_TODO_USER_ID') !== null && env('CMS_STOREFRONT_RFQ_TODO_USER_ID') !== ''
+        ? (int) env('CMS_STOREFRONT_RFQ_TODO_USER_ID')
+        : null,
 ];

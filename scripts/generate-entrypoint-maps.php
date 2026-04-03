@@ -23,22 +23,37 @@ function main(array $argv): int
     }
 
     $entrypointsDir = $repoRoot . '/ai/entrypoints';
+    $generatedDir = $entrypointsDir . '/generated';
     $today = (new DateTimeImmutable('now'))->format('Y-m-d');
+    $metadata = loadEntrypointMetadata($repoRoot);
 
     $inventory = buildInventory($repoRoot);
-    $documents = buildDocuments($repoRoot, $inventory);
+    $documents = buildDocuments($repoRoot, $inventory, $metadata['modules'] ?? []);
+    $jsonDocuments = buildJsonDocuments($repoRoot, $inventory, $metadata);
     $expectedModuleDocs = array_values(array_filter(
         array_keys($documents),
         static fn (string $name): bool => str_starts_with($name, 'module-')
     ));
+    $expectedJsonDocs = array_keys($jsonDocuments);
 
-    [$written, $unchanged, $removed, $issues] = syncDocuments(
+    [$writtenMd, $unchangedMd, $removedMd, $issuesMd] = syncDocuments(
         $entrypointsDir,
         $documents,
         $expectedModuleDocs,
         $today,
         $checkOnly
     );
+    [$writtenJson, $unchangedJson, $removedJson, $issuesJson] = syncJsonDocuments(
+        $generatedDir,
+        $jsonDocuments,
+        $expectedJsonDocs,
+        $today,
+        $checkOnly
+    );
+    $issues = array_merge($issuesMd, $issuesJson);
+    $written = array_merge($writtenMd, $writtenJson);
+    $unchanged = array_merge($unchangedMd, $unchangedJson);
+    $removed = array_merge($removedMd, $removedJson);
 
     if ($checkOnly) {
         if ($issues === []) {
@@ -56,9 +71,12 @@ function main(array $argv): int
     }
 
     fwrite(STDOUT, "Generated ai/entrypoints artifacts.\n");
-    fwrite(STDOUT, 'Written: ' . count($written) . "\n");
-    fwrite(STDOUT, 'Unchanged: ' . count($unchanged) . "\n");
-    fwrite(STDOUT, 'Removed stale module docs: ' . count($removed) . "\n");
+    fwrite(STDOUT, 'Markdown written: ' . count($writtenMd) . "\n");
+    fwrite(STDOUT, 'Markdown unchanged: ' . count($unchangedMd) . "\n");
+    fwrite(STDOUT, 'Markdown removed stale: ' . count($removedMd) . "\n");
+    fwrite(STDOUT, 'JSON written: ' . count($writtenJson) . "\n");
+    fwrite(STDOUT, 'JSON unchanged: ' . count($unchangedJson) . "\n");
+    fwrite(STDOUT, 'JSON removed stale: ' . count($removedJson) . "\n");
 
     if ($written !== []) {
         fwrite(STDOUT, "Updated files:\n");
@@ -75,6 +93,38 @@ function main(array $argv): int
     }
 
     return 0;
+}
+
+/**
+ * @return array{modules: array<string, array<string, mixed>>, core_maps: array<string, array<string, mixed>>, compatibility: array<string, mixed>}
+ */
+function loadEntrypointMetadata(string $repoRoot): array
+{
+    $metadataPath = $repoRoot . '/ai/entrypoints/metadata.php';
+    if (!is_file($metadataPath)) {
+        return [
+            'modules' => [],
+            'core_maps' => [],
+            'compatibility' => [],
+        ];
+    }
+
+    $loaded = require $metadataPath;
+    if (!is_array($loaded)) {
+        fwrite(STDERR, "Invalid ai/entrypoints/metadata.php payload. Expected array.\n");
+
+        return [
+            'modules' => [],
+            'core_maps' => [],
+            'compatibility' => [],
+        ];
+    }
+
+    return [
+        'modules' => is_array($loaded['modules'] ?? null) ? $loaded['modules'] : [],
+        'core_maps' => is_array($loaded['core_maps'] ?? null) ? $loaded['core_maps'] : [],
+        'compatibility' => is_array($loaded['compatibility'] ?? null) ? $loaded['compatibility'] : [],
+    ];
 }
 
 /**
@@ -211,39 +261,173 @@ function listFiles(string $directory, string $pattern): array
 }
 
 /**
- * @return array{
- *   name: string,
- *   readme: string|null,
- *   route_web: string|null,
- *   route_api: string|null,
- *   route_web_empty: bool,
- *   route_api_empty: bool,
- *   route_prefixes: array<int, string>,
- *   controllers_root: string,
- *   controller_entries: array<int, array{
- *     type: string,
- *     name: string,
- *     path: string,
- *     children: array<int, array{type: string, name: string, path: string}>
- *   }>,
- *   views_root: string,
- *   view_dirs: array<int, string>
- * }
+ * @return array<int, string>
+ */
+function collectPhpFilesRecursive(string $repoRoot, string $directory): array
+{
+    return collectFilesByExtensionsRecursive($repoRoot, $directory, ['php']);
+}
+
+/**
+ * @param array<int, string> $extensions
+ * @return array<int, string>
+ */
+function collectFilesByExtensionsRecursive(string $repoRoot, string $directory, array $extensions): array
+{
+    if (!is_dir($directory)) {
+        return [];
+    }
+
+    $normalizedExtensions = array_values(array_filter(array_map(
+        static fn (string $extension): string => strtolower(trim($extension, '. ')),
+        $extensions
+    )));
+    if ($normalizedExtensions === []) {
+        return [];
+    }
+
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+    );
+
+    /** @var SplFileInfo $entry */
+    foreach ($iterator as $entry) {
+        if (!$entry->isFile()) {
+            continue;
+        }
+
+        $extension = strtolower($entry->getExtension());
+        if (!in_array($extension, $normalizedExtensions, true)) {
+            continue;
+        }
+
+        $files[] = toRepoRelative($repoRoot, $entry->getPathname());
+    }
+
+    $files = array_values(array_unique($files));
+    sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $files;
+}
+
+/**
+ * @param array<int, string> $controllerFiles
+ * @return array{requests: array<int, string>, services: array<int, string>, utils: array<int, string>, models: array<int, string>}
+ */
+function collectControllerDependencies(string $repoRoot, array $controllerFiles): array
+{
+    $dependencies = [
+        'requests' => [],
+        'services' => [],
+        'utils' => [],
+        'models' => [],
+    ];
+
+    foreach ($controllerFiles as $relativePath) {
+        $absolutePath = $repoRoot . '/' . $relativePath;
+        if (!is_file($absolutePath)) {
+            continue;
+        }
+
+        $content = (string) file_get_contents($absolutePath);
+        if ($content === '') {
+            continue;
+        }
+
+        $imports = [];
+        if (preg_match_all('/^use\s+([^;]+);/m', $content, $matches) > 0) {
+            foreach ($matches[1] as $match) {
+                if (is_string($match)) {
+                    $imports[] = trim($match);
+                }
+            }
+        }
+
+        if (preg_match('/function\s+__construct\s*\((.*?)\)\s*/s', $content, $constructor) === 1) {
+            $signature = $constructor[1] ?? '';
+            if (is_string($signature) && $signature !== '') {
+                if (preg_match_all('/([\\\\A-Za-z_][\\\\A-Za-z0-9_]*)\s+\$/', $signature, $typed) > 0) {
+                    foreach ($typed[1] as $typeMatch) {
+                        if (is_string($typeMatch)) {
+                            $imports[] = trim($typeMatch, "\\ \t\n\r\0\x0B");
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($imports as $import) {
+            $normalized = trim($import, "\\ \t\n\r\0\x0B");
+            if ($normalized === '') {
+                continue;
+            }
+
+            $lc = strtolower($normalized);
+            if (str_contains($lc, '\\http\\requests\\')) {
+                $dependencies['requests'][] = $normalized;
+                continue;
+            }
+
+            if (str_contains($lc, '\\services\\')) {
+                $dependencies['services'][] = $normalized;
+                continue;
+            }
+
+            if (str_contains($lc, '\\utils\\')) {
+                $dependencies['utils'][] = $normalized;
+                continue;
+            }
+
+            if (str_contains($lc, '\\entities\\') || str_contains($lc, '\\models\\')) {
+                $dependencies['models'][] = $normalized;
+            }
+        }
+    }
+
+    foreach ($dependencies as $category => $values) {
+        $deduped = array_values(array_unique($values));
+        sort($deduped, SORT_NATURAL | SORT_FLAG_CASE);
+        $dependencies[$category] = $deduped;
+    }
+
+    return $dependencies;
+}
+
+/**
+ * @return array<string, mixed>
  */
 function collectModuleInventory(string $repoRoot, string $module): array
 {
-    $moduleRoot = $repoRoot . '/Modules/' . $module;
+    $moduleBase = 'Modules/' . $module;
+    $moduleRoot = $repoRoot . '/' . $moduleBase;
     $webPath = 'Modules/' . $module . '/Routes/web.php';
     $apiPath = 'Modules/' . $module . '/Routes/api.php';
     $controllersRoot = 'Modules/' . $module . '/Http/Controllers';
+    $requestsRoot = 'Modules/' . $module . '/Http/Requests';
     $viewsRoot = 'Modules/' . $module . '/Resources/views';
+    $servicesRoot = 'Modules/' . $module . '/Services';
+    $utilsRoot = 'Modules/' . $module . '/Utils';
+    $entitiesRoot = 'Modules/' . $module . '/Entities';
+    $modelsRoot = 'Modules/' . $module . '/Models';
+    $jobsRoot = 'Modules/' . $module . '/Jobs';
+    $notificationsRoot = 'Modules/' . $module . '/Notifications';
+    $assetsRoot = 'Modules/' . $module . '/Resources/assets';
+    $testsRoot = 'Modules/' . $module . '/Tests';
 
     $routeWebAbsolute = $repoRoot . '/' . $webPath;
     $routeApiAbsolute = $repoRoot . '/' . $apiPath;
+    $controllerFiles = collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $controllersRoot);
+    $modelPaths = array_values(array_unique(array_merge(
+        collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $entitiesRoot),
+        collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $modelsRoot)
+    )));
+    sort($modelPaths, SORT_NATURAL | SORT_FLAG_CASE);
 
     return [
         'name' => $module,
         'readme' => detectModuleReadme($repoRoot, $moduleRoot),
+        'module_root' => $moduleBase,
         'route_web' => is_file($routeWebAbsolute) ? $webPath : null,
         'route_api' => is_file($routeApiAbsolute) ? $apiPath : null,
         'route_web_empty' => is_file($routeWebAbsolute) ? trim((string) file_get_contents($routeWebAbsolute)) === '' : false,
@@ -254,8 +438,25 @@ function collectModuleInventory(string $repoRoot, string $module): array
         ))),
         'controllers_root' => $controllersRoot,
         'controller_entries' => collectTreeEntries($repoRoot, $repoRoot . '/' . $controllersRoot),
+        'controller_files' => $controllerFiles,
+        'requests_root' => $requestsRoot,
+        'request_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $requestsRoot),
         'views_root' => $viewsRoot,
         'view_dirs' => listDirectories($repoRoot . '/' . $viewsRoot),
+        'services_root' => $servicesRoot,
+        'service_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $servicesRoot),
+        'utils_root' => $utilsRoot,
+        'util_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $utilsRoot),
+        'models' => $modelPaths,
+        'jobs_root' => $jobsRoot,
+        'job_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $jobsRoot),
+        'notifications_root' => $notificationsRoot,
+        'notification_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $notificationsRoot),
+        'assets_root' => $assetsRoot,
+        'asset_files' => collectFilesByExtensionsRecursive($repoRoot, $repoRoot . '/' . $assetsRoot, ['js', 'ts', 'vue', 'css', 'scss']),
+        'tests_root' => $testsRoot,
+        'test_files' => collectPhpFilesRecursive($repoRoot, $repoRoot . '/' . $testsRoot),
+        'dependencies' => collectControllerDependencies($repoRoot, $controllerFiles),
     ];
 }
 
@@ -396,11 +597,11 @@ function toRepoRelative(string $repoRoot, string $absolutePath): string
  *   other_utils: array<int, string>,
  *   modules: array<string, array<string, mixed>>
  * } $inventory
+ * @param array<string, array<string, mixed>> $moduleMeta
  * @return array<string, string>
  */
-function buildDocuments(string $repoRoot, array $inventory): array
+function buildDocuments(string $repoRoot, array $inventory, array $moduleMeta): array
 {
-    $moduleMeta = moduleMetadata();
     $documents = [];
 
     $documents['README.md'] = buildReadmeDocument();
@@ -435,6 +636,666 @@ function buildDocuments(string $repoRoot, array $inventory): array
     return $documents;
 }
 
+/**
+ * @param array{
+ *   modules: array<string, array<string, mixed>>,
+ *   core_maps: array<string, array<string, mixed>>
+ * } $metadata
+ * @return array<string, string>
+ */
+function buildJsonDocuments(string $repoRoot, array $inventory, array $metadata): array
+{
+    $moduleMeta = is_array($metadata['modules'] ?? null) ? $metadata['modules'] : [];
+    $coreMeta = is_array($metadata['core_maps'] ?? null) ? $metadata['core_maps'] : [];
+
+    $documents = [];
+    $documents['index.json'] = encodeJsonDocument(buildIndexMapContract(
+        $inventory['enabled_modules'],
+        $inventory['local_modules'],
+        $inventory['modules'],
+        $moduleMeta
+    ));
+
+    $documents['core-http-entry.json'] = encodeJsonDocument(buildCoreHttpEntryMapContract(
+        $inventory,
+        $coreMeta['core-http-entry'] ?? []
+    ));
+    $documents['core-http-controllers.json'] = encodeJsonDocument(buildCoreHttpControllersMapContract(
+        $inventory,
+        $coreMeta['core-http-controllers'] ?? []
+    ));
+    $documents['core-utils-index.json'] = encodeJsonDocument(buildCoreUtilsMapContract(
+        $inventory,
+        $coreMeta['core-utils-index'] ?? []
+    ));
+
+    foreach ($inventory['local_modules'] as $module) {
+        /** @var array<string, mixed> $moduleInventory */
+        $moduleInventory = $inventory['modules'][$module];
+        $documents['module-' . $module . '.json'] = encodeJsonDocument(
+            buildModuleMapContract($module, $moduleInventory, $moduleMeta[$module] ?? [])
+        );
+    }
+
+    return $documents;
+}
+
+/**
+ * @param array<string, mixed> $inventory
+ * @param array<string, mixed> $meta
+ * @return array<string, mixed>
+ */
+function buildModuleMapContract(string $module, array $inventory, array $meta): array
+{
+    $keywords = buildModuleKeywords($module, $inventory['route_prefixes'], $meta['keywords'] ?? []);
+    $verifyCommands = buildVerifyCommands($module, $meta['verify_commands'] ?? []);
+    $tests = array_values(array_unique(array_merge(
+        is_array($meta['tests'] ?? null) ? $meta['tests'] : [],
+        collectRootPaths($inventory['test_files'] ?? [])
+    )));
+    sort($tests, SORT_NATURAL | SORT_FLAG_CASE);
+
+    $map = [
+        'kind' => 'module',
+        'title' => $module,
+        'purpose' => $meta['purpose'] ?? ('Entry map for the ' . $module . ' module.'),
+        'triggers' => normalizeTriggerList($meta['use_when'] ?? [], $meta['index_trigger'] ?? null, $module, $inventory['route_prefixes']),
+        'verified_paths' => [
+            'routes' => [
+                routeContractItem(
+                    $inventory['route_web'],
+                    $meta['web_summary'] ?? genericRouteSummary('web', $inventory['route_prefixes'], (bool) $inventory['route_web_empty'])
+                ),
+                routeContractItem(
+                    $inventory['route_api'],
+                    $meta['api_summary'] ?? genericRouteSummary('api', $inventory['route_prefixes'], (bool) $inventory['route_api_empty'])
+                ),
+            ],
+            'controllers' => array_values(array_unique(array_merge(
+                [$inventory['controllers_root']],
+                array_map(static fn (array $entry): string => (string) $entry['path'], $inventory['controller_entries'] ?? []),
+                $inventory['controller_files'] ?? []
+            ))),
+            'views' => array_values(array_unique(array_merge(
+                [$inventory['views_root']],
+                array_map(
+                    fn (string $viewDir): string => $inventory['views_root'] . '/' . $viewDir,
+                    $inventory['view_dirs'] ?? []
+                )
+            ))),
+            'requests' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['requests_root'], $inventory['request_files']),
+                $inventory['request_files'] ?? []
+            ))),
+            'services' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['services_root'], $inventory['service_files']),
+                $inventory['service_files'] ?? []
+            ))),
+            'utils' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['utils_root'], $inventory['util_files']),
+                $inventory['util_files'] ?? []
+            ))),
+            'models' => array_values($inventory['models'] ?? []),
+            'jobs' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['jobs_root'], $inventory['job_files']),
+                $inventory['job_files'] ?? []
+            ))),
+            'notifications' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['notifications_root'], $inventory['notification_files']),
+                $inventory['notification_files'] ?? []
+            ))),
+            'assets' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['assets_root'], $inventory['asset_files']),
+                $inventory['asset_files'] ?? [],
+                is_array($meta['asset_paths'] ?? null) ? $meta['asset_paths'] : []
+            ))),
+            'tests' => array_values(array_unique(array_merge(
+                pathIfDirectoryExists($inventory['tests_root'], $inventory['test_files']),
+                $inventory['test_files'] ?? []
+            ))),
+        ],
+        'route_prefixes' => array_values($inventory['route_prefixes']),
+        'search_keywords' => $keywords,
+        'related_docs' => normalizeRelatedDocPaths($inventory, $meta),
+        'workflows' => normalizeNamedPathBlocks($meta['workflows'] ?? []),
+        'edit_bundles' => normalizeNamedPathBlocks($meta['edit_bundles'] ?? []),
+        'dependencies' => [
+            'requests' => array_values($inventory['dependencies']['requests'] ?? []),
+            'services' => array_values($inventory['dependencies']['services'] ?? []),
+            'utils' => array_values($inventory['dependencies']['utils'] ?? []),
+            'models' => array_values($inventory['dependencies']['models'] ?? []),
+        ],
+        'tests' => $tests,
+        'verify_commands' => $verifyCommands,
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    return normalizeMapContract($map);
+}
+
+/**
+ * @param array<string, mixed> $inventory
+ * @param array<string, mixed> $meta
+ * @return array<string, mixed>
+ */
+function buildCoreHttpEntryMapContract(array $inventory, array $meta): array
+{
+    $map = [
+        'kind' => 'core',
+        'title' => $meta['title'] ?? 'Core HTTP Entry',
+        'purpose' => $meta['purpose'] ?? 'Use this map when the task is in the root Laravel app rather than a `Modules/*` package.',
+        'triggers' => normalizeStringList($meta['triggers'] ?? ['Core (root)', 'root routes', 'app/Http/Controllers', 'app/Utils']),
+        'verified_paths' => [
+            'routes' => [
+                routeContractItem('routes/web.php', 'main root web routes; includes routes/install_r.php'),
+                routeContractItem('routes/api.php', 'root API routes'),
+                routeContractItem('routes/install_r.php', 'install/bootstrap route file pulled into web.php'),
+                routeContractItem('routes/channels.php', 'broadcast authorization hooks'),
+            ],
+            'controllers' => [
+                'app/Http/Controllers',
+                'app/Http/Controllers/Auth',
+                'app/Http/Controllers/Install',
+                'app/Http/Controllers/Restaurant',
+            ],
+            'views' => [],
+            'requests' => ['app/Http/Requests'],
+            'services' => [],
+            'utils' => ['app/Utils'],
+            'models' => [],
+            'jobs' => ['app/Jobs'],
+            'notifications' => ['app/Notifications'],
+            'assets' => ['resources/js', 'resources/css'],
+            'tests' => ['tests/Feature'],
+        ],
+        'route_prefixes' => [],
+        'search_keywords' => normalizeStringList($meta['search_keywords'] ?? ['routes/web.php', 'routes/api.php', 'install_r.php', 'App\\Http\\Controllers']),
+        'related_docs' => normalizeRelatedDocPaths([], ['related_docs' => $meta['related_docs'] ?? []]),
+        'workflows' => normalizeNamedPathBlocks($meta['workflows'] ?? []),
+        'edit_bundles' => normalizeNamedPathBlocks($meta['edit_bundles'] ?? []),
+        'dependencies' => [
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+        ],
+        'tests' => normalizeStringList($meta['tests'] ?? ['tests/Feature']),
+        'verify_commands' => normalizeStringList($meta['verify_commands'] ?? ['php artisan route:list']),
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    return normalizeMapContract($map);
+}
+
+/**
+ * @param array<string, mixed> $inventory
+ * @param array<string, mixed> $meta
+ * @return array<string, mixed>
+ */
+function buildCoreHttpControllersMapContract(array $inventory, array $meta): array
+{
+    $controllers = array_values(array_unique(array_merge(
+        array_map(static fn (string $name): string => 'app/Http/Controllers/' . $name, $inventory['root_controllers']),
+        array_map(static fn (string $name): string => 'app/Http/Controllers/Auth/' . $name, $inventory['controller_sections']['Auth'] ?? []),
+        array_map(static fn (string $name): string => 'app/Http/Controllers/Install/' . $name, $inventory['controller_sections']['Install'] ?? []),
+        array_map(static fn (string $name): string => 'app/Http/Controllers/Restaurant/' . $name, $inventory['controller_sections']['Restaurant'] ?? [])
+    )));
+    sort($controllers, SORT_NATURAL | SORT_FLAG_CASE);
+
+    $map = [
+        'kind' => 'core',
+        'title' => $meta['title'] ?? 'Core HTTP Controllers',
+        'purpose' => $meta['purpose'] ?? 'Verified root controller index for root, Auth, Install, and Restaurant surfaces.',
+        'triggers' => normalizeStringList($meta['triggers'] ?? ['root controller edits', 'Auth controller', 'Install controller', 'Restaurant controller']),
+        'verified_paths' => [
+            'routes' => [
+                routeContractItem('routes/web.php', 'primary root route declarations'),
+                routeContractItem('routes/api.php', 'root API route declarations'),
+            ],
+            'controllers' => array_values(array_unique(array_merge(
+                ['app/Http/Controllers', 'app/Http/Controllers/Auth', 'app/Http/Controllers/Install', 'app/Http/Controllers/Restaurant'],
+                $controllers
+            ))),
+            'views' => [],
+            'requests' => ['app/Http/Requests'],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+            'jobs' => [],
+            'notifications' => [],
+            'assets' => [],
+            'tests' => ['tests/Feature'],
+        ],
+        'route_prefixes' => [],
+        'search_keywords' => normalizeStringList($meta['search_keywords'] ?? ['Controller.php', 'App\\Http\\Controllers', 'Auth', 'Install', 'Restaurant']),
+        'related_docs' => normalizeRelatedDocPaths([], ['related_docs' => $meta['related_docs'] ?? []]),
+        'workflows' => normalizeNamedPathBlocks($meta['workflows'] ?? []),
+        'edit_bundles' => normalizeNamedPathBlocks($meta['edit_bundles'] ?? []),
+        'dependencies' => [
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+        ],
+        'tests' => normalizeStringList($meta['tests'] ?? ['tests/Feature']),
+        'verify_commands' => normalizeStringList($meta['verify_commands'] ?? ['php artisan test --filter=Feature']),
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    return normalizeMapContract($map);
+}
+
+/**
+ * @param array<string, mixed> $inventory
+ * @param array<string, mixed> $meta
+ * @return array<string, mixed>
+ */
+function buildCoreUtilsMapContract(array $inventory, array $meta): array
+{
+    $utils = array_map(static fn (string $name): string => 'app/Utils/' . $name, $inventory['utils']);
+    $otherUtils = array_map(static fn (string $name): string => 'app/Utils/' . $name, $inventory['other_utils']);
+    $files = array_values(array_unique(array_merge($utils, $otherUtils)));
+    sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+
+    $map = [
+        'kind' => 'core',
+        'title' => $meta['title'] ?? 'Core Utils Index',
+        'purpose' => $meta['purpose'] ?? 'Primary utility index for app/Utils and shared helper/service files.',
+        'triggers' => normalizeStringList($meta['triggers'] ?? ['shared util refactor', 'App\\Utils dependency']),
+        'verified_paths' => [
+            'routes' => [],
+            'controllers' => ['app/Http/Controllers'],
+            'views' => [],
+            'requests' => ['app/Http/Requests'],
+            'services' => ['app/Services'],
+            'utils' => array_values(array_unique(array_merge(['app/Utils'], $files))),
+            'models' => [],
+            'jobs' => [],
+            'notifications' => [],
+            'assets' => [],
+            'tests' => ['tests/Unit', 'tests/Feature'],
+        ],
+        'route_prefixes' => [],
+        'search_keywords' => normalizeStringList($meta['search_keywords'] ?? ['Util.php', 'App\\Utils']),
+        'related_docs' => normalizeRelatedDocPaths([], ['related_docs' => $meta['related_docs'] ?? []]),
+        'workflows' => normalizeNamedPathBlocks($meta['workflows'] ?? []),
+        'edit_bundles' => normalizeNamedPathBlocks($meta['edit_bundles'] ?? []),
+        'dependencies' => [
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+        ],
+        'tests' => normalizeStringList($meta['tests'] ?? ['tests/Unit', 'tests/Feature']),
+        'verify_commands' => normalizeStringList($meta['verify_commands'] ?? ['php artisan test --filter=Unit']),
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    return normalizeMapContract($map);
+}
+
+/**
+ * @param array<int, string> $enabledModules
+ * @param array<int, string> $localModules
+ * @param array<string, array<string, mixed>> $moduleInventories
+ * @param array<string, array<string, mixed>> $moduleMeta
+ * @return array<string, mixed>
+ */
+function buildIndexMapContract(
+    array $enabledModules,
+    array $localModules,
+    array $moduleInventories,
+    array $moduleMeta
+): array {
+    $entries = [
+        [
+            'trigger' => 'Core (root), root routes, app/Http/Controllers, app/Utils',
+            'map' => 'core-http-entry',
+            'notes' => 'Deeper root maps: core-http-controllers, core-utils-index',
+            'status' => 'local',
+        ],
+    ];
+
+    foreach ($localModules as $module) {
+        $meta = $moduleMeta[$module] ?? [];
+        $entries[] = [
+            'trigger' => sanitizeTriggerText((string) ($meta['index_trigger'] ?? $module)),
+            'map' => 'module-' . $module,
+            'notes' => (string) ($meta['index_note'] ?? genericLocalIndexNote($moduleInventories[$module])),
+            'status' => 'local',
+        ];
+    }
+
+    $localLookup = array_flip($localModules);
+    foreach ($enabledModules as $module) {
+        if (isset($localLookup[$module])) {
+            continue;
+        }
+
+        $entries[] = [
+            'trigger' => $module,
+            'map' => null,
+            'notes' => 'not in checkout',
+            'status' => 'enabled_missing',
+        ];
+    }
+
+    foreach ($localModules as $module) {
+        if (in_array($module, $enabledModules, true)) {
+            continue;
+        }
+
+        $entries[] = [
+            'trigger' => $module,
+            'map' => 'module-' . $module,
+            'notes' => 'present locally; not listed in modules_statuses.json',
+            'status' => 'local_not_enabled',
+        ];
+    }
+
+    $map = [
+        'kind' => 'index',
+        'title' => 'Entry Map Index',
+        'purpose' => 'Start here when the correct repo area is unclear.',
+        'triggers' => ['unclear repo area', 'where do I start'],
+        'verified_paths' => [
+            'routes' => [],
+            'controllers' => [],
+            'views' => [],
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+            'jobs' => [],
+            'notifications' => [],
+            'assets' => [],
+            'tests' => [],
+        ],
+        'route_prefixes' => [],
+        'search_keywords' => ['core-http-entry', 'module-', 'entrypoints'],
+        'related_docs' => ['ai/entrypoints/README.md', 'ai/entrypoints/_TEMPLATE.md'],
+        'workflows' => [],
+        'edit_bundles' => [],
+        'dependencies' => [
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+        ],
+        'tests' => [],
+        'verify_commands' => ['composer entrypoints:check', 'composer entrypoints:test'],
+        'entries' => $entries,
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    return normalizeMapContract($map);
+}
+
+/**
+ * @param array<string, mixed> $map
+ * @return array<string, mixed>
+ */
+function normalizeMapContract(array $map): array
+{
+    $defaults = [
+        'kind' => 'module',
+        'title' => '',
+        'purpose' => '',
+        'triggers' => [],
+        'verified_paths' => [
+            'routes' => [],
+            'controllers' => [],
+            'views' => [],
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+            'jobs' => [],
+            'notifications' => [],
+            'assets' => [],
+            'tests' => [],
+        ],
+        'route_prefixes' => [],
+        'search_keywords' => [],
+        'related_docs' => [],
+        'workflows' => [],
+        'edit_bundles' => [],
+        'dependencies' => [
+            'requests' => [],
+            'services' => [],
+            'utils' => [],
+            'models' => [],
+        ],
+        'tests' => [],
+        'verify_commands' => [],
+        'last_reviewed' => LAST_REVIEWED_TOKEN,
+    ];
+
+    $normalized = array_merge($defaults, $map);
+    $normalized['triggers'] = normalizeStringList($normalized['triggers']);
+    $normalized['route_prefixes'] = normalizeStringList($normalized['route_prefixes']);
+    $normalized['search_keywords'] = normalizeStringList($normalized['search_keywords']);
+    $normalized['related_docs'] = normalizeStringList($normalized['related_docs']);
+    $normalized['tests'] = normalizeStringList($normalized['tests']);
+    $normalized['verify_commands'] = normalizeStringList($normalized['verify_commands']);
+    $normalized['workflows'] = normalizeNamedPathBlocks($normalized['workflows']);
+    $normalized['edit_bundles'] = normalizeNamedPathBlocks($normalized['edit_bundles']);
+
+    foreach ($normalized['verified_paths'] as $section => $paths) {
+        if ($section === 'routes') {
+            /** @var array<int, array<string, mixed>> $paths */
+            $normalized['verified_paths'][$section] = array_values(array_map(
+                static fn (array $item): array => [
+                    'path' => is_string($item['path'] ?? null) ? $item['path'] : null,
+                    'summary' => is_string($item['summary'] ?? null) ? $item['summary'] : '',
+                    'exists' => (bool) ($item['exists'] ?? false),
+                ],
+                $paths
+            ));
+            continue;
+        }
+
+        $normalized['verified_paths'][$section] = normalizeStringList(is_array($paths) ? $paths : []);
+    }
+
+    foreach ($normalized['dependencies'] as $key => $values) {
+        $normalized['dependencies'][$key] = normalizeStringList(is_array($values) ? $values : []);
+    }
+
+    return $normalized;
+}
+
+/**
+ * @param array<int, mixed> $raw
+ * @return array<int, array{name: string, paths: array<int, string>, notes: string}>
+ */
+function normalizeNamedPathBlocks(array $raw): array
+{
+    $result = [];
+    foreach ($raw as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $name = trim((string) ($item['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+
+        $result[] = [
+            'name' => $name,
+            'paths' => normalizeStringList(is_array($item['paths'] ?? null) ? $item['paths'] : []),
+            'notes' => trim((string) ($item['notes'] ?? '')),
+        ];
+    }
+
+    return $result;
+}
+
+/**
+ * @param array<int, mixed> $values
+ * @return array<int, string>
+ */
+function normalizeStringList(array $values): array
+{
+    $normalized = [];
+    foreach ($values as $value) {
+        if (!is_string($value)) {
+            continue;
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            continue;
+        }
+
+        $normalized[] = $trimmed;
+    }
+
+    $normalized = array_values(array_unique($normalized));
+    sort($normalized, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $normalized;
+}
+
+/**
+ * @param array<string, mixed> $inventory
+ * @param array<string, mixed> $meta
+ * @return array<int, string>
+ */
+function normalizeRelatedDocPaths(array $inventory, array $meta): array
+{
+    $docs = [];
+    foreach ($meta['related_docs'] ?? [] as $doc) {
+        if (is_string($doc) && $doc !== '') {
+            $docs[] = trim($doc);
+        }
+    }
+
+    if (is_string($inventory['readme'] ?? null) && $inventory['readme'] !== '') {
+        $docs[] = $inventory['readme'];
+    }
+
+    return normalizeStringList($docs);
+}
+
+/**
+ * @param array<int, string> $explicitUseWhen
+ * @param array<int, string> $routePrefixes
+ * @return array<int, string>
+ */
+function normalizeTriggerList(array $explicitUseWhen, ?string $indexTrigger, string $module, array $routePrefixes): array
+{
+    $triggers = normalizeStringList($explicitUseWhen);
+    if ($triggers !== []) {
+        return $triggers;
+    }
+
+    if (is_string($indexTrigger) && trim($indexTrigger) !== '') {
+        $parts = preg_split('/,\s*/', str_replace('`', '', $indexTrigger)) ?: [];
+        $fromIndex = normalizeStringList($parts);
+        if ($fromIndex !== []) {
+            return $fromIndex;
+        }
+    }
+
+    $fallback = [$module];
+    foreach ($routePrefixes as $prefix) {
+        if (is_string($prefix) && $prefix !== '') {
+            $fallback[] = $prefix;
+        }
+    }
+
+    return normalizeStringList($fallback);
+}
+
+/**
+ * @param array<int, string> $paths
+ * @return array<int, string>
+ */
+function pathIfDirectoryExists(string $rootPath, array $paths): array
+{
+    if ($rootPath === '') {
+        return [];
+    }
+
+    return $paths === [] ? [] : [$rootPath];
+}
+
+/**
+ * @param array<int, string> $files
+ * @return array<int, string>
+ */
+function collectRootPaths(array $files): array
+{
+    $roots = [];
+    foreach ($files as $file) {
+        if (!is_string($file) || $file === '') {
+            continue;
+        }
+
+        $parts = explode('/', str_replace('\\', '/', $file));
+        if (($parts[0] ?? null) === 'Modules' && count($parts) >= 3) {
+            $roots[] = $parts[0] . '/' . $parts[1] . '/' . $parts[2];
+            continue;
+        }
+
+        if (($parts[0] ?? null) === 'tests' && count($parts) >= 2) {
+            $roots[] = $parts[0] . '/' . $parts[1];
+            continue;
+        }
+
+        if (count($parts) >= 2) {
+            $roots[] = $parts[0] . '/' . $parts[1];
+            continue;
+        }
+
+        $roots[] = $file;
+    }
+
+    return normalizeStringList($roots);
+}
+
+function routeContractItem(?string $path, string $summary): array
+{
+    return [
+        'path' => $path,
+        'summary' => $summary,
+        'exists' => is_string($path) && $path !== '',
+    ];
+}
+
+/**
+ * @param array<int, string> $verifyCommands
+ * @return array<int, string>
+ */
+function buildVerifyCommands(string $module, array $verifyCommands): array
+{
+    $normalized = normalizeStringList($verifyCommands);
+    if ($normalized !== []) {
+        return $normalized;
+    }
+
+    return [
+        'php artisan test --filter=' . $module,
+    ];
+}
+
+function sanitizeTriggerText(string $trigger): string
+{
+    return trim(str_replace('`', '', $trigger));
+}
+
+/**
+ * @param array<string, mixed> $document
+ */
+function encodeJsonDocument(array $document): string
+{
+    $encoded = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+    return ($encoded === false ? '{}' : $encoded) . "\n";
+}
+
 function buildReadmeDocument(): string
 {
     $lines = [
@@ -442,6 +1303,8 @@ function buildReadmeDocument(): string
         '# Repo Entry Maps',
         '',
         '`ai/entrypoints/` is the checkout-aware starting point for agents when the correct route, controller, module, or view is not obvious from the user request.',
+        '',
+        'Entrypoints V2 keeps the existing Markdown maps and adds machine-readable sidecars under `ai/entrypoints/generated/` so coding agents can route work with less guessing.',
         '',
         '## INDEX-first workflow',
         '',
@@ -456,41 +1319,46 @@ function buildReadmeDocument(): string
         '',
         '- Refresh all generated maps: `composer entrypoints:generate` or `php scripts/generate-entrypoint-maps.php`',
         '- Check for drift without writing: `composer entrypoints:check` or `php scripts/generate-entrypoint-maps.php --check`',
-        '- The generator rewrites root maps, module maps, and the INDEX from the live checkout structure.',
+        '- Validate schema and required sections: `composer entrypoints:test`',
+        '- The generator rewrites root maps, module maps, INDEX, and generated JSON sidecars from the live checkout structure.',
+        '',
+        '## Compatibility rules',
+        '',
+        '- Markdown artifact names remain stable: `INDEX.md`, `core-*.md`, `module-*.md`.',
+        '- Existing commands remain stable: `entrypoints:generate`, `entrypoints:check`.',
+        '- New sidecars are additive and live under `ai/entrypoints/generated/*.json`.',
         '',
         '## Naming',
         '',
         '- `core-<area>.md` for root application shards such as [core-http-entry.md](./core-http-entry.md).',
         '- `module-<PascalCase>.md` for folders under `Modules/`.',
-        '- Keep file names matched to the real checkout paths so [INDEX.md](./INDEX.md) can link safely.',
+        '- Sidecar keys mirror Markdown names without extension: `core-http-entry.json`, `module-VasAccounting.json`, etc.',
         '',
-        '## Required map contents',
+        '## V2 JSON contract',
         '',
-        'Each module map should verify and list:',
+        'Each sidecar map contains:',
         '',
-        '- `Routes/web.php`',
-        '- `Routes/api.php` when it exists',
-        '- `Http/Controllers` files or subfolders',
-        '- `Resources/views` top-level directories',
-        '- relevant search keywords',
-        '- links to existing `ai/*.md` or module `README.md` files when they add real context',
-        '- a `Last reviewed` date',
+        '- `kind`, `title`, `purpose`, `triggers`',
+        '- `verified_paths` grouped by routes/controllers/views/requests/services/utils/models/jobs/notifications/assets/tests',
+        '- `route_prefixes`, `search_keywords`, `related_docs`',
+        '- `workflows`, `edit_bundles`, `dependencies`',
+        '- `tests`, `verify_commands`, `last_reviewed`',
         '',
-        'Root maps follow the same rule: link only to files or directories that exist in this checkout.',
+        'Use sidecars for strict checks/tooling and Markdown for first-pass human navigation.',
         '',
         '## Coverage policy',
         '',
         '- Every local folder under `Modules/` gets a `module-<Name>.md`.',
+        '- Every generated map key gets a matching JSON file under `ai/entrypoints/generated/`.',
         '- [INDEX.md](./INDEX.md) includes one row per enabled module in [modules_statuses.json](../../modules_statuses.json) plus any local module folder that is not present in that JSON file.',
         '- If a module is enabled in JSON but missing on disk, `Map` must be `—` and `Notes` must say `not in checkout`.',
-        '- Do not add dead map links or placeholder file links.',
-        '- [core-http-controllers.md](./core-http-controllers.md) covers root-level controllers plus dedicated `Auth/`, `Install/`, and `Restaurant/` sections.',
-        '- [core-utils-index.md](./core-utils-index.md) is Util-focused and also lists the remaining PHP files in `app/Utils/` so its scope is explicit.',
+        '- Do not add dead map links, placeholder file links, or stale JSON sidecars.',
         '',
         '## Maintenance rule',
         '',
-        '- Re-run the generator in the same PR when route wiring, controller ownership, primary views, or module entry structure changes.',
-        '- Keep `composer entrypoints:check` available for CI or pre-commit enforcement.',
+        '- Re-run generation in the same PR when route wiring, controller ownership, primary views, tests, or module entry structure changes.',
+        '- Update `ai/entrypoints/metadata.php` for curated workflows/edit bundles/verify guidance.',
+        '- Keep `composer entrypoints:check` and `composer entrypoints:test` in CI/pre-commit validation.',
         '',
         '## Fallbacks when a map is too thin',
         '',
@@ -519,11 +1387,19 @@ function buildTemplateDocument(): string
         generatedBanner(),
         '# Entry Map Template',
         '',
-        'Use this structure for new root or module maps. Replace the placeholder text with verified checkout paths only.',
+        'Use this structure for new root or module maps. Replace placeholders with verified checkout paths only.',
         '',
         '## Purpose',
         '',
         '- State what area this map narrows and when an agent should open it.',
+        '',
+        '## Use when',
+        '',
+        '- List trigger scenarios in plain language.',
+        '',
+        '## Start here',
+        '',
+        '- List the first 2-5 paths agents should open for this area.',
         '',
         '## Verified paths',
         '',
@@ -542,9 +1418,33 @@ function buildTemplateDocument(): string
         '- `Resources/views/`',
         '- top-level directories under `Resources/views/`',
         '',
+        '### Requests / Services / Utils / Models',
+        '',
+        '- Add verified module roots and key files for coding tasks.',
+        '',
+        '### Jobs / Notifications / Assets / Tests',
+        '',
+        '- Add only if those folders/files exist and help first-pass discovery.',
+        '',
         '### Assets / JS',
         '',
         '- Add only when there is a real entry asset, layout script include, or source file that helps first-pass discovery.',
+        '',
+        '## Common edit bundles',
+        '',
+        '- List common multi-file edit bundles with brief notes.',
+        '',
+        '## Primary workflows',
+        '',
+        '- List major workflows and companion paths.',
+        '',
+        '## Shared dependencies',
+        '',
+        '- List first-order requests/services/utils/models used by controllers.',
+        '',
+        '## Tests / verify',
+        '',
+        '- List likely tests and verify commands for this area.',
         '',
         '## Search keywords',
         '',
@@ -575,6 +1475,17 @@ function buildCoreHttpEntryDocument(): string
         '- Narrow first-pass reads for root routes, top-level controllers, and shared HTTP entry surfaces.',
         '- Open [core-http-controllers.md](./core-http-controllers.md) next when the task is clearly controller-owned.',
         '',
+        '## Use when',
+        '',
+        '- Root-route behavior is changing and the module owner is not involved.',
+        '- You need first-pass entry files for root HTTP flows.',
+        '',
+        '## Start here',
+        '',
+        '- ' . repoLink('routes/web.php'),
+        '- ' . repoLink('routes/api.php'),
+        '- ' . repoLink('app/Http/Controllers/'),
+        '',
         '## Verified paths',
         '',
         '### Routes',
@@ -595,6 +1506,26 @@ function buildCoreHttpEntryDocument(): string
         '',
         '- [core-http-controllers.md](./core-http-controllers.md)',
         '- [core-utils-index.md](./core-utils-index.md)',
+        '',
+        '## Common edit bundles',
+        '',
+        '- **Root route + controller bundle** — ' . repoLink('routes/web.php') . ', ' . repoLink('app/Http/Controllers/'),
+        '- **Install bootstrap bundle** — ' . repoLink('routes/install_r.php') . ', ' . repoLink('app/Http/Controllers/Install/'),
+        '',
+        '## Primary workflows',
+        '',
+        '- **Root route to controller trace** — start at `routes/web.php`, then open the targeted root controller.',
+        '- **Install flow trace** — confirm `routes/install_r.php` and `app/Http/Controllers/Install/*` together.',
+        '',
+        '## Shared dependencies',
+        '',
+        '- Root controllers frequently depend on `App\\Utils\\*Util` and root FormRequests under `app/Http/Requests`.',
+        '',
+        '## Tests / verify',
+        '',
+        '- ' . repoLink('tests/Feature'),
+        '- `php artisan route:list`',
+        '- `php artisan test --filter=Feature`',
         '',
         '## Search keywords',
         '',
@@ -641,6 +1572,18 @@ function buildCoreHttpControllersDocument(array $rootControllers, array $control
         '- Use the grep hint column to jump from a controller name to the owning route declarations quickly.',
         '- Open the section that matches the area first instead of scanning the whole controller tree.',
         '',
+        '## Use when',
+        '',
+        '- The task names a root controller but route ownership is still unclear.',
+        '- You need the closest controller section (`Auth`, `Install`, `Restaurant`) quickly.',
+        '',
+        '## Start here',
+        '',
+        '- ' . repoLink('app/Http/Controllers/'),
+        '- ' . repoLink('app/Http/Controllers/Auth/'),
+        '- ' . repoLink('app/Http/Controllers/Install/'),
+        '- ' . repoLink('app/Http/Controllers/Restaurant/'),
+        '',
     ];
 
     $lines = array_merge(
@@ -673,6 +1616,23 @@ function buildCoreHttpControllersDocument(array $rootControllers, array $control
 
     $lines = array_merge($lines, [
         '',
+        '## Common edit bundles',
+        '',
+        '- **Controller + route bundle** — ' . repoLink('app/Http/Controllers/') . ', ' . repoLink('routes/web.php') . ', ' . repoLink('routes/api.php'),
+        '',
+        '## Primary workflows',
+        '',
+        '- **Controller ownership pass** — identify the owning route and middleware before changing controller logic.',
+        '',
+        '## Shared dependencies',
+        '',
+        '- Root controllers frequently call `App\\Utils\\*Util` and root FormRequests under `app/Http/Requests`.',
+        '',
+        '## Tests / verify',
+        '',
+        '- ' . repoLink('tests/Feature'),
+        '- `php artisan test --filter=Feature`',
+        '',
         '## Related docs',
         '',
         '- [core-http-entry.md](./core-http-entry.md)',
@@ -698,6 +1658,16 @@ function buildCoreUtilsIndexDocument(array $utils, array $otherUtils): string
         '# Core Utils Index',
         '',
         'Primary utility index for `app/Utils/*Util.php`.',
+        '',
+        '## Use when',
+        '',
+        '- You are changing shared helper behavior used by multiple controllers/modules.',
+        '- You need to find util ownership quickly before refactoring.',
+        '',
+        '## Start here',
+        '',
+        '- ' . repoLink('app/Utils/'),
+        '- ' . repoLink('app/Http/Controllers/'),
         '',
         'This map is intentionally Util-focused. The first table lists the primary `*Util.php` classes, and the companion section below lists the remaining PHP files in `app/Utils/` so agents can see the full directory shape without assuming every file follows the Util naming pattern.',
         '',
@@ -728,6 +1698,24 @@ function buildCoreUtilsIndexDocument(array $utils, array $otherUtils): string
     }
 
     $lines = array_merge($lines, [
+        '',
+        '## Common edit bundles',
+        '',
+        '- **Util + caller bundle** — ' . repoLink('app/Utils/') . ', ' . repoLink('app/Http/Controllers/'),
+        '',
+        '## Primary workflows',
+        '',
+        '- **Util impact pass** — inspect util changes and at least one likely caller path before patching.',
+        '',
+        '## Shared dependencies',
+        '',
+        '- Root and module controllers commonly depend on `App\\Utils\\*Util`; verify constructor imports and call sites.',
+        '',
+        '## Tests / verify',
+        '',
+        '- ' . repoLink('tests/Unit'),
+        '- ' . repoLink('tests/Feature'),
+        '- `php artisan test --filter=Unit`',
         '',
         '## Related docs',
         '',
@@ -842,88 +1830,146 @@ function buildIndexDocument(
  */
 function buildModuleDocument(string $module, array $inventory, array $meta): string
 {
+    $map = buildModuleMapContract($module, $inventory, $meta);
+    $startHere = buildStartHerePaths($map, $meta, $inventory);
+
     $lines = [
         generatedBanner(),
-        '# ' . $module,
+        '# ' . $map['title'],
         '',
-        $meta['purpose'] ?? ('Entry map for the ' . $module . ' module.'),
+        $map['purpose'],
+        '',
+        '## Use when',
+        '',
+    ];
+
+    foreach ($map['triggers'] as $trigger) {
+        $lines[] = '- ' . $trigger;
+    }
+
+    $lines[] = '';
+    $lines[] = '## Start here';
+    $lines[] = '';
+    foreach ($startHere as $path) {
+        $lines[] = '- ' . repoLink($path);
+    }
+
+    $lines = array_merge($lines, [
         '',
         '## Verified paths',
         '',
         '### Routes',
         '',
-    ];
+    ]);
 
-    $lines[] = renderRouteLine(
-        $inventory['route_web'],
-        $meta['web_summary'] ?? genericRouteSummary('web', $inventory['route_prefixes'], (bool) $inventory['route_web_empty'])
-    );
-    $lines[] = renderRouteLine(
-        $inventory['route_api'],
-        $meta['api_summary'] ?? genericRouteSummary('api', $inventory['route_prefixes'], (bool) $inventory['route_api_empty']),
-        'Modules/' . $module . '/Routes/api.php'
-    );
+    foreach ($map['verified_paths']['routes'] as $routeItem) {
+        if ((bool) ($routeItem['exists'] ?? false) && is_string($routeItem['path'] ?? null)) {
+            $lines[] = '- ' . repoLink((string) $routeItem['path']) . ' — ' . (string) ($routeItem['summary'] ?? '');
+            continue;
+        }
+
+        $missingPath = is_string($routeItem['path'] ?? null) ? (string) $routeItem['path'] : 'missing route file';
+        $lines[] = '- `' . $missingPath . '` is not present in this checkout';
+    }
 
     $lines[] = '';
     $lines[] = '### Controllers';
     $lines[] = '';
-    $lines[] = '- ' . repoLink($inventory['controllers_root']);
-
-    foreach ($inventory['controller_entries'] as $entry) {
-        $description = $meta['controller_descriptions'][$entry['name']] ?? null;
-        $lines[] = renderPathBullet($entry['path'], $entry['name'], $description);
-
-        foreach ($entry['children'] as $child) {
-            $childDescription = $meta['controller_descriptions'][$child['name']] ?? null;
-            $lines[] = renderPathBullet($child['path'], $child['name'], $childDescription);
-        }
-    }
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['controllers']));
 
     $lines[] = '';
     $lines[] = '### Views';
     $lines[] = '';
-    $lines[] = '- ' . repoLink($inventory['views_root']);
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['views']));
 
-    foreach ($inventory['view_dirs'] as $viewDir) {
-        $lines[] = '- ' . repoLink($inventory['views_root'] . '/' . $viewDir, $viewDir . '/');
+    $lines[] = '';
+    $lines[] = '### Requests';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['requests']));
+
+    $lines[] = '';
+    $lines[] = '### Services';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['services']));
+
+    $lines[] = '';
+    $lines[] = '### Utils';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['utils']));
+
+    $lines[] = '';
+    $lines[] = '### Models / Entities';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['models']));
+
+    $lines[] = '';
+    $lines[] = '### Jobs / Notifications';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList(array_merge(
+        $map['verified_paths']['jobs'],
+        $map['verified_paths']['notifications']
+    )));
+
+    $lines[] = '';
+    $lines[] = '### Assets / JS';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['assets']));
+
+    $lines[] = '';
+    $lines[] = '### Tests';
+    $lines[] = '';
+    $lines = array_merge($lines, renderPathList($map['verified_paths']['tests']));
+
+    $lines[] = '';
+    $lines[] = '## Common edit bundles';
+    $lines[] = '';
+    $lines = array_merge($lines, renderNamedPathBlocks($map['edit_bundles']));
+
+    $lines[] = '';
+    $lines[] = '## Primary workflows';
+    $lines[] = '';
+    $lines = array_merge($lines, renderNamedPathBlocks($map['workflows']));
+
+    $lines[] = '';
+    $lines[] = '## Shared dependencies';
+    $lines[] = '';
+    $lines[] = '### Requests';
+    $lines[] = '';
+    $lines = array_merge($lines, renderCodeList($map['dependencies']['requests']));
+    $lines[] = '';
+    $lines[] = '### Services';
+    $lines[] = '';
+    $lines = array_merge($lines, renderCodeList($map['dependencies']['services']));
+    $lines[] = '';
+    $lines[] = '### Utils';
+    $lines[] = '';
+    $lines = array_merge($lines, renderCodeList($map['dependencies']['utils']));
+    $lines[] = '';
+    $lines[] = '### Models / Entities';
+    $lines[] = '';
+    $lines = array_merge($lines, renderCodeList($map['dependencies']['models']));
+
+    $lines[] = '';
+    $lines[] = '## Tests / verify';
+    $lines[] = '';
+    foreach ($map['tests'] as $testPath) {
+        $lines[] = '- ' . repoLink($testPath);
+    }
+    foreach ($map['verify_commands'] as $command) {
+        $lines[] = '- `' . $command . '`';
     }
 
-    foreach ($meta['extra_sections'] ?? [] as $section) {
-        $lines[] = '';
-        $lines[] = ($section['level'] ?? '###') . ' ' . $section['heading'];
-        $lines[] = '';
-
-        foreach ($section['bullets'] as $bullet) {
-            $lines[] = '- ' . $bullet;
-        }
-    }
-
-    $assetPaths = array_values(array_filter(
-        $meta['asset_paths'] ?? [],
-        static fn (string $path): bool => is_string($path) && $path !== ''
-    ));
-    if ($assetPaths !== []) {
-        $lines[] = '';
-        $lines[] = '### Assets / JS';
-        $lines[] = '';
-        foreach ($assetPaths as $assetPath) {
-            $lines[] = '- ' . repoLink($assetPath);
-        }
-    }
-
-    $keywords = buildModuleKeywords($module, $inventory['route_prefixes'], $meta['keywords'] ?? []);
     $lines[] = '';
     $lines[] = '## Search keywords';
     $lines[] = '';
-    foreach ($keywords as $keyword) {
+    foreach ($map['search_keywords'] as $keyword) {
         $lines[] = '- `' . $keyword . '`';
     }
 
-    $relatedDocs = buildRelatedDocs($inventory, $meta);
     $lines[] = '';
     $lines[] = '## Related docs';
     $lines[] = '';
-    foreach ($relatedDocs as $doc) {
+    foreach (buildRelatedDocs($inventory, $meta) as $doc) {
         $lines[] = '- ' . $doc;
     }
 
@@ -933,6 +1979,97 @@ function buildModuleDocument(string $module, array $inventory, array $meta): str
     $lines[] = '- ' . LAST_REVIEWED_TOKEN;
 
     return implode("\n", $lines) . "\n";
+}
+
+/**
+ * @param array<string, mixed> $map
+ * @param array<string, mixed> $meta
+ * @param array<string, mixed> $inventory
+ * @return array<int, string>
+ */
+function buildStartHerePaths(array $map, array $meta, array $inventory): array
+{
+    $startHere = normalizeStringList(is_array($meta['start_here'] ?? null) ? $meta['start_here'] : []);
+    if ($startHere !== []) {
+        return $startHere;
+    }
+
+    $fallback = [];
+    foreach ($map['verified_paths']['routes'] as $routeItem) {
+        if ((bool) ($routeItem['exists'] ?? false) && is_string($routeItem['path'] ?? null)) {
+            $fallback[] = (string) $routeItem['path'];
+        }
+    }
+
+    if (is_string($inventory['controllers_root'] ?? null) && $inventory['controllers_root'] !== '') {
+        $fallback[] = $inventory['controllers_root'];
+    }
+    if (is_string($inventory['views_root'] ?? null) && $inventory['views_root'] !== '') {
+        $fallback[] = $inventory['views_root'];
+    }
+
+    return normalizeStringList(array_slice($fallback, 0, 5));
+}
+
+/**
+ * @param array<int, string> $paths
+ * @return array<int, string>
+ */
+function renderPathList(array $paths): array
+{
+    if ($paths === []) {
+        return ['- _None discovered in this checkout_'];
+    }
+
+    $lines = [];
+    foreach ($paths as $path) {
+        $lines[] = '- ' . repoLink($path);
+    }
+
+    return $lines;
+}
+
+/**
+ * @param array<int, array{name: string, paths: array<int, string>, notes: string}> $blocks
+ * @return array<int, string>
+ */
+function renderNamedPathBlocks(array $blocks): array
+{
+    if ($blocks === []) {
+        return ['- _None curated yet_'];
+    }
+
+    $lines = [];
+    foreach ($blocks as $block) {
+        $text = '- **' . $block['name'] . '**';
+        if ($block['notes'] !== '') {
+            $text .= ' — ' . $block['notes'];
+        }
+        if ($block['paths'] !== []) {
+            $text .= ' | ' . implode(', ', array_map('repoLink', $block['paths']));
+        }
+        $lines[] = $text;
+    }
+
+    return $lines;
+}
+
+/**
+ * @param array<int, string> $values
+ * @return array<int, string>
+ */
+function renderCodeList(array $values): array
+{
+    if ($values === []) {
+        return ['- _None discovered from first-order controller references_'];
+    }
+
+    $lines = [];
+    foreach ($values as $value) {
+        $lines[] = '- `' . $value . '`';
+    }
+
+    return $lines;
 }
 
 function generatedBanner(): string
@@ -1022,19 +2159,25 @@ function buildModuleKeywords(string $module, array $routePrefixes, array $metaKe
  */
 function buildRelatedDocs(array $inventory, array $meta): array
 {
-    $docs = $meta['related_docs'] ?? [
-        aiLink('laravel-conventions.md'),
-        aiLink('security-and-auth.md'),
-    ];
-
-    if (is_string($inventory['readme']) && $inventory['readme'] !== '') {
-        $readmeLink = repoLink($inventory['readme']);
-        if (!in_array($readmeLink, $docs, true)) {
-            $docs[] = $readmeLink;
-        }
+    $docPaths = normalizeRelatedDocPaths($inventory, $meta);
+    if ($docPaths === []) {
+        $docPaths = [
+            'ai/laravel-conventions.md',
+            'ai/security-and-auth.md',
+        ];
     }
 
-    return array_values(array_unique($docs));
+    $links = [];
+    foreach ($docPaths as $path) {
+        if (str_starts_with($path, 'ai/')) {
+            $links[] = aiLink(substr($path, 3));
+            continue;
+        }
+
+        $links[] = repoLink($path);
+    }
+
+    return array_values(array_unique($links));
 }
 
 /**
@@ -1264,156 +2407,6 @@ function grepHintForTerms(array $terms): string
 }
 
 /**
- * @return array<string, array<string, mixed>>
- */
-function moduleMetadata(): array
-{
-    return [
-        'Aichat' => [
-            'purpose' => 'Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversation links, and quote-wizard flows.',
-            'web_summary' => 'admin chat routes under `/aichat/chat/*`, Telegram webhook ingress under `/aichat/telegram/webhook/{webhookKey}`, and signed shared conversations under `/aichat/chat/shared/{conversation}`',
-            'api_summary' => 'auth API placeholder route for `/aichat`',
-            'index_trigger' => '`Aichat`, chat drawer, Telegram, quote wizard',
-            'index_note' => 'Local module folder present; admin chat plus shared chat routes',
-            'keywords' => ['aichat', 'chat', 'telegram', 'quote-wizard', 'conversations', 'shared'],
-            'related_docs' => [
-                aiLink('aichat-authz-baseline.md'),
-                repoLink('Modules/Aichat/README.md'),
-                aiLink('security-and-auth.md'),
-                aiLink('product-copilot-patterns.md'),
-            ],
-        ],
-        'Cms' => [
-            'purpose' => 'Storefront and CMS-admin entry map for the root shopping pages, blogs, public contact pages, and `/cms/*` admin settings.',
-            'web_summary' => 'storefront routes for `/`, `/shop/*`, backward-compatible `/c/*` redirects, and admin routes under `/cms/*`',
-            'api_summary' => 'auth API placeholder route for `/cms`',
-            'index_trigger' => '`Cms`, storefront, `shop/*`, blog, contact-us',
-            'index_note' => 'Deepest storefront map in this folder',
-            'controller_descriptions' => [
-                'CmsController.php' => 'storefront, blogs, static product pages',
-                'CmsPageController.php' => 'CMS page CRUD and `shop/page/{page}`',
-            ],
-            'keywords' => ['cms.home', 'shop/', 'cms-page', 'site-details', 'decor-store', 'contact-us', 'blog'],
-            'related_docs' => [
-                aiLink('ui-components.md'),
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-            ],
-            'extra_sections' => [
-                [
-                    'heading' => 'Route clusters worth reading first',
-                    'level' => '###',
-                    'bullets' => [
-                        'Storefront home and page rendering: `/`, `/shop/page/{page}`',
-                        'Blog pages: `/shop/blogs`, `/shop/blog/{slug}-{id}`',
-                        'Contact and about pages: `/shop/contact-us`, `/shop/about-us`',
-                        'Decor-store page set: `/shop/catalog`, `/shop/collections`, `/shop/product`, `/shop/cart`, `/shop/checkout`, `/shop/account`, `/shop/wishlist`, `/shop/faq`',
-                        'Product pages: `/shop/products/bao-bi-cuon`, `/shop/products/hop-thung-carton`, `/shop/products/day-dai`, `/shop/products/air-silicagel`, `/shop/products/sanphamkhac`',
-                        'Admin install and CMS maintenance: `/cms/install`, `cms-page` resource routes, `site-details` resource routes',
-                    ],
-                ],
-                [
-                    'heading' => 'Storefront layout chain',
-                    'level' => '###',
-                    'bullets' => [
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/app.blade.php', 'frontend/layouts/app.blade.php'),
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/header.blade.php', 'frontend/layouts/header.blade.php'),
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/top.blade.php', 'frontend/layouts/top.blade.php'),
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/navbar.blade.php', 'frontend/layouts/navbar.blade.php'),
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/footer.blade.php', 'frontend/layouts/footer.blade.php'),
-                    ],
-                ],
-                [
-                    'heading' => 'Reference HTML and JS anchors',
-                    'level' => '###',
-                    'bullets' => [
-                        repoLink('Modules/Cms/Resources/html/', 'Modules/Cms/Resources/html/'),
-                        repoLink('Modules/Cms/Resources/html/demo-decor-store.html', 'demo-decor-store.html'),
-                        repoLink('Modules/Cms/Resources/views/frontend/layouts/app.blade.php', 'frontend/layouts/app.blade.php') . ' loads the storefront asset stack and includes the chat-widget script partial',
-                        repoLink('Modules/Cms/Resources/views/components/chat_widget/js/chat_widget-style1.blade.php', 'components/chat_widget/js/chat_widget-style1.blade.php'),
-                    ],
-                ],
-                [
-                    'heading' => 'Verified notes',
-                    'level' => '##',
-                    'bullets' => [
-                        'These controller-returned view names do not have matching Blade files in this checkout, so keep them as notes instead of adding dead links: `cms::frontend.pages.custom_view`, `cms::create`, `cms::show`, `cms::edit`.',
-                    ],
-                ],
-            ],
-        ],
-        'Essentials' => [
-            'purpose' => 'Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `/hrm/*`.',
-            'web_summary' => 'dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes',
-            'api_summary' => 'present but empty placeholder in this checkout',
-            'index_trigger' => '`Essentials`, HRM, attendance, payroll, leave, todo',
-            'index_note' => 'Local module folder present; `Routes/api.php` exists but is empty in this checkout',
-            'keywords' => ['essentials', 'hrm', 'attendance', 'payroll', 'leave', 'todo', 'knowledge-base', 'transcripts'],
-            'related_docs' => [
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-                aiLink('ui-components.md'),
-            ],
-        ],
-        'Mailbox' => [
-            'purpose' => 'Entry map for the admin mailbox module, including inbox views, account setup, OAuth callback wiring, and compose flows.',
-            'web_summary' => '`/mailbox/*` inbox, accounts, compose, and install routes',
-            'api_summary' => 'auth API placeholder route for `/mailbox`',
-            'index_trigger' => '`Mailbox`, inbox, Gmail OAuth, IMAP, compose',
-            'index_note' => 'Local module folder present; module README exists',
-            'keywords' => ['mailbox', 'gmail', 'oauth', 'imap', 'compose', 'threads', 'attachments'],
-            'related_docs' => [
-                repoLink('Modules/Mailbox/README.md'),
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-                aiLink('ui-components.md'),
-            ],
-        ],
-        'Projectauto' => [
-            'purpose' => 'Entry map for Projectauto tasks, workflow builder screens, settings, and API draft/publish routes.',
-            'web_summary' => '`/projectauto/tasks/*`, `/projectauto/settings/*`, `/projectauto/workflows/*`, and workflow API endpoints under `/projectauto/api/*`',
-            'api_summary' => 'auth API route for `/projectauto/tasks`',
-            'index_trigger' => '`Projectauto`, tasks, workflows, builder',
-            'index_note' => 'Local module folder present; workflow-wizard doc exists',
-            'keywords' => ['projectauto', 'workflow', 'tasks', 'from-wizard', 'validate-draft', 'publish'],
-            'asset_paths' => [
-                'Modules/Projectauto/Resources/assets/workflow-builder/src/main.js',
-            ],
-            'related_docs' => [
-                aiLink('projectauto-workflow-wizard.md'),
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-            ],
-        ],
-        'StorageManager' => [
-            'purpose' => 'Entry map for the warehouse and storage execution module under `/storage-manager/*`.',
-            'web_summary' => '`/storage-manager/*` routes for settings, areas, slots, inbound, putaway, outbound, transfers, counts, damage, replenishment, and control tower',
-            'index_trigger' => '`StorageManager`, warehouse, inbound, putaway, counts',
-            'index_note' => 'Local module folder present; no `Routes/api.php` file in this checkout',
-            'keywords' => ['storage-manager', 'control-tower', 'inbound', 'putaway', 'replenishment', 'counts', 'outbound', 'slots'],
-            'related_docs' => [
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-                aiLink('database-map.md'),
-            ],
-        ],
-        'VasAccounting' => [
-            'purpose' => 'Entry map for the `vas-accounting` module, including web UI routes, API routes, and the large finance controller surface.',
-            'web_summary' => '`/vas-accounting/*` web routes for setup, vouchers, treasury, invoices, reports, integrations, closing, cutover, and more',
-            'api_summary' => '`/vas-accounting/*` API routes for health, domains, posting previews, finance documents, treasury reconciliation, and provider webhooks',
-            'index_trigger' => '`VasAccounting`, `vas-accounting`, vouchers, budgets, reports',
-            'index_note' => 'Local module folder present; API controller subfolder exists',
-            'keywords' => ['vas-accounting', 'voucher', 'cash-bank', 'payment-documents', 'procurement', 'closing', 'budget', 'integration', 'treasury'],
-            'related_docs' => [
-                aiLink('laravel-conventions.md'),
-                aiLink('security-and-auth.md'),
-                aiLink('database-map.md'),
-            ],
-        ],
-    ];
-}
-
-/**
  * @param array<string, string> $documents
  * @param array<int, string> $expectedModuleDocs
  * @return array{0: array<int, string>, 1: array<int, string>, 2: array<int, string>, 3: array<int, string>}
@@ -1483,6 +2476,75 @@ function syncDocuments(
     return [$written, $unchanged, $removed, $issues];
 }
 
+/**
+ * @param array<string, string> $documents
+ * @param array<int, string> $expectedDocs
+ * @return array{0: array<int, string>, 1: array<int, string>, 2: array<int, string>, 3: array<int, string>}
+ */
+function syncJsonDocuments(
+    string $generatedDir,
+    array $documents,
+    array $expectedDocs,
+    string $today,
+    bool $checkOnly
+): array {
+    $written = [];
+    $unchanged = [];
+    $removed = [];
+    $issues = [];
+
+    if (!is_dir($generatedDir)) {
+        if ($checkOnly) {
+            $issues[] = 'Missing ai/entrypoints/generated directory.';
+        } else {
+            mkdir($generatedDir, 0777, true);
+        }
+    }
+
+    foreach ($documents as $name => $tokenizedContent) {
+        $path = $generatedDir . '/' . $name;
+        $existing = is_file($path) ? (string) file_get_contents($path) : null;
+        $existingNormalized = $existing !== null ? normalizeJsonLastReviewed($existing) : null;
+
+        if ($existingNormalized === $tokenizedContent) {
+            $unchanged[] = 'generated/' . $name;
+            continue;
+        }
+
+        if ($checkOnly) {
+            $issues[] = 'Would update generated/' . $name;
+            continue;
+        }
+
+        $finalContent = str_replace(LAST_REVIEWED_TOKEN, $today, $tokenizedContent);
+        file_put_contents($path, $finalContent);
+        $written[] = 'generated/' . $name;
+    }
+
+    $existingJsonDocs = [];
+    foreach (glob($generatedDir . '/*.json') ?: [] as $absolute) {
+        if (is_file($absolute)) {
+            $existingJsonDocs[] = basename($absolute);
+        }
+    }
+
+    foreach ($existingJsonDocs as $staleName) {
+        if (in_array($staleName, $expectedDocs, true)) {
+            continue;
+        }
+
+        if ($checkOnly) {
+            $issues[] = 'Would remove stale generated/' . $staleName;
+            continue;
+        }
+
+        @unlink($generatedDir . '/' . $staleName);
+        $removed[] = 'generated/' . $staleName;
+    }
+
+    return [$written, $unchanged, $removed, $issues];
+}
+
 function extractLastReviewed(string $content): ?string
 {
     if (preg_match('/## Last reviewed\s+\n\s*-\s+([0-9]{4}-[0-9]{2}-[0-9]{2})/m', $content, $matches) !== 1) {
@@ -1497,6 +2559,15 @@ function normalizeLastReviewed(string $content): string
     return (string) preg_replace(
         '/## Last reviewed\s+\n\s*-\s+[0-9]{4}-[0-9]{2}-[0-9]{2}/m',
         "## Last reviewed\n\n- " . LAST_REVIEWED_TOKEN,
+        str_replace("\r\n", "\n", $content)
+    );
+}
+
+function normalizeJsonLastReviewed(string $content): string
+{
+    return (string) preg_replace(
+        '/"last_reviewed"\s*:\s*"[0-9]{4}-[0-9]{2}-[0-9]{2}"/m',
+        '"last_reviewed": "' . LAST_REVIEWED_TOKEN . '"',
         str_replace("\r\n", "\n", $content)
     );
 }

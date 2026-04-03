@@ -3,6 +3,17 @@
 
 Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversation links, and quote-wizard flows.
 
+## Use when
+
+- Chat drawer open/close or route behavior is broken.
+- Telegram webhook, shared conversation link, or quote wizard behavior changes.
+
+## Start here
+
+- [Modules/Aichat/Http/Controllers/ChatController.php](../../Modules/Aichat/Http/Controllers/ChatController.php)
+- [Modules/Aichat/Resources/views/chat](../../Modules/Aichat/Resources/views/chat)
+- [Modules/Aichat/Routes/web.php](../../Modules/Aichat/Routes/web.php)
+
 ## Verified paths
 
 ### Routes
@@ -13,36 +24,210 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 ### Controllers
 
 - [Modules/Aichat/Http/Controllers](../../Modules/Aichat/Http/Controllers)
-- [ChatActionController.php](../../Modules/Aichat/Http/Controllers/ChatActionController.php)
-- [ChatController.php](../../Modules/Aichat/Http/Controllers/ChatController.php)
-- [ChatMemoryAdminController.php](../../Modules/Aichat/Http/Controllers/ChatMemoryAdminController.php)
-- [ChatQuoteWizardController.php](../../Modules/Aichat/Http/Controllers/ChatQuoteWizardController.php)
-- [ChatSettingsController.php](../../Modules/Aichat/Http/Controllers/ChatSettingsController.php)
-- [DataController.php](../../Modules/Aichat/Http/Controllers/DataController.php)
-- [TelegramWebhookController.php](../../Modules/Aichat/Http/Controllers/TelegramWebhookController.php)
+- [Modules/Aichat/Http/Controllers/ChatActionController.php](../../Modules/Aichat/Http/Controllers/ChatActionController.php)
+- [Modules/Aichat/Http/Controllers/ChatController.php](../../Modules/Aichat/Http/Controllers/ChatController.php)
+- [Modules/Aichat/Http/Controllers/ChatMemoryAdminController.php](../../Modules/Aichat/Http/Controllers/ChatMemoryAdminController.php)
+- [Modules/Aichat/Http/Controllers/ChatQuoteWizardController.php](../../Modules/Aichat/Http/Controllers/ChatQuoteWizardController.php)
+- [Modules/Aichat/Http/Controllers/ChatSettingsController.php](../../Modules/Aichat/Http/Controllers/ChatSettingsController.php)
+- [Modules/Aichat/Http/Controllers/DataController.php](../../Modules/Aichat/Http/Controllers/DataController.php)
+- [Modules/Aichat/Http/Controllers/TelegramWebhookController.php](../../Modules/Aichat/Http/Controllers/TelegramWebhookController.php)
 
 ### Views
 
 - [Modules/Aichat/Resources/views](../../Modules/Aichat/Resources/views)
-- [chat/](../../Modules/Aichat/Resources/views/chat)
+- [Modules/Aichat/Resources/views/chat](../../Modules/Aichat/Resources/views/chat)
+
+### Requests
+
+- [Modules/Aichat/Http/Requests](../../Modules/Aichat/Http/Requests)
+- [Modules/Aichat/Http/Requests/Chat/CancelChatActionRequest.php](../../Modules/Aichat/Http/Requests/Chat/CancelChatActionRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ConfirmChatActionRequest.php](../../Modules/Aichat/Http/Requests/Chat/ConfirmChatActionRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ConfirmProductQuoteDraftRequest.php](../../Modules/Aichat/Http/Requests/Chat/ConfirmProductQuoteDraftRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/CreateChatConversationRequest.php](../../Modules/Aichat/Http/Requests/Chat/CreateChatConversationRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/DeleteChatConversationRequest.php](../../Modules/Aichat/Http/Requests/Chat/DeleteChatConversationRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/DeleteChatMemoryFactRequest.php](../../Modules/Aichat/Http/Requests/Chat/DeleteChatMemoryFactRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ExportChatConversationRequest.php](../../Modules/Aichat/Http/Requests/Chat/ExportChatConversationRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/GetQuoteWizardCostingDefaultsRequest.php](../../Modules/Aichat/Http/Requests/Chat/GetQuoteWizardCostingDefaultsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ListChatConversationsRequest.php](../../Modules/Aichat/Http/Requests/Chat/ListChatConversationsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ListQuoteWizardLocationsRequest.php](../../Modules/Aichat/Http/Requests/Chat/ListQuoteWizardLocationsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/PrepareChatActionRequest.php](../../Modules/Aichat/Http/Requests/Chat/PrepareChatActionRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ProcessQuoteWizardStepRequest.php](../../Modules/Aichat/Http/Requests/Chat/ProcessQuoteWizardStepRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/RegenerateChatMessageRequest.php](../../Modules/Aichat/Http/Requests/Chat/RegenerateChatMessageRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/SaveChatCredentialRequest.php](../../Modules/Aichat/Http/Requests/Chat/SaveChatCredentialRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/SaveChatMessageFeedbackRequest.php](../../Modules/Aichat/Http/Requests/Chat/SaveChatMessageFeedbackRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/SearchQuoteWizardContactsRequest.php](../../Modules/Aichat/Http/Requests/Chat/SearchQuoteWizardContactsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/SearchQuoteWizardProductsRequest.php](../../Modules/Aichat/Http/Requests/Chat/SearchQuoteWizardProductsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/SendChatMessageRequest.php](../../Modules/Aichat/Http/Requests/Chat/SendChatMessageRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/ShareChatConversationRequest.php](../../Modules/Aichat/Http/Requests/Chat/ShareChatConversationRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/StoreChatMemoryFactRequest.php](../../Modules/Aichat/Http/Requests/Chat/StoreChatMemoryFactRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/StoreTelegramAllowedGroupRequest.php](../../Modules/Aichat/Http/Requests/Chat/StoreTelegramAllowedGroupRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/StoreTelegramBotRequest.php](../../Modules/Aichat/Http/Requests/Chat/StoreTelegramBotRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/UpdateChatBusinessSettingsRequest.php](../../Modules/Aichat/Http/Requests/Chat/UpdateChatBusinessSettingsRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/UpdateChatMemoryFactRequest.php](../../Modules/Aichat/Http/Requests/Chat/UpdateChatMemoryFactRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/UpdatePersistentMemoryNameRequest.php](../../Modules/Aichat/Http/Requests/Chat/UpdatePersistentMemoryNameRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/UpdateTelegramAllowedUsersRequest.php](../../Modules/Aichat/Http/Requests/Chat/UpdateTelegramAllowedUsersRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/UpdateUserChatProfileRequest.php](../../Modules/Aichat/Http/Requests/Chat/UpdateUserChatProfileRequest.php)
+- [Modules/Aichat/Http/Requests/Chat/WipeBusinessMemoryRequest.php](../../Modules/Aichat/Http/Requests/Chat/WipeBusinessMemoryRequest.php)
+
+### Services
+
+- _None discovered in this checkout_
+
+### Utils
+
+- [Modules/Aichat/Utils](../../Modules/Aichat/Utils)
+- [Modules/Aichat/Utils/AIChatUtil.php](../../Modules/Aichat/Utils/AIChatUtil.php)
+- [Modules/Aichat/Utils/ChatActionUtil.php](../../Modules/Aichat/Utils/ChatActionUtil.php)
+- [Modules/Aichat/Utils/ChatAuditUtil.php](../../Modules/Aichat/Utils/ChatAuditUtil.php)
+- [Modules/Aichat/Utils/ChatAuthorizationPolicy.php](../../Modules/Aichat/Utils/ChatAuthorizationPolicy.php)
+- [Modules/Aichat/Utils/ChatCapabilityResolver.php](../../Modules/Aichat/Utils/ChatCapabilityResolver.php)
+- [Modules/Aichat/Utils/ChatIntentDomainResolver.php](../../Modules/Aichat/Utils/ChatIntentDomainResolver.php)
+- [Modules/Aichat/Utils/ChatMessageRendererUtil.php](../../Modules/Aichat/Utils/ChatMessageRendererUtil.php)
+- [Modules/Aichat/Utils/ChatModelSerializer.php](../../Modules/Aichat/Utils/ChatModelSerializer.php)
+- [Modules/Aichat/Utils/ChatProductQuoteWizardUtil.php](../../Modules/Aichat/Utils/ChatProductQuoteWizardUtil.php)
+- [Modules/Aichat/Utils/ChatSensitiveDataRedactor.php](../../Modules/Aichat/Utils/ChatSensitiveDataRedactor.php)
+- [Modules/Aichat/Utils/ChatUtil.php](../../Modules/Aichat/Utils/ChatUtil.php)
+- [Modules/Aichat/Utils/ChatWorkflowUtil.php](../../Modules/Aichat/Utils/ChatWorkflowUtil.php)
+- [Modules/Aichat/Utils/TelegramApiUtil.php](../../Modules/Aichat/Utils/TelegramApiUtil.php)
+
+### Models / Entities
+
+- [Modules/Aichat/Entities/ChatAuditLog.php](../../Modules/Aichat/Entities/ChatAuditLog.php)
+- [Modules/Aichat/Entities/ChatConversation.php](../../Modules/Aichat/Entities/ChatConversation.php)
+- [Modules/Aichat/Entities/ChatCredential.php](../../Modules/Aichat/Entities/ChatCredential.php)
+- [Modules/Aichat/Entities/ChatMemory.php](../../Modules/Aichat/Entities/ChatMemory.php)
+- [Modules/Aichat/Entities/ChatMessage.php](../../Modules/Aichat/Entities/ChatMessage.php)
+- [Modules/Aichat/Entities/ChatMessageFeedback.php](../../Modules/Aichat/Entities/ChatMessageFeedback.php)
+- [Modules/Aichat/Entities/ChatPendingAction.php](../../Modules/Aichat/Entities/ChatPendingAction.php)
+- [Modules/Aichat/Entities/ChatSetting.php](../../Modules/Aichat/Entities/ChatSetting.php)
+- [Modules/Aichat/Entities/PersistentMemory.php](../../Modules/Aichat/Entities/PersistentMemory.php)
+- [Modules/Aichat/Entities/ProductQuoteDraft.php](../../Modules/Aichat/Entities/ProductQuoteDraft.php)
+- [Modules/Aichat/Entities/TelegramAllowedGroup.php](../../Modules/Aichat/Entities/TelegramAllowedGroup.php)
+- [Modules/Aichat/Entities/TelegramAllowedUser.php](../../Modules/Aichat/Entities/TelegramAllowedUser.php)
+- [Modules/Aichat/Entities/TelegramBot.php](../../Modules/Aichat/Entities/TelegramBot.php)
+- [Modules/Aichat/Entities/TelegramChat.php](../../Modules/Aichat/Entities/TelegramChat.php)
+- [Modules/Aichat/Entities/TelegramLinkCode.php](../../Modules/Aichat/Entities/TelegramLinkCode.php)
+- [Modules/Aichat/Entities/UserChatProfile.php](../../Modules/Aichat/Entities/UserChatProfile.php)
+
+### Jobs / Notifications
+
+- [Modules/Aichat/Jobs](../../Modules/Aichat/Jobs)
+- [Modules/Aichat/Jobs/ProcessTelegramWebhookJob.php](../../Modules/Aichat/Jobs/ProcessTelegramWebhookJob.php)
+
+### Assets / JS
+
+- [Modules/Aichat/Resources/assets](../../Modules/Aichat/Resources/assets)
+- [Modules/Aichat/Resources/assets/js/custom/apps/chat/aichat-ai-chat.js](../../Modules/Aichat/Resources/assets/js/custom/apps/chat/aichat-ai-chat.js)
+
+### Tests
+
+- [Modules/Aichat/Tests](../../Modules/Aichat/Tests)
+- [Modules/Aichat/Tests/Feature/ChatActionControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatActionControllerTest.php)
+- [Modules/Aichat/Tests/Feature/ChatActionLifecycleFeatureTest.php](../../Modules/Aichat/Tests/Feature/ChatActionLifecycleFeatureTest.php)
+- [Modules/Aichat/Tests/Feature/ChatQuoteWizardConfirmControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardConfirmControllerTest.php)
+- [Modules/Aichat/Tests/Feature/ChatQuoteWizardProcessControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardProcessControllerTest.php)
+- [Modules/Aichat/Tests/Feature/ChatQuoteWizardResolutionControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardResolutionControllerTest.php)
+- [Modules/Aichat/Tests/Feature/ChatSettingsControllerProfileTest.php](../../Modules/Aichat/Tests/Feature/ChatSettingsControllerProfileTest.php)
+- [Modules/Aichat/Tests/Feature/ChatSettingsTelegramControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatSettingsTelegramControllerTest.php)
+- [Modules/Aichat/Tests/Unit/ChatActionUtilPermissionTest.php](../../Modules/Aichat/Tests/Unit/ChatActionUtilPermissionTest.php)
+- [Modules/Aichat/Tests/Unit/ChatCapabilityResolverTest.php](../../Modules/Aichat/Tests/Unit/ChatCapabilityResolverTest.php)
+- [Modules/Aichat/Tests/Unit/ChatProductQuoteWizardUtilTest.php](../../Modules/Aichat/Tests/Unit/ChatProductQuoteWizardUtilTest.php)
+- [Modules/Aichat/Tests/Unit/ChatSecurityComponentsTest.php](../../Modules/Aichat/Tests/Unit/ChatSecurityComponentsTest.php)
+- [Modules/Aichat/Tests/Unit/ChatUtilClientConfigTest.php](../../Modules/Aichat/Tests/Unit/ChatUtilClientConfigTest.php)
+- [Modules/Aichat/Tests/Unit/ChatUtilProductPricingContextTest.php](../../Modules/Aichat/Tests/Unit/ChatUtilProductPricingContextTest.php)
+- [Modules/Aichat/Tests/Unit/ChatUtilPromptAssemblyTest.php](../../Modules/Aichat/Tests/Unit/ChatUtilPromptAssemblyTest.php)
+- [Modules/Aichat/Tests/Unit/ChatUtilTelegramConversationTest.php](../../Modules/Aichat/Tests/Unit/ChatUtilTelegramConversationTest.php)
+- [Modules/Aichat/Tests/Unit/ProcessTelegramWebhookJobTest.php](../../Modules/Aichat/Tests/Unit/ProcessTelegramWebhookJobTest.php)
+- [Modules/Aichat/Tests/Unit/UserChatProfileModelTest.php](../../Modules/Aichat/Tests/Unit/UserChatProfileModelTest.php)
+
+## Common edit bundles
+
+- **Drawer + settings bundle** — Most drawer UX issues involve both chat behavior and settings flags. | [Modules/Aichat/Http/Controllers/ChatController.php](../../Modules/Aichat/Http/Controllers/ChatController.php), [Modules/Aichat/Http/Controllers/ChatSettingsController.php](../../Modules/Aichat/Http/Controllers/ChatSettingsController.php), [Modules/Aichat/Resources/views/chat](../../Modules/Aichat/Resources/views/chat)
+- **Webhook bundle** — Keep route + handler aligned for webhook key and auth behavior. | [Modules/Aichat/Http/Controllers/TelegramWebhookController.php](../../Modules/Aichat/Http/Controllers/TelegramWebhookController.php), [Modules/Aichat/Routes/web.php](../../Modules/Aichat/Routes/web.php)
+
+## Primary workflows
+
+- **Chat drawer issue** — Start from chat controller + chat Blade to verify initial render and drawer state. | [Modules/Aichat/Http/Controllers/ChatController.php](../../Modules/Aichat/Http/Controllers/ChatController.php), [Modules/Aichat/Resources/views/chat](../../Modules/Aichat/Resources/views/chat)
+- **Quote wizard conversation flow** — Wizard behavior usually couples route definition with controller actions. | [Modules/Aichat/Http/Controllers/ChatQuoteWizardController.php](../../Modules/Aichat/Http/Controllers/ChatQuoteWizardController.php), [Modules/Aichat/Routes/web.php](../../Modules/Aichat/Routes/web.php)
+- **Telegram ingress** — Validate webhook route key and controller handling together. | [Modules/Aichat/Http/Controllers/TelegramWebhookController.php](../../Modules/Aichat/Http/Controllers/TelegramWebhookController.php), [Modules/Aichat/Routes/web.php](../../Modules/Aichat/Routes/web.php)
+
+## Shared dependencies
+
+### Requests
+
+- `Modules\Aichat\Http\Requests\Chat\CancelChatActionRequest`
+- `Modules\Aichat\Http\Requests\Chat\ConfirmChatActionRequest`
+- `Modules\Aichat\Http\Requests\Chat\ConfirmProductQuoteDraftRequest`
+- `Modules\Aichat\Http\Requests\Chat\CreateChatConversationRequest`
+- `Modules\Aichat\Http\Requests\Chat\DeleteChatConversationRequest`
+- `Modules\Aichat\Http\Requests\Chat\DeleteChatMemoryFactRequest`
+- `Modules\Aichat\Http\Requests\Chat\ExportChatConversationRequest`
+- `Modules\Aichat\Http\Requests\Chat\GetQuoteWizardCostingDefaultsRequest`
+- `Modules\Aichat\Http\Requests\Chat\ListChatConversationsRequest`
+- `Modules\Aichat\Http\Requests\Chat\ListQuoteWizardLocationsRequest`
+- `Modules\Aichat\Http\Requests\Chat\PrepareChatActionRequest`
+- `Modules\Aichat\Http\Requests\Chat\ProcessQuoteWizardStepRequest`
+- `Modules\Aichat\Http\Requests\Chat\RegenerateChatMessageRequest`
+- `Modules\Aichat\Http\Requests\Chat\SaveChatCredentialRequest`
+- `Modules\Aichat\Http\Requests\Chat\SaveChatMessageFeedbackRequest`
+- `Modules\Aichat\Http\Requests\Chat\SearchQuoteWizardContactsRequest`
+- `Modules\Aichat\Http\Requests\Chat\SearchQuoteWizardProductsRequest`
+- `Modules\Aichat\Http\Requests\Chat\SendChatMessageRequest`
+- `Modules\Aichat\Http\Requests\Chat\ShareChatConversationRequest`
+- `Modules\Aichat\Http\Requests\Chat\StoreChatMemoryFactRequest`
+- `Modules\Aichat\Http\Requests\Chat\StoreTelegramAllowedGroupRequest`
+- `Modules\Aichat\Http\Requests\Chat\StoreTelegramBotRequest`
+- `Modules\Aichat\Http\Requests\Chat\UpdateChatBusinessSettingsRequest`
+- `Modules\Aichat\Http\Requests\Chat\UpdateChatMemoryFactRequest`
+- `Modules\Aichat\Http\Requests\Chat\UpdatePersistentMemoryNameRequest`
+- `Modules\Aichat\Http\Requests\Chat\UpdateTelegramAllowedUsersRequest`
+- `Modules\Aichat\Http\Requests\Chat\UpdateUserChatProfileRequest`
+- `Modules\Aichat\Http\Requests\Chat\WipeBusinessMemoryRequest`
+
+### Services
+
+- _None discovered from first-order controller references_
+
+### Utils
+
+- `App\Utils\ModuleUtil`
+- `Modules\Aichat\Utils\AIChatUtil`
+- `Modules\Aichat\Utils\ChatActionUtil`
+- `Modules\Aichat\Utils\ChatProductQuoteWizardUtil`
+- `Modules\Aichat\Utils\ChatUtil`
+- `Modules\Aichat\Utils\ChatWorkflowUtil`
+- `Modules\Aichat\Utils\TelegramApiUtil`
+
+### Models / Entities
+
+- `Modules\Aichat\Entities\ChatConversation`
+- `Modules\Aichat\Entities\ChatMemory`
+- `Modules\Aichat\Entities\ChatMessage`
+- `Modules\Aichat\Entities\ProductQuoteDraft`
+
+## Tests / verify
+
+- [Modules/Aichat/Tests](../../Modules/Aichat/Tests)
+- `php artisan route:list --name=aichat`
+- `php artisan test --filter=Aichat`
 
 ## Search keywords
 
+- `/conversations/{id}/quote-wizard`
 - `Aichat`
 - `aichat`
 - `chat`
-- `telegram`
-- `quote-wizard`
 - `conversations`
+- `quote-wizard`
 - `shared`
-- `/conversations/{id}/quote-wizard`
+- `telegram`
 
 ## Related docs
 
 - [ai/aichat-authz-baseline.md](../aichat-authz-baseline.md)
-- [Modules/Aichat/README.md](../../Modules/Aichat/README.md)
-- [ai/security-and-auth.md](../security-and-auth.md)
 - [ai/product-copilot-patterns.md](../product-copilot-patterns.md)
+- [ai/security-and-auth.md](../security-and-auth.md)
+- [Modules/Aichat/README.md](../../Modules/Aichat/README.md)
 
 ## Last reviewed
 

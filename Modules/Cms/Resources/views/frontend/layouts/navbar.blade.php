@@ -165,8 +165,7 @@
                             <li><a href="{{ route('cms.store.faq') }}">FAQs</a></li>
                             <li><a href="{{ route('cms.store.wishlist') }}">Wishlist</a></li>
                             <li><a href="{{ route('cms.store.account') }}">Account</a></li>
-                            <li><a href="{{ route('cms.store.cart') }}">Cart</a></li>
-                            <li><a href="{{ route('cms.store.checkout') }}">Checkout</a></li>
+                            <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
                         </ul>
                     </li>
                     <li class="nav-item"><a href="{{ route('cms.blogs.index') }}" class="nav-link">Blog</a></li>

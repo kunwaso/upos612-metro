@@ -3,6 +3,20 @@
 
 Entry map for the admin mailbox module, including inbox views, account setup, OAuth callback wiring, and compose flows.
 
+## Use when
+
+- compose
+- Gmail OAuth
+- IMAP
+- inbox
+- Mailbox
+
+## Start here
+
+- [Modules/Mailbox/Http/Controllers](../../Modules/Mailbox/Http/Controllers)
+- [Modules/Mailbox/Resources/views](../../Modules/Mailbox/Resources/views)
+- [Modules/Mailbox/Routes/web.php](../../Modules/Mailbox/Routes/web.php)
+
 ## Verified paths
 
 ### Routes
@@ -13,40 +27,130 @@ Entry map for the admin mailbox module, including inbox views, account setup, OA
 ### Controllers
 
 - [Modules/Mailbox/Http/Controllers](../../Modules/Mailbox/Http/Controllers)
-- [DataController.php](../../Modules/Mailbox/Http/Controllers/DataController.php)
-- [InstallController.php](../../Modules/Mailbox/Http/Controllers/InstallController.php)
-- [MailboxAccountController.php](../../Modules/Mailbox/Http/Controllers/MailboxAccountController.php)
-- [MailboxController.php](../../Modules/Mailbox/Http/Controllers/MailboxController.php)
-- [MailboxOAuthController.php](../../Modules/Mailbox/Http/Controllers/MailboxOAuthController.php)
-- [MailboxSendController.php](../../Modules/Mailbox/Http/Controllers/MailboxSendController.php)
+- [Modules/Mailbox/Http/Controllers/DataController.php](../../Modules/Mailbox/Http/Controllers/DataController.php)
+- [Modules/Mailbox/Http/Controllers/InstallController.php](../../Modules/Mailbox/Http/Controllers/InstallController.php)
+- [Modules/Mailbox/Http/Controllers/MailboxAccountController.php](../../Modules/Mailbox/Http/Controllers/MailboxAccountController.php)
+- [Modules/Mailbox/Http/Controllers/MailboxController.php](../../Modules/Mailbox/Http/Controllers/MailboxController.php)
+- [Modules/Mailbox/Http/Controllers/MailboxOAuthController.php](../../Modules/Mailbox/Http/Controllers/MailboxOAuthController.php)
+- [Modules/Mailbox/Http/Controllers/MailboxSendController.php](../../Modules/Mailbox/Http/Controllers/MailboxSendController.php)
 
 ### Views
 
 - [Modules/Mailbox/Resources/views](../../Modules/Mailbox/Resources/views)
-- [accounts/](../../Modules/Mailbox/Resources/views/accounts)
-- [inbox/](../../Modules/Mailbox/Resources/views/inbox)
-- [layouts/](../../Modules/Mailbox/Resources/views/layouts)
-- [partials/](../../Modules/Mailbox/Resources/views/partials)
+- [Modules/Mailbox/Resources/views/accounts](../../Modules/Mailbox/Resources/views/accounts)
+- [Modules/Mailbox/Resources/views/inbox](../../Modules/Mailbox/Resources/views/inbox)
+- [Modules/Mailbox/Resources/views/layouts](../../Modules/Mailbox/Resources/views/layouts)
+- [Modules/Mailbox/Resources/views/partials](../../Modules/Mailbox/Resources/views/partials)
+
+### Requests
+
+- [Modules/Mailbox/Http/Requests](../../Modules/Mailbox/Http/Requests)
+- [Modules/Mailbox/Http/Requests/SendMailboxMessageRequest.php](../../Modules/Mailbox/Http/Requests/SendMailboxMessageRequest.php)
+- [Modules/Mailbox/Http/Requests/StoreMailboxAccountRequest.php](../../Modules/Mailbox/Http/Requests/StoreMailboxAccountRequest.php)
+- [Modules/Mailbox/Http/Requests/TestMailboxConnectionRequest.php](../../Modules/Mailbox/Http/Requests/TestMailboxConnectionRequest.php)
+- [Modules/Mailbox/Http/Requests/UpdateMailboxAccountRequest.php](../../Modules/Mailbox/Http/Requests/UpdateMailboxAccountRequest.php)
+
+### Services
+
+- [Modules/Mailbox/Services](../../Modules/Mailbox/Services)
+- [Modules/Mailbox/Services/GmailMailboxClient.php](../../Modules/Mailbox/Services/GmailMailboxClient.php)
+- [Modules/Mailbox/Services/ImapMailboxClient.php](../../Modules/Mailbox/Services/ImapMailboxClient.php)
+- [Modules/Mailbox/Services/SmtpMailboxSender.php](../../Modules/Mailbox/Services/SmtpMailboxSender.php)
+
+### Utils
+
+- [Modules/Mailbox/Utils](../../Modules/Mailbox/Utils)
+- [Modules/Mailbox/Utils/MailboxAccountUtil.php](../../Modules/Mailbox/Utils/MailboxAccountUtil.php)
+- [Modules/Mailbox/Utils/MailboxMessageUtil.php](../../Modules/Mailbox/Utils/MailboxMessageUtil.php)
+- [Modules/Mailbox/Utils/MailboxSendUtil.php](../../Modules/Mailbox/Utils/MailboxSendUtil.php)
+- [Modules/Mailbox/Utils/MailboxSyncUtil.php](../../Modules/Mailbox/Utils/MailboxSyncUtil.php)
+
+### Models / Entities
+
+- [Modules/Mailbox/Entities/MailboxAccount.php](../../Modules/Mailbox/Entities/MailboxAccount.php)
+- [Modules/Mailbox/Entities/MailboxAttachment.php](../../Modules/Mailbox/Entities/MailboxAttachment.php)
+- [Modules/Mailbox/Entities/MailboxMessage.php](../../Modules/Mailbox/Entities/MailboxMessage.php)
+
+### Jobs / Notifications
+
+- [Modules/Mailbox/Jobs](../../Modules/Mailbox/Jobs)
+- [Modules/Mailbox/Jobs/SendMailboxMessageJob.php](../../Modules/Mailbox/Jobs/SendMailboxMessageJob.php)
+- [Modules/Mailbox/Jobs/SyncMailboxAccountJob.php](../../Modules/Mailbox/Jobs/SyncMailboxAccountJob.php)
+
+### Assets / JS
+
+- [Modules/Mailbox/Resources/assets](../../Modules/Mailbox/Resources/assets)
+- [Modules/Mailbox/Resources/assets/css/mailbox.css](../../Modules/Mailbox/Resources/assets/css/mailbox.css)
+- [Modules/Mailbox/Resources/assets/js/app.js](../../Modules/Mailbox/Resources/assets/js/app.js)
+- [Modules/Mailbox/Resources/assets/js/mailbox.js](../../Modules/Mailbox/Resources/assets/js/mailbox.js)
+- [Modules/Mailbox/Resources/assets/sass/app.scss](../../Modules/Mailbox/Resources/assets/sass/app.scss)
+
+### Tests
+
+- [Modules/Mailbox/Tests](../../Modules/Mailbox/Tests)
+- [Modules/Mailbox/Tests/Unit/GmailMailboxClientEncodingTest.php](../../Modules/Mailbox/Tests/Unit/GmailMailboxClientEncodingTest.php)
+- [Modules/Mailbox/Tests/Unit/ImapMailboxClientTest.php](../../Modules/Mailbox/Tests/Unit/ImapMailboxClientTest.php)
+- [Modules/Mailbox/Tests/Unit/MailboxAccountModelTest.php](../../Modules/Mailbox/Tests/Unit/MailboxAccountModelTest.php)
+- [Modules/Mailbox/Tests/Unit/TestMailboxConnectionRequestTest.php](../../Modules/Mailbox/Tests/Unit/TestMailboxConnectionRequestTest.php)
+
+## Common edit bundles
+
+- _None curated yet_
+
+## Primary workflows
+
+- _None curated yet_
+
+## Shared dependencies
+
+### Requests
+
+- `Modules\Mailbox\Http\Requests\SendMailboxMessageRequest`
+- `Modules\Mailbox\Http\Requests\StoreMailboxAccountRequest`
+- `Modules\Mailbox\Http\Requests\TestMailboxConnectionRequest`
+- `Modules\Mailbox\Http\Requests\UpdateMailboxAccountRequest`
+
+### Services
+
+- `Modules\Mailbox\Services\GmailMailboxClient`
+
+### Utils
+
+- `App\Utils\ModuleUtil`
+- `Modules\Mailbox\Utils\MailboxAccountUtil`
+- `Modules\Mailbox\Utils\MailboxMessageUtil`
+- `Modules\Mailbox\Utils\MailboxSendUtil`
+
+### Models / Entities
+
+- `Modules\Mailbox\Entities\MailboxAccount`
+- `Spatie\Permission\Models\Permission`
+- `Spatie\Permission\Models\Role`
+
+## Tests / verify
+
+- [Modules/Mailbox/Tests](../../Modules/Mailbox/Tests)
+- `php artisan test --filter=Mailbox`
 
 ## Search keywords
 
+- `accounts`
+- `attachments`
+- `compose`
+- `gmail`
+- `imap`
+- `install`
 - `Mailbox`
 - `mailbox`
-- `gmail`
 - `oauth`
-- `imap`
-- `compose`
 - `threads`
-- `attachments`
-- `accounts`
-- `install`
 
 ## Related docs
 
-- [Modules/Mailbox/README.md](../../Modules/Mailbox/README.md)
 - [ai/laravel-conventions.md](../laravel-conventions.md)
 - [ai/security-and-auth.md](../security-and-auth.md)
 - [ai/ui-components.md](../ui-components.md)
+- [Modules/Mailbox/README.md](../../Modules/Mailbox/README.md)
 
 ## Last reviewed
 

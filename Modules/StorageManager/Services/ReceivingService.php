@@ -34,23 +34,16 @@ class ReceivingService
         $settings = StorageLocationSetting::query()
             ->where('business_id', $businessId)
             ->where('status', 'active')
-            ->where('execution_mode', '!=', 'off')
             ->when($locationId, fn ($query) => $query->where('location_id', $locationId))
             ->get()
             ->keyBy('location_id');
 
-        $enabledLocationIds = $settings->keys()->map(fn ($id) => (int) $id)->values()->all();
-        if (empty($enabledLocationIds)) {
-            return [
-                'executionSummary' => [
-                    'enabled_location_count' => 0,
-                    'purchase_count' => 0,
-                    'purchase_order_count' => 0,
-                ],
-                'purchases' => collect(),
-                'purchaseOrders' => collect(),
-            ];
-        }
+        $enabledLocationIds = $settings
+            ->filter(fn (StorageLocationSetting $setting) => (string) $setting->execution_mode !== 'off')
+            ->keys()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
 
         $receiptDocuments = StorageDocument::query()
             ->where('business_id', $businessId)
@@ -63,7 +56,7 @@ class ReceivingService
             ->with(['contact', 'location', 'purchase_lines'])
             ->where('business_id', $businessId)
             ->where('type', 'purchase')
-            ->whereIn('location_id', $enabledLocationIds)
+            ->when($locationId, fn ($query) => $query->where('location_id', $locationId))
             ->whereIn('status', ['pending', 'ordered', 'received'])
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
@@ -72,12 +65,16 @@ class ReceivingService
             ->map(function (Transaction $transaction) use ($receiptDocuments, $settings) {
                 $document = $receiptDocuments->get('purchase:' . $transaction->id);
                 $setting = $settings->get($transaction->location_id);
+                $executionMode = (string) ($setting?->execution_mode ?: 'off');
+                $executionEnabled = $executionMode !== 'off';
+                $sourceStatus = (string) $transaction->status;
+                $planningOnly = $sourceStatus === 'ordered';
 
                 return [
                     'source_type' => 'purchase',
                     'source_id' => (int) $transaction->id,
                     'source_ref' => (string) ($transaction->ref_no ?: $transaction->invoice_no ?: ('PUR-' . $transaction->id)),
-                    'source_status' => (string) $transaction->status,
+                    'source_status' => $sourceStatus,
                     'location_name' => (string) optional($transaction->location)->name,
                     'supplier_name' => (string) (optional($transaction->contact)->supplier_business_name ?: optional($transaction->contact)->name ?: '—'),
                     'transaction_date' => ! empty($transaction->transaction_date)
@@ -88,10 +85,13 @@ class ReceivingService
                     'receipt_document_id' => $document?->id,
                     'receipt_document_no' => $document?->document_no,
                     'receipt_status' => $document?->status,
-                    'execution_mode' => (string) ($setting?->execution_mode ?: 'off'),
-                    'ready_for_execution' => true,
-                    'planning_only' => false,
-                    'can_open' => true,
+                    'execution_mode' => $executionMode,
+                    'ready_for_execution' => $executionEnabled && ! $planningOnly,
+                    'planning_only' => $planningOnly,
+                    'can_open' => $executionEnabled && ! $planningOnly,
+                    'action_note' => ! $executionEnabled
+                        ? 'Enable storage execution for this location to receive and put away stock.'
+                        : ($planningOnly ? 'Planning only. Purchase is still in ordered status after reversal.' : null),
                 ];
             })
             ->values();
@@ -100,7 +100,7 @@ class ReceivingService
             ->with(['contact', 'location', 'purchase_lines'])
             ->where('business_id', $businessId)
             ->where('type', 'purchase_order')
-            ->whereIn('location_id', $enabledLocationIds)
+            ->when($locationId, fn ($query) => $query->where('location_id', $locationId))
             ->where('status', '!=', 'completed')
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
@@ -108,6 +108,7 @@ class ReceivingService
             ->map(function (Transaction $transaction) use ($receiptDocuments, $settings) {
                 $document = $receiptDocuments->get('purchase_order:' . $transaction->id);
                 $setting = $settings->get($transaction->location_id);
+                $executionMode = (string) ($setting?->execution_mode ?: 'off');
                 $remainingQty = round((float) $transaction->purchase_lines->sum(function (PurchaseLine $line) {
                     return max((float) $line->quantity - (float) $line->po_quantity_purchased, 0);
                 }), 4);
@@ -130,14 +131,26 @@ class ReceivingService
                     'receipt_document_id' => $document?->id,
                     'receipt_document_no' => $document?->document_no,
                     'receipt_status' => $document?->status,
-                    'execution_mode' => (string) ($setting?->execution_mode ?: 'off'),
+                    'execution_mode' => $executionMode,
                     'ready_for_execution' => false,
                     'planning_only' => true,
                     'can_open' => $remainingQty > 0,
+                    'action_note' => $remainingQty > 0
+                        ? 'Planning only. Confirm receipt and putaway become available after creating/receiving the purchase from this PO.'
+                        : 'No remaining quantity on this PO.',
                 ];
             })
-            ->filter(fn (array $row) => $row['expected_qty'] > 0)
             ->values();
+
+        $planningPurchases = $purchases
+            ->filter(fn (array $row) => ! empty($row['planning_only']))
+            ->values();
+        $purchases = $purchases
+            ->reject(fn (array $row) => ! empty($row['planning_only']))
+            ->values();
+        if ($planningPurchases->isNotEmpty()) {
+            $purchaseOrders = $planningPurchases->concat($purchaseOrders)->values();
+        }
 
         return [
             'executionSummary' => [
@@ -153,7 +166,11 @@ class ReceivingService
     public function getReceiptWorkbench(int $businessId, string $sourceType, int $sourceId, int $userId): array
     {
         $sourceDocument = $this->loadSourceDocumentByKey($businessId, $sourceType, $sourceId);
-        $settings = $this->locationSettingForSource($businessId, (int) $sourceDocument->location_id);
+        $settings = $this->locationSettingForSource(
+            $businessId,
+            (int) $sourceDocument->location_id,
+            $sourceType === 'purchase_order'
+        );
         $document = $this->ensureReceiptDocument($businessId, $sourceType, $sourceDocument, $settings, $userId);
         $this->syncReceiptLinesFromSource($document, $sourceType, $sourceDocument, $settings);
 
@@ -182,6 +199,18 @@ class ReceivingService
             ->where('document_type', 'putaway')
             ->where('parent_document_id', $document->id)
             ->first();
+
+        $canReopen = false;
+        $reopenReason = null;
+        if (! in_array((string) $document->status, ['completed', 'closed'], true)) {
+            $reopenReason = 'Receipt can only be reopened after confirmation.';
+        } elseif ((string) $document->sync_status === 'posted') {
+            $reopenReason = 'Receipt is already posted to accounting and cannot be reopened.';
+        } elseif ($putawayDocument && in_array((string) $putawayDocument->status, ['closed', 'completed'], true)) {
+            $reopenReason = 'Reverse putaway first before reopening this receipt.';
+        } else {
+            $canReopen = true;
+        }
 
         $lineRows = $document->lines->map(function (StorageDocumentLine $line) use ($businessId, $document) {
             $suggestedDestination = $this->putawayService->suggestSlotForProduct(
@@ -225,6 +254,8 @@ class ReceivingService
                 'requires_purchase_permission' => $sourceType === 'purchase' && $sourceDocument->status !== 'received',
                 'has_putaway_document' => (bool) $putawayDocument,
                 'putaway_document_id' => $putawayDocument?->id,
+                'can_reopen' => $canReopen,
+                'reopen_reason' => $reopenReason,
             ],
             'lineRows' => $lineRows,
             'stagingSlotOptions' => $stagingSlotOptions,
@@ -262,6 +293,13 @@ class ReceivingService
         DB::transaction(function () use ($businessId, $document, $sourceDocument, $settings, $lineInputs, $userId, $allowSourceStatusUpdate) {
             $document->loadMissing(['lines']);
             $sourceDocument->loadMissing('purchase_lines');
+            $documentMeta = (array) $document->meta;
+            $receiptAttempt = (int) data_get($documentMeta, 'receipt_attempt', 0) + 1;
+            $documentMeta['receipt_attempt'] = $receiptAttempt;
+            $documentMeta['last_receipt_confirmed_at'] = now()->toDateTimeString();
+            $sourceStatusBeforeReceipt = (string) $sourceDocument->status;
+            $documentMeta['source_status_before_receipt'] = $sourceStatusBeforeReceipt;
+            $documentMeta['source_status_changed_by_receipt'] = false;
 
             foreach ($document->lines as $line) {
                 $input = (array) ($lineInputs[$line->id] ?? []);
@@ -332,7 +370,9 @@ class ReceivingService
                 }
 
                 $this->markPurchaseAsReceived($businessId, $sourceDocument);
+                $documentMeta['source_status_changed_by_receipt'] = true;
             }
+            $documentMeta['source_status_after_receipt'] = (string) $sourceDocument->status;
 
             foreach ($document->lines as $line) {
                 $this->inventoryMovementService->applyMovement([
@@ -355,7 +395,7 @@ class ReceivingService
                     'quantity' => $line->executed_qty,
                     'unit_cost' => $line->unit_cost,
                     'reason_code' => 'receipt',
-                    'idempotency_key' => 'receipt-' . $document->id . '-line-' . $line->id,
+                    'idempotency_key' => 'receipt-' . $document->id . '-line-' . $line->id . '-attempt-' . $receiptAttempt,
                     'created_by' => $userId,
                 ]);
             }
@@ -365,6 +405,7 @@ class ReceivingService
                 'workflow_state' => 'putaway_pending',
                 'completed_at' => now(),
                 'approved_by' => $userId,
+                'meta' => $documentMeta,
             ])->save();
         });
 
@@ -382,6 +423,140 @@ class ReceivingService
         } catch (\Throwable $exception) {
             // Sync errors are already logged in StorageSyncLog and surfaced in Control Tower.
         }
+
+        return $receiptDocument->fresh([
+            'lines.product',
+            'lines.variation',
+            'lines.toArea',
+            'lines.toSlot',
+        ]);
+    }
+
+    public function reopenReceipt(int $businessId, StorageDocument $document, int $userId): StorageDocument
+    {
+        if ($document->document_type !== 'receipt') {
+            throw new RuntimeException('Only receipt documents can be reopened from inbound receiving.');
+        }
+
+        if (! in_array((string) $document->status, ['completed', 'closed'], true)) {
+            throw new RuntimeException('Only completed receipts can be reopened.');
+        }
+
+        if ((string) $document->sync_status === 'posted') {
+            throw new RuntimeException('This receipt is already posted to accounting and cannot be reopened.');
+        }
+
+        $putawayDocument = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'putaway')
+            ->where('parent_document_id', $document->id)
+            ->first();
+
+        if ($putawayDocument && in_array((string) $putawayDocument->status, ['closed', 'completed'], true)) {
+            throw new RuntimeException('Reverse putaway first before reopening this receipt.');
+        }
+
+        $sourceDocument = $this->loadSourceDocument($document);
+
+        DB::transaction(function () use ($businessId, $document, $putawayDocument, $sourceDocument, $userId) {
+            $document->loadMissing('lines');
+            $documentMeta = (array) $document->meta;
+            $receiptAttempt = max((int) data_get($documentMeta, 'receipt_attempt', 1), 1);
+
+            foreach ($document->lines as $line) {
+                $quantity = round((float) ($line->executed_qty ?: $line->expected_qty), 4);
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $stagingSlotId = (int) ($line->to_slot_id ?: 0);
+                if ($stagingSlotId <= 0) {
+                    throw new RuntimeException("Staging slot is missing for receipt line [{$line->id}].");
+                }
+
+                $this->inventoryMovementService->applyMovement([
+                    'business_id' => $businessId,
+                    'location_id' => $document->location_id,
+                    'document_id' => $document->id,
+                    'document_line_id' => $line->id,
+                    'source_type' => $document->source_type,
+                    'source_id' => $document->source_id,
+                    'source_line_id' => $line->source_line_id,
+                    'movement_type' => 'receipt_reopen',
+                    'direction' => 'out',
+                    'product_id' => $line->product_id,
+                    'variation_id' => $line->variation_id,
+                    'from_area_id' => $line->to_area_id,
+                    'from_slot_id' => $stagingSlotId,
+                    'from_status' => 'staged_in',
+                    'lot_number' => $line->lot_number,
+                    'expiry_date' => optional($line->expiry_date)->toDateString(),
+                    'quantity' => $quantity,
+                    'unit_cost' => $line->unit_cost,
+                    'reason_code' => 'receipt_reopen',
+                    'idempotency_key' => 'receipt-reopen-' . $document->id . '-line-' . $line->id . '-attempt-' . $receiptAttempt,
+                    'created_by' => $userId,
+                ]);
+
+                $line->forceFill([
+                    'executed_qty' => round((float) $line->expected_qty, 4),
+                    'variance_qty' => 0,
+                    'inventory_status' => 'receiving',
+                    'result_status' => 'pending',
+                ])->save();
+            }
+
+            $sourceStatusBeforeReceipt = strtolower(trim((string) data_get($documentMeta, 'source_status_before_receipt', '')));
+            $sourceStatusChangedByReceipt = (bool) data_get($documentMeta, 'source_status_changed_by_receipt', false);
+            if (
+                $document->source_type === 'purchase'
+                && $sourceStatusChangedByReceipt
+                && $sourceStatusBeforeReceipt !== ''
+                && $sourceStatusBeforeReceipt !== 'received'
+                && (string) $sourceDocument->status === 'received'
+            ) {
+                $this->markPurchaseAsStatus($businessId, $sourceDocument, $sourceStatusBeforeReceipt);
+                $documentMeta['source_status_restored_on_reopen'] = $sourceStatusBeforeReceipt;
+            }
+            $documentMeta['source_status_after_receipt'] = (string) $sourceDocument->status;
+            $documentMeta['source_status_changed_by_receipt'] = false;
+
+            $nextSyncStatus = (string) $document->sync_status === 'not_required'
+                ? 'not_required'
+                : 'pending_sync';
+            $documentMeta['last_receipt_reopened_at'] = now()->toDateTimeString();
+            $documentMeta['last_receipt_reopened_attempt'] = $receiptAttempt;
+
+            $document->forceFill([
+                'status' => 'open',
+                'workflow_state' => 'pending_receipt',
+                'completed_at' => null,
+                'closed_at' => null,
+                'approved_by' => null,
+                'closed_by' => null,
+                'sync_status' => $nextSyncStatus,
+                'meta' => $documentMeta,
+            ])->save();
+
+            if ($putawayDocument) {
+                $putawayDocument->forceFill([
+                    'status' => 'open',
+                    'workflow_state' => 'pending',
+                    'completed_at' => null,
+                    'closed_at' => null,
+                    'closed_by' => null,
+                ])->save();
+            }
+        });
+
+        $receiptDocument = $document->fresh([
+            'lines.product',
+            'lines.variation',
+            'lines.toArea',
+            'lines.toSlot',
+        ]);
+
+        $this->putawayService->ensureDocumentForReceipt($receiptDocument, $userId);
 
         return $receiptDocument->fresh([
             'lines.product',
@@ -551,7 +726,7 @@ class ReceivingService
         return $sourceDocument;
     }
 
-    protected function locationSettingForSource(int $businessId, int $locationId): StorageLocationSetting
+    protected function locationSettingForSource(int $businessId, int $locationId, bool $allowDisabled = false): StorageLocationSetting
     {
         $settings = StorageLocationSetting::query()
             ->where('business_id', $businessId)
@@ -559,7 +734,16 @@ class ReceivingService
             ->where('status', 'active')
             ->first();
 
-        if (! $settings || $settings->execution_mode === 'off') {
+        if (! $settings && $allowDisabled) {
+            $settings = new StorageLocationSetting([
+                'business_id' => $businessId,
+                'location_id' => $locationId,
+                'execution_mode' => 'off',
+                'status' => 'active',
+            ]);
+        }
+
+        if (! $settings || ($settings->execution_mode === 'off' && ! $allowDisabled)) {
             throw new RuntimeException('Storage execution is not enabled for this location.');
         }
 
@@ -603,9 +787,23 @@ class ReceivingService
 
     protected function markPurchaseAsReceived(int $businessId, Transaction $purchase): void
     {
+        $this->markPurchaseAsStatus($businessId, $purchase, 'received');
+    }
+
+    protected function markPurchaseAsStatus(int $businessId, Transaction $purchase, string $targetStatus): void
+    {
+        $targetStatus = strtolower(trim($targetStatus));
+        if (! in_array($targetStatus, ['pending', 'ordered', 'received'], true)) {
+            throw new RuntimeException("Unsupported purchase status [{$targetStatus}] for receiving rollback.");
+        }
+
         $purchase->loadMissing('purchase_lines');
         $beforeStatus = (string) $purchase->status;
-        $purchase->update(['status' => 'received']);
+        if ($beforeStatus === $targetStatus) {
+            return;
+        }
+
+        $purchase->update(['status' => $targetStatus]);
 
         $currencyDetails = $this->transactionUtil->purchaseCurrencyDetails($businessId);
         foreach ($purchase->purchase_lines as $purchaseLine) {
@@ -621,6 +819,8 @@ class ReceivingService
         }
 
         $this->transactionUtil->adjustMappingPurchaseSellAfterEditingPurchase($beforeStatus, $purchase, null);
-        $this->productUtil->adjustStockOverSelling($purchase);
+        if ($targetStatus === 'received') {
+            $this->productUtil->adjustStockOverSelling($purchase);
+        }
     }
 }

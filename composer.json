@@ -116,6 +116,9 @@
         "entrypoints:check": [
             "@php scripts/generate-entrypoint-maps.php --check"
         ],
+        "entrypoints:test": [
+            "@php scripts/validate-entrypoint-maps.php"
+        ],
         "test:clean:aichat": [
             "@php -d error_reporting=8191 vendor/bin/phpunit Modules/Aichat/Tests"
         ]

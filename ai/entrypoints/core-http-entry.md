@@ -8,6 +8,17 @@ Use this map when the task is in the root Laravel app rather than a `Modules/*` 
 - Narrow first-pass reads for root routes, top-level controllers, and shared HTTP entry surfaces.
 - Open [core-http-controllers.md](./core-http-controllers.md) next when the task is clearly controller-owned.
 
+## Use when
+
+- Root-route behavior is changing and the module owner is not involved.
+- You need first-pass entry files for root HTTP flows.
+
+## Start here
+
+- [routes/web.php](../../routes/web.php)
+- [routes/api.php](../../routes/api.php)
+- [app/Http/Controllers/](../../app/Http/Controllers/)
+
 ## Verified paths
 
 ### Routes
@@ -28,6 +39,26 @@ Use this map when the task is in the root Laravel app rather than a `Modules/*` 
 
 - [core-http-controllers.md](./core-http-controllers.md)
 - [core-utils-index.md](./core-utils-index.md)
+
+## Common edit bundles
+
+- **Root route + controller bundle** — [routes/web.php](../../routes/web.php), [app/Http/Controllers/](../../app/Http/Controllers/)
+- **Install bootstrap bundle** — [routes/install_r.php](../../routes/install_r.php), [app/Http/Controllers/Install/](../../app/Http/Controllers/Install/)
+
+## Primary workflows
+
+- **Root route to controller trace** — start at `routes/web.php`, then open the targeted root controller.
+- **Install flow trace** — confirm `routes/install_r.php` and `app/Http/Controllers/Install/*` together.
+
+## Shared dependencies
+
+- Root controllers frequently depend on `App\Utils\*Util` and root FormRequests under `app/Http/Requests`.
+
+## Tests / verify
+
+- [tests/Feature](../../tests/Feature)
+- `php artisan route:list`
+- `php artisan test --filter=Feature`
 
 ## Search keywords
 

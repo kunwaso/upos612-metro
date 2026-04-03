@@ -3,6 +3,7 @@
 namespace Modules\StorageManager\Entities;
 
 use App\Product;
+use App\User;
 use App\Variation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,5 +45,25 @@ class StorageInventoryMovement extends Model
     public function variation(): BelongsTo
     {
         return $this->belongsTo(Variation::class, 'variation_id');
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getActorLabelAttribute(): string
+    {
+        $actorName = trim((string) optional($this->createdByUser)->user_full_name);
+
+        if ($actorName !== '') {
+            return $actorName;
+        }
+
+        if (! empty($this->created_by)) {
+            return '#' . $this->created_by;
+        }
+
+        return (string) __('lang_v1.system');
     }
 }

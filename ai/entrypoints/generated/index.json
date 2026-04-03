@@ -1,0 +1,210 @@
+{
+    "kind": "index",
+    "title": "Entry Map Index",
+    "purpose": "Start here when the correct repo area is unclear.",
+    "triggers": [
+        "unclear repo area",
+        "where do I start"
+    ],
+    "verified_paths": {
+        "routes": [],
+        "controllers": [],
+        "views": [],
+        "requests": [],
+        "services": [],
+        "utils": [],
+        "models": [],
+        "jobs": [],
+        "notifications": [],
+        "assets": [],
+        "tests": []
+    },
+    "route_prefixes": [],
+    "search_keywords": [
+        "core-http-entry",
+        "entrypoints",
+        "module-"
+    ],
+    "related_docs": [
+        "ai/entrypoints/README.md",
+        "ai/entrypoints/_TEMPLATE.md"
+    ],
+    "workflows": [],
+    "edit_bundles": [],
+    "dependencies": {
+        "requests": [],
+        "services": [],
+        "utils": [],
+        "models": []
+    },
+    "tests": [],
+    "verify_commands": [
+        "composer entrypoints:check",
+        "composer entrypoints:test"
+    ],
+    "last_reviewed": "2026-04-03",
+    "entries": [
+        {
+            "trigger": "Core (root), root routes, app/Http/Controllers, app/Utils",
+            "map": "core-http-entry",
+            "notes": "Deeper root maps: core-http-controllers, core-utils-index",
+            "status": "local"
+        },
+        {
+            "trigger": "Aichat, chat drawer, Telegram, quote wizard",
+            "map": "module-Aichat",
+            "notes": "Local module folder present; admin chat plus shared chat routes",
+            "status": "local"
+        },
+        {
+            "trigger": "Cms, storefront, shop/*, blog, contact-us",
+            "map": "module-Cms",
+            "notes": "Deepest storefront map in this folder",
+            "status": "local"
+        },
+        {
+            "trigger": "Essentials, HRM, attendance, payroll, leave, todo",
+            "map": "module-Essentials",
+            "notes": "Local module folder present; `Routes/api.php` exists but is empty in this checkout",
+            "status": "local"
+        },
+        {
+            "trigger": "Mailbox, inbox, Gmail OAuth, IMAP, compose",
+            "map": "module-Mailbox",
+            "notes": "Local module folder present; module README exists",
+            "status": "local"
+        },
+        {
+            "trigger": "Projectauto, tasks, workflows, builder",
+            "map": "module-Projectauto",
+            "notes": "Local module folder present; workflow-wizard doc exists",
+            "status": "local"
+        },
+        {
+            "trigger": "StorageManager, warehouse, inbound, putaway, counts",
+            "map": "module-StorageManager",
+            "notes": "Local module folder present; no `Routes/api.php` file in this checkout",
+            "status": "local"
+        },
+        {
+            "trigger": "VasAccounting, vas-accounting, vouchers, budgets, reports",
+            "map": "module-VasAccounting",
+            "notes": "Local module folder present; API controller subfolder exists",
+            "status": "local"
+        },
+        {
+            "trigger": "Accounting",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "AiAssistance",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "AssetManagement",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Connector",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Crm",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "CustomDashboard",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Ecommerce",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "FieldForce",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Gym",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Hms",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "InboxReport",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Manufacturing",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "ProductCatalogue",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Project",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Repair",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Spreadsheet",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Superadmin",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "Woocommerce",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        },
+        {
+            "trigger": "ZatcaIntegrationKsa",
+            "map": null,
+            "notes": "not in checkout",
+            "status": "enabled_missing"
+        }
+    ]
+}

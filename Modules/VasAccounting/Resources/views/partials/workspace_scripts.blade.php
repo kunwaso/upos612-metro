@@ -109,7 +109,9 @@
 
             if (cards.length === 0) {
                 $target.html(
-                    '<div class="col-12"><div class="alert alert-light-warning mb-0">' + escapeHtml(messages.noKpiData) + '</div></div>'
+                    '<div class="row g-5 g-xl-8" data-vas-kpi-strip>' +
+                    '  <div class="col-12"><div class="alert alert-light-warning mb-0">' + escapeHtml(messages.noKpiData) + '</div></div>' +
+                    '</div>'
                 );
                 return;
             }
@@ -148,7 +150,9 @@
                     '</div>';
             }).join('');
 
-            $target.html(html);
+            $target.html(
+                '<div class="row g-5 g-xl-8" data-vas-kpi-strip>' + html + '</div>'
+            );
         };
 
         const renderFailureList = function (targetSelector, payload) {

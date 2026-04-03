@@ -1,0 +1,192 @@
+{
+    "kind": "module",
+    "title": "Essentials",
+    "purpose": "Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `/hrm/*`.",
+    "triggers": [
+        "attendance",
+        "Essentials",
+        "HRM",
+        "leave",
+        "payroll",
+        "todo"
+    ],
+    "verified_paths": {
+        "routes": [
+            {
+                "path": "Modules/Essentials/Routes/web.php",
+                "summary": "dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes",
+                "exists": true
+            },
+            {
+                "path": "Modules/Essentials/Routes/api.php",
+                "summary": "present but empty placeholder in this checkout",
+                "exists": true
+            }
+        ],
+        "controllers": [
+            "Modules/Essentials/Http/Controllers",
+            "Modules/Essentials/Http/Controllers/AttendanceController.php",
+            "Modules/Essentials/Http/Controllers/DashboardController.php",
+            "Modules/Essentials/Http/Controllers/DataController.php",
+            "Modules/Essentials/Http/Controllers/DocumentController.php",
+            "Modules/Essentials/Http/Controllers/DocumentShareController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsHolidayController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsLeaveController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsMessageController.php",
+            "Modules/Essentials/Http/Controllers/EssentialsSettingsController.php",
+            "Modules/Essentials/Http/Controllers/InstallController.php",
+            "Modules/Essentials/Http/Controllers/KnowledgeBaseController.php",
+            "Modules/Essentials/Http/Controllers/PayrollController.php",
+            "Modules/Essentials/Http/Controllers/ReminderController.php",
+            "Modules/Essentials/Http/Controllers/SalesTargetController.php",
+            "Modules/Essentials/Http/Controllers/ShiftController.php",
+            "Modules/Essentials/Http/Controllers/ToDoController.php",
+            "Modules/Essentials/Http/Controllers/TranscriptController.php"
+        ],
+        "views": [
+            "Modules/Essentials/Resources/views",
+            "Modules/Essentials/Resources/views/allowance_deduction",
+            "Modules/Essentials/Resources/views/attendance",
+            "Modules/Essentials/Resources/views/custom_dashboard",
+            "Modules/Essentials/Resources/views/dashboard",
+            "Modules/Essentials/Resources/views/document",
+            "Modules/Essentials/Resources/views/document_share",
+            "Modules/Essentials/Resources/views/holiday",
+            "Modules/Essentials/Resources/views/knowledge_base",
+            "Modules/Essentials/Resources/views/layouts",
+            "Modules/Essentials/Resources/views/leave",
+            "Modules/Essentials/Resources/views/leave_type",
+            "Modules/Essentials/Resources/views/memos",
+            "Modules/Essentials/Resources/views/messages",
+            "Modules/Essentials/Resources/views/partials",
+            "Modules/Essentials/Resources/views/payroll",
+            "Modules/Essentials/Resources/views/reminder",
+            "Modules/Essentials/Resources/views/reports",
+            "Modules/Essentials/Resources/views/sales_targets",
+            "Modules/Essentials/Resources/views/settings",
+            "Modules/Essentials/Resources/views/todo",
+            "Modules/Essentials/Resources/views/transcript"
+        ],
+        "requests": [
+            "Modules/Essentials/Http/Requests",
+            "Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php",
+            "Modules/Essentials/Http/Requests/StoreTranscriptRequest.php",
+            "Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php"
+        ],
+        "services": [],
+        "utils": [
+            "Modules/Essentials/Utils",
+            "Modules/Essentials/Utils/EssentialsUtil.php",
+            "Modules/Essentials/Utils/TranscriptTranslationUtil.php",
+            "Modules/Essentials/Utils/TranscriptUtil.php"
+        ],
+        "models": [
+            "Modules/Essentials/Entities/Document.php",
+            "Modules/Essentials/Entities/DocumentShare.php",
+            "Modules/Essentials/Entities/EssentialsAllowanceAndDeduction.php",
+            "Modules/Essentials/Entities/EssentialsAttendance.php",
+            "Modules/Essentials/Entities/EssentialsHoliday.php",
+            "Modules/Essentials/Entities/EssentialsLeave.php",
+            "Modules/Essentials/Entities/EssentialsLeaveType.php",
+            "Modules/Essentials/Entities/EssentialsMessage.php",
+            "Modules/Essentials/Entities/EssentialsTodoComment.php",
+            "Modules/Essentials/Entities/EssentialsTranscript.php",
+            "Modules/Essentials/Entities/EssentialsUserAllowancesAndDeduction.php",
+            "Modules/Essentials/Entities/EssentialsUserSalesTarget.php",
+            "Modules/Essentials/Entities/EssentialsUserShift.php",
+            "Modules/Essentials/Entities/KnowledgeBase.php",
+            "Modules/Essentials/Entities/PayrollGroup.php",
+            "Modules/Essentials/Entities/PayrollGroupTransaction.php",
+            "Modules/Essentials/Entities/Reminder.php",
+            "Modules/Essentials/Entities/Shift.php",
+            "Modules/Essentials/Entities/ToDo.php"
+        ],
+        "jobs": [],
+        "notifications": [
+            "Modules/Essentials/Notifications",
+            "Modules/Essentials/Notifications/DocumentShareNotification.php",
+            "Modules/Essentials/Notifications/LeaveStatusNotification.php",
+            "Modules/Essentials/Notifications/NewLeaveNotification.php",
+            "Modules/Essentials/Notifications/NewMessageNotification.php",
+            "Modules/Essentials/Notifications/NewTaskCommentNotification.php",
+            "Modules/Essentials/Notifications/NewTaskDocumentNotification.php",
+            "Modules/Essentials/Notifications/NewTaskNotification.php",
+            "Modules/Essentials/Notifications/PayrollNotification.php"
+        ],
+        "assets": [
+            "Modules/Essentials/Resources/assets",
+            "Modules/Essentials/Resources/assets/js/app.js",
+            "Modules/Essentials/Resources/assets/sass/app.scss"
+        ],
+        "tests": []
+    },
+    "route_prefixes": [
+        "essentials",
+        "hrm"
+    ],
+    "search_keywords": [
+        "attendance",
+        "Essentials",
+        "essentials",
+        "hrm",
+        "knowledge-base",
+        "leave",
+        "payroll",
+        "todo",
+        "transcripts"
+    ],
+    "related_docs": [
+        "ai/laravel-conventions.md",
+        "ai/security-and-auth.md",
+        "ai/ui-components.md"
+    ],
+    "workflows": [],
+    "edit_bundles": [],
+    "dependencies": {
+        "requests": [
+            "Modules\\Essentials\\Http\\Requests\\PreviewTranscriptRequest",
+            "Modules\\Essentials\\Http\\Requests\\StoreTranscriptRequest",
+            "Modules\\Essentials\\Http\\Requests\\TranslateTranscriptRequest"
+        ],
+        "services": [],
+        "utils": [
+            "App\\Utils\\BusinessUtil",
+            "App\\Utils\\ModuleUtil",
+            "App\\Utils\\TransactionUtil",
+            "App\\Utils\\Util",
+            "Modules\\Essentials\\Utils\\EssentialsUtil",
+            "Modules\\Essentials\\Utils\\TranscriptTranslationUtil",
+            "Modules\\Essentials\\Utils\\TranscriptUtil"
+        ],
+        "models": [
+            "Modules\\Essentials\\Entities\\Document",
+            "Modules\\Essentials\\Entities\\DocumentShare",
+            "Modules\\Essentials\\Entities\\EssentialsAllowanceAndDeduction",
+            "Modules\\Essentials\\Entities\\EssentialsAttendance",
+            "Modules\\Essentials\\Entities\\EssentialsHoliday",
+            "Modules\\Essentials\\Entities\\EssentialsLeave",
+            "Modules\\Essentials\\Entities\\EssentialsLeaveType",
+            "Modules\\Essentials\\Entities\\EssentialsMessage",
+            "Modules\\Essentials\\Entities\\EssentialsTodoComment",
+            "Modules\\Essentials\\Entities\\EssentialsTranscript",
+            "Modules\\Essentials\\Entities\\EssentialsUserAllowancesAndDeduction",
+            "Modules\\Essentials\\Entities\\EssentialsUserSalesTarget",
+            "Modules\\Essentials\\Entities\\EssentialsUserShift",
+            "Modules\\Essentials\\Entities\\KnowledgeBase",
+            "Modules\\Essentials\\Entities\\PayrollGroup",
+            "Modules\\Essentials\\Entities\\Reminder",
+            "Modules\\Essentials\\Entities\\Shift",
+            "Modules\\Essentials\\Entities\\ToDo",
+            "Spatie\\Activitylog\\Models\\Activity",
+            "Spatie\\Permission\\Models\\Permission"
+        ]
+    },
+    "tests": [],
+    "verify_commands": [
+        "php artisan test --filter=Essentials"
+    ],
+    "last_reviewed": "2026-04-03"
+}

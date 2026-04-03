@@ -181,6 +181,8 @@ This keeps external evaluation grounded in local repo truth instead of drifting 
 
 - When the repo area is unclear, start with `ai/entrypoints/INDEX.md`, then open one root or module map before widening search.
 - Treat entry maps as a checkout-aware narrowing layer for route files, controller roots, and primary view directories.
+- Use `ai/entrypoints/generated/*.json` when you need structured fields for workflows, edit bundles, dependencies, or verify commands.
+- Update curated guidance in `ai/entrypoints/metadata.php`, then regenerate with `composer entrypoints:generate`.
 - Entry maps do **not** replace grep, semantic search, GitNexus, or repo-aware MCP tools; they only reduce blind first-pass reads.
 
 ### 2.2 File reading

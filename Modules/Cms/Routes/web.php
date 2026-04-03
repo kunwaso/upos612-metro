@@ -31,8 +31,15 @@ Route::redirect('shop/product', '/shop/catalog', 301);
 Route::get('shop/product/{id}', [Modules\Cms\Http\Controllers\CmsController::class, 'shopProductShow'])
     ->whereNumber('id')
     ->name('cms.store.product.show');
-Route::get('shop/cart', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCart'])->name('cms.store.cart');
-Route::get('shop/checkout', [Modules\Cms\Http\Controllers\CmsController::class, 'shopCheckout'])->name('cms.store.checkout');
+Route::get('shop/product/{id}/request-quote', [Modules\Cms\Http\Controllers\CmsController::class, 'rfqShow'])
+    ->whereNumber('id')
+    ->name('cms.store.rfq.show');
+Route::post('shop/product/{id}/request-quote', [Modules\Cms\Http\Controllers\CmsController::class, 'rfqStore'])
+    ->whereNumber('id')
+    ->middleware('throttle:10,1')
+    ->name('cms.store.rfq.store');
+Route::redirect('shop/cart', '/shop/catalog', 301)->name('cms.store.cart');
+Route::redirect('shop/checkout', '/shop/catalog', 301)->name('cms.store.checkout');
 Route::get('shop/account', [Modules\Cms\Http\Controllers\CmsController::class, 'shopAccount'])->name('cms.store.account');
 Route::get('shop/wishlist', [Modules\Cms\Http\Controllers\CmsController::class, 'shopWishlist'])->name('cms.store.wishlist');
 Route::get('shop/faq', [Modules\Cms\Http\Controllers\CmsController::class, 'shopFaq'])->name('cms.store.faq');

@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-lg" role="document">
   <div class="modal-content">
     <div class="modal-header mini_print">
-      <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn btn-icon btn-sm btn-active-light-primary no-print" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></button>
       <h3 class="modal-title">@lang( 'cash_register.register_details' ) ( {{ \Carbon::createFromFormat('Y-m-d H:i:s', $register_details->open_time)->format('jS M, Y h:i A') }} -  {{\Carbon::createFromFormat('Y-m-d H:i:s', $close_time)->format('jS M, Y h:i A')}} )</h3>
     </div>
 
@@ -76,7 +76,7 @@
         <i class="fa fa-print"></i> @lang( 'messages.print_detailed' )
       </button>
 
-      <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white no-print" 
+      <button type="button" class="btn btn-sm btn-light no-print" 
         data-dismiss="modal">@lang( 'messages.cancel' )
       </button>
     </div>

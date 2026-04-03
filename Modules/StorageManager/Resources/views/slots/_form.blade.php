@@ -1,4 +1,5 @@
 {{-- Shared form fields for create / edit storage slot --}}
+@php($slot = $slot ?? null)
 <div class="row gy-5">
     <div class="col-md-6">
         <label class="form-label required fw-semibold fs-6">@lang('business.location')</label>

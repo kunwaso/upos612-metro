@@ -1,0 +1,108 @@
+{
+    "kind": "core",
+    "title": "Core Utils Index",
+    "purpose": "Primary utility index for `app/Utils/*Util.php` and remaining helper/service files under `app/Utils`.",
+    "triggers": [
+        "App\\Utils dependency",
+        "cross-module helper behavior",
+        "shared util refactor"
+    ],
+    "verified_paths": {
+        "routes": [],
+        "controllers": [
+            "app/Http/Controllers"
+        ],
+        "views": [],
+        "requests": [
+            "app/Http/Requests"
+        ],
+        "services": [
+            "app/Services"
+        ],
+        "utils": [
+            "app/Utils",
+            "app/Utils/AccountTransactionUtil.php",
+            "app/Utils/BusinessUtil.php",
+            "app/Utils/CalendarEventUtil.php",
+            "app/Utils/CashRegisterUtil.php",
+            "app/Utils/ContactFeedProviderInterface.php",
+            "app/Utils/ContactFeedUtil.php",
+            "app/Utils/ContactUtil.php",
+            "app/Utils/FacebookContactFeedProvider.php",
+            "app/Utils/GlobalSearchUtil.php",
+            "app/Utils/GoogleContactFeedProvider.php",
+            "app/Utils/HomeMetronicDashboardUtil.php",
+            "app/Utils/InstallUtil.php",
+            "app/Utils/LinkedInContactFeedProvider.php",
+            "app/Utils/ModuleUtil.php",
+            "app/Utils/NotificationUtil.php",
+            "app/Utils/NumberFormatUtil.php",
+            "app/Utils/ProductActivityLogUtil.php",
+            "app/Utils/ProductCostingUtil.php",
+            "app/Utils/ProductUtil.php",
+            "app/Utils/QuoteDisplayPresenter.php",
+            "app/Utils/QuoteInvoiceReleaseService.php",
+            "app/Utils/QuoteUtil.php",
+            "app/Utils/RestaurantUtil.php",
+            "app/Utils/SalesOrderEditUtil.php",
+            "app/Utils/SerpApiGoogleContactFeedProvider.php",
+            "app/Utils/TaxUtil.php",
+            "app/Utils/TransactionUtil.php",
+            "app/Utils/UnifiedQuoteListUtil.php",
+            "app/Utils/Util.php"
+        ],
+        "models": [],
+        "jobs": [],
+        "notifications": [],
+        "assets": [],
+        "tests": [
+            "tests/Feature",
+            "tests/Unit"
+        ]
+    },
+    "route_prefixes": [],
+    "search_keywords": [
+        "App\\Utils",
+        "Util.php"
+    ],
+    "related_docs": [
+        "ai/database-map.md",
+        "ai/laravel-conventions.md"
+    ],
+    "workflows": [
+        {
+            "name": "Util caller impact pass",
+            "paths": [
+                "app/Http/Controllers",
+                "app/Utils",
+                "Modules"
+            ],
+            "notes": "Before changing shared utils, confirm likely callers across root and modules."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Util + caller bundle",
+            "paths": [
+                "app/Http/Controllers",
+                "app/Utils",
+                "Modules/*/Http/Controllers"
+            ],
+            "notes": "Most util edits require at least one caller update or verification read."
+        }
+    ],
+    "dependencies": {
+        "requests": [],
+        "services": [],
+        "utils": [],
+        "models": []
+    },
+    "tests": [
+        "tests/Feature",
+        "tests/Unit"
+    ],
+    "verify_commands": [
+        "php artisan test --filter=Unit"
+    ],
+    "last_reviewed": "2026-04-03"
+}

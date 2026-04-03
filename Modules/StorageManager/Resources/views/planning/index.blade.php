@@ -58,6 +58,51 @@
                 </div>
             </div>
 
+            @php
+                $groupableRows = collect($rows)->filter(fn ($row) => !empty($row['can_create_requisition']));
+            @endphp
+
+            @if((int) $locationId > 0)
+                <div class="card card-flush mb-6">
+                    <div class="card-header pt-6">
+                        <h3 class="card-title fw-bold text-gray-900">@lang('lang_v1.grouped_purchase_requisition')</h3>
+                    </div>
+                    <div class="card-body pt-0">
+                        @if($purchaseRequisitionEnabled && $groupableRows->isNotEmpty() && auth()->user()->can('purchase_requisition.create') && (auth()->user()->can('storage_manager.manage') || auth()->user()->can('storage_manager.approve')))
+                            <form method="POST" action="{{ route('storage-manager.planning.store-grouped', $locationId) }}" class="row g-5 align-items-end">
+                                @csrf
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">@lang('lang_v1.groupable_shortage_rows')</label>
+                                    <div class="form-control form-control-solid">{{ $groupableRows->count() }}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">@lang('lang_v1.total_grouped_shortage_qty')</label>
+                                    <div class="form-control form-control-solid">{{ format_quantity_value($groupableRows->sum('external_shortage_qty')) }}</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-semibold">@lang('purchase.required_by')</label>
+                                    <input type="date" name="delivery_date" class="form-control form-control-solid" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">@lang('lang_v1.notes_optional')</label>
+                                    <input type="text" name="notes" class="form-control form-control-solid" placeholder="@lang('lang_v1.notes_optional')" />
+                                </div>
+                                <div class="col-12">
+                                    <div class="text-muted fs-7 mb-3">@lang('lang_v1.grouped_purchase_requisition_help')</div>
+                                    <button type="submit" class="btn btn-primary">@lang('lang_v1.create_grouped_purchase_requisition')</button>
+                                </div>
+                            </form>
+                        @elseif(! $purchaseRequisitionEnabled)
+                            <div class="text-muted py-3">@lang('lang_v1.purchase_requisition_feature_disabled')</div>
+                        @elseif($groupableRows->isEmpty())
+                            <div class="text-muted py-3">@lang('lang_v1.no_groupable_purchasing_advisories')</div>
+                        @else
+                            <div class="text-muted py-3">@lang('lang_v1.grouped_purchase_requisition_permission_note')</div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <div class="card card-flush">
                 <div class="card-header pt-6">
                     <h3 class="card-title fw-bold text-gray-900">@lang('lang_v1.purchasing_advisories')</h3>
@@ -93,10 +138,27 @@
                                         <td>{{ format_quantity_value($row['external_shortage_qty'] ?? 0) }}</td>
                                         <td>
                                             @if(!empty($row['purchase_requisition_id']))
-                                                <div class="fw-semibold text-gray-900">{{ $row['purchase_requisition_ref'] ?? ('#' . $row['purchase_requisition_id']) }}</div>
+                                                <div class="fw-semibold text-gray-900">
+                                                    <a href="#"
+                                                        class="btn-modal text-primary"
+                                                        data-container=".view_modal"
+                                                        data-href="{{ action([\App\Http\Controllers\PurchaseRequisitionController::class, 'show'], [$row['purchase_requisition_id']]) }}">
+                                                        {{ $row['purchase_requisition_ref'] ?? ('#' . $row['purchase_requisition_id']) }}
+                                                    </a>
+                                                </div>
                                                 <div class="text-muted fs-8">{{ ucfirst((string) ($row['purchase_requisition_status'] ?? 'ordered')) }}</div>
+                                                @if(!empty($row['advisory_document_id']) && !empty($row['advisory_document_no']))
+                                                    <div class="text-muted fs-8">
+                                                        <a href="#"
+                                                            class="btn-modal text-muted"
+                                                            data-container=".view_modal"
+                                                            data-href="{{ route('storage-manager.planning.show', $row['advisory_document_id']) }}">
+                                                            {{ $row['advisory_document_no'] }}
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             @else
-                                                <span class="text-muted">—</span>
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <td class="text-end">
@@ -109,7 +171,20 @@
                                                     <button type="submit" class="btn btn-sm btn-light-primary">@lang('lang_v1.create_purchase_requisition')</button>
                                                 </form>
                                             @elseif(!empty($row['purchase_requisition_id']))
-                                                <a href="{{ route('purchase-requisition.index') }}" class="btn btn-sm btn-light">@lang('messages.view')</a>
+                                                <a href="#"
+                                                    class="btn btn-sm btn-light btn-modal"
+                                                    data-container=".view_modal"
+                                                    data-href="{{ action([\App\Http\Controllers\PurchaseRequisitionController::class, 'show'], [$row['purchase_requisition_id']]) }}">
+                                                    @lang('messages.view')
+                                                </a>
+                                                @if(!empty($row['advisory_document_id']))
+                                                    <a href="#"
+                                                        class="btn btn-sm btn-light-primary btn-modal"
+                                                        data-container=".view_modal"
+                                                        data-href="{{ route('storage-manager.planning.show', $row['advisory_document_id']) }}">
+                                                        @lang('lang_v1.view_advisory')
+                                                    </a>
+                                                @endif
                                             @else
                                                 <span class="text-muted fs-8">@lang('lang_v1.requisition_already_open')</span>
                                             @endif
@@ -129,3 +204,4 @@
     </div>
 </div>
 @endsection
+

@@ -149,6 +149,11 @@ class VasAccountingShellRenderTest extends TestCase
                 ['label' => 'Unassigned', 'value' => 1],
                 ['label' => 'Aged > 7 days', 'value' => 1],
                 ['label' => 'Older than 14 days', 'value' => 0],
+                ['label' => 'Reassignment loopbacks (14 days)', 'value' => 1],
+                ['label' => 'Churned documents (14 days)', 'value' => 1],
+                ['label' => 'Loopback hotspot documents (14 days)', 'value' => 1],
+                ['label' => 'Reason-volatile documents (14 days)', 'value' => 1],
+                ['label' => 'Critical reassignment hotspots (14 days)', 'value' => 1],
             ],
             'sections' => [
                 [
@@ -157,6 +162,14 @@ class VasAccountingShellRenderTest extends TestCase
                     'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
                     'rows' => [
                         ['2026-03-24', '2', '1', '1', '0'],
+                    ],
+                ],
+                [
+                    'title' => 'Owner Aging Trend',
+                    'subtitle' => 'Weekly aging trend for the busiest assignee queues so managers can see whose backlog is getting older.',
+                    'columns' => ['Owner', 'Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '2026-03-24', '2', '1', '1', '0'],
                     ],
                 ],
                 [
@@ -189,6 +202,78 @@ class VasAccountingShellRenderTest extends TestCase
                     'columns' => ['Date', 'Claimed', 'Reassigned', 'Resolved'],
                     'rows' => [
                         ['2026-04-01', '1', '0', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reassignment Trend by Reviewer',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the reviewer who moved the work.',
+                    'columns' => ['Reviewer', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '2026-04-02', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reassignment Trend by Assignee',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the assignee receiving the work.',
+                    'columns' => ['Assignee', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Le Vendor Review', '2026-04-02', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reassignment Path Mix',
+                    'subtitle' => 'See how procurement discrepancy ownership is moving between previous and new owners across the last fourteen days.',
+                    'columns' => ['Previous Owner', 'New Owner', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Tran Procurement Lead', 'Le Vendor Review', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reassignment Reason Mix',
+                    'subtitle' => 'Top stated reasons for procurement discrepancy reassignments across the last fourteen days.',
+                    'columns' => ['Reason', 'Reassignments', 'Documents', 'Reviewers'],
+                    'rows' => [
+                        ['Moved to vendor specialist', '1', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Reviewer-Assignee Reassignment Matrix',
+                    'subtitle' => 'Cross-matrix of which reviewers are routing procurement discrepancies to which assignees.',
+                    'columns' => ['Reviewer', 'Assignee', 'Reassignments', 'Documents', 'Reason Types'],
+                    'rows' => [
+                        ['Tran Procurement Lead', 'Le Vendor Review', '1', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Document Reassignment Churn',
+                    'subtitle' => 'Document-level view of reassignment volume and loopback risk in the procurement discrepancy queue.',
+                    'columns' => ['Document', 'Current Owner', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types'],
+                    'rows' => [
+                        ['AP-00043', 'Le Vendor Review', '3', '1', '2', '2'],
+                    ],
+                ],
+                [
+                    'title' => 'Loopback Hotspots',
+                    'subtitle' => 'Documents that looped back to prior owners, signaling repeated handoff risk in the discrepancy queue.',
+                    'columns' => ['Document', 'Loopbacks', 'Reassignments', 'Current Owner', 'Reviewers', 'Reason Types'],
+                    'rows' => [
+                        ['AP-00043', '1', '3', 'Le Vendor Review', '2', '2'],
+                    ],
+                ],
+                [
+                    'title' => 'Reason Volatility Hotspots',
+                    'subtitle' => 'Documents reassigned under multiple reasons or reviewers, signaling inconsistent triage rationale.',
+                    'columns' => ['Document', 'Reason Types', 'Reviewers', 'Reassignments', 'Loopbacks', 'Current Owner'],
+                    'rows' => [
+                        ['AP-00043', '2', '2', '3', '1', 'Le Vendor Review'],
+                    ],
+                ],
+                [
+                    'title' => 'Critical Reassignment Hotspots',
+                    'subtitle' => 'High-churn documents with loopback or triage volatility signals that need active escalation.',
+                    'columns' => ['Document', 'Risk Flags', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types', 'Current Owner'],
+                    'rows' => [
+                        ['AP-00043', 'High churn, Loopback, Multi-reviewer, Multi-reason', '3', '1', '2', '2', 'Le Vendor Review'],
                     ],
                 ],
                 [
@@ -241,10 +326,25 @@ class VasAccountingShellRenderTest extends TestCase
 
         $this->assertStringContainsString('Procurement Discrepancy Ownership', $html);
         $this->assertStringContainsString('Assignment Aging Trend', $html);
+        $this->assertStringContainsString('Owner Aging Trend', $html);
         $this->assertStringContainsString('Owner Aging Mix', $html);
         $this->assertStringContainsString('Stale Owner Backlog', $html);
         $this->assertStringContainsString('Unassigned Discrepancies', $html);
         $this->assertStringContainsString('Ownership Activity Trend', $html);
+        $this->assertStringContainsString('Reassignment Trend by Reviewer', $html);
+        $this->assertStringContainsString('Reassignment Trend by Assignee', $html);
+        $this->assertStringContainsString('Reassignment Path Mix', $html);
+        $this->assertStringContainsString('Reassignment Reason Mix', $html);
+        $this->assertStringContainsString('Reviewer-Assignee Reassignment Matrix', $html);
+        $this->assertStringContainsString('Document Reassignment Churn', $html);
+        $this->assertStringContainsString('Reassignment loopbacks (14 days)', $html);
+        $this->assertStringContainsString('Churned documents (14 days)', $html);
+        $this->assertStringContainsString('Loopback hotspot documents (14 days)', $html);
+        $this->assertStringContainsString('Loopback Hotspots', $html);
+        $this->assertStringContainsString('Reason-volatile documents (14 days)', $html);
+        $this->assertStringContainsString('Reason Volatility Hotspots', $html);
+        $this->assertStringContainsString('Critical reassignment hotspots (14 days)', $html);
+        $this->assertStringContainsString('Critical Reassignment Hotspots', $html);
         $this->assertStringContainsString('Reviewer Throughput', $html);
         $this->assertStringContainsString('Ownership controls', $html);
         $this->assertStringContainsString('Assign unassigned backlog to', $html);
@@ -319,8 +419,39 @@ class VasAccountingShellRenderTest extends TestCase
             'summary' => [
                 ['label' => 'Procurement ownership actions', 'value' => 4],
                 ['label' => 'Procurement reassignments', 'value' => 2],
+                ['label' => 'Procurement reassignment loopbacks', 'value' => 1],
+                ['label' => 'Procurement churned documents', 'value' => 1],
+                ['label' => 'Procurement loopback hotspot documents', 'value' => 1],
+                ['label' => 'Procurement reason-volatile documents', 'value' => 1],
+                ['label' => 'Procurement critical hotspots', 'value' => 1],
+                ['label' => 'Active procurement reviewers', 'value' => 2],
+                ['label' => 'Procurement discrepancies aged > 14 days', 'value' => 1],
             ],
             'sections' => [
+                [
+                    'title' => 'Procurement Ownership Actions by Reviewer',
+                    'subtitle' => 'Reviewer-level rollup of claimed, reassigned, and resolved procurement discrepancy actions recorded during the close window.',
+                    'columns' => ['Reviewer', 'Claimed', 'Reassigned', 'Resolved', 'Documents', 'Total Actions'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '1', '1', '1', '2', '3'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Ownership Actions by Assignee',
+                    'subtitle' => 'Assignee-level rollup of received and resolved procurement discrepancy work recorded during the close window.',
+                    'columns' => ['Assignee', 'Received', 'Resolved', 'Documents', 'Total Actions'],
+                    'rows' => [
+                        ['Le Vendor Review', '2', '1', '2', '3'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Ownership Activity Trend',
+                    'subtitle' => 'Daily claimed, reassigned, and resolved procurement discrepancy activity across the close window.',
+                    'columns' => ['Date', 'Claimed', 'Reassigned', 'Resolved'],
+                    'rows' => [
+                        ['2026-04-02', '1', '1', '1'],
+                    ],
+                ],
                 [
                     'title' => 'Procurement Ownership Activity',
                     'subtitle' => 'Canonical audit history for procurement discrepancy ownership actions recorded during the close period.',
@@ -335,6 +466,94 @@ class VasAccountingShellRenderTest extends TestCase
                     'columns' => ['Date/Time', 'Document', 'Previous Owner', 'New Owner', 'Reviewer', 'Reason'],
                     'rows' => [
                         ['2026-04-02 09:15', 'AP-00043', 'Tran Procurement Lead', 'Le Vendor Review', 'Tran Procurement Lead', 'Moved to vendor specialist'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment Path Mix',
+                    'subtitle' => 'Route-level summary of how procurement discrepancy ownership moved between previous and new owners during close.',
+                    'columns' => ['Previous Owner', 'New Owner', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Tran Procurement Lead', 'Le Vendor Review', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment Trend by Reviewer',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the reviewer who moved the work during close.',
+                    'columns' => ['Reviewer', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '2026-04-02', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment Trend by Assignee',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the assignee receiving work during close.',
+                    'columns' => ['Assignee', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => [
+                        ['Le Vendor Review', '2026-04-02', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment Reason Mix',
+                    'subtitle' => 'Top stated reasons for procurement discrepancy reassignment decisions taken during close.',
+                    'columns' => ['Reason', 'Reassignments', 'Documents', 'Reviewers'],
+                    'rows' => [
+                        ['Moved to vendor specialist', '1', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reviewer-Assignee Reassignment Matrix',
+                    'subtitle' => 'Cross-matrix of reviewers routing procurement discrepancies to assignees during close.',
+                    'columns' => ['Reviewer', 'Assignee', 'Reassignments', 'Documents', 'Reason Types'],
+                    'rows' => [
+                        ['Tran Procurement Lead', 'Le Vendor Review', '1', '1', '1'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reassignment Churn',
+                    'subtitle' => 'Document-level view of procurement reassignment volume and loopback risk during close.',
+                    'columns' => ['Document', 'Current Owner', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types'],
+                    'rows' => [
+                        ['AP-00043', 'Le Vendor Review', '3', '1', '2', '2'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Loopback Hotspots',
+                    'subtitle' => 'Documents that looped back to prior owners during close, signaling repeated reassignment risk.',
+                    'columns' => ['Document', 'Loopbacks', 'Reassignments', 'Current Owner', 'Reviewers', 'Reason Types'],
+                    'rows' => [
+                        ['AP-00043', '1', '3', 'Le Vendor Review', '2', '2'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Reason Volatility Hotspots',
+                    'subtitle' => 'Documents reassigned under multiple reasons or reviewers during close, signaling triage inconsistency.',
+                    'columns' => ['Document', 'Reason Types', 'Reviewers', 'Reassignments', 'Loopbacks', 'Current Owner'],
+                    'rows' => [
+                        ['AP-00043', '2', '2', '3', '1', 'Le Vendor Review'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Critical Reassignment Hotspots',
+                    'subtitle' => 'High-churn procurement discrepancy documents with loopback or triage volatility signals during close.',
+                    'columns' => ['Document', 'Risk Flags', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types', 'Current Owner'],
+                    'rows' => [
+                        ['AP-00043', 'High churn, Loopback, Multi-reviewer, Multi-reason', '3', '1', '2', '2', 'Le Vendor Review'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Ownership Aging Trend',
+                    'subtitle' => 'Weekly backlog aging trend for unresolved procurement discrepancies assigned during the close window horizon.',
+                    'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => [
+                        ['2026-03-24', '2', '1', '1', '0'],
+                    ],
+                ],
+                [
+                    'title' => 'Procurement Ownership Aging Trend by Owner',
+                    'subtitle' => 'Export-oriented owner breakdown for the busiest procurement discrepancy queues in the close window.',
+                    'columns' => ['Owner', 'Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => [
+                        ['Tran Procurement Lead', '2026-03-24', '2', '1', '1', '0'],
                     ],
                 ],
             ],
@@ -353,8 +572,28 @@ class VasAccountingShellRenderTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('Close Packet - March 2026', $html);
+        $this->assertStringContainsString('Active procurement reviewers', $html);
+        $this->assertStringContainsString('Procurement reassignment loopbacks', $html);
+        $this->assertStringContainsString('Procurement churned documents', $html);
+        $this->assertStringContainsString('Procurement loopback hotspot documents', $html);
+        $this->assertStringContainsString('Procurement reason-volatile documents', $html);
+        $this->assertStringContainsString('Procurement critical hotspots', $html);
+        $this->assertStringContainsString('Procurement Ownership Actions by Reviewer', $html);
+        $this->assertStringContainsString('Procurement Ownership Actions by Assignee', $html);
+        $this->assertStringContainsString('Procurement Ownership Activity Trend', $html);
         $this->assertStringContainsString('Procurement Ownership Activity', $html);
         $this->assertStringContainsString('Procurement Reassignment History', $html);
+        $this->assertStringContainsString('Procurement Reassignment Path Mix', $html);
+        $this->assertStringContainsString('Procurement Reassignment Trend by Reviewer', $html);
+        $this->assertStringContainsString('Procurement Reassignment Trend by Assignee', $html);
+        $this->assertStringContainsString('Procurement Reassignment Reason Mix', $html);
+        $this->assertStringContainsString('Procurement Reviewer-Assignee Reassignment Matrix', $html);
+        $this->assertStringContainsString('Procurement Reassignment Churn', $html);
+        $this->assertStringContainsString('Procurement Loopback Hotspots', $html);
+        $this->assertStringContainsString('Procurement Reason Volatility Hotspots', $html);
+        $this->assertStringContainsString('Procurement Critical Reassignment Hotspots', $html);
+        $this->assertStringContainsString('Procurement Ownership Aging Trend', $html);
+        $this->assertStringContainsString('Procurement Ownership Aging Trend by Owner', $html);
         $this->assertStringContainsString('Moved to vendor specialist', $html);
         $this->assertStringContainsString('Le Vendor Review', $html);
         $this->assertStringContainsString('Back to reports', $html);

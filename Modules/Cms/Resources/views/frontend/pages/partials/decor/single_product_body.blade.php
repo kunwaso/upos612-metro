@@ -16,6 +16,15 @@
         <!-- start section -->
         <section class="pt-40px pb-0">
             <div class="container">
+                @if (session('status'))
+                <div class="row mb-20px">
+                    <div class="col-12">
+                        <div class="p-15px bg-very-light-gray border-radius-6px text-dark-gray">
+                            {{ session('status') }}
+                        </div>
+                    </div>
+                </div>
+                @endif
                 <div class="row">
                     <div class="col-lg-6 md-mb-40px" data-anime='{ "translate": [0, 0], "opacity": [0,1], "duration": 600, "delay": 100, "staggervalue": 150, "easing": "easeOutQuad" }'>
                         <div class="row overflow-hidden position-relative">
@@ -98,10 +107,10 @@
                                 <input class="qty-text" type="text" id="1" value="1" aria-label="qty-text" />
                                 <button type="button" class="qty-plus">+</button>
                             </div>
-                            <a href="{{ route('cms.store.cart') }}" class="btn btn-cart btn-extra-large btn-switch-text btn-box-shadow btn-none-transform btn-dark-gray left-icon border-radius-5px me-15px xs-me-0 order-3 order-sm-2">
+                            <a href="{{ route('cms.store.rfq.show', ['id' => $detail['id']]) }}" class="btn btn-cart btn-extra-large btn-switch-text btn-box-shadow btn-none-transform btn-dark-gray left-icon border-radius-5px me-15px xs-me-0 order-3 order-sm-2">
                                 <span>
-                                    <span><i class="feather icon-feather-shopping-bag"></i></span>
-                                    <span class="btn-double-text" data-text="Add to cart">Add to cart</span> 
+                                    <span><i class="feather icon-feather-mail"></i></span>
+                                    <span class="btn-double-text" data-text="{{ __('cms::lang.storefront_request_quote') }}">{{ __('cms::lang.storefront_request_quote') }}</span>
                                 </span>
                             </a>
                             <a href="#" class="wishlist d-flex align-items-center justify-content-center border border-radius-5px border-color-extra-medium-gray order-2 order-sm-3">

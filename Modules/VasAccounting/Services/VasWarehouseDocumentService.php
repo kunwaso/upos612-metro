@@ -111,6 +111,10 @@ class VasWarehouseDocumentService
             ->with('lines')
             ->findOrFail((int) $document->posted_voucher_id);
 
+        if ((string) $voucher->status !== 'posted') {
+            throw new RuntimeException(__('vasaccounting::lang.inventory_reverse_requires_posted_voucher'));
+        }
+
         $reversal = $this->postingService->reverseVoucher($voucher, $userId);
 
         $document->status = 'reversed';

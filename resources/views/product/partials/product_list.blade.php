@@ -61,7 +61,7 @@
                         &nbsp;
                         <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-accent  update_product_location" data-type="add">@lang('lang_v1.add_to_location')</button>
                         &nbsp;
-                        <button type="button" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-neutral update_product_location" data-type="remove">@lang('lang_v1.remove_from_location')</button>
+                        <button type="button" class="btn btn-sm btn-light update_product_location" data-type="remove">@lang('lang_v1.remove_from_location')</button>
                     @endcan
                 
                 &nbsp;

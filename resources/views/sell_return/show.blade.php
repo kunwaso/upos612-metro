@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-xl no-print" role="document">
   <div class="modal-content">
     <div class="modal-header">
-    <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary no-print" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></button>
     <h4 class="modal-title" id="modalTitle"> @lang('lang_v1.sell_return') (<b>@lang('sale.invoice_no'):</b> {{ $sell->return_parent->invoice_no }})
     </h4>
 </div>
@@ -123,7 +123,7 @@
 </div>
 <div class="modal-footer">
     <a href="#" class="print-invoice btn btn-primary" data-href="{{action([\App\Http\Controllers\SellReturnController::class, 'printInvoice'], [$sell->return_parent->id])}}"><i class="fa fa-print" aria-hidden="true"></i> @lang("messages.print")</a>
-      <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white no-print" data-dismiss="modal">@lang( 'messages.close' )</button>
+      <button type="button" class="btn btn-sm btn-light no-print" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
     </div>
   </div>
 </div>

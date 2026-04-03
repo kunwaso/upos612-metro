@@ -86,10 +86,20 @@
                     </thead>
                     <tbody>
                         @forelse ($vouchers as $voucher)
+                            @php
+                                $sourceType = trim((string) $voucher->source_type);
+                                $sourceLabel = $sourceType !== '' ? preg_replace('/(?:_reversal)+$/', '', $sourceType) : __('vasaccounting::lang.views.vouchers.index.source_manual');
+                                $isReversalSource = (bool) $voucher->is_reversal || ($sourceType !== '' && str_ends_with(strtolower($sourceType), '_reversal'));
+                            @endphp
                             <tr>
                                 <td><a class="text-gray-900 fw-semibold" href="{{ route('vasaccounting.vouchers.show', $voucher->id) }}">{{ $voucher->voucher_no }}</a></td>
                                 <td>{{ $vasAccountingUtil->voucherTypeLabel((string) $voucher->voucher_type) }}</td>
-                                <td>{{ $voucher->source_type ?: __('vasaccounting::lang.views.vouchers.index.source_manual') }}</td>
+                                <td>
+                                    <span>{{ $sourceLabel }}</span>
+                                    @if ($isReversalSource)
+                                        <span class="badge badge-light-warning ms-2">{{ __('vasaccounting::lang.actions.reverse') }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $vasAccountingUtil->moduleAreaLabel((string) ($voucher->module_area ?: 'accounting')) }}</td>
                                 <td>{{ $voucher->posting_date }}</td>
                                 <td class="text-end">{{ number_format((float) $voucher->total_debit, 2) }}</td>

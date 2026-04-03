@@ -3,6 +3,7 @@
 namespace Modules\StorageManager\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\CompletePutawayRequest;
 use Modules\StorageManager\Services\PutawayService;
@@ -75,6 +76,43 @@ class PutawayController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
+                ->with('status', [
+                    'success' => false,
+                    'msg' => $exception->getMessage(),
+                ]);
+        }
+    }
+
+    public function reopen(Request $request, int $document)
+    {
+        if (! auth()->user()->can('storage_manager.operate')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $businessId = $request->session()->get('user.business_id');
+        $userId = (int) $request->session()->get('user.id');
+
+        $documentModel = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'putaway')
+            ->findOrFail($document);
+
+        try {
+            $this->putawayService->reopenPutaway(
+                $businessId,
+                $documentModel,
+                $userId
+            );
+
+            return redirect()
+                ->route('storage-manager.putaway.show', $document)
+                ->with('status', [
+                    'success' => true,
+                    'msg' => 'Putaway reopened successfully.',
+                ]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->back()
                 ->with('status', [
                     'success' => false,
                     'msg' => $exception->getMessage(),

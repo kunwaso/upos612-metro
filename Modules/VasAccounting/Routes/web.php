@@ -55,6 +55,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::get('/vouchers/{voucher}', [VoucherController::class, 'show'])->whereNumber('voucher')->name('vouchers.show');
         Route::post('/vouchers/{voucher}/post', [VoucherController::class, 'post'])->whereNumber('voucher')->name('vouchers.post');
         Route::post('/vouchers/{voucher}/reverse', [VoucherController::class, 'reverse'])->whereNumber('voucher')->name('vouchers.reverse');
+        Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy'])->whereNumber('voucher')->name('vouchers.destroy');
 
         Route::get('/cash-bank', [CashBankController::class, 'index'])->name('cash_bank.index');
         Route::post('/cash-bank/treasury-documents', [CashBankController::class, 'storeTreasuryDocument'])->name('cash_bank.treasury_documents.store');
@@ -116,6 +117,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory/warehouses', [InventoryController::class, 'storeWarehouse'])->name('inventory.warehouses.store');
         Route::post('/inventory/documents', [InventoryController::class, 'storeDocument'])->name('inventory.documents.store');
+        Route::get('/inventory/documents/{document}', [InventoryController::class, 'showDocument'])->whereNumber('document')->name('inventory.documents.show');
         Route::post('/inventory/documents/{document}/post', [InventoryController::class, 'postDocument'])->whereNumber('document')->name('inventory.documents.post');
         Route::post('/inventory/documents/{document}/reverse', [InventoryController::class, 'reverseDocument'])->whereNumber('document')->name('inventory.documents.reverse');
         Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');

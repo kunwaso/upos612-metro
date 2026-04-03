@@ -3,6 +3,16 @@
 
 Primary utility index for `app/Utils/*Util.php`.
 
+## Use when
+
+- You are changing shared helper behavior used by multiple controllers/modules.
+- You need to find util ownership quickly before refactoring.
+
+## Start here
+
+- [app/Utils/](../../app/Utils/)
+- [app/Http/Controllers/](../../app/Http/Controllers/)
+
 This map is intentionally Util-focused. The first table lists the primary `*Util.php` classes, and the companion section below lists the remaining PHP files in `app/Utils/` so agents can see the full directory shape without assuming every file follows the Util naming pattern.
 
 | Util | Purpose | Grep hint |
@@ -41,6 +51,24 @@ This map is intentionally Util-focused. The first table lists the primary `*Util
 | [QuoteDisplayPresenter.php](../../app/Utils/QuoteDisplayPresenter.php) | Quote display and presentation formatting helpers. | `rg -n 'QuoteDisplayPresenter|QuoteDisplay' app routes Modules` |
 | [QuoteInvoiceReleaseService.php](../../app/Utils/QuoteInvoiceReleaseService.php) | Service that releases quotes into invoice-ready state. | `rg -n 'QuoteInvoiceReleaseService|QuoteInvoiceRelease' app routes Modules` |
 | [SerpApiGoogleContactFeedProvider.php](../../app/Utils/SerpApiGoogleContactFeedProvider.php) | SerpApi-backed Google contact-feed provider adapter. | `rg -n 'SerpApiGoogleContactFeedProvider|ContactFeedProvider' app routes Modules` |
+
+## Common edit bundles
+
+- **Util + caller bundle** — [app/Utils/](../../app/Utils/), [app/Http/Controllers/](../../app/Http/Controllers/)
+
+## Primary workflows
+
+- **Util impact pass** — inspect util changes and at least one likely caller path before patching.
+
+## Shared dependencies
+
+- Root and module controllers commonly depend on `App\Utils\*Util`; verify constructor imports and call sites.
+
+## Tests / verify
+
+- [tests/Unit](../../tests/Unit)
+- [tests/Feature](../../tests/Feature)
+- `php artisan test --filter=Unit`
 
 ## Related docs
 

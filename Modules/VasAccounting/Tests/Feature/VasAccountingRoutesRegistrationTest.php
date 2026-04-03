@@ -20,6 +20,7 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.chart.index'));
         $this->assertTrue($router->has('vasaccounting.periods.index'));
         $this->assertTrue($router->has('vasaccounting.vouchers.index'));
+        $this->assertTrue($router->has('vasaccounting.vouchers.destroy'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.index'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.store'));
         $this->assertTrue($router->has('vasaccounting.cash_bank.treasury_documents.submit'));
@@ -78,6 +79,7 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.inventory.index'));
         $this->assertTrue($router->has('vasaccounting.inventory.warehouses.store'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.store'));
+        $this->assertTrue($router->has('vasaccounting.inventory.documents.show'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.post'));
         $this->assertTrue($router->has('vasaccounting.inventory.documents.reverse'));
         $this->assertTrue($router->has('vasaccounting.expenses.index'));
@@ -450,8 +452,16 @@ class VasAccountingRoutesRegistrationTest extends TestCase
             $routes->getByName('vasaccounting.cutover.settings.update')->uri()
         );
         $this->assertSame(
+            'vas-accounting/inventory/documents/{document}',
+            $routes->getByName('vasaccounting.inventory.documents.show')->uri()
+        );
+        $this->assertSame(
             'vas-accounting/inventory/documents/{document}/post',
             $routes->getByName('vasaccounting.inventory.documents.post')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/vouchers/{voucher}',
+            $routes->getByName('vasaccounting.vouchers.destroy')->uri()
         );
         $this->assertSame(
             'vas-accounting/reports/operational-health',

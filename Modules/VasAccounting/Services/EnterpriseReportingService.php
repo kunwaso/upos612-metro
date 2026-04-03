@@ -521,6 +521,7 @@ class EnterpriseReportingService
         $ownerLabels = $this->userLabels($rows->pluck('owner_id')->filter()->all());
         $ownershipActivity = $this->procurementOwnershipActivity($businessId);
         $activityUserLabels = $this->userLabels($ownershipActivity->pluck('actor_id')->filter()->all());
+        $reassignmentChurnRows = $this->procurementReassignmentDocumentChurnRows($ownershipActivity, $activityUserLabels);
 
         return $this->dataset(
             'Procurement Discrepancy Ownership',
@@ -548,6 +549,11 @@ class EnterpriseReportingService
                 ['label' => 'Aged > 2 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 2)->count()],
                 ['label' => 'Aged > 7 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 7)->count()],
                 ['label' => 'Older than 14 days', 'value' => $rows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 14)->count()],
+                ['label' => 'Reassignment loopbacks (14 days)', 'value' => collect($reassignmentChurnRows)->sum(fn (array $row) => (int) $row[3])],
+                ['label' => 'Churned documents (14 days)', 'value' => collect($reassignmentChurnRows)->filter(fn (array $row) => (int) $row[2] >= 2)->count()],
+                ['label' => 'Loopback hotspot documents (14 days)', 'value' => collect($reassignmentChurnRows)->filter(fn (array $row) => (int) $row[3] > 0)->count()],
+                ['label' => 'Reason-volatile documents (14 days)', 'value' => collect($reassignmentChurnRows)->filter(fn (array $row) => (int) $row[5] > 1 || (int) $row[4] > 1)->count()],
+                ['label' => 'Critical reassignment hotspots (14 days)', 'value' => collect($reassignmentChurnRows)->filter(fn (array $row) => $this->isCriticalReassignmentHotspot($row))->count()],
                 ['label' => 'Ownership actions (14 days)', 'value' => $ownershipActivity->count()],
             ],
             [
@@ -555,30 +561,37 @@ class EnterpriseReportingService
                     'title' => 'Assignment Aging Trend',
                     'subtitle' => 'Weekly backlog aging trend based on current unresolved discrepancies and when ownership was last assigned.',
                     'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
-                    'rows' => collect(range(5, 0))
-                        ->map(function ($weeksAgo) use ($rows) {
-                            $weekStart = now()->subWeeks($weeksAgo)->startOfWeek();
-                            $weekEnd = (clone $weekStart)->endOfWeek();
-                            $weekRows = $rows->filter(function ($row) use ($weekStart, $weekEnd) {
-                                if ((int) $row->owner_id === 0 || is_null($row->owner_age_days)) {
-                                    return false;
-                                }
+                    'rows' => $this->procurementOwnershipAssignmentTrendRows(
+                        $rows,
+                        function ($row) {
+                            if ((int) $row->owner_id === 0 || is_null($row->owner_age_days)) {
+                                return null;
+                            }
 
-                                $assignedAt = now()->subDays((int) $row->owner_age_days);
-
-                                return $assignedAt->betweenIncluded($weekStart, $weekEnd);
-                            });
-
-                            return [
-                                $weekStart->format('Y-m-d'),
-                                $weekRows->count(),
-                                $weekRows->where('status', FinanceMatchException::STATUS_IN_REVIEW)->count(),
-                                $weekRows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 7)->count(),
-                                $weekRows->filter(fn ($row) => ! is_null($row->owner_age_days) && $row->owner_age_days > 14)->count(),
-                            ];
-                        })
-                        ->all(),
+                            return now()->subDays((int) $row->owner_age_days);
+                        },
+                        fn ($row) => (string) $row->status
+                    ),
                     'empty' => 'No ownership assignments are available to trend across the last six weeks.',
+                ],
+                [
+                    'title' => 'Owner Aging Trend',
+                    'subtitle' => 'Weekly aging trend for the busiest assignee queues so managers can see whose backlog is getting older.',
+                    'columns' => ['Owner', 'Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => $this->procurementOwnershipAssignmentTrendRowsByOwner(
+                        $rows,
+                        fn ($row) => (int) $row->owner_id,
+                        fn ($ownerId) => $ownerLabels[$ownerId] ?? ('User #' . $ownerId),
+                        function ($row) {
+                            if ((int) $row->owner_id === 0 || is_null($row->owner_age_days)) {
+                                return null;
+                            }
+
+                            return now()->subDays((int) $row->owner_age_days);
+                        },
+                        fn ($row) => (string) $row->status
+                    ),
+                    'empty' => 'No assignee aging trend is available because no procurement discrepancies currently have an owner.',
                 ],
                 [
                     'title' => 'Owner Aging Mix',
@@ -680,6 +693,95 @@ class EnterpriseReportingService
                     'empty' => 'No procurement ownership activity has been recorded in the last fourteen days.',
                 ],
                 [
+                    'title' => 'Reassignment Trend by Reviewer',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the reviewer who moved the work.',
+                    'columns' => ['Reviewer', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentTrendRows(
+                        $ownershipActivity,
+                        fn ($activity) => (int) $activity->actor_id,
+                        fn ($userId) => $activityUserLabels[$userId] ?? ('User #' . $userId)
+                    ),
+                    'empty' => 'No procurement discrepancy reassignments have been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reassignment Trend by Assignee',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the assignee receiving the work.',
+                    'columns' => ['Assignee', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentTrendRows(
+                        $ownershipActivity,
+                        fn ($activity) => (int) $activity->after_owner_id,
+                        function ($userId) use ($activityUserLabels) {
+                            if ($userId === 0) {
+                                return 'Unassigned';
+                            }
+
+                            return $activityUserLabels[$userId] ?? ('User #' . $userId);
+                        }
+                    ),
+                    'empty' => 'No procurement discrepancy assignee reassignments have been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reassignment Path Mix',
+                    'subtitle' => 'See how procurement discrepancy ownership is moving between previous and new owners across the last fourteen days.',
+                    'columns' => ['Previous Owner', 'New Owner', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentPathRows($ownershipActivity, $activityUserLabels),
+                    'empty' => 'No procurement discrepancy reassignment paths have been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reassignment Reason Mix',
+                    'subtitle' => 'Top stated reasons for procurement discrepancy reassignments across the last fourteen days.',
+                    'columns' => ['Reason', 'Reassignments', 'Documents', 'Reviewers'],
+                    'rows' => $this->procurementReassignmentReasonRows($ownershipActivity),
+                    'empty' => 'No procurement discrepancy reassignment reasons have been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reviewer-Assignee Reassignment Matrix',
+                    'subtitle' => 'Cross-matrix of which reviewers are routing procurement discrepancies to which assignees.',
+                    'columns' => ['Reviewer', 'Assignee', 'Reassignments', 'Documents', 'Reason Types'],
+                    'rows' => $this->procurementReassignmentReviewerAssigneeRows($ownershipActivity, $activityUserLabels),
+                    'empty' => 'No reviewer-to-assignee procurement reassignment routes have been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Document Reassignment Churn',
+                    'subtitle' => 'Document-level view of reassignment volume and loopback risk in the procurement discrepancy queue.',
+                    'columns' => ['Document', 'Current Owner', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types'],
+                    'rows' => $reassignmentChurnRows,
+                    'empty' => 'No procurement discrepancy reassignment churn has been recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Loopback Hotspots',
+                    'subtitle' => 'Documents that looped back to prior owners, signaling repeated handoff risk in the discrepancy queue.',
+                    'columns' => ['Document', 'Loopbacks', 'Reassignments', 'Current Owner', 'Reviewers', 'Reason Types'],
+                    'rows' => collect($reassignmentChurnRows)
+                        ->filter(fn (array $row) => (int) $row[3] > 0)
+                        ->map(fn (array $row) => [$row[0], $row[3], $row[2], $row[1], $row[4], $row[5]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement discrepancy loopback hotspots were recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Reason Volatility Hotspots',
+                    'subtitle' => 'Documents reassigned under multiple reasons or reviewers, signaling inconsistent triage rationale.',
+                    'columns' => ['Document', 'Reason Types', 'Reviewers', 'Reassignments', 'Loopbacks', 'Current Owner'],
+                    'rows' => collect($reassignmentChurnRows)
+                        ->filter(fn (array $row) => (int) $row[5] > 1 || (int) $row[4] > 1)
+                        ->map(fn (array $row) => [$row[0], $row[5], $row[4], $row[2], $row[3], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement discrepancy reason-volatility hotspots were recorded in the last fourteen days.',
+                ],
+                [
+                    'title' => 'Critical Reassignment Hotspots',
+                    'subtitle' => 'High-churn documents with loopback or triage volatility signals that need active escalation.',
+                    'columns' => ['Document', 'Risk Flags', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types', 'Current Owner'],
+                    'rows' => collect($reassignmentChurnRows)
+                        ->filter(fn (array $row) => $this->isCriticalReassignmentHotspot($row))
+                        ->map(fn (array $row) => [$row[0], $this->reassignmentHotspotFlagsLabel($row), $row[2], $row[3], $row[4], $row[5], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No critical procurement discrepancy reassignment hotspots were recorded in the last fourteen days.',
+                ],
+                [
                     'title' => 'Reviewer Throughput',
                     'subtitle' => 'See which reviewers are actively taking ownership, reassigning, or resolving procurement discrepancies.',
                     'columns' => ['Reviewer', 'Claimed', 'Reassigned', 'Resolved', 'Total Actions'],
@@ -773,6 +875,343 @@ class EnterpriseReportingService
                     'after_owner_id' => (int) data_get($event->after_state, 'owner_id', 0),
                 ];
             });
+    }
+
+    protected function procurementOwnershipAssignmentTrendRows(Collection $items, callable $assignedAtResolver, callable $statusResolver): array
+    {
+        return collect(range(5, 0))
+            ->map(function ($weeksAgo) use ($items, $assignedAtResolver, $statusResolver) {
+                $weekStart = now()->subWeeks($weeksAgo)->startOfWeek();
+                $weekEnd = (clone $weekStart)->endOfWeek();
+                $weekRows = $items->filter(function ($item) use ($assignedAtResolver, $weekStart, $weekEnd) {
+                    $assignedAt = $assignedAtResolver($item);
+
+                    if (! $assignedAt) {
+                        return false;
+                    }
+
+                    return $assignedAt->betweenIncluded($weekStart, $weekEnd);
+                });
+
+                return [
+                    $weekStart->format('Y-m-d'),
+                    $weekRows->count(),
+                    $weekRows->filter(fn ($item) => $statusResolver($item) === FinanceMatchException::STATUS_IN_REVIEW)->count(),
+                    $weekRows->filter(function ($item) use ($assignedAtResolver) {
+                        $assignedAt = $assignedAtResolver($item);
+
+                        return $assignedAt && $assignedAt->diffInDays(now()) > 7;
+                    })->count(),
+                    $weekRows->filter(function ($item) use ($assignedAtResolver) {
+                        $assignedAt = $assignedAtResolver($item);
+
+                        return $assignedAt && $assignedAt->diffInDays(now()) > 14;
+                    })->count(),
+                ];
+            })
+            ->all();
+    }
+
+    protected function procurementOwnershipAssignmentTrendRowsByOwner(
+        Collection $items,
+        callable $ownerIdResolver,
+        callable $ownerLabelResolver,
+        callable $assignedAtResolver,
+        callable $statusResolver,
+        int $ownerLimit = 5,
+        int $weeks = 4
+    ): array {
+        return $items
+            ->groupBy(fn ($item) => (int) $ownerIdResolver($item))
+            ->reject(fn (Collection $group, $ownerId) => (int) $ownerId === 0)
+            ->sortByDesc(fn (Collection $group) => $group->count())
+            ->take($ownerLimit)
+            ->flatMap(function (Collection $ownerItems, $ownerId) use ($ownerLabelResolver, $assignedAtResolver, $statusResolver, $weeks) {
+                return collect(range($weeks - 1, 0))
+                    ->map(function ($weeksAgo) use ($ownerItems, $ownerId, $ownerLabelResolver, $assignedAtResolver, $statusResolver) {
+                        $weekStart = now()->subWeeks($weeksAgo)->startOfWeek();
+                        $weekEnd = (clone $weekStart)->endOfWeek();
+                        $weekRows = $ownerItems->filter(function ($item) use ($assignedAtResolver, $weekStart, $weekEnd) {
+                            $assignedAt = $assignedAtResolver($item);
+
+                            if (! $assignedAt) {
+                                return false;
+                            }
+
+                            return $assignedAt->betweenIncluded($weekStart, $weekEnd);
+                        });
+
+                        return [
+                            $ownerLabelResolver((int) $ownerId),
+                            $weekStart->format('Y-m-d'),
+                            $weekRows->count(),
+                            $weekRows->filter(fn ($item) => $statusResolver($item) === FinanceMatchException::STATUS_IN_REVIEW)->count(),
+                            $weekRows->filter(function ($item) use ($assignedAtResolver) {
+                                $assignedAt = $assignedAtResolver($item);
+
+                                return $assignedAt && $assignedAt->diffInDays(now()) > 7;
+                            })->count(),
+                            $weekRows->filter(function ($item) use ($assignedAtResolver) {
+                                $assignedAt = $assignedAtResolver($item);
+
+                                return $assignedAt && $assignedAt->diffInDays(now()) > 14;
+                            })->count(),
+                        ];
+                    });
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function procurementReassignmentTrendRows(
+        Collection $activities,
+        callable $groupIdResolver,
+        callable $groupLabelResolver
+    ): array {
+        return $activities
+            ->where('event_type', 'procurement.discrepancy_reassigned')
+            ->groupBy(function ($activity) use ($groupIdResolver) {
+                return $activity->activity_date . '|' . $groupIdResolver($activity);
+            })
+            ->map(function (Collection $group, string $key) use ($groupLabelResolver) {
+                [$date, $groupId] = explode('|', $key, 2);
+                $groupId = (int) $groupId;
+
+                return [
+                    $groupLabelResolver($groupId),
+                    $date,
+                    $group->count(),
+                    $group->pluck('document_id')->filter()->unique()->count(),
+                ];
+            })
+            ->sortBy([
+                fn (array $row) => $row[1],
+                fn (array $row) => $row[0],
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementOwnershipActionsByReviewerRows(Collection $activities, array $reviewerLabels): array
+    {
+        return $activities
+            ->groupBy(fn ($activity) => (int) $activity->actor_id)
+            ->map(function (Collection $group, int $reviewerId) use ($reviewerLabels) {
+                $claimed = $group->where('event_type', 'procurement.discrepancy_owned')->count();
+                $reassigned = $group->where('event_type', 'procurement.discrepancy_reassigned')->count();
+                $resolved = $group->where('event_type', 'procurement.discrepancy_resolved')->count();
+                $total = $group->count();
+
+                return [
+                    'reviewer' => $reviewerLabels[$reviewerId] ?? ('User #' . $reviewerId),
+                    'claimed' => $claimed,
+                    'reassigned' => $reassigned,
+                    'resolved' => $resolved,
+                    'documents' => $group->pluck('document_id')->filter()->unique()->count(),
+                    'total' => $total,
+                ];
+            })
+            ->sortBy([
+                fn (array $row) => -1 * $row['total'],
+                fn (array $row) => $row['reviewer'],
+            ])
+            ->map(fn (array $row) => [
+                $row['reviewer'],
+                $row['claimed'],
+                $row['reassigned'],
+                $row['resolved'],
+                $row['documents'],
+                $row['total'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementOwnershipActionsByAssigneeRows(Collection $activities, array $userLabels): array
+    {
+        return $activities
+            ->map(function ($activity) {
+                $assigneeId = match ((string) $activity->event_type) {
+                    'procurement.discrepancy_resolved' => $activity->before_owner_id > 0
+                        ? (int) $activity->before_owner_id
+                        : (int) $activity->after_owner_id,
+                    default => (int) $activity->after_owner_id,
+                };
+
+                return (object) [
+                    'document_id' => (int) $activity->document_id,
+                    'event_type' => (string) $activity->event_type,
+                    'assignee_id' => $assigneeId,
+                ];
+            })
+            ->groupBy(fn ($activity) => (int) $activity->assignee_id)
+            ->map(function (Collection $group, int $assigneeId) use ($userLabels) {
+                $received = $group->whereIn('event_type', [
+                    'procurement.discrepancy_owned',
+                    'procurement.discrepancy_reassigned',
+                ])->count();
+                $resolved = $group->where('event_type', 'procurement.discrepancy_resolved')->count();
+                $total = $group->count();
+
+                return [
+                    'assignee' => $assigneeId > 0 ? ($userLabels[$assigneeId] ?? ('User #' . $assigneeId)) : 'Unassigned',
+                    'received' => $received,
+                    'resolved' => $resolved,
+                    'documents' => $group->pluck('document_id')->filter()->unique()->count(),
+                    'total' => $total,
+                ];
+            })
+            ->sortBy([
+                fn (array $row) => -1 * $row['total'],
+                fn (array $row) => $row['assignee'],
+            ])
+            ->map(fn (array $row) => [
+                $row['assignee'],
+                $row['received'],
+                $row['resolved'],
+                $row['documents'],
+                $row['total'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementReassignmentPathRows(Collection $activities, array $userLabels): array
+    {
+        return $activities
+            ->where('event_type', 'procurement.discrepancy_reassigned')
+            ->groupBy(function ($activity) {
+                return (int) $activity->before_owner_id . '|' . (int) $activity->after_owner_id;
+            })
+            ->map(function (Collection $group, string $pathKey) use ($userLabels) {
+                [$previousOwnerId, $newOwnerId] = array_map('intval', explode('|', $pathKey, 2));
+
+                return [
+                    $previousOwnerId > 0 ? ($userLabels[$previousOwnerId] ?? ('User #' . $previousOwnerId)) : 'Unassigned',
+                    $newOwnerId > 0 ? ($userLabels[$newOwnerId] ?? ('User #' . $newOwnerId)) : 'Unassigned',
+                    $group->count(),
+                    $group->pluck('document_id')->filter()->unique()->count(),
+                ];
+            })
+            ->sortByDesc(fn (array $row) => [$row[2], $row[3]])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementReassignmentReasonRows(Collection $activities): array
+    {
+        return $activities
+            ->where('event_type', 'procurement.discrepancy_reassigned')
+            ->groupBy(function ($activity) {
+                $reason = trim((string) ($activity->reason ?? ''));
+
+                return $reason !== '' ? $reason : 'Unspecified';
+            })
+            ->map(function (Collection $group, string $reason) {
+                return [
+                    $reason,
+                    $group->count(),
+                    $group->pluck('document_id')->filter()->unique()->count(),
+                    $group->pluck('actor_id')->filter()->unique()->count(),
+                ];
+            })
+            ->sortByDesc(fn (array $row) => [$row[1], $row[2], $row[0]])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementReassignmentReviewerAssigneeRows(Collection $activities, array $userLabels): array
+    {
+        return $activities
+            ->where('event_type', 'procurement.discrepancy_reassigned')
+            ->groupBy(fn ($activity) => (int) $activity->actor_id . '|' . (int) $activity->after_owner_id)
+            ->map(function (Collection $group, string $key) use ($userLabels) {
+                [$reviewerId, $assigneeId] = array_map('intval', explode('|', $key, 2));
+
+                return [
+                    $userLabels[$reviewerId] ?? ('User #' . $reviewerId),
+                    $assigneeId > 0 ? ($userLabels[$assigneeId] ?? ('User #' . $assigneeId)) : 'Unassigned',
+                    $group->count(),
+                    $group->pluck('document_id')->filter()->unique()->count(),
+                    $group->map(function ($activity) {
+                        $reason = trim((string) ($activity->reason ?? ''));
+
+                        return $reason !== '' ? $reason : 'Unspecified';
+                    })->unique()->count(),
+                ];
+            })
+            ->sortByDesc(fn (array $row) => [$row[2], $row[3], $row[4], $row[0], $row[1]])
+            ->values()
+            ->all();
+    }
+
+    protected function procurementReassignmentDocumentChurnRows(Collection $activities, array $userLabels): array
+    {
+        return $activities
+            ->where('event_type', 'procurement.discrepancy_reassigned')
+            ->groupBy(fn ($activity) => (int) $activity->document_id)
+            ->map(function (Collection $group, $documentId) use ($userLabels) {
+                $assigneeTrail = $group->pluck('after_owner_id')
+                    ->map(fn ($ownerId) => (int) $ownerId)
+                    ->values();
+                $seenOwners = [];
+                $loopbacks = 0;
+
+                foreach ($assigneeTrail as $ownerId) {
+                    if (in_array($ownerId, $seenOwners, true)) {
+                        $loopbacks++;
+                    }
+
+                    $seenOwners[] = $ownerId;
+                }
+
+                $currentOwnerId = (int) ($assigneeTrail->last() ?? 0);
+
+                return [
+                    $group->first()->document_no ?: ('#' . $documentId),
+                    $currentOwnerId > 0 ? ($userLabels[$currentOwnerId] ?? ('User #' . $currentOwnerId)) : 'Unassigned',
+                    $group->count(),
+                    $loopbacks,
+                    $group->pluck('actor_id')->filter()->unique()->count(),
+                    $group->map(function ($activity) {
+                        $reason = trim((string) ($activity->reason ?? ''));
+
+                        return $reason !== '' ? $reason : 'Unspecified';
+                    })->unique()->count(),
+                ];
+            })
+            ->sortByDesc(fn (array $row) => [$row[2], $row[3], $row[4], $row[5], $row[0]])
+            ->values()
+            ->all();
+    }
+
+    protected function isCriticalReassignmentHotspot(array $row): bool
+    {
+        $reassignments = (int) ($row[2] ?? 0);
+        $loopbacks = (int) ($row[3] ?? 0);
+        $reviewers = (int) ($row[4] ?? 0);
+        $reasonTypes = (int) ($row[5] ?? 0);
+
+        return $reassignments >= 3 && ($loopbacks > 0 || $reviewers > 1 || $reasonTypes > 1);
+    }
+
+    protected function reassignmentHotspotFlagsLabel(array $row): string
+    {
+        $flags = ['High churn'];
+
+        if ((int) ($row[3] ?? 0) > 0) {
+            $flags[] = 'Loopback';
+        }
+
+        if ((int) ($row[4] ?? 0) > 1) {
+            $flags[] = 'Multi-reviewer';
+        }
+
+        if ((int) ($row[5] ?? 0) > 1) {
+            $flags[] = 'Multi-reason';
+        }
+
+        return implode(', ', $flags);
     }
 
     protected function expenseOutstanding(int $businessId): array
@@ -1053,6 +1492,10 @@ class EnterpriseReportingService
                 ->values()
                 ->all()
         );
+        $procurementReassignmentChurnRows = $this->procurementReassignmentDocumentChurnRows(
+            $procurementOwnershipActivity,
+            $procurementOwnershipLabels
+        );
         $blockedCount = collect($blockers)->reduce(function ($carry, $value, $key) {
             if ($key === 'posting_map_incomplete') {
                 return $carry + ($value ? 1 : 0);
@@ -1076,8 +1519,15 @@ class EnterpriseReportingService
                 ['label' => 'Matching backlog', 'value' => $blockers['matching_procurement_documents']],
                 ['label' => 'Unassigned procurement discrepancies', 'value' => $procurementInsights['owner_summary']->where('owner_id', 0)->sum('open_count')],
                 ['label' => 'Procurement discrepancies aged > 7 days', 'value' => $procurementInsights['owner_summary']->sum('aged_over_7_days')],
+                ['label' => 'Procurement discrepancies aged > 14 days', 'value' => $procurementInsights['discrepancy_exceptions']->filter(fn ($exception) => $exception->owner_assigned_at && $exception->owner_assigned_at->diffInDays(now()) > 14)->count()],
                 ['label' => 'Procurement ownership actions', 'value' => $procurementOwnershipActivity->count()],
                 ['label' => 'Procurement reassignments', 'value' => $procurementOwnershipActivity->where('event_type', 'procurement.discrepancy_reassigned')->count()],
+                ['label' => 'Procurement reassignment loopbacks', 'value' => collect($procurementReassignmentChurnRows)->sum(fn (array $row) => (int) $row[3])],
+                ['label' => 'Procurement churned documents', 'value' => collect($procurementReassignmentChurnRows)->filter(fn (array $row) => (int) $row[2] >= 2)->count()],
+                ['label' => 'Procurement loopback hotspot documents', 'value' => collect($procurementReassignmentChurnRows)->filter(fn (array $row) => (int) $row[3] > 0)->count()],
+                ['label' => 'Procurement reason-volatile documents', 'value' => collect($procurementReassignmentChurnRows)->filter(fn (array $row) => (int) $row[5] > 1 || (int) $row[4] > 1)->count()],
+                ['label' => 'Procurement critical hotspots', 'value' => collect($procurementReassignmentChurnRows)->filter(fn (array $row) => $this->isCriticalReassignmentHotspot($row))->count()],
+                ['label' => 'Active procurement reviewers', 'value' => $procurementOwnershipActivity->pluck('actor_id')->filter()->unique()->count()],
                 ['label' => 'Pending expense docs', 'value' => $blockers['pending_expense_documents']],
                 ['label' => 'Outstanding expense balances', 'value' => $blockers['outstanding_expense_documents']],
                 ['label' => 'Escalated expense approvals', 'value' => $blockers['escalated_expense_approvals']],
@@ -1176,6 +1626,67 @@ class EnterpriseReportingService
                     'empty' => 'No procurement discrepancy ownership backlog exists for this period.',
                 ],
                 [
+                    'title' => 'Procurement Ownership Aging Trend',
+                    'subtitle' => 'Weekly backlog aging trend for unresolved procurement discrepancies assigned during the close window horizon.',
+                    'columns' => ['Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => $this->procurementOwnershipAssignmentTrendRows(
+                        $procurementInsights['discrepancy_exceptions'],
+                        fn ($exception) => $exception->owner_id > 0 ? $exception->owner_assigned_at : null,
+                        fn ($exception) => (string) $exception->status
+                    ),
+                    'empty' => 'No procurement ownership assignments are available to trend for this close period.',
+                ],
+                [
+                    'title' => 'Procurement Ownership Aging Trend by Owner',
+                    'subtitle' => 'Export-oriented owner breakdown for the busiest procurement discrepancy queues in the close window.',
+                    'columns' => ['Owner', 'Assignment Week', 'Open Rows', 'In Review', 'Aged > 7 Days', 'Aged > 14 Days'],
+                    'rows' => $this->procurementOwnershipAssignmentTrendRowsByOwner(
+                        $procurementInsights['discrepancy_exceptions'],
+                        fn ($exception) => (int) $exception->owner_id,
+                        function (int $ownerId) use ($procurementInsights) {
+                            $summary = collect($procurementInsights['owner_summary'])->firstWhere('owner_id', $ownerId);
+
+                            return $summary['owner_name'] ?? ('User #' . $ownerId);
+                        },
+                        fn ($exception) => $exception->owner_id > 0 ? $exception->owner_assigned_at : null,
+                        fn ($exception) => (string) $exception->status
+                    ),
+                    'empty' => 'No owner-level procurement aging trend is available for this close period.',
+                ],
+                [
+                    'title' => 'Procurement Ownership Actions by Reviewer',
+                    'subtitle' => 'Reviewer-level rollup of claimed, reassigned, and resolved procurement discrepancy actions recorded during the close window.',
+                    'columns' => ['Reviewer', 'Claimed', 'Reassigned', 'Resolved', 'Documents', 'Total Actions'],
+                    'rows' => $this->procurementOwnershipActionsByReviewerRows($procurementOwnershipActivity, $procurementOwnershipLabels),
+                    'empty' => 'No procurement ownership reviewer activity was recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Ownership Actions by Assignee',
+                    'subtitle' => 'Assignee-level rollup of received and resolved procurement discrepancy work recorded during the close window.',
+                    'columns' => ['Assignee', 'Received', 'Resolved', 'Documents', 'Total Actions'],
+                    'rows' => $this->procurementOwnershipActionsByAssigneeRows($procurementOwnershipActivity, $procurementOwnershipLabels),
+                    'empty' => 'No procurement ownership assignee activity was recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Ownership Activity Trend',
+                    'subtitle' => 'Daily claimed, reassigned, and resolved procurement discrepancy activity across the close window.',
+                    'columns' => ['Date', 'Claimed', 'Reassigned', 'Resolved'],
+                    'rows' => $procurementOwnershipActivity
+                        ->groupBy(fn ($activity) => $activity->activity_date ?: '-')
+                        ->map(function (Collection $events, string $date) {
+                            return [
+                                $date,
+                                $events->where('event_type', 'procurement.discrepancy_owned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_reassigned')->count(),
+                                $events->where('event_type', 'procurement.discrepancy_resolved')->count(),
+                            ];
+                        })
+                        ->sortBy(fn (array $row) => $row[0])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement ownership activity trend rows were recorded in the close period.',
+                ],
+                [
                     'title' => 'Procurement Ownership Activity',
                     'subtitle' => 'Canonical audit history for procurement discrepancy ownership actions recorded during the close period.',
                     'columns' => ['Date/Time', 'Reviewer', 'Action', 'Document', 'Reason'],
@@ -1216,6 +1727,95 @@ class EnterpriseReportingService
                         ->values()
                         ->all(),
                     'empty' => 'No procurement discrepancy reassignments were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment Path Mix',
+                    'subtitle' => 'Route-level summary of how procurement discrepancy ownership moved between previous and new owners during close.',
+                    'columns' => ['Previous Owner', 'New Owner', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentPathRows($procurementOwnershipActivity, $procurementOwnershipLabels),
+                    'empty' => 'No procurement reassignment paths were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment Trend by Reviewer',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the reviewer who moved the work during close.',
+                    'columns' => ['Reviewer', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentTrendRows(
+                        $procurementOwnershipActivity,
+                        fn ($activity) => (int) $activity->actor_id,
+                        fn (int $userId) => $procurementOwnershipLabels[$userId] ?? ('User #' . $userId)
+                    ),
+                    'empty' => 'No procurement reassignment reviewer trend rows were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment Trend by Assignee',
+                    'subtitle' => 'Daily procurement discrepancy reassignments grouped by the assignee receiving work during close.',
+                    'columns' => ['Assignee', 'Date', 'Reassignments', 'Documents'],
+                    'rows' => $this->procurementReassignmentTrendRows(
+                        $procurementOwnershipActivity,
+                        fn ($activity) => (int) $activity->after_owner_id,
+                        function (int $userId) use ($procurementOwnershipLabels) {
+                            if ($userId === 0) {
+                                return 'Unassigned';
+                            }
+
+                            return $procurementOwnershipLabels[$userId] ?? ('User #' . $userId);
+                        }
+                    ),
+                    'empty' => 'No procurement reassignment assignee trend rows were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment Reason Mix',
+                    'subtitle' => 'Top stated reasons for procurement discrepancy reassignment decisions taken during close.',
+                    'columns' => ['Reason', 'Reassignments', 'Documents', 'Reviewers'],
+                    'rows' => $this->procurementReassignmentReasonRows($procurementOwnershipActivity),
+                    'empty' => 'No procurement reassignment reasons were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reviewer-Assignee Reassignment Matrix',
+                    'subtitle' => 'Cross-matrix of reviewers routing procurement discrepancies to assignees during close.',
+                    'columns' => ['Reviewer', 'Assignee', 'Reassignments', 'Documents', 'Reason Types'],
+                    'rows' => $this->procurementReassignmentReviewerAssigneeRows($procurementOwnershipActivity, $procurementOwnershipLabels),
+                    'empty' => 'No reviewer-to-assignee procurement reassignment routes were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reassignment Churn',
+                    'subtitle' => 'Document-level view of procurement reassignment volume and loopback risk during close.',
+                    'columns' => ['Document', 'Current Owner', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types'],
+                    'rows' => $procurementReassignmentChurnRows,
+                    'empty' => 'No procurement reassignment churn was recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Loopback Hotspots',
+                    'subtitle' => 'Documents that looped back to prior owners during close, signaling repeated reassignment risk.',
+                    'columns' => ['Document', 'Loopbacks', 'Reassignments', 'Current Owner', 'Reviewers', 'Reason Types'],
+                    'rows' => collect($procurementReassignmentChurnRows)
+                        ->filter(fn (array $row) => (int) $row[3] > 0)
+                        ->map(fn (array $row) => [$row[0], $row[3], $row[2], $row[1], $row[4], $row[5]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement loopback hotspots were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Reason Volatility Hotspots',
+                    'subtitle' => 'Documents reassigned under multiple reasons or reviewers during close, signaling triage inconsistency.',
+                    'columns' => ['Document', 'Reason Types', 'Reviewers', 'Reassignments', 'Loopbacks', 'Current Owner'],
+                    'rows' => collect($procurementReassignmentChurnRows)
+                        ->filter(fn (array $row) => (int) $row[5] > 1 || (int) $row[4] > 1)
+                        ->map(fn (array $row) => [$row[0], $row[5], $row[4], $row[2], $row[3], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement reason-volatility hotspots were recorded in the close period.',
+                ],
+                [
+                    'title' => 'Procurement Critical Reassignment Hotspots',
+                    'subtitle' => 'High-churn procurement discrepancy documents with loopback or triage volatility signals during close.',
+                    'columns' => ['Document', 'Risk Flags', 'Reassignments', 'Loopbacks', 'Reviewers', 'Reason Types', 'Current Owner'],
+                    'rows' => collect($procurementReassignmentChurnRows)
+                        ->filter(fn (array $row) => $this->isCriticalReassignmentHotspot($row))
+                        ->map(fn (array $row) => [$row[0], $this->reassignmentHotspotFlagsLabel($row), $row[2], $row[3], $row[4], $row[5], $row[1]])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No procurement critical reassignment hotspots were recorded in the close period.',
                 ],
                 [
                     'title' => 'Aged Procurement Discrepancies',

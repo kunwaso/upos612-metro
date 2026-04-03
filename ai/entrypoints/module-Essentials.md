@@ -3,6 +3,21 @@
 
 Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `/hrm/*`.
 
+## Use when
+
+- attendance
+- Essentials
+- HRM
+- leave
+- payroll
+- todo
+
+## Start here
+
+- [Modules/Essentials/Http/Controllers](../../Modules/Essentials/Http/Controllers)
+- [Modules/Essentials/Resources/views](../../Modules/Essentials/Resources/views)
+- [Modules/Essentials/Routes/web.php](../../Modules/Essentials/Routes/web.php)
+
 ## Verified paths
 
 ### Routes
@@ -13,62 +28,181 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 ### Controllers
 
 - [Modules/Essentials/Http/Controllers](../../Modules/Essentials/Http/Controllers)
-- [AttendanceController.php](../../Modules/Essentials/Http/Controllers/AttendanceController.php)
-- [DashboardController.php](../../Modules/Essentials/Http/Controllers/DashboardController.php)
-- [DataController.php](../../Modules/Essentials/Http/Controllers/DataController.php)
-- [DocumentController.php](../../Modules/Essentials/Http/Controllers/DocumentController.php)
-- [DocumentShareController.php](../../Modules/Essentials/Http/Controllers/DocumentShareController.php)
-- [EssentialsAllowanceAndDeductionController.php](../../Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php)
-- [EssentialsController.php](../../Modules/Essentials/Http/Controllers/EssentialsController.php)
-- [EssentialsHolidayController.php](../../Modules/Essentials/Http/Controllers/EssentialsHolidayController.php)
-- [EssentialsLeaveController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveController.php)
-- [EssentialsLeaveTypeController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php)
-- [EssentialsMessageController.php](../../Modules/Essentials/Http/Controllers/EssentialsMessageController.php)
-- [EssentialsSettingsController.php](../../Modules/Essentials/Http/Controllers/EssentialsSettingsController.php)
-- [InstallController.php](../../Modules/Essentials/Http/Controllers/InstallController.php)
-- [KnowledgeBaseController.php](../../Modules/Essentials/Http/Controllers/KnowledgeBaseController.php)
-- [PayrollController.php](../../Modules/Essentials/Http/Controllers/PayrollController.php)
-- [ReminderController.php](../../Modules/Essentials/Http/Controllers/ReminderController.php)
-- [SalesTargetController.php](../../Modules/Essentials/Http/Controllers/SalesTargetController.php)
-- [ShiftController.php](../../Modules/Essentials/Http/Controllers/ShiftController.php)
-- [ToDoController.php](../../Modules/Essentials/Http/Controllers/ToDoController.php)
-- [TranscriptController.php](../../Modules/Essentials/Http/Controllers/TranscriptController.php)
+- [Modules/Essentials/Http/Controllers/AttendanceController.php](../../Modules/Essentials/Http/Controllers/AttendanceController.php)
+- [Modules/Essentials/Http/Controllers/DashboardController.php](../../Modules/Essentials/Http/Controllers/DashboardController.php)
+- [Modules/Essentials/Http/Controllers/DataController.php](../../Modules/Essentials/Http/Controllers/DataController.php)
+- [Modules/Essentials/Http/Controllers/DocumentController.php](../../Modules/Essentials/Http/Controllers/DocumentController.php)
+- [Modules/Essentials/Http/Controllers/DocumentShareController.php](../../Modules/Essentials/Http/Controllers/DocumentShareController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php](../../Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsController.php](../../Modules/Essentials/Http/Controllers/EssentialsController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsHolidayController.php](../../Modules/Essentials/Http/Controllers/EssentialsHolidayController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsLeaveController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsMessageController.php](../../Modules/Essentials/Http/Controllers/EssentialsMessageController.php)
+- [Modules/Essentials/Http/Controllers/EssentialsSettingsController.php](../../Modules/Essentials/Http/Controllers/EssentialsSettingsController.php)
+- [Modules/Essentials/Http/Controllers/InstallController.php](../../Modules/Essentials/Http/Controllers/InstallController.php)
+- [Modules/Essentials/Http/Controllers/KnowledgeBaseController.php](../../Modules/Essentials/Http/Controllers/KnowledgeBaseController.php)
+- [Modules/Essentials/Http/Controllers/PayrollController.php](../../Modules/Essentials/Http/Controllers/PayrollController.php)
+- [Modules/Essentials/Http/Controllers/ReminderController.php](../../Modules/Essentials/Http/Controllers/ReminderController.php)
+- [Modules/Essentials/Http/Controllers/SalesTargetController.php](../../Modules/Essentials/Http/Controllers/SalesTargetController.php)
+- [Modules/Essentials/Http/Controllers/ShiftController.php](../../Modules/Essentials/Http/Controllers/ShiftController.php)
+- [Modules/Essentials/Http/Controllers/ToDoController.php](../../Modules/Essentials/Http/Controllers/ToDoController.php)
+- [Modules/Essentials/Http/Controllers/TranscriptController.php](../../Modules/Essentials/Http/Controllers/TranscriptController.php)
 
 ### Views
 
 - [Modules/Essentials/Resources/views](../../Modules/Essentials/Resources/views)
-- [allowance_deduction/](../../Modules/Essentials/Resources/views/allowance_deduction)
-- [attendance/](../../Modules/Essentials/Resources/views/attendance)
-- [custom_dashboard/](../../Modules/Essentials/Resources/views/custom_dashboard)
-- [dashboard/](../../Modules/Essentials/Resources/views/dashboard)
-- [document/](../../Modules/Essentials/Resources/views/document)
-- [document_share/](../../Modules/Essentials/Resources/views/document_share)
-- [holiday/](../../Modules/Essentials/Resources/views/holiday)
-- [knowledge_base/](../../Modules/Essentials/Resources/views/knowledge_base)
-- [layouts/](../../Modules/Essentials/Resources/views/layouts)
-- [leave/](../../Modules/Essentials/Resources/views/leave)
-- [leave_type/](../../Modules/Essentials/Resources/views/leave_type)
-- [memos/](../../Modules/Essentials/Resources/views/memos)
-- [messages/](../../Modules/Essentials/Resources/views/messages)
-- [partials/](../../Modules/Essentials/Resources/views/partials)
-- [payroll/](../../Modules/Essentials/Resources/views/payroll)
-- [reminder/](../../Modules/Essentials/Resources/views/reminder)
-- [reports/](../../Modules/Essentials/Resources/views/reports)
-- [sales_targets/](../../Modules/Essentials/Resources/views/sales_targets)
-- [settings/](../../Modules/Essentials/Resources/views/settings)
-- [todo/](../../Modules/Essentials/Resources/views/todo)
-- [transcript/](../../Modules/Essentials/Resources/views/transcript)
+- [Modules/Essentials/Resources/views/allowance_deduction](../../Modules/Essentials/Resources/views/allowance_deduction)
+- [Modules/Essentials/Resources/views/attendance](../../Modules/Essentials/Resources/views/attendance)
+- [Modules/Essentials/Resources/views/custom_dashboard](../../Modules/Essentials/Resources/views/custom_dashboard)
+- [Modules/Essentials/Resources/views/dashboard](../../Modules/Essentials/Resources/views/dashboard)
+- [Modules/Essentials/Resources/views/document](../../Modules/Essentials/Resources/views/document)
+- [Modules/Essentials/Resources/views/document_share](../../Modules/Essentials/Resources/views/document_share)
+- [Modules/Essentials/Resources/views/holiday](../../Modules/Essentials/Resources/views/holiday)
+- [Modules/Essentials/Resources/views/knowledge_base](../../Modules/Essentials/Resources/views/knowledge_base)
+- [Modules/Essentials/Resources/views/layouts](../../Modules/Essentials/Resources/views/layouts)
+- [Modules/Essentials/Resources/views/leave](../../Modules/Essentials/Resources/views/leave)
+- [Modules/Essentials/Resources/views/leave_type](../../Modules/Essentials/Resources/views/leave_type)
+- [Modules/Essentials/Resources/views/memos](../../Modules/Essentials/Resources/views/memos)
+- [Modules/Essentials/Resources/views/messages](../../Modules/Essentials/Resources/views/messages)
+- [Modules/Essentials/Resources/views/partials](../../Modules/Essentials/Resources/views/partials)
+- [Modules/Essentials/Resources/views/payroll](../../Modules/Essentials/Resources/views/payroll)
+- [Modules/Essentials/Resources/views/reminder](../../Modules/Essentials/Resources/views/reminder)
+- [Modules/Essentials/Resources/views/reports](../../Modules/Essentials/Resources/views/reports)
+- [Modules/Essentials/Resources/views/sales_targets](../../Modules/Essentials/Resources/views/sales_targets)
+- [Modules/Essentials/Resources/views/settings](../../Modules/Essentials/Resources/views/settings)
+- [Modules/Essentials/Resources/views/todo](../../Modules/Essentials/Resources/views/todo)
+- [Modules/Essentials/Resources/views/transcript](../../Modules/Essentials/Resources/views/transcript)
+
+### Requests
+
+- [Modules/Essentials/Http/Requests](../../Modules/Essentials/Http/Requests)
+- [Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php](../../Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php)
+- [Modules/Essentials/Http/Requests/StoreTranscriptRequest.php](../../Modules/Essentials/Http/Requests/StoreTranscriptRequest.php)
+- [Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php](../../Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php)
+
+### Services
+
+- _None discovered in this checkout_
+
+### Utils
+
+- [Modules/Essentials/Utils](../../Modules/Essentials/Utils)
+- [Modules/Essentials/Utils/EssentialsUtil.php](../../Modules/Essentials/Utils/EssentialsUtil.php)
+- [Modules/Essentials/Utils/TranscriptTranslationUtil.php](../../Modules/Essentials/Utils/TranscriptTranslationUtil.php)
+- [Modules/Essentials/Utils/TranscriptUtil.php](../../Modules/Essentials/Utils/TranscriptUtil.php)
+
+### Models / Entities
+
+- [Modules/Essentials/Entities/Document.php](../../Modules/Essentials/Entities/Document.php)
+- [Modules/Essentials/Entities/DocumentShare.php](../../Modules/Essentials/Entities/DocumentShare.php)
+- [Modules/Essentials/Entities/EssentialsAllowanceAndDeduction.php](../../Modules/Essentials/Entities/EssentialsAllowanceAndDeduction.php)
+- [Modules/Essentials/Entities/EssentialsAttendance.php](../../Modules/Essentials/Entities/EssentialsAttendance.php)
+- [Modules/Essentials/Entities/EssentialsHoliday.php](../../Modules/Essentials/Entities/EssentialsHoliday.php)
+- [Modules/Essentials/Entities/EssentialsLeave.php](../../Modules/Essentials/Entities/EssentialsLeave.php)
+- [Modules/Essentials/Entities/EssentialsLeaveType.php](../../Modules/Essentials/Entities/EssentialsLeaveType.php)
+- [Modules/Essentials/Entities/EssentialsMessage.php](../../Modules/Essentials/Entities/EssentialsMessage.php)
+- [Modules/Essentials/Entities/EssentialsTodoComment.php](../../Modules/Essentials/Entities/EssentialsTodoComment.php)
+- [Modules/Essentials/Entities/EssentialsTranscript.php](../../Modules/Essentials/Entities/EssentialsTranscript.php)
+- [Modules/Essentials/Entities/EssentialsUserAllowancesAndDeduction.php](../../Modules/Essentials/Entities/EssentialsUserAllowancesAndDeduction.php)
+- [Modules/Essentials/Entities/EssentialsUserSalesTarget.php](../../Modules/Essentials/Entities/EssentialsUserSalesTarget.php)
+- [Modules/Essentials/Entities/EssentialsUserShift.php](../../Modules/Essentials/Entities/EssentialsUserShift.php)
+- [Modules/Essentials/Entities/KnowledgeBase.php](../../Modules/Essentials/Entities/KnowledgeBase.php)
+- [Modules/Essentials/Entities/PayrollGroup.php](../../Modules/Essentials/Entities/PayrollGroup.php)
+- [Modules/Essentials/Entities/PayrollGroupTransaction.php](../../Modules/Essentials/Entities/PayrollGroupTransaction.php)
+- [Modules/Essentials/Entities/Reminder.php](../../Modules/Essentials/Entities/Reminder.php)
+- [Modules/Essentials/Entities/Shift.php](../../Modules/Essentials/Entities/Shift.php)
+- [Modules/Essentials/Entities/ToDo.php](../../Modules/Essentials/Entities/ToDo.php)
+
+### Jobs / Notifications
+
+- [Modules/Essentials/Notifications](../../Modules/Essentials/Notifications)
+- [Modules/Essentials/Notifications/DocumentShareNotification.php](../../Modules/Essentials/Notifications/DocumentShareNotification.php)
+- [Modules/Essentials/Notifications/LeaveStatusNotification.php](../../Modules/Essentials/Notifications/LeaveStatusNotification.php)
+- [Modules/Essentials/Notifications/NewLeaveNotification.php](../../Modules/Essentials/Notifications/NewLeaveNotification.php)
+- [Modules/Essentials/Notifications/NewMessageNotification.php](../../Modules/Essentials/Notifications/NewMessageNotification.php)
+- [Modules/Essentials/Notifications/NewTaskCommentNotification.php](../../Modules/Essentials/Notifications/NewTaskCommentNotification.php)
+- [Modules/Essentials/Notifications/NewTaskDocumentNotification.php](../../Modules/Essentials/Notifications/NewTaskDocumentNotification.php)
+- [Modules/Essentials/Notifications/NewTaskNotification.php](../../Modules/Essentials/Notifications/NewTaskNotification.php)
+- [Modules/Essentials/Notifications/PayrollNotification.php](../../Modules/Essentials/Notifications/PayrollNotification.php)
+
+### Assets / JS
+
+- [Modules/Essentials/Resources/assets](../../Modules/Essentials/Resources/assets)
+- [Modules/Essentials/Resources/assets/js/app.js](../../Modules/Essentials/Resources/assets/js/app.js)
+- [Modules/Essentials/Resources/assets/sass/app.scss](../../Modules/Essentials/Resources/assets/sass/app.scss)
+
+### Tests
+
+- _None discovered in this checkout_
+
+## Common edit bundles
+
+- _None curated yet_
+
+## Primary workflows
+
+- _None curated yet_
+
+## Shared dependencies
+
+### Requests
+
+- `Modules\Essentials\Http\Requests\PreviewTranscriptRequest`
+- `Modules\Essentials\Http\Requests\StoreTranscriptRequest`
+- `Modules\Essentials\Http\Requests\TranslateTranscriptRequest`
+
+### Services
+
+- _None discovered from first-order controller references_
+
+### Utils
+
+- `App\Utils\BusinessUtil`
+- `App\Utils\ModuleUtil`
+- `App\Utils\TransactionUtil`
+- `App\Utils\Util`
+- `Modules\Essentials\Utils\EssentialsUtil`
+- `Modules\Essentials\Utils\TranscriptTranslationUtil`
+- `Modules\Essentials\Utils\TranscriptUtil`
+
+### Models / Entities
+
+- `Modules\Essentials\Entities\Document`
+- `Modules\Essentials\Entities\DocumentShare`
+- `Modules\Essentials\Entities\EssentialsAllowanceAndDeduction`
+- `Modules\Essentials\Entities\EssentialsAttendance`
+- `Modules\Essentials\Entities\EssentialsHoliday`
+- `Modules\Essentials\Entities\EssentialsLeave`
+- `Modules\Essentials\Entities\EssentialsLeaveType`
+- `Modules\Essentials\Entities\EssentialsMessage`
+- `Modules\Essentials\Entities\EssentialsTodoComment`
+- `Modules\Essentials\Entities\EssentialsTranscript`
+- `Modules\Essentials\Entities\EssentialsUserAllowancesAndDeduction`
+- `Modules\Essentials\Entities\EssentialsUserSalesTarget`
+- `Modules\Essentials\Entities\EssentialsUserShift`
+- `Modules\Essentials\Entities\KnowledgeBase`
+- `Modules\Essentials\Entities\PayrollGroup`
+- `Modules\Essentials\Entities\Reminder`
+- `Modules\Essentials\Entities\Shift`
+- `Modules\Essentials\Entities\ToDo`
+- `Spatie\Activitylog\Models\Activity`
+- `Spatie\Permission\Models\Permission`
+
+## Tests / verify
+
+- `php artisan test --filter=Essentials`
 
 ## Search keywords
 
+- `attendance`
 - `Essentials`
 - `essentials`
 - `hrm`
-- `attendance`
-- `payroll`
-- `leave`
-- `todo`
 - `knowledge-base`
+- `leave`
+- `payroll`
+- `todo`
 - `transcripts`
 
 ## Related docs

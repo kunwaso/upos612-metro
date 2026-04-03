@@ -219,7 +219,12 @@
                             <tbody>
                                 @forelse ($inventoryDocuments as $document)
                                     <tr>
-                                        <td><div class="fw-bold text-gray-900">{{ $document->document_no }}</div><div class="text-muted fs-8">{{ optional($document->document_date)->format('Y-m-d') }}</div></td>
+                                        <td>
+                                            <div class="fw-bold text-gray-900">
+                                                <a href="{{ route('vasaccounting.inventory.documents.show', $document->id) }}">{{ $document->document_no }}</a>
+                                            </div>
+                                            <div class="text-muted fs-8">{{ optional($document->document_date)->format('Y-m-d') }}</div>
+                                        </td>
                                         <td>{{ $vasAccountingUtil->documentTypeLabel((string) $document->document_type) }}</td>
                                         <td>
                                             {{ optional($document->warehouse)->code ?: '-' }}
@@ -232,8 +237,10 @@
                                         <td class="text-end">
                                             @if (in_array($document->status, ['draft', 'pending_approval', 'approved'], true))
                                                 <form method="POST" action="{{ route('vasaccounting.inventory.documents.post', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-primary">{{ $vasAccountingUtil->actionLabel('post') }}</button></form>
-                                            @elseif ($document->status === 'posted')
+                                            @elseif ($document->status === 'posted' && optional($document->postedVoucher)->status === 'posted')
                                                 <form method="POST" action="{{ route('vasaccounting.inventory.documents.reverse', $document->id) }}" class="d-inline">@csrf<button type="submit" class="btn btn-sm btn-light-danger">{{ $vasAccountingUtil->actionLabel('reverse') }}</button></form>
+                                            @elseif ($document->status === 'posted')
+                                                <span class="text-warning fs-8">{{ __('vasaccounting::lang.inventory_reverse_requires_posted_voucher') }}</span>
                                             @else
                                                 <span class="text-muted fs-8">{{ __('vasaccounting::lang.views.inventory.recent_documents.no_action') }}</span>
                                             @endif

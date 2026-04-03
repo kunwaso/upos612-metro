@@ -119,6 +119,16 @@ class PutawayService
             ];
         })->values();
 
+        $canReopen = false;
+        $reopenReason = null;
+        if (! in_array((string) $document->status, ['closed', 'completed'], true)) {
+            $reopenReason = 'Putaway can only be reopened after completion.';
+        } elseif ((string) $document->sync_status === 'posted') {
+            $reopenReason = 'Putaway is already posted to accounting and cannot be reopened.';
+        } else {
+            $canReopen = true;
+        }
+
         return [
             'document' => $document,
             'parentDocument' => $document->parentDocument,
@@ -128,7 +138,9 @@ class PutawayService
                 'receipt_document_no' => (string) optional($document->parentDocument)->document_no,
                 'status' => (string) $document->status,
                 'workflow_state' => (string) $document->workflow_state,
-                'sync_status' => (string) optional($document->parentDocument)->sync_status,
+                'sync_status' => (string) ($document->sync_status ?: optional($document->parentDocument)->sync_status ?: 'not_required'),
+                'can_reopen' => $canReopen,
+                'reopen_reason' => $reopenReason,
             ],
             'lineRows' => $lineRows,
             'slotOptions' => $slotOptions,
@@ -200,6 +212,11 @@ class PutawayService
         $document->loadMissing(['lines.tasks']);
 
         DB::transaction(function () use ($businessId, $document, $lineInputs, $userId) {
+            $documentMeta = (array) $document->meta;
+            $putawayAttempt = (int) data_get($documentMeta, 'putaway_attempt', 0) + 1;
+            $documentMeta['putaway_attempt'] = $putawayAttempt;
+            $documentMeta['last_putaway_completed_at'] = now()->toDateTimeString();
+
             foreach ($document->lines as $line) {
                 $input = (array) ($lineInputs[$line->id] ?? []);
                 $destinationSlotId = (int) ($input['destination_slot_id'] ?? $line->to_slot_id);
@@ -245,7 +262,7 @@ class PutawayService
                     'quantity' => $quantity,
                     'unit_cost' => $line->unit_cost,
                     'reason_code' => 'putaway',
-                    'idempotency_key' => 'putaway-' . $document->id . '-line-' . $line->id,
+                    'idempotency_key' => 'putaway-' . $document->id . '-line-' . $line->id . '-attempt-' . $putawayAttempt,
                     'created_by' => $userId,
                 ]);
 
@@ -287,6 +304,7 @@ class PutawayService
                 'completed_at' => now(),
                 'closed_at' => now(),
                 'closed_by' => $userId,
+                'meta' => $documentMeta,
             ])->save();
 
             if ($document->parent_document_id) {
@@ -309,6 +327,144 @@ class PutawayService
                             'closed_by' => $userId,
                         ]);
                 }
+            }
+        });
+
+        return $document->fresh([
+            'lines.product',
+            'lines.variation',
+            'lines.fromArea',
+            'lines.fromSlot',
+            'lines.toArea',
+            'lines.toSlot',
+            'parentDocument',
+        ]);
+    }
+
+    public function reopenPutaway(int $businessId, StorageDocument $document, int $userId): StorageDocument
+    {
+        if ($document->document_type !== 'putaway') {
+            throw new RuntimeException('Only putaway documents can be reopened from the putaway workbench.');
+        }
+
+        if (! in_array((string) $document->status, ['closed', 'completed'], true)) {
+            throw new RuntimeException('Only completed putaway documents can be reopened.');
+        }
+
+        if ((string) $document->sync_status === 'posted') {
+            throw new RuntimeException('This putaway is already posted to accounting and cannot be reopened.');
+        }
+
+        DB::transaction(function () use ($businessId, $document, $userId) {
+            $document->loadMissing(['lines.tasks', 'parentDocument']);
+            $documentMeta = (array) $document->meta;
+            $putawayAttempt = max((int) data_get($documentMeta, 'putaway_attempt', 1), 1);
+
+            foreach ($document->lines as $line) {
+                $quantity = round((float) ($line->executed_qty ?: $line->expected_qty), 4);
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $stagingSlotId = (int) ($line->from_slot_id ?: 0);
+                $destinationSlotId = (int) ($line->to_slot_id ?: 0);
+                if ($stagingSlotId <= 0 || $destinationSlotId <= 0) {
+                    throw new RuntimeException("Putaway line [{$line->id}] is missing slot data and cannot be reopened.");
+                }
+
+                $stagingSlot = StorageSlot::query()
+                    ->where('business_id', $businessId)
+                    ->where('location_id', $document->location_id)
+                    ->find($stagingSlotId);
+                $destinationSlot = StorageSlot::query()
+                    ->where('business_id', $businessId)
+                    ->where('location_id', $document->location_id)
+                    ->find($destinationSlotId);
+
+                if (! $stagingSlot || ! $destinationSlot) {
+                    throw new RuntimeException("Putaway line [{$line->id}] cannot be reopened because slots are no longer available.");
+                }
+
+                $this->inventoryMovementService->applyMovement([
+                    'business_id' => $businessId,
+                    'location_id' => $document->location_id,
+                    'document_id' => $document->id,
+                    'document_line_id' => $line->id,
+                    'source_type' => $document->source_type,
+                    'source_id' => $document->source_id,
+                    'source_line_id' => $line->source_line_id,
+                    'movement_type' => 'putaway_reopen',
+                    'direction' => 'move',
+                    'product_id' => $line->product_id,
+                    'variation_id' => $line->variation_id,
+                    'from_area_id' => $destinationSlot->area_id ?: $line->to_area_id,
+                    'to_area_id' => $stagingSlot->area_id ?: $line->from_area_id,
+                    'from_slot_id' => $destinationSlotId,
+                    'to_slot_id' => $stagingSlotId,
+                    'from_status' => 'available',
+                    'to_status' => 'staged_in',
+                    'lot_number' => $line->lot_number,
+                    'expiry_date' => optional($line->expiry_date)->toDateString(),
+                    'quantity' => $quantity,
+                    'unit_cost' => $line->unit_cost,
+                    'reason_code' => 'putaway_reopen',
+                    'idempotency_key' => 'putaway-reopen-' . $document->id . '-line-' . $line->id . '-attempt-' . $putawayAttempt,
+                    'created_by' => $userId,
+                ]);
+
+                $line->forceFill([
+                    'result_status' => 'pending',
+                    'executed_qty' => $quantity,
+                    'variance_qty' => 0,
+                ])->save();
+
+                foreach ($line->tasks as $task) {
+                    $task->forceFill([
+                        'status' => 'open',
+                        'completed_qty' => 0,
+                        'completed_at' => null,
+                        'meta' => array_merge((array) $task->meta, [
+                            'reopened_at' => now()->toDateTimeString(),
+                        ]),
+                    ])->save();
+
+                    StorageTaskEvent::query()->create([
+                        'business_id' => $businessId,
+                        'task_id' => $task->id,
+                        'event_type' => 'reopened',
+                        'user_id' => $userId,
+                        'payload' => [
+                            'source_slot_id' => $destinationSlotId,
+                            'return_slot_id' => $stagingSlotId,
+                            'quantity' => $quantity,
+                        ],
+                    ]);
+                }
+            }
+
+            $nextSyncStatus = (string) $document->sync_status === 'not_required'
+                ? 'not_required'
+                : 'pending_sync';
+            $documentMeta['last_putaway_reopened_at'] = now()->toDateTimeString();
+            $documentMeta['last_putaway_reopened_attempt'] = $putawayAttempt;
+
+            $document->forceFill([
+                'status' => 'open',
+                'workflow_state' => 'pending',
+                'completed_at' => null,
+                'closed_at' => null,
+                'closed_by' => null,
+                'sync_status' => $nextSyncStatus,
+                'meta' => $documentMeta,
+            ])->save();
+
+            if ($document->parentDocument && $document->parentDocument->document_type === 'receipt') {
+                $document->parentDocument->forceFill([
+                    'status' => 'completed',
+                    'workflow_state' => 'putaway_pending',
+                    'closed_at' => null,
+                    'closed_by' => null,
+                ])->save();
             }
         });
 

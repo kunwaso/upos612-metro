@@ -13,6 +13,8 @@ use App\Utils\Util;
 use App\VariationLocationDetails;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Modules\StorageManager\Entities\StorageDocumentLink;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseRequisitionController extends Controller
@@ -82,6 +84,12 @@ class PurchaseRequisitionController extends Controller
                     )
                     ->groupBy('transactions.id');
 
+            if (class_exists(StorageDocumentLink::class) && Schema::hasTable('storage_document_links')) {
+                $purchase_requisitions->addSelect(DB::raw("(SELECT COUNT(*) FROM storage_document_links sdl WHERE sdl.linked_system = 'app' AND sdl.linked_type = 'purchase_requisition' AND sdl.linked_id = transactions.id) as advisory_count"));
+            } else {
+                $purchase_requisitions->addSelect(DB::raw('0 as advisory_count'));
+            }
+
             $permitted_locations = auth()->user()->permitted_locations();
             if ($permitted_locations != 'all') {
                 $purchase_requisitions->whereIn('transactions.location_id', $permitted_locations);
@@ -140,6 +148,13 @@ class PurchaseRequisitionController extends Controller
                 ->removeColumn('id')
                 ->editColumn('delivery_date', '@if(!empty($delivery_date)){{@format_datetime($delivery_date)}}@endif')
                 ->editColumn('transaction_date', '{{@format_datetime($transaction_date)}}')
+                ->addColumn('advisory_count_display', function ($row) {
+                    $count = (int) ($row->advisory_count ?? 0);
+
+                    return $count > 0
+                        ? '<span class="label bg-blue">'.$count.'</span>'
+                        : '<span class="text-muted">—</span>';
+                })
                 ->editColumn('status', function ($row) {
                     $status = '';
                     $order_statuses = $this->purchaseRequisitionStatuses;
@@ -154,7 +169,7 @@ class PurchaseRequisitionController extends Controller
                     'data-href' => function ($row) {
                         return  action([\App\Http\Controllers\PurchaseRequisitionController::class, 'show'], [$row->id]);
                     }, ])
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status', 'action', 'advisory_count_display'])
                 ->make(true);
         }
 
@@ -293,8 +308,19 @@ class PurchaseRequisitionController extends Controller
 
         $purchase = $query->firstOrFail();
 
+        $advisory_links = collect();
+        if (class_exists(StorageDocumentLink::class) && Schema::hasTable('storage_document_links')) {
+            $advisory_links = StorageDocumentLink::query()
+                ->with('document')
+                ->where('linked_system', 'app')
+                ->where('linked_type', 'purchase_requisition')
+                ->where('linked_id', $purchase->id)
+                ->orderByDesc('id')
+                ->get();
+        }
+
         return view('purchase_requisition.show')
-                ->with(compact('purchase'));
+                ->with(compact('purchase', 'advisory_links'));
     }
 
     /**

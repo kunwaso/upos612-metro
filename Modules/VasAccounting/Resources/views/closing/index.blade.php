@@ -118,6 +118,7 @@
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_depreciation') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.unreconciled_bank') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_treasury_docs') }}</th>
+                            <th>@lang('lang_v1.vas_sync')</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.procurement_blockers') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.expense_blockers') }}</th>
                             <th>{{ __('vasaccounting::lang.views.closing.control_board.table.pending_approvals') }}</th>
@@ -146,6 +147,7 @@
                                 <td>{{ $blockers[$period->id]['pending_depreciation'] }}</td>
                                 <td>{{ $blockers[$period->id]['unreconciled_bank_lines'] }}</td>
                                 <td>{{ $blockers[$period->id]['pending_treasury_documents'] }}</td>
+                                <td>{{ (int) ($blockers[$period->id]['storage_sync_pending'] ?? 0) + (int) ($blockers[$period->id]['storage_sync_errors'] ?? 0) + (int) ($blockers[$period->id]['storage_reconcile_errors'] ?? 0) }}</td>
                                 <td>{{ $blockers[$period->id]['pending_procurement_documents'] + $blockers[$period->id]['receiving_procurement_documents'] + $blockers[$period->id]['matching_procurement_documents'] }}</td>
                                 <td>{{ $blockers[$period->id]['pending_expense_documents'] + $blockers[$period->id]['outstanding_expense_documents'] + $blockers[$period->id]['escalated_expense_approvals'] }}</td>
                                 <td>{{ $blockers[$period->id]['pending_approvals'] }}</td>
@@ -182,7 +184,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="12" class="bg-light-secondary">
+                                <td colspan="13" class="bg-light-secondary">
                                     <div class="d-flex flex-wrap gap-2">
                                         @foreach ($periodChecklists as $item)
                                             <span class="badge {{ $item->status === 'completed' ? 'badge-light-success' : 'badge-light-danger' }}">

@@ -3,6 +3,8 @@
 
 `ai/entrypoints/` is the checkout-aware starting point for agents when the correct route, controller, module, or view is not obvious from the user request.
 
+Entrypoints V2 keeps the existing Markdown maps and adds machine-readable sidecars under `ai/entrypoints/generated/` so coding agents can route work with less guessing.
+
 ## INDEX-first workflow
 
 1. Open [INDEX.md](./INDEX.md).
@@ -16,41 +18,46 @@ This keeps discovery narrow without replacing repo-aware tools.
 
 - Refresh all generated maps: `composer entrypoints:generate` or `php scripts/generate-entrypoint-maps.php`
 - Check for drift without writing: `composer entrypoints:check` or `php scripts/generate-entrypoint-maps.php --check`
-- The generator rewrites root maps, module maps, and the INDEX from the live checkout structure.
+- Validate schema and required sections: `composer entrypoints:test`
+- The generator rewrites root maps, module maps, INDEX, and generated JSON sidecars from the live checkout structure.
+
+## Compatibility rules
+
+- Markdown artifact names remain stable: `INDEX.md`, `core-*.md`, `module-*.md`.
+- Existing commands remain stable: `entrypoints:generate`, `entrypoints:check`.
+- New sidecars are additive and live under `ai/entrypoints/generated/*.json`.
 
 ## Naming
 
 - `core-<area>.md` for root application shards such as [core-http-entry.md](./core-http-entry.md).
 - `module-<PascalCase>.md` for folders under `Modules/`.
-- Keep file names matched to the real checkout paths so [INDEX.md](./INDEX.md) can link safely.
+- Sidecar keys mirror Markdown names without extension: `core-http-entry.json`, `module-VasAccounting.json`, etc.
 
-## Required map contents
+## V2 JSON contract
 
-Each module map should verify and list:
+Each sidecar map contains:
 
-- `Routes/web.php`
-- `Routes/api.php` when it exists
-- `Http/Controllers` files or subfolders
-- `Resources/views` top-level directories
-- relevant search keywords
-- links to existing `ai/*.md` or module `README.md` files when they add real context
-- a `Last reviewed` date
+- `kind`, `title`, `purpose`, `triggers`
+- `verified_paths` grouped by routes/controllers/views/requests/services/utils/models/jobs/notifications/assets/tests
+- `route_prefixes`, `search_keywords`, `related_docs`
+- `workflows`, `edit_bundles`, `dependencies`
+- `tests`, `verify_commands`, `last_reviewed`
 
-Root maps follow the same rule: link only to files or directories that exist in this checkout.
+Use sidecars for strict checks/tooling and Markdown for first-pass human navigation.
 
 ## Coverage policy
 
 - Every local folder under `Modules/` gets a `module-<Name>.md`.
+- Every generated map key gets a matching JSON file under `ai/entrypoints/generated/`.
 - [INDEX.md](./INDEX.md) includes one row per enabled module in [modules_statuses.json](../../modules_statuses.json) plus any local module folder that is not present in that JSON file.
 - If a module is enabled in JSON but missing on disk, `Map` must be `—` and `Notes` must say `not in checkout`.
-- Do not add dead map links or placeholder file links.
-- [core-http-controllers.md](./core-http-controllers.md) covers root-level controllers plus dedicated `Auth/`, `Install/`, and `Restaurant/` sections.
-- [core-utils-index.md](./core-utils-index.md) is Util-focused and also lists the remaining PHP files in `app/Utils/` so its scope is explicit.
+- Do not add dead map links, placeholder file links, or stale JSON sidecars.
 
 ## Maintenance rule
 
-- Re-run the generator in the same PR when route wiring, controller ownership, primary views, or module entry structure changes.
-- Keep `composer entrypoints:check` available for CI or pre-commit enforcement.
+- Re-run generation in the same PR when route wiring, controller ownership, primary views, tests, or module entry structure changes.
+- Update `ai/entrypoints/metadata.php` for curated workflows/edit bundles/verify guidance.
+- Keep `composer entrypoints:check` and `composer entrypoints:test` in CI/pre-commit validation.
 
 ## Fallbacks when a map is too thin
 

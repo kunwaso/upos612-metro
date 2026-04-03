@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-xl" role="document">
 	<div class="modal-content">
 		<div class="modal-header">
-		    <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary no-print" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></button>
 		    <h4 class="modal-title" id="modalTitle"> @lang('lang_v1.stock_transfer_details') (<b>@lang('purchase.ref_no'):</b> #{{ $sell_transfer->ref_no }})
 		    </h4>
 		</div>
@@ -169,7 +169,7 @@
 			<button type="button" class="btn btn-primary no-print" aria-label="Print" 
 			onclick="$(this).closest('div.modal-content').printThis();"><i class="fa fa-print"></i> @lang( 'messages.print' )
 			</button>
-			<button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white no-print" data-dismiss="modal">@lang( 'messages.close' )</button>
+			<button type="button" class="btn btn-sm btn-light no-print" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
 		</div>
 	</div>
 </div>

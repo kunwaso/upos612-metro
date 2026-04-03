@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
         <div class="modal-header">
-            <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="btn btn-icon btn-sm btn-active-light-primary no-print" data-bs-dismiss="modal" data-dismiss="modal" aria-label="@lang('messages.close')"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></button>
             <h4 class="modal-title" id="modalTitle"> @lang('lang_v1.purchase_requisition_details') (<b>@lang('purchase.ref_no'):</b> #{{ $purchase->ref_no }})
             </h4>
         </div>
@@ -52,9 +52,55 @@
                     </table>
                 </div>
             </div>
+            @if(!empty($advisory_links) && $advisory_links->count() > 0)
+                <div class="row mt-5">
+                    <div class="col-md-12">
+                        <h5 class="mb-3">@lang('lang_v1.warehouse_advisories')</h5>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>@lang('lang_v1.advisory_document_no')</th>
+                                    <th>@lang('lang_v1.status')</th>
+                                    <th>@lang('messages.date')</th>
+                                    <th>@lang('lang_v1.notes')</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($advisory_links as $advisory_link)
+                                    <tr>
+                                        <td class="fw-semibold">
+                                            @if(auth()->user()->can('storage_manager.view'))
+                                                <a href="#"
+                                                    class="btn-modal text-primary"
+                                                    data-container=".view_modal"
+                                                    data-href="{{ route('storage-manager.planning.show', $advisory_link->document_id) }}">
+                                                    {{ optional($advisory_link->document)->document_no ?: ($advisory_link->linked_ref ?? '-') }}
+                                                </a>
+                                            @else
+                                                {{ optional($advisory_link->document)->document_no ?: ($advisory_link->linked_ref ?? '-') }}
+                                            @endif
+                                        </td>
+                                        <td>{{ optional($advisory_link->document)->status ?: '-' }}</td>
+                                        <td>
+                                            @if(!empty(optional($advisory_link->document)->created_at))
+                                                {{ format_datetime_value(optional($advisory_link->document)->created_at) }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>{{ data_get($advisory_link->meta, 'requested_qty') ? __('lang_v1.requested_qty') . ': ' . format_quantity_value(data_get($advisory_link->meta, 'requested_qty')) : '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
         </div>
         <div class="modal-footer">
-            <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white no-print" data-dismiss="modal">@lang( 'messages.close' )</button>
+            <button type="button" class="btn btn-sm btn-light no-print" data-bs-dismiss="modal" data-dismiss="modal">@lang( 'messages.close' )</button>
         </div>
   </div>
 </div>
+
+

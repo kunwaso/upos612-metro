@@ -601,7 +601,7 @@
                                 <div class="text-muted fs-8">
                                     {{ __('vasaccounting::lang.views.cash_bank.reconciliation.recommended_document') }}:
                                     {{ $exceptionRow['recommended_document_no'] }}
-                                    ({{ \Illuminate\Support\Str::headline((string) str_replace('_', ' ', $exceptionRow['recommended_document_type'] ?? ''))) }})
+                                    ({{ \Illuminate\Support\Str::headline((string) str_replace('_', ' ', $exceptionRow['recommended_document_type'] ?? '')) }})
                                 </div>
                                 @if (! empty($exceptionRow['recommended_document_id']))
                                     <form method="POST" action="{{ route('vasaccounting.cash_bank.statements.canonical_reconcile', $exceptionRow['statement_line_id']) }}" class="mt-3">

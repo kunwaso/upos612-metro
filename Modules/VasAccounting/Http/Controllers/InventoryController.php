@@ -7,6 +7,7 @@ use App\BusinessLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Route;
 use Modules\VasAccounting\Entities\VasAccount;
 use Modules\VasAccounting\Entities\VasWarehouse;
 use Modules\VasAccounting\Entities\VasInventoryDocument;
@@ -16,6 +17,8 @@ use Modules\VasAccounting\Services\VasInventoryValuationService;
 use Modules\VasAccounting\Services\VasWarehouseDocumentService;
 use Modules\VasAccounting\Utils\OperationsAssetReportUtil;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
+use RuntimeException;
+use Throwable;
 
 class InventoryController extends VasBaseController
 {
@@ -78,6 +81,9 @@ class InventoryController extends VasBaseController
                 'uncovered_locations' => 0,
                 'unposted_documents' => $inventoryDocuments->whereIn('status', ['draft', 'pending_approval', 'approved'])->count(),
                 'warehouse_discrepancies' => $reconciliationRows->where('coverage_status', '!=', 'aligned')->count(),
+                'storage_sync_pending' => 0,
+                'storage_sync_errors' => 0,
+                'storage_reconcile_errors' => 0,
             ];
         }
 
@@ -137,6 +143,67 @@ class InventoryController extends VasBaseController
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.inventory_document_saved', ['document' => $document->document_no])]);
     }
 
+    public function showDocument(Request $request, int $document)
+    {
+        $this->authorizePermission('vas_accounting.inventory.manage');
+
+        $businessId = $this->businessId($request);
+        $inventoryDocument = VasInventoryDocument::query()
+            ->with([
+                'warehouse.businessLocation',
+                'destinationWarehouse.businessLocation',
+                'offsetAccount',
+                'period',
+                'postedVoucher',
+                'reversalVoucher',
+                'lines.product',
+            ])
+            ->where('business_id', $businessId)
+            ->findOrFail($document);
+
+        $storageDocumentLinks = collect();
+        $storageSyncLogs = collect();
+        if (
+            class_exists(\Modules\StorageManager\Entities\StorageDocumentLink::class)
+            && Schema::hasTable('storage_document_links')
+            && Schema::hasTable('storage_documents')
+        ) {
+            $storageDocumentLinks = \Modules\StorageManager\Entities\StorageDocumentLink::query()
+                ->with('document')
+                ->where('business_id', $businessId)
+                ->where('linked_system', 'vas')
+                ->where('linked_type', 'vas_inventory_document')
+                ->where('linked_id', $inventoryDocument->id)
+                ->orderByDesc('id')
+                ->get();
+
+            if (
+                class_exists(\Modules\StorageManager\Entities\StorageSyncLog::class)
+                && Schema::hasTable('storage_sync_logs')
+                && $storageDocumentLinks->isNotEmpty()
+            ) {
+                $documentIds = $storageDocumentLinks->pluck('document_id')->filter()->unique()->values();
+                $storageSyncLogs = \Modules\StorageManager\Entities\StorageSyncLog::query()
+                    ->with(['createdByUser', 'document'])
+                    ->where('business_id', $businessId)
+                    ->whereIn('document_id', $documentIds)
+                    ->orderByDesc('id')
+                    ->limit(40)
+                    ->get();
+            }
+        }
+
+        $canViewStorageManager = (bool) optional($request->user())->can('storage_manager.view');
+        $canOpenStorageDocument = $canViewStorageManager && Route::has('storage-manager.documents.show');
+
+        return view('vasaccounting::inventory.show_document', [
+            'inventoryDocument' => $inventoryDocument,
+            'storageDocumentLinks' => $storageDocumentLinks,
+            'storageSyncLogs' => $storageSyncLogs,
+            'canOpenStorageDocument' => $canOpenStorageDocument,
+        ]);
+    }
+
     public function postDocument(Request $request, int $document): RedirectResponse
     {
         $this->authorizePermission('vas_accounting.inventory.manage');
@@ -160,7 +227,19 @@ class InventoryController extends VasBaseController
             ->where('business_id', $this->businessId($request))
             ->findOrFail($document);
 
-        $this->warehouseDocumentService->reverseDocument($inventoryDocument, (int) $request->user()->id);
+        try {
+            $this->warehouseDocumentService->reverseDocument($inventoryDocument, (int) $request->user()->id);
+        } catch (RuntimeException $exception) {
+            return redirect()
+                ->route('vasaccounting.inventory.documents.show', $inventoryDocument->id)
+                ->with('status', ['success' => false, 'msg' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('vasaccounting.inventory.documents.show', $inventoryDocument->id)
+                ->with('status', ['success' => false, 'msg' => __('messages.something_went_wrong')]);
+        }
 
         return redirect()
             ->route('vasaccounting.inventory.index')

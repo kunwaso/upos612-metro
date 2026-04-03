@@ -103,12 +103,14 @@ class ControlTowerController extends Controller
         $movementRows = StorageInventoryMovement::query()
             ->where('business_id', $businessId)
             ->when($locationId > 0, fn ($query) => $query->where('location_id', $locationId))
+            ->with(['createdByUser', 'document'])
             ->latest('id')
             ->limit(15)
             ->get();
 
         $recentSyncLogs = StorageSyncLog::query()
             ->where('business_id', $businessId)
+            ->with(['createdByUser', 'document'])
             ->latest('id')
             ->limit(12)
             ->get();

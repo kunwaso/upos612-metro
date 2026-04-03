@@ -22,7 +22,7 @@ class OperationsAssetReportUtil
     ) {
     }
 
-    public function warehouseSummary(int $businessId): array
+    public function warehouseSummary(int $businessId, ?string $periodEnd = null): array
     {
         $warehouses = Schema::hasTable('vas_warehouses')
             ? VasWarehouse::query()->where('business_id', $businessId)->get()
@@ -31,6 +31,7 @@ class OperationsAssetReportUtil
             ? $this->inventoryValuationService->summaries($businessId)
             : collect();
         $stockLocations = $valuations->pluck('location_id')->filter()->unique();
+        $storageSyncSummary = $this->storageExecutionSyncSummary($businessId, $periodEnd);
 
         return [
             'warehouse_count' => $warehouses->count(),
@@ -39,6 +40,9 @@ class OperationsAssetReportUtil
             'uncovered_locations' => $stockLocations->diff($warehouses->pluck('business_location_id')->filter()->unique())->count(),
             'unposted_documents' => $this->unpostedInventoryDocumentCount($businessId),
             'warehouse_discrepancies' => $this->warehouseDiscrepancyCount($businessId),
+            'storage_sync_pending' => (int) ($storageSyncSummary['pending_sync'] ?? 0),
+            'storage_sync_errors' => (int) ($storageSyncSummary['sync_errors'] ?? 0),
+            'storage_reconcile_errors' => (int) ($storageSyncSummary['reconcile_errors'] ?? 0),
         ];
     }
 
@@ -132,6 +136,41 @@ class OperationsAssetReportUtil
             ->where('business_id', $businessId)
             ->whereIn('status', ['draft', 'pending_approval', 'approved'])
             ->count();
+    }
+
+    protected function storageExecutionSyncSummary(int $businessId, ?string $periodEnd = null): array
+    {
+        if (! Schema::hasTable('storage_documents') || ! Schema::hasColumn('storage_documents', 'sync_status')) {
+            return [
+                'pending_sync' => 0,
+                'sync_errors' => 0,
+                'reconcile_errors' => 0,
+            ];
+        }
+
+        $syncRows = DB::table('storage_documents')
+            ->where('business_id', $businessId)
+            ->when($periodEnd, function ($query) use ($periodEnd) {
+                $query->where(function ($dateQuery) use ($periodEnd) {
+                    $dateQuery->where(function ($closedQuery) use ($periodEnd) {
+                        $closedQuery->whereNotNull('closed_at')
+                            ->whereDate('closed_at', '<=', $periodEnd);
+                    })->orWhere(function ($openQuery) use ($periodEnd) {
+                        $openQuery->whereNull('closed_at')
+                            ->whereDate('created_at', '<=', $periodEnd);
+                    });
+                });
+            })
+            ->whereIn('sync_status', ['pending_sync', 'sync_error', 'reconcile_error'])
+            ->select('sync_status', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('sync_status')
+            ->pluck('aggregate', 'sync_status');
+
+        return [
+            'pending_sync' => (int) ($syncRows['pending_sync'] ?? 0),
+            'sync_errors' => (int) ($syncRows['sync_error'] ?? 0),
+            'reconcile_errors' => (int) ($syncRows['reconcile_error'] ?? 0),
+        ];
     }
 
     public function toolSummary(int $businessId): array

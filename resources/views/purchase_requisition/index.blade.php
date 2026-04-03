@@ -90,6 +90,7 @@
                         <th>@lang('purchase.ref_no')</th>
                         <th>@lang('purchase.location')</th>
                         <th>@lang('sale.status')</th>
+                        <th>@lang('lang_v1.warehouse_advisories')</th>
                         <th>@lang('lang_v1.required_by_date')</th>
                         <th>@lang('lang_v1.added_by')</th>
                     </tr>
@@ -171,6 +172,11 @@
                     {
                         data: 'status',
                         name: 'status'
+                    },
+                    {
+                        data: 'advisory_count_display',
+                        name: 'advisory_count',
+                        searchable: false
                     },
                     {
                         data: 'delivery_date',

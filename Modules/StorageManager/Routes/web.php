@@ -4,6 +4,7 @@ use Modules\StorageManager\Http\Controllers\StorageManagerController;
 use Modules\StorageManager\Http\Controllers\StorageSlotController;
 use Modules\StorageManager\Http\Controllers\InstallController;
 use Modules\StorageManager\Http\Controllers\StorageAreaController;
+use Modules\StorageManager\Http\Controllers\StorageDocumentController;
 use Modules\StorageManager\Http\Controllers\StorageLocationSettingsController;
 use Modules\StorageManager\Http\Controllers\ControlTowerController;
 use Modules\StorageManager\Http\Controllers\CycleCountController;
@@ -43,22 +44,27 @@ Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezo
         });
 
         Route::get('/control-tower', [ControlTowerController::class, 'index'])->name('control-tower.index');
+        Route::get('/documents/{document}', [StorageDocumentController::class, 'show'])->name('documents.show');
 
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/purchasing', [PurchasingAdvisoryController::class, 'index'])->name('index');
+            Route::get('/advisories/{document}', [PurchasingAdvisoryController::class, 'show'])->name('show');
             Route::post('/purchasing/{rule}/purchase-requisition', [PurchasingAdvisoryController::class, 'store'])->name('store');
+            Route::post('/purchasing/location/{location}/purchase-requisition', [PurchasingAdvisoryController::class, 'storeGrouped'])->name('store-grouped');
         });
 
         Route::prefix('inbound')->name('inbound.')->group(function () {
             Route::get('/expected-receipts', [InboundController::class, 'index'])->name('index');
             Route::get('/receipts/{sourceType}/{sourceId}', [InboundController::class, 'show'])->name('show');
             Route::post('/receipts/{document}/confirm', [InboundController::class, 'confirm'])->name('confirm');
+            Route::post('/receipts/{document}/reopen', [InboundController::class, 'reopen'])->name('reopen');
         });
 
         Route::prefix('putaway')->name('putaway.')->group(function () {
             Route::get('/', [PutawayController::class, 'index'])->name('index');
             Route::get('/{document}', [PutawayController::class, 'show'])->name('show');
             Route::post('/{document}/complete', [PutawayController::class, 'complete'])->name('complete');
+            Route::post('/{document}/reopen', [PutawayController::class, 'reopen'])->name('reopen');
         });
 
         Route::prefix('transfers')->name('transfers.')->group(function () {

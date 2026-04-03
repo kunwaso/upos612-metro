@@ -3,71 +3,248 @@
 
 Entry map for the warehouse and storage execution module under `/storage-manager/*`.
 
+## Use when
+
+- counts
+- inbound
+- putaway
+- StorageManager
+- warehouse
+
+## Start here
+
+- [Modules/StorageManager/Http/Controllers](../../Modules/StorageManager/Http/Controllers)
+- [Modules/StorageManager/Resources/views](../../Modules/StorageManager/Resources/views)
+- [Modules/StorageManager/Routes/web.php](../../Modules/StorageManager/Routes/web.php)
+
 ## Verified paths
 
 ### Routes
 
 - [Modules/StorageManager/Routes/web.php](../../Modules/StorageManager/Routes/web.php) — `/storage-manager/*` routes for settings, areas, slots, inbound, putaway, outbound, transfers, counts, damage, replenishment, and control tower
-- `Modules/StorageManager/Routes/api.php` is not present in this checkout
+- `missing route file` is not present in this checkout
 
 ### Controllers
 
 - [Modules/StorageManager/Http/Controllers](../../Modules/StorageManager/Http/Controllers)
-- [ControlTowerController.php](../../Modules/StorageManager/Http/Controllers/ControlTowerController.php)
-- [CycleCountController.php](../../Modules/StorageManager/Http/Controllers/CycleCountController.php)
-- [DamageQuarantineController.php](../../Modules/StorageManager/Http/Controllers/DamageQuarantineController.php)
-- [DataController.php](../../Modules/StorageManager/Http/Controllers/DataController.php)
-- [InboundController.php](../../Modules/StorageManager/Http/Controllers/InboundController.php)
-- [InstallController.php](../../Modules/StorageManager/Http/Controllers/InstallController.php)
-- [OutboundExecutionController.php](../../Modules/StorageManager/Http/Controllers/OutboundExecutionController.php)
-- [PurchasingAdvisoryController.php](../../Modules/StorageManager/Http/Controllers/PurchasingAdvisoryController.php)
-- [PutawayController.php](../../Modules/StorageManager/Http/Controllers/PutawayController.php)
-- [ReplenishmentController.php](../../Modules/StorageManager/Http/Controllers/ReplenishmentController.php)
-- [StorageAreaController.php](../../Modules/StorageManager/Http/Controllers/StorageAreaController.php)
-- [StorageLocationSettingsController.php](../../Modules/StorageManager/Http/Controllers/StorageLocationSettingsController.php)
-- [StorageManagerController.php](../../Modules/StorageManager/Http/Controllers/StorageManagerController.php)
-- [StorageSlotController.php](../../Modules/StorageManager/Http/Controllers/StorageSlotController.php)
-- [TransferExecutionController.php](../../Modules/StorageManager/Http/Controllers/TransferExecutionController.php)
+- [Modules/StorageManager/Http/Controllers/ControlTowerController.php](../../Modules/StorageManager/Http/Controllers/ControlTowerController.php)
+- [Modules/StorageManager/Http/Controllers/CycleCountController.php](../../Modules/StorageManager/Http/Controllers/CycleCountController.php)
+- [Modules/StorageManager/Http/Controllers/DamageQuarantineController.php](../../Modules/StorageManager/Http/Controllers/DamageQuarantineController.php)
+- [Modules/StorageManager/Http/Controllers/DataController.php](../../Modules/StorageManager/Http/Controllers/DataController.php)
+- [Modules/StorageManager/Http/Controllers/InboundController.php](../../Modules/StorageManager/Http/Controllers/InboundController.php)
+- [Modules/StorageManager/Http/Controllers/InstallController.php](../../Modules/StorageManager/Http/Controllers/InstallController.php)
+- [Modules/StorageManager/Http/Controllers/OutboundExecutionController.php](../../Modules/StorageManager/Http/Controllers/OutboundExecutionController.php)
+- [Modules/StorageManager/Http/Controllers/PurchasingAdvisoryController.php](../../Modules/StorageManager/Http/Controllers/PurchasingAdvisoryController.php)
+- [Modules/StorageManager/Http/Controllers/PutawayController.php](../../Modules/StorageManager/Http/Controllers/PutawayController.php)
+- [Modules/StorageManager/Http/Controllers/ReplenishmentController.php](../../Modules/StorageManager/Http/Controllers/ReplenishmentController.php)
+- [Modules/StorageManager/Http/Controllers/StorageAreaController.php](../../Modules/StorageManager/Http/Controllers/StorageAreaController.php)
+- [Modules/StorageManager/Http/Controllers/StorageDocumentController.php](../../Modules/StorageManager/Http/Controllers/StorageDocumentController.php)
+- [Modules/StorageManager/Http/Controllers/StorageLocationSettingsController.php](../../Modules/StorageManager/Http/Controllers/StorageLocationSettingsController.php)
+- [Modules/StorageManager/Http/Controllers/StorageManagerController.php](../../Modules/StorageManager/Http/Controllers/StorageManagerController.php)
+- [Modules/StorageManager/Http/Controllers/StorageSlotController.php](../../Modules/StorageManager/Http/Controllers/StorageSlotController.php)
+- [Modules/StorageManager/Http/Controllers/TransferExecutionController.php](../../Modules/StorageManager/Http/Controllers/TransferExecutionController.php)
 
 ### Views
 
 - [Modules/StorageManager/Resources/views](../../Modules/StorageManager/Resources/views)
-- [areas/](../../Modules/StorageManager/Resources/views/areas)
-- [control_tower/](../../Modules/StorageManager/Resources/views/control_tower)
-- [counts/](../../Modules/StorageManager/Resources/views/counts)
-- [damage/](../../Modules/StorageManager/Resources/views/damage)
-- [inbound/](../../Modules/StorageManager/Resources/views/inbound)
-- [outbound/](../../Modules/StorageManager/Resources/views/outbound)
-- [planning/](../../Modules/StorageManager/Resources/views/planning)
-- [putaway/](../../Modules/StorageManager/Resources/views/putaway)
-- [replenishment/](../../Modules/StorageManager/Resources/views/replenishment)
-- [settings/](../../Modules/StorageManager/Resources/views/settings)
-- [slots/](../../Modules/StorageManager/Resources/views/slots)
-- [transfers/](../../Modules/StorageManager/Resources/views/transfers)
+- [Modules/StorageManager/Resources/views/areas](../../Modules/StorageManager/Resources/views/areas)
+- [Modules/StorageManager/Resources/views/control_tower](../../Modules/StorageManager/Resources/views/control_tower)
+- [Modules/StorageManager/Resources/views/counts](../../Modules/StorageManager/Resources/views/counts)
+- [Modules/StorageManager/Resources/views/damage](../../Modules/StorageManager/Resources/views/damage)
+- [Modules/StorageManager/Resources/views/documents](../../Modules/StorageManager/Resources/views/documents)
+- [Modules/StorageManager/Resources/views/inbound](../../Modules/StorageManager/Resources/views/inbound)
+- [Modules/StorageManager/Resources/views/outbound](../../Modules/StorageManager/Resources/views/outbound)
+- [Modules/StorageManager/Resources/views/planning](../../Modules/StorageManager/Resources/views/planning)
+- [Modules/StorageManager/Resources/views/putaway](../../Modules/StorageManager/Resources/views/putaway)
+- [Modules/StorageManager/Resources/views/replenishment](../../Modules/StorageManager/Resources/views/replenishment)
+- [Modules/StorageManager/Resources/views/settings](../../Modules/StorageManager/Resources/views/settings)
+- [Modules/StorageManager/Resources/views/slots](../../Modules/StorageManager/Resources/views/slots)
+- [Modules/StorageManager/Resources/views/transfers](../../Modules/StorageManager/Resources/views/transfers)
+
+### Requests
+
+- [Modules/StorageManager/Http/Requests](../../Modules/StorageManager/Http/Requests)
+- [Modules/StorageManager/Http/Requests/ApproveCycleCountShortagesRequest.php](../../Modules/StorageManager/Http/Requests/ApproveCycleCountShortagesRequest.php)
+- [Modules/StorageManager/Http/Requests/AssignSlotRequest.php](../../Modules/StorageManager/Http/Requests/AssignSlotRequest.php)
+- [Modules/StorageManager/Http/Requests/CompletePackRequest.php](../../Modules/StorageManager/Http/Requests/CompletePackRequest.php)
+- [Modules/StorageManager/Http/Requests/CompletePickRequest.php](../../Modules/StorageManager/Http/Requests/CompletePickRequest.php)
+- [Modules/StorageManager/Http/Requests/CompletePutawayRequest.php](../../Modules/StorageManager/Http/Requests/CompletePutawayRequest.php)
+- [Modules/StorageManager/Http/Requests/CompleteReplenishmentRequest.php](../../Modules/StorageManager/Http/Requests/CompleteReplenishmentRequest.php)
+- [Modules/StorageManager/Http/Requests/CompleteShipRequest.php](../../Modules/StorageManager/Http/Requests/CompleteShipRequest.php)
+- [Modules/StorageManager/Http/Requests/CompleteTransferDispatchRequest.php](../../Modules/StorageManager/Http/Requests/CompleteTransferDispatchRequest.php)
+- [Modules/StorageManager/Http/Requests/ConfirmReceiptRequest.php](../../Modules/StorageManager/Http/Requests/ConfirmReceiptRequest.php)
+- [Modules/StorageManager/Http/Requests/ConfirmTransferReceiptRequest.php](../../Modules/StorageManager/Http/Requests/ConfirmTransferReceiptRequest.php)
+- [Modules/StorageManager/Http/Requests/CreateCycleCountSessionRequest.php](../../Modules/StorageManager/Http/Requests/CreateCycleCountSessionRequest.php)
+- [Modules/StorageManager/Http/Requests/ReportDamageRequest.php](../../Modules/StorageManager/Http/Requests/ReportDamageRequest.php)
+- [Modules/StorageManager/Http/Requests/ResolveDamageRequest.php](../../Modules/StorageManager/Http/Requests/ResolveDamageRequest.php)
+- [Modules/StorageManager/Http/Requests/StoreGroupedPurchasingAdvisoryRequest.php](../../Modules/StorageManager/Http/Requests/StoreGroupedPurchasingAdvisoryRequest.php)
+- [Modules/StorageManager/Http/Requests/StorePurchasingAdvisoryRequest.php](../../Modules/StorageManager/Http/Requests/StorePurchasingAdvisoryRequest.php)
+- [Modules/StorageManager/Http/Requests/StoreStorageAreaRequest.php](../../Modules/StorageManager/Http/Requests/StoreStorageAreaRequest.php)
+- [Modules/StorageManager/Http/Requests/StoreStorageSlotRequest.php](../../Modules/StorageManager/Http/Requests/StoreStorageSlotRequest.php)
+- [Modules/StorageManager/Http/Requests/SubmitCycleCountRequest.php](../../Modules/StorageManager/Http/Requests/SubmitCycleCountRequest.php)
+- [Modules/StorageManager/Http/Requests/UpdateStorageAreaRequest.php](../../Modules/StorageManager/Http/Requests/UpdateStorageAreaRequest.php)
+- [Modules/StorageManager/Http/Requests/UpdateStorageSlotRequest.php](../../Modules/StorageManager/Http/Requests/UpdateStorageSlotRequest.php)
+
+### Services
+
+- [Modules/StorageManager/Services](../../Modules/StorageManager/Services)
+- [Modules/StorageManager/Services/Adapters/AbstractTransactionSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/AbstractTransactionSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/PurchaseOrderSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/PurchaseOrderSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/PurchaseSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/PurchaseSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/SalesOrderSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/SalesOrderSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/StockAdjustmentSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/StockAdjustmentSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/StockTransferSourceAdapter.php](../../Modules/StorageManager/Services/Adapters/StockTransferSourceAdapter.php)
+- [Modules/StorageManager/Services/Adapters/VasWarehousePostingAdapter.php](../../Modules/StorageManager/Services/Adapters/VasWarehousePostingAdapter.php)
+- [Modules/StorageManager/Services/CycleCountService.php](../../Modules/StorageManager/Services/CycleCountService.php)
+- [Modules/StorageManager/Services/DamageQuarantineService.php](../../Modules/StorageManager/Services/DamageQuarantineService.php)
+- [Modules/StorageManager/Services/InventoryMovementService.php](../../Modules/StorageManager/Services/InventoryMovementService.php)
+- [Modules/StorageManager/Services/OutboundExecutionService.php](../../Modules/StorageManager/Services/OutboundExecutionService.php)
+- [Modules/StorageManager/Services/PurchasingAdvisoryService.php](../../Modules/StorageManager/Services/PurchasingAdvisoryService.php)
+- [Modules/StorageManager/Services/PutawayService.php](../../Modules/StorageManager/Services/PutawayService.php)
+- [Modules/StorageManager/Services/ReceivingService.php](../../Modules/StorageManager/Services/ReceivingService.php)
+- [Modules/StorageManager/Services/ReconciliationService.php](../../Modules/StorageManager/Services/ReconciliationService.php)
+- [Modules/StorageManager/Services/ReplenishmentService.php](../../Modules/StorageManager/Services/ReplenishmentService.php)
+- [Modules/StorageManager/Services/SourceDocumentAdapterManager.php](../../Modules/StorageManager/Services/SourceDocumentAdapterManager.php)
+- [Modules/StorageManager/Services/StockAdjustmentBridgeService.php](../../Modules/StorageManager/Services/StockAdjustmentBridgeService.php)
+- [Modules/StorageManager/Services/TransferExecutionService.php](../../Modules/StorageManager/Services/TransferExecutionService.php)
+- [Modules/StorageManager/Services/WarehouseKpiService.php](../../Modules/StorageManager/Services/WarehouseKpiService.php)
+- [Modules/StorageManager/Services/WarehouseSyncService.php](../../Modules/StorageManager/Services/WarehouseSyncService.php)
+
+### Utils
+
+- [Modules/StorageManager/Utils](../../Modules/StorageManager/Utils)
+- [Modules/StorageManager/Utils/StorageManagerUtil.php](../../Modules/StorageManager/Utils/StorageManagerUtil.php)
+
+### Models / Entities
+
+- [Modules/StorageManager/Entities/StorageApprovalRequest.php](../../Modules/StorageManager/Entities/StorageApprovalRequest.php)
+- [Modules/StorageManager/Entities/StorageArea.php](../../Modules/StorageManager/Entities/StorageArea.php)
+- [Modules/StorageManager/Entities/StorageCountLine.php](../../Modules/StorageManager/Entities/StorageCountLine.php)
+- [Modules/StorageManager/Entities/StorageCountSession.php](../../Modules/StorageManager/Entities/StorageCountSession.php)
+- [Modules/StorageManager/Entities/StorageDocument.php](../../Modules/StorageManager/Entities/StorageDocument.php)
+- [Modules/StorageManager/Entities/StorageDocumentLine.php](../../Modules/StorageManager/Entities/StorageDocumentLine.php)
+- [Modules/StorageManager/Entities/StorageDocumentLink.php](../../Modules/StorageManager/Entities/StorageDocumentLink.php)
+- [Modules/StorageManager/Entities/StorageInventoryMovement.php](../../Modules/StorageManager/Entities/StorageInventoryMovement.php)
+- [Modules/StorageManager/Entities/StorageLocationSetting.php](../../Modules/StorageManager/Entities/StorageLocationSetting.php)
+- [Modules/StorageManager/Entities/StorageReplenishmentRule.php](../../Modules/StorageManager/Entities/StorageReplenishmentRule.php)
+- [Modules/StorageManager/Entities/StorageSlot.php](../../Modules/StorageManager/Entities/StorageSlot.php)
+- [Modules/StorageManager/Entities/StorageSlotStock.php](../../Modules/StorageManager/Entities/StorageSlotStock.php)
+- [Modules/StorageManager/Entities/StorageSyncLog.php](../../Modules/StorageManager/Entities/StorageSyncLog.php)
+- [Modules/StorageManager/Entities/StorageTask.php](../../Modules/StorageManager/Entities/StorageTask.php)
+- [Modules/StorageManager/Entities/StorageTaskEvent.php](../../Modules/StorageManager/Entities/StorageTaskEvent.php)
+
+### Jobs / Notifications
+
+- _None discovered in this checkout_
+
+### Assets / JS
+
+- _None discovered in this checkout_
+
+### Tests
+
+- [Modules/StorageManager/Tests](../../Modules/StorageManager/Tests)
+- [Modules/StorageManager/Tests/Feature/StorageManagerRoutesRegistrationTest.php](../../Modules/StorageManager/Tests/Feature/StorageManagerRoutesRegistrationTest.php)
+- [Modules/StorageManager/Tests/Unit/StorageManagerContractTest.php](../../Modules/StorageManager/Tests/Unit/StorageManagerContractTest.php)
+- [Modules/StorageManager/Tests/Unit/StorageManagerUtilContractTest.php](../../Modules/StorageManager/Tests/Unit/StorageManagerUtilContractTest.php)
+- [Modules/StorageManager/Tests/Unit/StorageManagerVasSyncContractTest.php](../../Modules/StorageManager/Tests/Unit/StorageManagerVasSyncContractTest.php)
+- [Modules/StorageManager/Tests/Unit/StorageSlotModelContractTest.php](../../Modules/StorageManager/Tests/Unit/StorageSlotModelContractTest.php)
+
+## Common edit bundles
+
+- _None curated yet_
+
+## Primary workflows
+
+- _None curated yet_
+
+## Shared dependencies
+
+### Requests
+
+- `Modules\StorageManager\Http\Requests\ApproveCycleCountShortagesRequest`
+- `Modules\StorageManager\Http\Requests\AssignSlotRequest`
+- `Modules\StorageManager\Http\Requests\CompletePackRequest`
+- `Modules\StorageManager\Http\Requests\CompletePickRequest`
+- `Modules\StorageManager\Http\Requests\CompletePutawayRequest`
+- `Modules\StorageManager\Http\Requests\CompleteReplenishmentRequest`
+- `Modules\StorageManager\Http\Requests\CompleteShipRequest`
+- `Modules\StorageManager\Http\Requests\CompleteTransferDispatchRequest`
+- `Modules\StorageManager\Http\Requests\ConfirmReceiptRequest`
+- `Modules\StorageManager\Http\Requests\ConfirmTransferReceiptRequest`
+- `Modules\StorageManager\Http\Requests\CreateCycleCountSessionRequest`
+- `Modules\StorageManager\Http\Requests\ReportDamageRequest`
+- `Modules\StorageManager\Http\Requests\ResolveDamageRequest`
+- `Modules\StorageManager\Http\Requests\StoreGroupedPurchasingAdvisoryRequest`
+- `Modules\StorageManager\Http\Requests\StorePurchasingAdvisoryRequest`
+- `Modules\StorageManager\Http\Requests\StoreStorageAreaRequest`
+- `Modules\StorageManager\Http\Requests\StoreStorageSlotRequest`
+- `Modules\StorageManager\Http\Requests\SubmitCycleCountRequest`
+- `Modules\StorageManager\Http\Requests\UpdateStorageAreaRequest`
+- `Modules\StorageManager\Http\Requests\UpdateStorageSlotRequest`
+
+### Services
+
+- `Modules\StorageManager\Services\CycleCountService`
+- `Modules\StorageManager\Services\DamageQuarantineService`
+- `Modules\StorageManager\Services\OutboundExecutionService`
+- `Modules\StorageManager\Services\PurchasingAdvisoryService`
+- `Modules\StorageManager\Services\PutawayService`
+- `Modules\StorageManager\Services\ReceivingService`
+- `Modules\StorageManager\Services\ReconciliationService`
+- `Modules\StorageManager\Services\ReplenishmentService`
+- `Modules\StorageManager\Services\TransferExecutionService`
+- `Modules\StorageManager\Services\WarehouseKpiService`
+- `Modules\StorageManager\Services\WarehouseSyncService`
+
+### Utils
+
+- `App\Utils\ModuleUtil`
+- `Modules\StorageManager\Utils\StorageManagerUtil`
+
+### Models / Entities
+
+- `Modules\StorageManager\Entities\StorageArea`
+- `Modules\StorageManager\Entities\StorageCountSession`
+- `Modules\StorageManager\Entities\StorageDocument`
+- `Modules\StorageManager\Entities\StorageDocumentLink`
+- `Modules\StorageManager\Entities\StorageInventoryMovement`
+- `Modules\StorageManager\Entities\StorageLocationSetting`
+- `Modules\StorageManager\Entities\StorageSlot`
+- `Modules\StorageManager\Entities\StorageSlotStock`
+- `Modules\StorageManager\Entities\StorageSyncLog`
+- `Modules\StorageManager\Entities\StorageTask`
+- `Spatie\Permission\Models\Permission`
+- `Spatie\Permission\Models\Role`
+
+## Tests / verify
+
+- [Modules/StorageManager/Tests](../../Modules/StorageManager/Tests)
+- `php artisan test --filter=StorageManager`
 
 ## Search keywords
 
-- `StorageManager`
-- `storage-manager`
-- `control-tower`
-- `inbound`
-- `putaway`
-- `replenishment`
-- `counts`
-- `outbound`
-- `slots`
 - `api`
 - `areas`
+- `control-tower`
+- `counts`
 - `damage`
+- `inbound`
 - `install`
+- `outbound`
 - `planning`
+- `putaway`
+- `replenishment`
+- `slots`
+- `storage-manager`
+- `StorageManager`
 - `transfers`
 
 ## Related docs
 
+- [ai/database-map.md](../database-map.md)
 - [ai/laravel-conventions.md](../laravel-conventions.md)
 - [ai/security-and-auth.md](../security-and-auth.md)
-- [ai/database-map.md](../database-map.md)
 
 ## Last reviewed
 

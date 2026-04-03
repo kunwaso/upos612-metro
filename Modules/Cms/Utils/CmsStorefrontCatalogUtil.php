@@ -6,7 +6,6 @@ use App\Business;
 use App\Product;
 use App\Utils\Util;
 use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator as PaginatorConcrete;
@@ -52,7 +51,7 @@ class CmsStorefrontCatalogUtil
             ->with(['variations']);
     }
 
-    public function paginateCatalog(Request $request, int $perPage = 12): LengthAwarePaginator
+    public function paginateCatalog(Request $request, int $perPage = 12): PaginatorConcrete
     {
         $businessId = $this->getStorefrontBusinessId();
         if ($businessId === null || $this->getStorefrontBusiness() === null) {
@@ -72,7 +71,7 @@ class CmsStorefrontCatalogUtil
             $query->orderByDesc('products.updated_at');
         }
 
-        return $query->paginate($perPage)->withQueryString();
+        return $query->paginate($perPage);
     }
 
     /**
@@ -127,7 +126,7 @@ class CmsStorefrontCatalogUtil
         return $products->map(fn (Product $p) => $this->buildCardPresentation($p, $business))->values();
     }
 
-    protected function emptyPaginator(Request $request, int $perPage): LengthAwarePaginator
+    protected function emptyPaginator(Request $request, int $perPage): PaginatorConcrete
     {
         $page = max(1, (int) $request->query('page', 1));
 
@@ -250,6 +249,7 @@ class CmsStorefrontCatalogUtil
         $plainDescription = Str::limit(trim(strip_tags($description)), 2000);
 
         return [
+            'id' => $product->id,
             'title' => $product->name,
             'sku' => $product->sku,
             'price_label' => $this->formatPriceLabel($priceData, $business, $priceData['show_from']),
@@ -258,7 +258,7 @@ class CmsStorefrontCatalogUtil
         ];
     }
 
-    public function buildResultsSummary(LengthAwarePaginator $paginator): string
+    public function buildResultsSummary(PaginatorConcrete $paginator): string
     {
         if ($paginator->total() === 0) {
             return __('cms::lang.storefront_no_results');

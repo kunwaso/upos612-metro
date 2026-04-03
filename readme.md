@@ -41,6 +41,7 @@ Use these docs in this order when working with Codex or Cursor in this repo:
 ### CMS public storefront catalog
 
 The CMS shop at `/shop/catalog` lists **`App\Product`** rows for the business id set in **`.env`** as **`CMS_STOREFRONT_BUSINESS_ID`** (integer). If unset, the catalog renders empty. After changing `.env`, run `php artisan config:clear` if config is cached.
+Storefront checkout/cart pages are replaced by a product-level RFQ flow at `/shop/product/{id}/request-quote`, which stores rows in `cms_quote_requests` and (when the Essentials module and `essentials_to_dos` tables exist) creates an assigned **To Do** for the business. Optional: set **`CMS_STOREFRONT_RFQ_TODO_USER_ID`** to force assignment to a specific user id; otherwise the business **owner** or first business user is used.
 
 README is only the entry point. It should link to the canonical docs above instead of duplicating policy.
 

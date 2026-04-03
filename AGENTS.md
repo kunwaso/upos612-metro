@@ -770,6 +770,8 @@ ai/                           ← AI reference documents (this folder)
 │   ├── core-http-controllers.md ← Top-level root controller index with grep hints
 │   ├── core-utils-index.md   ← Shared root Util index
 │   └── module-<Name>.md      ← Verified module route/controller/view entry maps
+│   ├── generated/*.json      ← Structured sidecars for workflows/edit bundles/dependencies/tests
+│   └── metadata.php          ← Curated entrypoint enrichments (source of truth for generator)
 ├── external-adoption.md      ← GitHub/trending intake and safe adaptation checklist
 ├── known-issues.md           ← Bugs, debt, traps
 ├── laravel-conventions.md    ← Coding conventions
@@ -814,7 +816,7 @@ Always read the relevant document before writing code in that domain:
 | Structuring a controller, Util, model, or route | `ai/laravel-conventions.md` |
 | Writing any database query or migration | `ai/database-map.md` |
 | Adding/modifying routes, middleware, permissions | `ai/security-and-auth.md` |
-| Unclear entry points / where to start reading in this checkout | `ai/entrypoints/INDEX.md` first, then one area map, then the relevant domain doc(s) below |
+| Unclear entry points / where to start reading in this checkout | `ai/entrypoints/INDEX.md` first, then one area map; use `ai/entrypoints/generated/*.json` when structured workflow/dependency hints are needed |
 | Working on any existing file or fixing bugs | `ai/known-issues.md` |
 | Improving agent workflow (reasoning, preferences, minimize tool calls; what works in-repo vs training-only) | `ai/agent-improvement.md` |
 | Agent tools, MCP, or speeding up answers and implementation | `ai/agent-tools-and-mcp.md` |
@@ -1042,7 +1044,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (16728 symbols, 35710 relationships, 88 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (16832 symbols, 35990 relationships, 88 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

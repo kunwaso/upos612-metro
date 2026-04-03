@@ -9,6 +9,18 @@ Verified controller index for root files in `app/Http/Controllers/*.php` plus th
 - Use the grep hint column to jump from a controller name to the owning route declarations quickly.
 - Open the section that matches the area first instead of scanning the whole controller tree.
 
+## Use when
+
+- The task names a root controller but route ownership is still unclear.
+- You need the closest controller section (`Auth`, `Install`, `Restaurant`) quickly.
+
+## Start here
+
+- [app/Http/Controllers/](../../app/Http/Controllers/)
+- [app/Http/Controllers/Auth/](../../app/Http/Controllers/Auth/)
+- [app/Http/Controllers/Install/](../../app/Http/Controllers/Install/)
+- [app/Http/Controllers/Restaurant/](../../app/Http/Controllers/Restaurant/)
+
 ## Root-level controllers
 
 Open [app/Http/Controllers/](../../app/Http/Controllers/) first for non-module controllers that live directly under the root controller directory.
@@ -117,6 +129,23 @@ Open [app/Http/Controllers/Restaurant/](../../app/Http/Controllers/Restaurant/) 
 | [RestaurantController.php](../../app/Http/Controllers/Restaurant/RestaurantController.php) | Restaurant settings, service areas, and dining flows. | `rg -n 'RestaurantController' routes app/Providers` |
 | [TableController.php](../../app/Http/Controllers/Restaurant/TableController.php) | Restaurant table management and seating flows. | `rg -n 'TableController' routes app/Providers` |
 
+
+## Common edit bundles
+
+- **Controller + route bundle** — [app/Http/Controllers/](../../app/Http/Controllers/), [routes/web.php](../../routes/web.php), [routes/api.php](../../routes/api.php)
+
+## Primary workflows
+
+- **Controller ownership pass** — identify the owning route and middleware before changing controller logic.
+
+## Shared dependencies
+
+- Root controllers frequently call `App\Utils\*Util` and root FormRequests under `app/Http/Requests`.
+
+## Tests / verify
+
+- [tests/Feature](../../tests/Feature)
+- `php artisan test --filter=Feature`
 
 ## Related docs
 

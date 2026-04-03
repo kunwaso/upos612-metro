@@ -1,0 +1,123 @@
+{
+    "kind": "core",
+    "title": "Core HTTP Entry",
+    "purpose": "Use this map when the task is in the root Laravel app rather than a `Modules/*` package.",
+    "triggers": [
+        "app/Http/Controllers",
+        "app/Utils",
+        "Core (root)",
+        "root routes"
+    ],
+    "verified_paths": {
+        "routes": [
+            {
+                "path": "routes/web.php",
+                "summary": "main root web routes; includes routes/install_r.php",
+                "exists": true
+            },
+            {
+                "path": "routes/api.php",
+                "summary": "root API routes",
+                "exists": true
+            },
+            {
+                "path": "routes/install_r.php",
+                "summary": "install/bootstrap route file pulled into web.php",
+                "exists": true
+            },
+            {
+                "path": "routes/channels.php",
+                "summary": "broadcast authorization hooks",
+                "exists": true
+            }
+        ],
+        "controllers": [
+            "app/Http/Controllers",
+            "app/Http/Controllers/Auth",
+            "app/Http/Controllers/Install",
+            "app/Http/Controllers/Restaurant"
+        ],
+        "views": [],
+        "requests": [
+            "app/Http/Requests"
+        ],
+        "services": [],
+        "utils": [
+            "app/Utils"
+        ],
+        "models": [],
+        "jobs": [
+            "app/Jobs"
+        ],
+        "notifications": [
+            "app/Notifications"
+        ],
+        "assets": [
+            "resources/css",
+            "resources/js"
+        ],
+        "tests": [
+            "tests/Feature"
+        ]
+    },
+    "route_prefixes": [],
+    "search_keywords": [
+        "App\\Http\\Controllers",
+        "contacts",
+        "home",
+        "products",
+        "quotes",
+        "reports",
+        "routes/api.php",
+        "routes/web.php",
+        "sell"
+    ],
+    "related_docs": [
+        "ai/agent-tools-and-mcp.md",
+        "ai/laravel-conventions.md",
+        "ai/security-and-auth.md"
+    ],
+    "workflows": [
+        {
+            "name": "Root route to controller trace",
+            "paths": [
+                "app/Http/Controllers",
+                "routes/web.php"
+            ],
+            "notes": "Use this path when a task references a root route name, middleware, or controller action."
+        },
+        {
+            "name": "Install/bootstrap route trace",
+            "paths": [
+                "app/Http/Controllers/Install",
+                "routes/install_r.php"
+            ],
+            "notes": "Start here when setup/installer flows are involved."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Root web flow bundle",
+            "paths": [
+                "app/Http/Controllers",
+                "resources/views",
+                "routes/web.php"
+            ],
+            "notes": "Most root feature edits touch route declaration, controller behavior, and a root Blade surface together."
+        }
+    ],
+    "dependencies": {
+        "requests": [],
+        "services": [],
+        "utils": [],
+        "models": []
+    },
+    "tests": [
+        "tests/Feature"
+    ],
+    "verify_commands": [
+        "php artisan route:list",
+        "php artisan test --filter=Feature"
+    ],
+    "last_reviewed": "2026-04-03"
+}

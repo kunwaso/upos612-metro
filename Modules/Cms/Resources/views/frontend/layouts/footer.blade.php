@@ -42,8 +42,7 @@
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Account</span>
                 <ul>
                     <li><a href="{{ route('cms.store.account') }}">My account</a></li>
-                    <li><a href="{{ route('cms.store.cart') }}">Orders</a></li>
-                    <li><a href="{{ route('cms.store.checkout') }}">Checkout</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
                     <li><a href="{{ route('cms.store.wishlist') }}">My wishlists</a></li>
                 </ul>
             </div>

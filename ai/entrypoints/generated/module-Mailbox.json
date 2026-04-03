@@ -1,0 +1,142 @@
+{
+    "kind": "module",
+    "title": "Mailbox",
+    "purpose": "Entry map for the admin mailbox module, including inbox views, account setup, OAuth callback wiring, and compose flows.",
+    "triggers": [
+        "compose",
+        "Gmail OAuth",
+        "IMAP",
+        "inbox",
+        "Mailbox"
+    ],
+    "verified_paths": {
+        "routes": [
+            {
+                "path": "Modules/Mailbox/Routes/web.php",
+                "summary": "`/mailbox/*` inbox, accounts, compose, and install routes",
+                "exists": true
+            },
+            {
+                "path": "Modules/Mailbox/Routes/api.php",
+                "summary": "auth API placeholder route for `/mailbox`",
+                "exists": true
+            }
+        ],
+        "controllers": [
+            "Modules/Mailbox/Http/Controllers",
+            "Modules/Mailbox/Http/Controllers/DataController.php",
+            "Modules/Mailbox/Http/Controllers/InstallController.php",
+            "Modules/Mailbox/Http/Controllers/MailboxAccountController.php",
+            "Modules/Mailbox/Http/Controllers/MailboxController.php",
+            "Modules/Mailbox/Http/Controllers/MailboxOAuthController.php",
+            "Modules/Mailbox/Http/Controllers/MailboxSendController.php"
+        ],
+        "views": [
+            "Modules/Mailbox/Resources/views",
+            "Modules/Mailbox/Resources/views/accounts",
+            "Modules/Mailbox/Resources/views/inbox",
+            "Modules/Mailbox/Resources/views/layouts",
+            "Modules/Mailbox/Resources/views/partials"
+        ],
+        "requests": [
+            "Modules/Mailbox/Http/Requests",
+            "Modules/Mailbox/Http/Requests/SendMailboxMessageRequest.php",
+            "Modules/Mailbox/Http/Requests/StoreMailboxAccountRequest.php",
+            "Modules/Mailbox/Http/Requests/TestMailboxConnectionRequest.php",
+            "Modules/Mailbox/Http/Requests/UpdateMailboxAccountRequest.php"
+        ],
+        "services": [
+            "Modules/Mailbox/Services",
+            "Modules/Mailbox/Services/GmailMailboxClient.php",
+            "Modules/Mailbox/Services/ImapMailboxClient.php",
+            "Modules/Mailbox/Services/SmtpMailboxSender.php"
+        ],
+        "utils": [
+            "Modules/Mailbox/Utils",
+            "Modules/Mailbox/Utils/MailboxAccountUtil.php",
+            "Modules/Mailbox/Utils/MailboxMessageUtil.php",
+            "Modules/Mailbox/Utils/MailboxSendUtil.php",
+            "Modules/Mailbox/Utils/MailboxSyncUtil.php"
+        ],
+        "models": [
+            "Modules/Mailbox/Entities/MailboxAccount.php",
+            "Modules/Mailbox/Entities/MailboxAttachment.php",
+            "Modules/Mailbox/Entities/MailboxMessage.php"
+        ],
+        "jobs": [
+            "Modules/Mailbox/Jobs",
+            "Modules/Mailbox/Jobs/SendMailboxMessageJob.php",
+            "Modules/Mailbox/Jobs/SyncMailboxAccountJob.php"
+        ],
+        "notifications": [],
+        "assets": [
+            "Modules/Mailbox/Resources/assets",
+            "Modules/Mailbox/Resources/assets/css/mailbox.css",
+            "Modules/Mailbox/Resources/assets/js/app.js",
+            "Modules/Mailbox/Resources/assets/js/mailbox.js",
+            "Modules/Mailbox/Resources/assets/sass/app.scss"
+        ],
+        "tests": [
+            "Modules/Mailbox/Tests",
+            "Modules/Mailbox/Tests/Unit/GmailMailboxClientEncodingTest.php",
+            "Modules/Mailbox/Tests/Unit/ImapMailboxClientTest.php",
+            "Modules/Mailbox/Tests/Unit/MailboxAccountModelTest.php",
+            "Modules/Mailbox/Tests/Unit/TestMailboxConnectionRequestTest.php"
+        ]
+    },
+    "route_prefixes": [
+        "accounts",
+        "compose",
+        "install",
+        "mailbox"
+    ],
+    "search_keywords": [
+        "accounts",
+        "attachments",
+        "compose",
+        "gmail",
+        "imap",
+        "install",
+        "Mailbox",
+        "mailbox",
+        "oauth",
+        "threads"
+    ],
+    "related_docs": [
+        "ai/laravel-conventions.md",
+        "ai/security-and-auth.md",
+        "ai/ui-components.md",
+        "Modules/Mailbox/README.md"
+    ],
+    "workflows": [],
+    "edit_bundles": [],
+    "dependencies": {
+        "requests": [
+            "Modules\\Mailbox\\Http\\Requests\\SendMailboxMessageRequest",
+            "Modules\\Mailbox\\Http\\Requests\\StoreMailboxAccountRequest",
+            "Modules\\Mailbox\\Http\\Requests\\TestMailboxConnectionRequest",
+            "Modules\\Mailbox\\Http\\Requests\\UpdateMailboxAccountRequest"
+        ],
+        "services": [
+            "Modules\\Mailbox\\Services\\GmailMailboxClient"
+        ],
+        "utils": [
+            "App\\Utils\\ModuleUtil",
+            "Modules\\Mailbox\\Utils\\MailboxAccountUtil",
+            "Modules\\Mailbox\\Utils\\MailboxMessageUtil",
+            "Modules\\Mailbox\\Utils\\MailboxSendUtil"
+        ],
+        "models": [
+            "Modules\\Mailbox\\Entities\\MailboxAccount",
+            "Spatie\\Permission\\Models\\Permission",
+            "Spatie\\Permission\\Models\\Role"
+        ]
+    },
+    "tests": [
+        "Modules/Mailbox/Tests"
+    ],
+    "verify_commands": [
+        "php artisan test --filter=Mailbox"
+    ],
+    "last_reviewed": "2026-04-03"
+}

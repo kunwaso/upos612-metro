@@ -5,6 +5,12 @@ namespace Modules\VasAccounting\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Modules\StorageManager\Entities\StorageDocumentLink;
+use Modules\VasAccounting\Entities\VasDocumentApproval;
+use Modules\VasAccounting\Entities\VasDocumentAttachment;
+use Modules\VasAccounting\Entities\VasDocumentAuditLog;
+use Modules\VasAccounting\Entities\VasInventoryDocument;
 use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Entities\VasVoucher;
 use Modules\VasAccounting\Entities\VasVoucherLine;
@@ -222,12 +228,114 @@ class VasPostingService
 
     public function reverseVoucher(VasVoucher $voucher, int $userId): VasVoucher
     {
-        if ($voucher->status !== 'posted') {
-            throw new RuntimeException("Only posted vouchers can be reversed. Voucher [{$voucher->voucher_no}] is [{$voucher->status}].");
+        $status = $this->voucherReversalStatus($voucher);
+
+        if (! ($status['allowed'] ?? false)) {
+            throw new RuntimeException((string) ($status['reason'] ?? __('vasaccounting::lang.manual_voucher_reverse_not_allowed')));
         }
 
         return DB::transaction(function () use ($voucher, $userId) {
             return $this->createReversalVoucher($voucher->fresh(['lines']), $userId);
+        });
+    }
+
+    public function voucherReversalStatus(VasVoucher $voucher): array
+    {
+        if ((string) $voucher->status !== 'posted') {
+            return $this->blockedReversalStatus('status_not_posted', __('vasaccounting::lang.manual_voucher_reverse_requires_posted'));
+        }
+
+        if ((bool) $voucher->is_reversal || $this->isReversalSourceType((string) $voucher->source_type)) {
+            return $this->blockedReversalStatus('reversal_chain_blocked', __('vasaccounting::lang.manual_voucher_reverse_nested_blocked'));
+        }
+
+        return [
+            'allowed' => true,
+            'code' => null,
+            'reason' => null,
+            'meta' => [],
+        ];
+    }
+
+    public function draftVoucherDeletionStatus(VasVoucher $voucher): array
+    {
+        if ((string) $voucher->status !== 'draft') {
+            return $this->blockedDeletionStatus('status_not_draft', __('vasaccounting::lang.manual_voucher_delete_requires_draft'));
+        }
+
+        if ((bool) $voucher->is_system_generated) {
+            return $this->blockedDeletionStatus('system_generated', __('vasaccounting::lang.manual_voucher_delete_system_generated_blocked'));
+        }
+
+        $sourceType = strtolower(trim((string) $voucher->source_type));
+        if ($sourceType !== '' && $sourceType !== 'manual') {
+            return $this->blockedDeletionStatus('source_linked', __('vasaccounting::lang.manual_voucher_delete_source_linked'));
+        }
+
+        if (! empty($voucher->source_id)) {
+            return $this->blockedDeletionStatus('source_id_linked', __('vasaccounting::lang.manual_voucher_delete_source_linked'));
+        }
+
+        if (! empty($voucher->posted_at) || ! empty($voucher->posted_by) || ! empty($voucher->reversed_at) || ! empty($voucher->reversed_by)) {
+            return $this->blockedDeletionStatus('already_processed', __('vasaccounting::lang.manual_voucher_delete_already_processed'));
+        }
+
+        if ($voucher->journals()->exists()) {
+            return $this->blockedDeletionStatus('journal_linked', __('vasaccounting::lang.manual_voucher_delete_journal_linked'));
+        }
+
+        $linkedInventoryDocumentIds = $this->linkedInventoryDocumentIds($voucher);
+        if ($linkedInventoryDocumentIds !== []) {
+            return $this->blockedDeletionStatus(
+                'inventory_document_linked',
+                __('vasaccounting::lang.manual_voucher_delete_inventory_linked', ['count' => count($linkedInventoryDocumentIds)]),
+                ['linked_inventory_document_ids' => $linkedInventoryDocumentIds]
+            );
+        }
+
+        if ($this->hasLinkedStorageDocuments($voucher, $linkedInventoryDocumentIds)) {
+            return $this->blockedDeletionStatus('storage_document_linked', __('vasaccounting::lang.manual_voucher_delete_storage_linked'));
+        }
+
+        return [
+            'allowed' => true,
+            'code' => null,
+            'reason' => null,
+            'meta' => [],
+        ];
+    }
+
+    public function deleteDraftVoucher(VasVoucher $voucher): void
+    {
+        $status = $this->draftVoucherDeletionStatus($voucher);
+
+        if (! ($status['allowed'] ?? false)) {
+            throw new RuntimeException((string) ($status['reason'] ?? __('vasaccounting::lang.manual_voucher_delete_not_allowed')));
+        }
+
+        DB::transaction(function () use ($voucher) {
+            $businessId = (int) $voucher->business_id;
+            $voucherId = (int) $voucher->id;
+
+            VasDocumentApproval::query()
+                ->where('business_id', $businessId)
+                ->where('entity_type', VasVoucher::class)
+                ->where('entity_id', $voucherId)
+                ->delete();
+
+            VasDocumentAuditLog::query()
+                ->where('business_id', $businessId)
+                ->where('entity_type', VasVoucher::class)
+                ->where('entity_id', $voucherId)
+                ->delete();
+
+            VasDocumentAttachment::query()
+                ->where('business_id', $businessId)
+                ->where('entity_type', VasVoucher::class)
+                ->where('entity_id', $voucherId)
+                ->delete();
+
+            $voucher->delete();
         });
     }
 
@@ -438,6 +546,79 @@ class VasPostingService
             })
             ->orderByDesc('version_no')
             ->first();
+    }
+
+    protected function linkedInventoryDocumentIds(VasVoucher $voucher): array
+    {
+        if (! Schema::hasTable('vas_inventory_documents')) {
+            return [];
+        }
+
+        return VasInventoryDocument::query()
+            ->where('business_id', (int) $voucher->business_id)
+            ->where(function ($query) use ($voucher) {
+                $query->where('posted_voucher_id', (int) $voucher->id)
+                    ->orWhere('reversal_voucher_id', (int) $voucher->id);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    protected function hasLinkedStorageDocuments(VasVoucher $voucher, array $linkedInventoryDocumentIds = []): bool
+    {
+        if (! class_exists(StorageDocumentLink::class) || ! Schema::hasTable('storage_document_links')) {
+            return false;
+        }
+
+        $query = StorageDocumentLink::query()
+            ->where('business_id', (int) $voucher->business_id)
+            ->where('linked_system', 'vas');
+
+        if ($linkedInventoryDocumentIds !== []) {
+            $query->where(function ($linkQuery) use ($voucher, $linkedInventoryDocumentIds) {
+                $linkQuery->where(function ($inventoryQuery) use ($linkedInventoryDocumentIds) {
+                    $inventoryQuery->where('linked_type', 'vas_inventory_document')
+                        ->whereIn('linked_id', $linkedInventoryDocumentIds);
+                })->orWhere(function ($voucherQuery) use ($voucher) {
+                    $voucherQuery->whereIn('linked_type', ['vas_voucher', 'voucher'])
+                        ->where('linked_id', (int) $voucher->id);
+                });
+            });
+        } else {
+            $query->whereIn('linked_type', ['vas_voucher', 'voucher'])
+                ->where('linked_id', (int) $voucher->id);
+        }
+
+        return $query->exists();
+    }
+
+    protected function blockedDeletionStatus(string $code, string $reason, array $meta = []): array
+    {
+        return [
+            'allowed' => false,
+            'code' => $code,
+            'reason' => $reason,
+            'meta' => $meta,
+        ];
+    }
+
+    protected function blockedReversalStatus(string $code, string $reason, array $meta = []): array
+    {
+        return [
+            'allowed' => false,
+            'code' => $code,
+            'reason' => $reason,
+            'meta' => $meta,
+        ];
+    }
+
+    protected function isReversalSourceType(string $sourceType): bool
+    {
+        $sourceType = strtolower(trim($sourceType));
+
+        return $sourceType !== '' && str_ends_with($sourceType, '_reversal');
     }
 
     protected function approvalService(): DocumentApprovalService

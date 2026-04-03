@@ -1,0 +1,169 @@
+{
+    "kind": "module",
+    "title": "Projectauto",
+    "purpose": "Entry map for Projectauto tasks, workflow builder screens, settings, and API draft/publish routes.",
+    "triggers": [
+        "Task board, workflow builder, or draft/publish API behavior is changing.",
+        "Workflows fail between wizard steps and publish validation."
+    ],
+    "verified_paths": {
+        "routes": [
+            {
+                "path": "Modules/Projectauto/Routes/web.php",
+                "summary": "`/projectauto/tasks/*`, `/projectauto/settings/*`, `/projectauto/workflows/*`, and workflow API endpoints under `/projectauto/api/*`",
+                "exists": true
+            },
+            {
+                "path": "Modules/Projectauto/Routes/api.php",
+                "summary": "auth API route for `/projectauto/tasks`",
+                "exists": true
+            }
+        ],
+        "controllers": [
+            "Modules/Projectauto/Http/Controllers",
+            "Modules/Projectauto/Http/Controllers/DataController.php",
+            "Modules/Projectauto/Http/Controllers/InstallController.php",
+            "Modules/Projectauto/Http/Controllers/ProjectautoApiTaskController.php",
+            "Modules/Projectauto/Http/Controllers/ProjectautoController.php",
+            "Modules/Projectauto/Http/Controllers/ProjectautoSettingsController.php",
+            "Modules/Projectauto/Http/Controllers/ProjectautoTaskController.php",
+            "Modules/Projectauto/Http/Controllers/WorkflowApiController.php",
+            "Modules/Projectauto/Http/Controllers/WorkflowController.php",
+            "Modules/Projectauto/Http/Controllers/WorkflowRegistryApiController.php"
+        ],
+        "views": [
+            "Modules/Projectauto/Resources/views",
+            "Modules/Projectauto/Resources/views/layouts",
+            "Modules/Projectauto/Resources/views/settings",
+            "Modules/Projectauto/Resources/views/tasks",
+            "Modules/Projectauto/Resources/views/workflows"
+        ],
+        "requests": [
+            "Modules/Projectauto/Http/Requests",
+            "Modules/Projectauto/Http/Requests/CreateProjectautoTaskRequest.php",
+            "Modules/Projectauto/Http/Requests/ModifyAcceptProjectautoTaskRequest.php",
+            "Modules/Projectauto/Http/Requests/RejectProjectautoTaskRequest.php",
+            "Modules/Projectauto/Http/Requests/StoreProjectautoRuleRequest.php",
+            "Modules/Projectauto/Http/Requests/UpdateProjectautoRuleRequest.php",
+            "Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowFromWizardRequest.php",
+            "Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowRequest.php",
+            "Modules/Projectauto/Http/Requests/Workflow/UpdateWorkflowDraftRequest.php"
+        ],
+        "services": [],
+        "utils": [
+            "Modules/Projectauto/Utils",
+            "Modules/Projectauto/Utils/ProjectautoPayloadValidator.php",
+            "Modules/Projectauto/Utils/ProjectautoUtil.php",
+            "Modules/Projectauto/Utils/WizardGraphBuilder.php"
+        ],
+        "models": [
+            "Modules/Projectauto/Entities/ProjectautoAuditLog.php",
+            "Modules/Projectauto/Entities/ProjectautoPendingTask.php",
+            "Modules/Projectauto/Entities/ProjectautoRule.php",
+            "Modules/Projectauto/Entities/ProjectautoWorkflow.php"
+        ],
+        "jobs": [],
+        "notifications": [],
+        "assets": [
+            "Modules/Projectauto/Resources/assets",
+            "Modules/Projectauto/Resources/assets/js/app.js",
+            "Modules/Projectauto/Resources/assets/sass/app.scss",
+            "Modules/Projectauto/Resources/assets/workflow-builder/src/main.js"
+        ],
+        "tests": [
+            "Modules/Projectauto/Tests",
+            "Modules/Projectauto/Tests/Feature/WorkflowWizardControllerTest.php",
+            "Modules/Projectauto/Tests/Unit/PredefinedRuleCatalogTest.php",
+            "Modules/Projectauto/Tests/Unit/WizardGraphBuilderTest.php",
+            "Modules/Projectauto/Tests/Unit/WorkflowGraphValidatorTest.php"
+        ]
+    },
+    "route_prefixes": [
+        "api",
+        "install",
+        "projectauto",
+        "settings",
+        "tasks",
+        "workflows"
+    ],
+    "search_keywords": [
+        "api",
+        "from-wizard",
+        "install",
+        "Projectauto",
+        "projectauto",
+        "publish",
+        "settings",
+        "tasks",
+        "validate-draft",
+        "workflow",
+        "workflows"
+    ],
+    "related_docs": [
+        "ai/laravel-conventions.md",
+        "ai/projectauto-workflow-wizard.md",
+        "ai/security-and-auth.md"
+    ],
+    "workflows": [
+        {
+            "name": "Workflow draft to publish",
+            "paths": [
+                "Modules/Projectauto/Http/Controllers",
+                "Modules/Projectauto/Resources/assets/workflow-builder/src/main.js",
+                "Modules/Projectauto/Routes/web.php"
+            ],
+            "notes": "Workflow lifecycle bugs typically touch route wiring, controller validation, and builder JS payloads."
+        },
+        {
+            "name": "Task board and filters",
+            "paths": [
+                "Modules/Projectauto/Http/Controllers",
+                "Modules/Projectauto/Resources/views"
+            ],
+            "notes": "Task listing behavior is usually a controller query + view filter integration issue."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Builder payload bundle",
+            "paths": [
+                "Modules/Projectauto/Http/Controllers",
+                "Modules/Projectauto/Resources/assets/workflow-builder/src/main.js"
+            ],
+            "notes": "JS schema and backend validation should be edited together to avoid drift."
+        }
+    ],
+    "dependencies": {
+        "requests": [
+            "Modules\\Projectauto\\Http\\Requests\\CreateProjectautoTaskRequest",
+            "Modules\\Projectauto\\Http\\Requests\\ModifyAcceptProjectautoTaskRequest",
+            "Modules\\Projectauto\\Http\\Requests\\RejectProjectautoTaskRequest",
+            "Modules\\Projectauto\\Http\\Requests\\StoreProjectautoRuleRequest",
+            "Modules\\Projectauto\\Http\\Requests\\UpdateProjectautoRuleRequest",
+            "Modules\\Projectauto\\Http\\Requests\\Workflow\\CreateWorkflowFromWizardRequest",
+            "Modules\\Projectauto\\Http\\Requests\\Workflow\\CreateWorkflowRequest",
+            "Modules\\Projectauto\\Http\\Requests\\Workflow\\UpdateWorkflowDraftRequest"
+        ],
+        "services": [],
+        "utils": [
+            "App\\Utils\\ModuleUtil",
+            "Modules\\Projectauto\\Utils\\ProjectautoUtil",
+            "Modules\\Projectauto\\Utils\\WizardGraphBuilder"
+        ],
+        "models": [
+            "Modules\\Projectauto\\Entities\\ProjectautoPendingTask",
+            "Modules\\Projectauto\\Entities\\ProjectautoRule",
+            "Modules\\Projectauto\\Entities\\ProjectautoWorkflow",
+            "Spatie\\Permission\\Models\\Permission",
+            "Spatie\\Permission\\Models\\Role"
+        ]
+    },
+    "tests": [
+        "Modules/Projectauto/Tests"
+    ],
+    "verify_commands": [
+        "php artisan route:list --name=projectauto",
+        "php artisan test --filter=Projectauto"
+    ],
+    "last_reviewed": "2026-04-03"
+}

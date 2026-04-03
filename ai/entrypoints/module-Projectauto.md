@@ -3,6 +3,18 @@
 
 Entry map for Projectauto tasks, workflow builder screens, settings, and API draft/publish routes.
 
+## Use when
+
+- Task board, workflow builder, or draft/publish API behavior is changing.
+- Workflows fail between wizard steps and publish validation.
+
+## Start here
+
+- [Modules/Projectauto/Http/Controllers](../../Modules/Projectauto/Http/Controllers)
+- [Modules/Projectauto/Resources/assets/workflow-builder/src/main.js](../../Modules/Projectauto/Resources/assets/workflow-builder/src/main.js)
+- [Modules/Projectauto/Resources/views](../../Modules/Projectauto/Resources/views)
+- [Modules/Projectauto/Routes/web.php](../../Modules/Projectauto/Routes/web.php)
+
 ## Verified paths
 
 ### Routes
@@ -13,46 +25,137 @@ Entry map for Projectauto tasks, workflow builder screens, settings, and API dra
 ### Controllers
 
 - [Modules/Projectauto/Http/Controllers](../../Modules/Projectauto/Http/Controllers)
-- [DataController.php](../../Modules/Projectauto/Http/Controllers/DataController.php)
-- [InstallController.php](../../Modules/Projectauto/Http/Controllers/InstallController.php)
-- [ProjectautoApiTaskController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoApiTaskController.php)
-- [ProjectautoController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoController.php)
-- [ProjectautoSettingsController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoSettingsController.php)
-- [ProjectautoTaskController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoTaskController.php)
-- [WorkflowApiController.php](../../Modules/Projectauto/Http/Controllers/WorkflowApiController.php)
-- [WorkflowController.php](../../Modules/Projectauto/Http/Controllers/WorkflowController.php)
-- [WorkflowRegistryApiController.php](../../Modules/Projectauto/Http/Controllers/WorkflowRegistryApiController.php)
+- [Modules/Projectauto/Http/Controllers/DataController.php](../../Modules/Projectauto/Http/Controllers/DataController.php)
+- [Modules/Projectauto/Http/Controllers/InstallController.php](../../Modules/Projectauto/Http/Controllers/InstallController.php)
+- [Modules/Projectauto/Http/Controllers/ProjectautoApiTaskController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoApiTaskController.php)
+- [Modules/Projectauto/Http/Controllers/ProjectautoController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoController.php)
+- [Modules/Projectauto/Http/Controllers/ProjectautoSettingsController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoSettingsController.php)
+- [Modules/Projectauto/Http/Controllers/ProjectautoTaskController.php](../../Modules/Projectauto/Http/Controllers/ProjectautoTaskController.php)
+- [Modules/Projectauto/Http/Controllers/WorkflowApiController.php](../../Modules/Projectauto/Http/Controllers/WorkflowApiController.php)
+- [Modules/Projectauto/Http/Controllers/WorkflowController.php](../../Modules/Projectauto/Http/Controllers/WorkflowController.php)
+- [Modules/Projectauto/Http/Controllers/WorkflowRegistryApiController.php](../../Modules/Projectauto/Http/Controllers/WorkflowRegistryApiController.php)
 
 ### Views
 
 - [Modules/Projectauto/Resources/views](../../Modules/Projectauto/Resources/views)
-- [layouts/](../../Modules/Projectauto/Resources/views/layouts)
-- [settings/](../../Modules/Projectauto/Resources/views/settings)
-- [tasks/](../../Modules/Projectauto/Resources/views/tasks)
-- [workflows/](../../Modules/Projectauto/Resources/views/workflows)
+- [Modules/Projectauto/Resources/views/layouts](../../Modules/Projectauto/Resources/views/layouts)
+- [Modules/Projectauto/Resources/views/settings](../../Modules/Projectauto/Resources/views/settings)
+- [Modules/Projectauto/Resources/views/tasks](../../Modules/Projectauto/Resources/views/tasks)
+- [Modules/Projectauto/Resources/views/workflows](../../Modules/Projectauto/Resources/views/workflows)
+
+### Requests
+
+- [Modules/Projectauto/Http/Requests](../../Modules/Projectauto/Http/Requests)
+- [Modules/Projectauto/Http/Requests/CreateProjectautoTaskRequest.php](../../Modules/Projectauto/Http/Requests/CreateProjectautoTaskRequest.php)
+- [Modules/Projectauto/Http/Requests/ModifyAcceptProjectautoTaskRequest.php](../../Modules/Projectauto/Http/Requests/ModifyAcceptProjectautoTaskRequest.php)
+- [Modules/Projectauto/Http/Requests/RejectProjectautoTaskRequest.php](../../Modules/Projectauto/Http/Requests/RejectProjectautoTaskRequest.php)
+- [Modules/Projectauto/Http/Requests/StoreProjectautoRuleRequest.php](../../Modules/Projectauto/Http/Requests/StoreProjectautoRuleRequest.php)
+- [Modules/Projectauto/Http/Requests/UpdateProjectautoRuleRequest.php](../../Modules/Projectauto/Http/Requests/UpdateProjectautoRuleRequest.php)
+- [Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowFromWizardRequest.php](../../Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowFromWizardRequest.php)
+- [Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowRequest.php](../../Modules/Projectauto/Http/Requests/Workflow/CreateWorkflowRequest.php)
+- [Modules/Projectauto/Http/Requests/Workflow/UpdateWorkflowDraftRequest.php](../../Modules/Projectauto/Http/Requests/Workflow/UpdateWorkflowDraftRequest.php)
+
+### Services
+
+- _None discovered in this checkout_
+
+### Utils
+
+- [Modules/Projectauto/Utils](../../Modules/Projectauto/Utils)
+- [Modules/Projectauto/Utils/ProjectautoPayloadValidator.php](../../Modules/Projectauto/Utils/ProjectautoPayloadValidator.php)
+- [Modules/Projectauto/Utils/ProjectautoUtil.php](../../Modules/Projectauto/Utils/ProjectautoUtil.php)
+- [Modules/Projectauto/Utils/WizardGraphBuilder.php](../../Modules/Projectauto/Utils/WizardGraphBuilder.php)
+
+### Models / Entities
+
+- [Modules/Projectauto/Entities/ProjectautoAuditLog.php](../../Modules/Projectauto/Entities/ProjectautoAuditLog.php)
+- [Modules/Projectauto/Entities/ProjectautoPendingTask.php](../../Modules/Projectauto/Entities/ProjectautoPendingTask.php)
+- [Modules/Projectauto/Entities/ProjectautoRule.php](../../Modules/Projectauto/Entities/ProjectautoRule.php)
+- [Modules/Projectauto/Entities/ProjectautoWorkflow.php](../../Modules/Projectauto/Entities/ProjectautoWorkflow.php)
+
+### Jobs / Notifications
+
+- _None discovered in this checkout_
 
 ### Assets / JS
 
+- [Modules/Projectauto/Resources/assets](../../Modules/Projectauto/Resources/assets)
+- [Modules/Projectauto/Resources/assets/js/app.js](../../Modules/Projectauto/Resources/assets/js/app.js)
+- [Modules/Projectauto/Resources/assets/sass/app.scss](../../Modules/Projectauto/Resources/assets/sass/app.scss)
 - [Modules/Projectauto/Resources/assets/workflow-builder/src/main.js](../../Modules/Projectauto/Resources/assets/workflow-builder/src/main.js)
+
+### Tests
+
+- [Modules/Projectauto/Tests](../../Modules/Projectauto/Tests)
+- [Modules/Projectauto/Tests/Feature/WorkflowWizardControllerTest.php](../../Modules/Projectauto/Tests/Feature/WorkflowWizardControllerTest.php)
+- [Modules/Projectauto/Tests/Unit/PredefinedRuleCatalogTest.php](../../Modules/Projectauto/Tests/Unit/PredefinedRuleCatalogTest.php)
+- [Modules/Projectauto/Tests/Unit/WizardGraphBuilderTest.php](../../Modules/Projectauto/Tests/Unit/WizardGraphBuilderTest.php)
+- [Modules/Projectauto/Tests/Unit/WorkflowGraphValidatorTest.php](../../Modules/Projectauto/Tests/Unit/WorkflowGraphValidatorTest.php)
+
+## Common edit bundles
+
+- **Builder payload bundle** — JS schema and backend validation should be edited together to avoid drift. | [Modules/Projectauto/Http/Controllers](../../Modules/Projectauto/Http/Controllers), [Modules/Projectauto/Resources/assets/workflow-builder/src/main.js](../../Modules/Projectauto/Resources/assets/workflow-builder/src/main.js)
+
+## Primary workflows
+
+- **Workflow draft to publish** — Workflow lifecycle bugs typically touch route wiring, controller validation, and builder JS payloads. | [Modules/Projectauto/Http/Controllers](../../Modules/Projectauto/Http/Controllers), [Modules/Projectauto/Resources/assets/workflow-builder/src/main.js](../../Modules/Projectauto/Resources/assets/workflow-builder/src/main.js), [Modules/Projectauto/Routes/web.php](../../Modules/Projectauto/Routes/web.php)
+- **Task board and filters** — Task listing behavior is usually a controller query + view filter integration issue. | [Modules/Projectauto/Http/Controllers](../../Modules/Projectauto/Http/Controllers), [Modules/Projectauto/Resources/views](../../Modules/Projectauto/Resources/views)
+
+## Shared dependencies
+
+### Requests
+
+- `Modules\Projectauto\Http\Requests\CreateProjectautoTaskRequest`
+- `Modules\Projectauto\Http\Requests\ModifyAcceptProjectautoTaskRequest`
+- `Modules\Projectauto\Http\Requests\RejectProjectautoTaskRequest`
+- `Modules\Projectauto\Http\Requests\StoreProjectautoRuleRequest`
+- `Modules\Projectauto\Http\Requests\UpdateProjectautoRuleRequest`
+- `Modules\Projectauto\Http\Requests\Workflow\CreateWorkflowFromWizardRequest`
+- `Modules\Projectauto\Http\Requests\Workflow\CreateWorkflowRequest`
+- `Modules\Projectauto\Http\Requests\Workflow\UpdateWorkflowDraftRequest`
+
+### Services
+
+- _None discovered from first-order controller references_
+
+### Utils
+
+- `App\Utils\ModuleUtil`
+- `Modules\Projectauto\Utils\ProjectautoUtil`
+- `Modules\Projectauto\Utils\WizardGraphBuilder`
+
+### Models / Entities
+
+- `Modules\Projectauto\Entities\ProjectautoPendingTask`
+- `Modules\Projectauto\Entities\ProjectautoRule`
+- `Modules\Projectauto\Entities\ProjectautoWorkflow`
+- `Spatie\Permission\Models\Permission`
+- `Spatie\Permission\Models\Role`
+
+## Tests / verify
+
+- [Modules/Projectauto/Tests](../../Modules/Projectauto/Tests)
+- `php artisan route:list --name=projectauto`
+- `php artisan test --filter=Projectauto`
 
 ## Search keywords
 
+- `api`
+- `from-wizard`
+- `install`
 - `Projectauto`
 - `projectauto`
-- `workflow`
-- `tasks`
-- `from-wizard`
-- `validate-draft`
 - `publish`
-- `api`
-- `install`
 - `settings`
+- `tasks`
+- `validate-draft`
+- `workflow`
 - `workflows`
 
 ## Related docs
 
-- [ai/projectauto-workflow-wizard.md](../projectauto-workflow-wizard.md)
 - [ai/laravel-conventions.md](../laravel-conventions.md)
+- [ai/projectauto-workflow-wizard.md](../projectauto-workflow-wizard.md)
 - [ai/security-and-auth.md](../security-and-auth.md)
 
 ## Last reviewed

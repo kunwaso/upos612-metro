@@ -3,6 +3,7 @@
 namespace Modules\StorageManager\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\ConfirmReceiptRequest;
 use Modules\StorageManager\Services\ReceivingService;
@@ -86,6 +87,46 @@ class InboundController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
+                ->with('status', [
+                    'success' => false,
+                    'msg' => $exception->getMessage(),
+                ]);
+        }
+    }
+
+    public function reopen(Request $request, int $document)
+    {
+        if (! auth()->user()->can('storage_manager.operate')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $businessId = $request->session()->get('user.business_id');
+        $userId = (int) $request->session()->get('user.id');
+
+        $documentModel = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'receipt')
+            ->findOrFail($document);
+
+        try {
+            $receiptDocument = $this->receivingService->reopenReceipt(
+                $businessId,
+                $documentModel,
+                $userId
+            );
+
+            return redirect()
+                ->route('storage-manager.inbound.show', [
+                    'sourceType' => $receiptDocument->source_type,
+                    'sourceId' => $receiptDocument->source_id,
+                ])
+                ->with('status', [
+                    'success' => true,
+                    'msg' => 'Receipt reopened successfully.',
+                ]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->back()
                 ->with('status', [
                     'success' => false,
                     'msg' => $exception->getMessage(),

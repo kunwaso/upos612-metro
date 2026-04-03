@@ -19,6 +19,18 @@
             <div class="d-flex align-items-center gap-2 gap-lg-3">
                 <a href="{{ route('storage-manager.putaway.index') }}" class="btn btn-sm btn-light">@lang('messages.back')</a>
                 <a href="{{ route('storage-manager.inbound.index') }}" class="btn btn-sm btn-light-primary">Inbound Receiving</a>
+                @if(auth()->user()->can('storage_manager.operate') && in_array((string) ($document->status ?? ''), ['closed', 'completed'], true))
+                    <form method="POST" action="{{ route('storage-manager.putaway.reopen', $document->id) }}" class="d-inline-block">
+                        @csrf
+                        <button type="submit"
+                                class="btn btn-sm btn-light-danger"
+                                {{ empty($sourceSummary['can_reopen']) ? 'disabled' : '' }}
+                                @if(!empty($sourceSummary['reopen_reason'])) title="{{ $sourceSummary['reopen_reason'] }}" @endif
+                                onclick="return confirm('Reverse this putaway and reopen destination selection?');">
+                            Reverse Putaway
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>
@@ -28,6 +40,12 @@
             @if(session('status'))
                 <div class="alert alert-{{ session('status.success') ? 'success' : 'danger' }} mb-6">
                     {{ session('status.msg') }}
+                </div>
+            @endif
+
+            @if(!empty($sourceSummary['reopen_reason']) && auth()->user()->can('storage_manager.operate') && in_array((string) ($document->status ?? ''), ['closed', 'completed'], true))
+                <div class="alert alert-warning mb-6">
+                    {{ $sourceSummary['reopen_reason'] }}
                 </div>
             @endif
 

@@ -5,12 +5,15 @@ namespace Modules\Cms\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Modules\Cms\Http\Requests\StoreCmsStorefrontRfqRequest;
 use Modules\Cms\Entities\CmsPage;
 use Modules\Cms\Entities\CmsSiteDetail;
 use Modules\Cms\Notifications\NewLeadGeneratedNotification;
 use Modules\Cms\Utils\CmsStorefrontCatalogUtil;
+use Modules\Cms\Utils\CmsStorefrontRfqUtil;
 use Modules\Cms\Utils\CmsUtil;
-use Notification;
 
 class CmsController extends Controller
 {
@@ -26,7 +29,8 @@ class CmsController extends Controller
      */
     public function __construct(
         CmsUtil $cmsUtil,
-        protected CmsStorefrontCatalogUtil $storefrontCatalogUtil
+        protected CmsStorefrontCatalogUtil $storefrontCatalogUtil,
+        protected CmsStorefrontRfqUtil $storefrontRfqUtil
     ) {
         $this->cmsUtil = $cmsUtil;
     }
@@ -253,14 +257,45 @@ class CmsController extends Controller
             ->with(compact('detail', 'galleryUrls', 'relatedProductCards', 'pageTitle', 'metaDescription'));
     }
 
-    public function shopCart()
+    public function rfqShow(int $id)
     {
-        return view('cms::frontend.pages.cart');
+        $businessId = $this->storefrontCatalogUtil->getStorefrontBusinessId();
+        if ($businessId === null) {
+            abort(404);
+        }
+
+        $product = $this->storefrontCatalogUtil->findProductForStorefront($businessId, $id);
+        if ($product === null) {
+            abort(404);
+        }
+
+        $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
+        $detail = $this->storefrontCatalogUtil->buildDetailPresentation($product, $business);
+        $pageTitle = __('cms::lang.storefront_request_quote');
+        $metaDescription = __('cms::lang.storefront_request_quote');
+
+        return view('cms::frontend.pages.rfq')
+            ->with(compact('detail', 'pageTitle', 'metaDescription'));
     }
 
-    public function shopCheckout()
+    public function rfqStore(StoreCmsStorefrontRfqRequest $request, int $id)
     {
-        return view('cms::frontend.pages.checkout');
+        $businessId = $this->storefrontCatalogUtil->getStorefrontBusinessId();
+        if ($businessId === null) {
+            abort(404);
+        }
+
+        $product = $this->storefrontCatalogUtil->findProductForStorefront($businessId, $id);
+        if ($product === null) {
+            abort(404);
+        }
+
+        $validated = $request->validated();
+        $this->storefrontRfqUtil->createRfqAndTodo($businessId, $product->id, $validated, $product->name);
+
+        return redirect()
+            ->route('cms.store.product.show', ['id' => $product->id])
+            ->with('status', __('cms::lang.storefront_rfq_submitted'));
     }
 
     public function shopAccount()
@@ -302,7 +337,7 @@ class CmsController extends Controller
                     'msg' => __('cms::lang.we_will_contact_soon'),
                 ];
             } catch (\Exception $e) {
-                \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
+                Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
                 $output = [
                     'success' => false,
                     'msg' => __('messages.something_went_wrong'),
