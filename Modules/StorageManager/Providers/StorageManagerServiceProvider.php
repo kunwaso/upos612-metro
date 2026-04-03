@@ -16,6 +16,7 @@ use Modules\StorageManager\Services\ReceivingService;
 use Modules\StorageManager\Services\StockAdjustmentBridgeService;
 use Modules\StorageManager\Services\SourceDocumentAdapterManager;
 use Modules\StorageManager\Services\TransferExecutionService;
+use Modules\StorageManager\Services\WarehouseKpiService;
 use Modules\StorageManager\Services\WarehouseSyncService;
 
 class StorageManagerServiceProvider extends ServiceProvider
@@ -49,6 +50,7 @@ class StorageManagerServiceProvider extends ServiceProvider
         $this->app->singleton(StockAdjustmentBridgeService::class);
         $this->app->singleton(SourceDocumentAdapterManager::class);
         $this->app->singleton(TransferExecutionService::class);
+        $this->app->singleton(WarehouseKpiService::class);
         $this->app->singleton(WarehouseSyncService::class);
     }
 

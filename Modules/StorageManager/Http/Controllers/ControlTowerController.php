@@ -13,6 +13,7 @@ use Modules\StorageManager\Entities\StorageLocationSetting;
 use Modules\StorageManager\Entities\StorageSlotStock;
 use Modules\StorageManager\Entities\StorageSyncLog;
 use Modules\StorageManager\Entities\StorageTask;
+use Modules\StorageManager\Services\WarehouseKpiService;
 use Modules\StorageManager\Services\ReconciliationService;
 use Modules\StorageManager\Services\WarehouseSyncService;
 
@@ -20,7 +21,8 @@ class ControlTowerController extends Controller
 {
     public function __construct(
         protected ReconciliationService $reconciliationService,
-        protected WarehouseSyncService $warehouseSyncService
+        protected WarehouseSyncService $warehouseSyncService,
+        protected WarehouseKpiService $warehouseKpiService
     ) {
     }
 
@@ -118,6 +120,8 @@ class ControlTowerController extends Controller
             ];
         })->all();
 
+        $dashboard = $this->warehouseKpiService->buildDashboard($businessId, $locationId > 0 ? $locationId : null);
+
         return view('storagemanager::control_tower.index', compact(
             'locations',
             'locationId',
@@ -126,7 +130,8 @@ class ControlTowerController extends Controller
             'movementRows',
             'recentSyncLogs',
             'locationRows',
-            'readinessRows'
+            'readinessRows',
+            'dashboard'
         ));
     }
 

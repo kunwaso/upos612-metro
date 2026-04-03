@@ -2,7 +2,7 @@
 
 return [
     'name' => 'StorageManager',
-    'module_version' => '1.5.0',
+    'module_version' => '1.6.0',
     'execution_modes' => [
         'off',
         'advisory',

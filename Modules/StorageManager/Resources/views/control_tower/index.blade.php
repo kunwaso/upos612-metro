@@ -38,6 +38,36 @@
                 <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.quarantine_bins')</div><div class="fs-2hx fw-bold">{{ $metrics['quarantine_bins'] }}</div></div></div></div>
             </div>
 
+            <div class="row g-5 g-xl-8 mb-6">
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.strict_ready_locations')</div><div class="fs-2hx fw-bold">{{ $dashboard['headlineMetrics']['strict_ready_locations'] ?? 0 }}</div></div></div></div>
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.mismatch_locations')</div><div class="fs-2hx fw-bold">{{ $dashboard['headlineMetrics']['mismatch_locations'] ?? 0 }}</div></div></div></div>
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.bypass_events')</div><div class="fs-2hx fw-bold">{{ $dashboard['headlineMetrics']['bypass_events'] ?? 0 }}</div></div></div></div>
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.bin_occupancy')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.occupancy_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.occupancy_rate.detail', '—') }}</div></div></div></div>
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.count_accuracy')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.count_accuracy_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.count_accuracy_rate.detail', '—') }}</div></div></div></div>
+                <div class="col-md-2"><div class="card card-flush"><div class="card-body"><div class="text-gray-500 fs-7">@lang('lang_v1.damage_rate')</div><div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.damage_rate.label', '—') }}</div><div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.damage_rate.detail', '—') }}</div></div></div></div>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-6">
+                <div class="col-md-6">
+                    <div class="card card-flush h-100">
+                        <div class="card-body">
+                            <div class="text-gray-500 fs-7">@lang('lang_v1.transfer_cycle_time')</div>
+                            <div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.transfer_cycle_hours.label', '—') }}</div>
+                            <div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.transfer_cycle_hours.detail', '—') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card card-flush h-100">
+                        <div class="card-body">
+                            <div class="text-gray-500 fs-7">@lang('lang_v1.dock_to_stock_time')</div>
+                            <div class="fs-2hx fw-bold">{{ data_get($dashboard, 'kpis.dock_to_stock_hours.label', '—') }}</div>
+                            <div class="text-muted fs-8">{{ data_get($dashboard, 'kpis.dock_to_stock_hours.detail', '—') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-flush mb-6">
                 <div class="card-body py-4">
                     <form method="GET" action="{{ route('storage-manager.control-tower.index') }}" class="d-flex align-items-center gap-3 flex-wrap">
@@ -111,6 +141,52 @@
                 </div>
             </div>
 
+            <div class="card card-flush mb-6">
+                <div class="card-header pt-6">
+                    <h3 class="card-title fw-bold text-gray-900">@lang('lang_v1.rollout_readiness')</h3>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle">
+                            <thead>
+                                <tr class="fw-bold text-gray-800">
+                                    <th>@lang('business.location')</th>
+                                    <th>@lang('lang_v1.execution_mode')</th>
+                                    <th>@lang('lang_v1.bypass_policy')</th>
+                                    <th>@lang('lang_v1.closed_count_sessions')</th>
+                                    <th>@lang('lang_v1.lot_expiry_ready')</th>
+                                    <th>@lang('lang_v1.strict_mode_ready')</th>
+                                    <th>@lang('lang_v1.reason')</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse(($dashboard['rolloutRows'] ?? collect()) as $row)
+                                    <tr>
+                                        <td class="fw-semibold text-gray-900">{{ $row['location_name'] ?? '-' }}</td>
+                                        <td>{{ ucwords(str_replace('_', ' ', (string) ($row['execution_mode'] ?? 'off'))) }}</td>
+                                        <td>{{ ucwords(str_replace('_', ' ', (string) ($row['bypass_policy'] ?? 'allow'))) }}</td>
+                                        <td>{{ (int) ($row['closed_count_sessions'] ?? 0) }}</td>
+                                        <td>
+                                            <span class="badge {{ !empty($row['lot_ready']) ? 'badge-light-success' : 'badge-light-warning' }}">
+                                                {{ !empty($row['lot_ready']) ? __('lang_v1.ready') : __('lang_v1.attention_required') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ !empty($row['strict_ready']) ? 'badge-light-success' : 'badge-light-danger' }}">
+                                                {{ !empty($row['strict_ready']) ? __('lang_v1.ready') : __('lang_v1.not_ready') }}
+                                            </span>
+                                        </td>
+                                        <td class="text-gray-700">{{ $row['strict_ready_reason'] ?? '—' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="7" class="text-center text-muted py-8">@lang('lang_v1.no_reconciliation_data')</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-6 mb-6">
                 <div class="col-12 col-xxl-6">
                     <div class="card card-flush h-100">
@@ -165,6 +241,60 @@
                                             </tr>
                                         @empty
                                             <tr><td colspan="5" class="text-center text-muted py-8">@lang('lang_v1.no_movement_events_yet')</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-6 mb-6">
+                <div class="col-12 col-xxl-6">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-6"><h3 class="card-title fw-bold text-gray-900">@lang('lang_v1.bypass_events')</h3></div>
+                        <div class="card-body pt-0">
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle">
+                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('lang_v1.type')</th><th>@lang('business.location')</th><th>@lang('sale.ref_no')</th><th>@lang('lang_v1.message')</th><th>@lang('lang_v1.date')</th></tr></thead>
+                                    <tbody>
+                                        @forelse(($dashboard['bypassRows'] ?? collect()) as $row)
+                                            <tr>
+                                                <td class="fw-semibold text-gray-900">{{ ucwords(str_replace('_', ' ', (string) ($row['event_type'] ?? '-'))) }}</td>
+                                                <td>{{ $row['location_name'] ?? '-' }}</td>
+                                                <td>{{ $row['reference'] ?? '-' }}</td>
+                                                <td class="text-gray-700">{{ $row['details'] ?? '-' }}</td>
+                                                <td>{{ $row['event_date'] ?? '-' }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr><td colspan="5" class="text-center text-muted py-8">@lang('lang_v1.no_bypass_events_detected')</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xxl-6">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-6"><h3 class="card-title fw-bold text-gray-900">@lang('lang_v1.planning_advisories')</h3></div>
+                        <div class="card-body pt-0">
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle">
+                                    <thead><tr class="fw-bold text-gray-800"><th>@lang('product.product')</th><th>@lang('lang_v1.type')</th><th>@lang('lang_v1.source_slot')</th><th>@lang('lang_v1.destination_slot')</th><th>@lang('lang_v1.recommended_qty')</th><th>@lang('lang_v1.external_shortage_qty')</th></tr></thead>
+                                    <tbody>
+                                        @forelse(($dashboard['planningRows'] ?? collect()) as $row)
+                                            <tr>
+                                                <td class="fw-semibold text-gray-900">{{ $row['product_label'] ?? '-' }}<div class="text-muted fs-8">{{ $row['sku'] ?? '-' }}</div></td>
+                                                <td>{{ ucwords(str_replace('_', ' ', (string) ($row['advisory_type'] ?? '-'))) }}</td>
+                                                <td>{{ $row['source_label'] ?? '-' }}</td>
+                                                <td>{{ $row['destination_label'] ?? '-' }}</td>
+                                                <td>{{ @format_quantity($row['recommended_qty'] ?? 0) }}</td>
+                                                <td>{{ @format_quantity($row['external_shortage_qty'] ?? 0) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr><td colspan="6" class="text-center text-muted py-8">@lang('lang_v1.no_planning_advisories')</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
