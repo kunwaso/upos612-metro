@@ -44,6 +44,8 @@ Root maps follow the same rule: link only to files or directories that exist in 
 - [INDEX.md](./INDEX.md) includes one row per enabled module in [modules_statuses.json](../../modules_statuses.json) plus any local module folder that is not present in that JSON file.
 - If a module is enabled in JSON but missing on disk, `Map` must be `—` and `Notes` must say `not in checkout`.
 - Do not add dead map links or placeholder file links.
+- [core-http-controllers.md](./core-http-controllers.md) covers root-level controllers plus dedicated `Auth/`, `Install/`, and `Restaurant/` sections.
+- [core-utils-index.md](./core-utils-index.md) is Util-focused and also lists the remaining PHP files in `app/Utils/` so its scope is explicit.
 
 ## Maintenance rule
 

@@ -137,84 +137,93 @@ class PurchasingAdvisoryService
         }
 
         return DB::transaction(function () use ($businessId, $rule, $advisory, $payload, $userId, $requestedQty) {
+            $purchaseRequisition = $this->createPurchaseRequisitionTransaction(
+                $businessId,
+                (int) $rule->location_id,
+                [[
+                    'variation_id' => $rule->variation_id,
+                    'product_id' => $rule->product_id,
+                    'quantity' => $requestedQty,
+                    'purchase_price_inc_tax' => 0,
+                    'item_tax' => 0,
+                    'secondary_unit_quantity' => 0,
+                ]],
+                $payload,
+                $userId
+            );
+
             $document = $this->createAdvisoryDocument($rule, $advisory, $payload, $requestedQty, $userId);
-
-            $transactionData = [
-                'business_id' => $businessId,
-                'location_id' => (int) $rule->location_id,
-                'type' => 'purchase_requisition',
-                'status' => 'ordered',
-                'created_by' => $userId,
-                'transaction_date' => Carbon::now()->toDateTimeString(),
-            ];
-
-            if (! empty($payload['delivery_date'])) {
-                $transactionData['delivery_date'] = $this->commonUtil->uf_date((string) $payload['delivery_date'], true);
-            }
-
-            $refCount = $this->commonUtil->setAndGetReferenceCount('purchase_requisition');
-            $transactionData['ref_no'] = $this->commonUtil->generateReferenceNumber('purchase_requisition', $refCount);
-
-            $purchaseRequisition = Transaction::query()->create($transactionData);
-            $purchaseRequisition->purchase_lines()->create([
-                'variation_id' => $rule->variation_id,
-                'product_id' => $rule->product_id,
-                'quantity' => $requestedQty,
-                'purchase_price_inc_tax' => 0,
-                'item_tax' => 0,
-                'secondary_unit_quantity' => 0,
-            ]);
-
-            StorageDocumentLink::query()->create([
-                'business_id' => $businessId,
-                'document_id' => $document->id,
-                'linked_system' => 'app',
-                'linked_type' => 'purchase_requisition',
-                'linked_id' => $purchaseRequisition->id,
-                'linked_ref' => (string) $purchaseRequisition->ref_no,
-                'link_role' => 'source_truth',
-                'sync_status' => 'not_required',
-                'synced_at' => now(),
-                'meta' => [
-                    'rule_id' => $rule->id,
-                    'requested_qty' => $requestedQty,
-                ],
-            ]);
-
-            StorageSyncLog::query()->create([
-                'business_id' => $businessId,
-                'document_id' => $document->id,
-                'linked_system' => 'app',
-                'action' => 'purchase_requisition_created',
-                'status' => 'completed',
-                'message' => 'Created purchase requisition ' . $purchaseRequisition->ref_no . ' from planning advisory.',
-                'payload' => [
-                    'purchase_requisition_id' => $purchaseRequisition->id,
-                    'purchase_requisition_ref' => $purchaseRequisition->ref_no,
-                    'rule_id' => $rule->id,
-                    'requested_qty' => $requestedQty,
-                ],
-                'created_by' => $userId,
-            ]);
-
-            $document->forceFill([
-                'status' => 'closed',
-                'workflow_state' => 'requisition_created',
-                'approval_status' => 'approved',
-                'completed_at' => now(),
-                'closed_at' => now(),
-                'closed_by' => $userId,
-                'meta' => array_merge((array) $document->meta, [
-                    'purchase_requisition_id' => $purchaseRequisition->id,
-                    'purchase_requisition_ref' => $purchaseRequisition->ref_no,
-                    'requested_qty' => $requestedQty,
-                ]),
-            ])->save();
+            $this->finalizeAdvisoryDocument($document, $purchaseRequisition, $rule, $requestedQty, $userId);
 
             return [
                 'document' => $document->fresh('links'),
                 'purchase_requisition' => $purchaseRequisition->fresh('purchase_lines'),
                 'advisory' => $advisory,
+            ];
+        });
+    }
+
+    public function createGroupedPurchaseRequisitionForLocation(int $businessId, int $locationId, array $payload, int $userId): array
+    {
+        $rows = collect($this->queueForLocation($businessId, $locationId)['rows'] ?? [])
+            ->filter(fn (array $row) => (int) $row['location_id'] === $locationId)
+            ->filter(fn (array $row) => ! empty($row['can_create_requisition']))
+            ->values();
+
+        if ($rows->isEmpty()) {
+            throw new RuntimeException('No open purchasing advisories are available for grouped requisition creation in this location.');
+        }
+
+        $rules = StorageReplenishmentRule::query()
+            ->where('business_id', $businessId)
+            ->where('location_id', $locationId)
+            ->whereIn('id', $rows->pluck('rule_id')->all())
+            ->get()
+            ->keyBy('id');
+
+        if ($rules->count() !== $rows->count()) {
+            throw new RuntimeException('One or more planning advisories could not be resolved to active replenishment rules.');
+        }
+
+        return DB::transaction(function () use ($businessId, $locationId, $payload, $userId, $rows, $rules) {
+            $purchaseLines = $rows->map(function (array $row) use ($rules) {
+                $rule = $rules->get((int) $row['rule_id']);
+
+                return [
+                    'variation_id' => $rule->variation_id,
+                    'product_id' => $rule->product_id,
+                    'quantity' => (float) $row['external_shortage_qty'],
+                    'purchase_price_inc_tax' => 0,
+                    'item_tax' => 0,
+                    'secondary_unit_quantity' => 0,
+                ];
+            })->values()->all();
+
+            $purchaseRequisition = $this->createPurchaseRequisitionTransaction(
+                $businessId,
+                $locationId,
+                $purchaseLines,
+                $payload,
+                $userId
+            );
+
+            $documents = [];
+            foreach ($rows as $row) {
+                $rule = $rules->get((int) $row['rule_id']);
+                $requestedQty = (float) $row['external_shortage_qty'];
+                $document = $this->createAdvisoryDocument($rule, $row, $payload, $requestedQty, $userId);
+                $this->finalizeAdvisoryDocument($document, $purchaseRequisition, $rule, $requestedQty, $userId, [
+                    'batch_location_id' => $locationId,
+                    'batch_rule_count' => $rows->count(),
+                ]);
+                $documents[] = $document->fresh('links');
+            }
+
+            return [
+                'purchase_requisition' => $purchaseRequisition->fresh('purchase_lines'),
+                'documents' => collect($documents),
+                'advisory_count' => $rows->count(),
+                'location_id' => $locationId,
             ];
         });
     }
@@ -267,5 +276,89 @@ class PurchasingAdvisoryService
         ])->save();
 
         return $document;
+    }
+
+    protected function createPurchaseRequisitionTransaction(
+        int $businessId,
+        int $locationId,
+        array $purchaseLines,
+        array $payload,
+        int $userId
+    ): Transaction {
+        $transactionData = [
+            'business_id' => $businessId,
+            'location_id' => $locationId,
+            'type' => 'purchase_requisition',
+            'status' => 'ordered',
+            'created_by' => $userId,
+            'transaction_date' => Carbon::now()->toDateTimeString(),
+        ];
+
+        if (! empty($payload['delivery_date'])) {
+            $transactionData['delivery_date'] = $this->commonUtil->uf_date((string) $payload['delivery_date'], true);
+        }
+
+        $refCount = $this->commonUtil->setAndGetReferenceCount('purchase_requisition');
+        $transactionData['ref_no'] = $this->commonUtil->generateReferenceNumber('purchase_requisition', $refCount);
+
+        $purchaseRequisition = Transaction::query()->create($transactionData);
+        $purchaseRequisition->purchase_lines()->createMany($purchaseLines);
+
+        return $purchaseRequisition;
+    }
+
+    protected function finalizeAdvisoryDocument(
+        StorageDocument $document,
+        Transaction $purchaseRequisition,
+        StorageReplenishmentRule $rule,
+        float $requestedQty,
+        int $userId,
+        array $extraMeta = []
+    ): void {
+        StorageDocumentLink::query()->create([
+            'business_id' => (int) $rule->business_id,
+            'document_id' => $document->id,
+            'linked_system' => 'app',
+            'linked_type' => 'purchase_requisition',
+            'linked_id' => $purchaseRequisition->id,
+            'linked_ref' => (string) $purchaseRequisition->ref_no,
+            'link_role' => 'source_truth',
+            'sync_status' => 'not_required',
+            'synced_at' => now(),
+            'meta' => array_merge([
+                'rule_id' => $rule->id,
+                'requested_qty' => $requestedQty,
+            ], $extraMeta),
+        ]);
+
+        StorageSyncLog::query()->create([
+            'business_id' => (int) $rule->business_id,
+            'document_id' => $document->id,
+            'linked_system' => 'app',
+            'action' => 'purchase_requisition_created',
+            'status' => 'completed',
+            'message' => 'Created purchase requisition ' . $purchaseRequisition->ref_no . ' from planning advisory.',
+            'payload' => array_merge([
+                'purchase_requisition_id' => $purchaseRequisition->id,
+                'purchase_requisition_ref' => $purchaseRequisition->ref_no,
+                'rule_id' => $rule->id,
+                'requested_qty' => $requestedQty,
+            ], $extraMeta),
+            'created_by' => $userId,
+        ]);
+
+        $document->forceFill([
+            'status' => 'closed',
+            'workflow_state' => 'requisition_created',
+            'approval_status' => 'approved',
+            'completed_at' => now(),
+            'closed_at' => now(),
+            'closed_by' => $userId,
+            'meta' => array_merge((array) $document->meta, [
+                'purchase_requisition_id' => $purchaseRequisition->id,
+                'purchase_requisition_ref' => $purchaseRequisition->ref_no,
+                'requested_qty' => $requestedQty,
+            ], $extraMeta),
+        ])->save();
     }
 }

@@ -81,8 +81,10 @@ function main(array $argv): int
  * @return array{
  *   enabled_modules: array<int, string>,
  *   local_modules: array<int, string>,
- *   controllers: array<int, string>,
+ *   root_controllers: array<int, string>,
+ *   controller_sections: array<string, array<int, string>>,
  *   utils: array<int, string>,
+ *   other_utils: array<int, string>,
  *   modules: array<string, array{
  *     name: string,
  *     readme: string|null,
@@ -107,8 +109,16 @@ function buildInventory(string $repoRoot): array
 {
     $enabledModules = loadEnabledModules($repoRoot . '/modules_statuses.json');
     $localModules = listDirectories($repoRoot . '/Modules');
-    $controllers = listFiles($repoRoot . '/app/Http/Controllers', '*.php');
+    $rootControllers = listFiles($repoRoot . '/app/Http/Controllers', '*.php');
+    $controllerSections = [
+        'Auth' => listFiles($repoRoot . '/app/Http/Controllers/Auth', '*.php'),
+        'Install' => listFiles($repoRoot . '/app/Http/Controllers/Install', '*.php'),
+        'Restaurant' => listFiles($repoRoot . '/app/Http/Controllers/Restaurant', '*.php'),
+    ];
     $utils = listFiles($repoRoot . '/app/Utils', '*Util.php');
+    $allUtils = listFiles($repoRoot . '/app/Utils', '*.php');
+    $otherUtils = array_values(array_diff($allUtils, $utils));
+    sort($otherUtils, SORT_NATURAL | SORT_FLAG_CASE);
 
     $modules = [];
     foreach ($localModules as $module) {
@@ -118,8 +128,10 @@ function buildInventory(string $repoRoot): array
     return [
         'enabled_modules' => $enabledModules,
         'local_modules' => $localModules,
-        'controllers' => $controllers,
+        'root_controllers' => $rootControllers,
+        'controller_sections' => $controllerSections,
         'utils' => $utils,
+        'other_utils' => $otherUtils,
         'modules' => $modules,
     ];
 }
@@ -378,8 +390,10 @@ function toRepoRelative(string $repoRoot, string $absolutePath): string
  * @param array{
  *   enabled_modules: array<int, string>,
  *   local_modules: array<int, string>,
- *   controllers: array<int, string>,
+ *   root_controllers: array<int, string>,
+ *   controller_sections: array<string, array<int, string>>,
  *   utils: array<int, string>,
+ *   other_utils: array<int, string>,
  *   modules: array<string, array<string, mixed>>
  * } $inventory
  * @return array<string, string>
@@ -392,8 +406,14 @@ function buildDocuments(string $repoRoot, array $inventory): array
     $documents['README.md'] = buildReadmeDocument();
     $documents['_TEMPLATE.md'] = buildTemplateDocument();
     $documents['core-http-entry.md'] = buildCoreHttpEntryDocument();
-    $documents['core-http-controllers.md'] = buildCoreHttpControllersDocument($inventory['controllers']);
-    $documents['core-utils-index.md'] = buildCoreUtilsIndexDocument($inventory['utils']);
+    $documents['core-http-controllers.md'] = buildCoreHttpControllersDocument(
+        $inventory['root_controllers'],
+        $inventory['controller_sections']
+    );
+    $documents['core-utils-index.md'] = buildCoreUtilsIndexDocument(
+        $inventory['utils'],
+        $inventory['other_utils']
+    );
 
     foreach ($inventory['local_modules'] as $module) {
         /** @var array<string, mixed> $moduleInventory */
@@ -464,6 +484,8 @@ function buildReadmeDocument(): string
         '- [INDEX.md](./INDEX.md) includes one row per enabled module in [modules_statuses.json](../../modules_statuses.json) plus any local module folder that is not present in that JSON file.',
         '- If a module is enabled in JSON but missing on disk, `Map` must be `—` and `Notes` must say `not in checkout`.',
         '- Do not add dead map links or placeholder file links.',
+        '- [core-http-controllers.md](./core-http-controllers.md) covers root-level controllers plus dedicated `Auth/`, `Install/`, and `Restaurant/` sections.',
+        '- [core-utils-index.md](./core-utils-index.md) is Util-focused and also lists the remaining PHP files in `app/Utils/` so its scope is explicit.',
         '',
         '## Maintenance rule',
         '',
@@ -602,31 +624,52 @@ function buildCoreHttpEntryDocument(): string
 }
 
 /**
- * @param array<int, string> $controllers
+ * @param array<int, string> $rootControllers
+ * @param array<string, array<int, string>> $controllerSections
  */
-function buildCoreHttpControllersDocument(array $controllers): string
+function buildCoreHttpControllersDocument(array $rootControllers, array $controllerSections): string
 {
     $lines = [
         generatedBanner(),
         '# Core HTTP Controllers',
         '',
-        'Top-level root controller index for `app/Http/Controllers/*.php`.',
+        'Verified controller index for root files in `app/Http/Controllers/*.php` plus the `Auth/`, `Install/`, and `Restaurant/` subfolders.',
         '',
         '## Purpose',
         '',
         '- Give agents a fast, verified map of the root controller surface.',
         '- Use the grep hint column to jump from a controller name to the owning route declarations quickly.',
+        '- Open the section that matches the area first instead of scanning the whole controller tree.',
         '',
-        '| Controller | Purpose | Grep / route hint |',
-        '|---|---|---|',
     ];
 
-    foreach ($controllers as $controller) {
-        $className = basename($controller, '.php');
-        $lines[] = '| ' . repoLink('app/Http/Controllers/' . $controller, $controller)
-            . ' | ' . controllerPurpose($controller)
-            . ' | `' . controllerHint($className) . '` |';
-    }
+    $lines = array_merge(
+        $lines,
+        buildControllerTableSection(
+            'Root-level controllers',
+            'app/Http/Controllers',
+            $rootControllers,
+            'Open ' . repoLink('app/Http/Controllers/', 'app/Http/Controllers/') . ' first for non-module controllers that live directly under the root controller directory.'
+        ),
+        buildControllerTableSection(
+            'Auth controllers',
+            'app/Http/Controllers/Auth',
+            $controllerSections['Auth'] ?? [],
+            'Open ' . repoLink('app/Http/Controllers/Auth/', 'app/Http/Controllers/Auth/') . ' for login, registration, password reset, and verification flows.'
+        ),
+        buildControllerTableSection(
+            'Install controllers',
+            'app/Http/Controllers/Install',
+            $controllerSections['Install'] ?? [],
+            'Open ' . repoLink('app/Http/Controllers/Install/', 'app/Http/Controllers/Install/') . ' for installer and module-bootstrap flows.'
+        ),
+        buildControllerTableSection(
+            'Restaurant controllers',
+            'app/Http/Controllers/Restaurant',
+            $controllerSections['Restaurant'] ?? [],
+            'Open ' . repoLink('app/Http/Controllers/Restaurant/', 'app/Http/Controllers/Restaurant/') . ' for bookings, kitchen screens, orders, tables, and modifier-set flows.'
+        )
+    );
 
     $lines = array_merge($lines, [
         '',
@@ -646,24 +689,42 @@ function buildCoreHttpControllersDocument(array $controllers): string
 
 /**
  * @param array<int, string> $utils
+ * @param array<int, string> $otherUtils
  */
-function buildCoreUtilsIndexDocument(array $utils): string
+function buildCoreUtilsIndexDocument(array $utils, array $otherUtils): string
 {
     $lines = [
         generatedBanner(),
         '# Core Utils Index',
         '',
-        'Shared root utility index for `app/Utils/*Util.php`.',
+        'Primary utility index for `app/Utils/*Util.php`.',
+        '',
+        'This map is intentionally Util-focused. The first table lists the primary `*Util.php` classes, and the companion section below lists the remaining PHP files in `app/Utils/` so agents can see the full directory shape without assuming every file follows the Util naming pattern.',
         '',
         '| Util | Purpose | Grep hint |',
         '|---|---|---|',
     ];
 
     foreach ($utils as $util) {
-        $stem = basename($util, '.php');
         $lines[] = '| ' . repoLink('app/Utils/' . $util, $util)
             . ' | ' . utilPurpose($util)
-            . ' | `rg -n \'' . $stem . '|' . preg_replace('/Util$/', '', $stem) . '\' app routes Modules` |';
+            . ' | `' . utilHint($util) . '` |';
+    }
+
+    if ($otherUtils !== []) {
+        $lines = array_merge($lines, [
+            '',
+            '## Other files in app/Utils/',
+            '',
+            '| File | Purpose | Grep hint |',
+            '|---|---|---|',
+        ]);
+
+        foreach ($otherUtils as $file) {
+            $lines[] = '| ' . repoLink('app/Utils/' . $file, $file)
+                . ' | ' . otherUtilPurpose($file)
+                . ' | `' . otherUtilHint($file) . '` |';
+        }
     }
 
     $lines = array_merge($lines, [
@@ -680,6 +741,41 @@ function buildCoreUtilsIndexDocument(array $utils): string
     ]);
 
     return implode("\n", $lines) . "\n";
+}
+
+/**
+ * @param array<int, string> $controllers
+ * @return array<int, string>
+ */
+function buildControllerTableSection(
+    string $heading,
+    string $directory,
+    array $controllers,
+    string $instruction
+): array {
+    if ($controllers === []) {
+        return [];
+    }
+
+    $lines = [
+        '## ' . $heading,
+        '',
+        $instruction,
+        '',
+        '| Controller | Purpose | Grep / route hint |',
+        '|---|---|---|',
+    ];
+
+    foreach ($controllers as $controller) {
+        $className = basename($controller, '.php');
+        $lines[] = '| ' . repoLink($directory . '/' . $controller, $controller)
+            . ' | ' . controllerPurpose($controller)
+            . ' | `' . controllerHint($className) . '` |';
+    }
+
+    $lines[] = '';
+
+    return $lines;
 }
 
 /**
@@ -975,33 +1071,43 @@ function controllerPurpose(string $controllerFile): string
         'CalendarController.php' => 'Calendar views and schedule CRUD.',
         'CashRegisterController.php' => 'Cash register open, close, and reporting flows.',
         'CombinedPurchaseReturnController.php' => 'Combined purchase return workflows.',
+        'ConfirmPasswordController.php' => 'Password confirmation gate before sensitive actions.',
         'ContactController.php' => 'Customer and supplier CRUD, ledgers, and contact feeds.',
         'Controller.php' => 'Base app controller class used by other controllers.',
         'CustomerGroupController.php' => 'Customer group management.',
         'DashboardConfiguratorController.php' => 'Dashboard configuration and widget settings.',
+        'DataController.php' => 'Restaurant AJAX and data-feed endpoints.',
         'DiscountController.php' => 'Discount management.',
         'DocumentAndNoteController.php' => 'Document and note attachment flows.',
         'ExpenseCategoryController.php' => 'Expense category management.',
         'ExpenseController.php' => 'Expense CRUD and expense reports.',
+        'ForgotPasswordController.php' => 'Password reset request and email dispatch flows.',
         'GlobalSearchController.php' => 'Global search endpoints across entities.',
         'GroupTaxController.php' => 'Group tax configuration.',
         'HomeController.php' => 'Dashboard and authenticated home screens.',
         'ImportOpeningStockController.php' => 'Opening stock import workflows.',
         'ImportProductsController.php' => 'Product import workflows.',
         'ImportSalesController.php' => 'Sales import workflows.',
+        'InstallController.php' => 'Installer setup steps and bootstrap flow.',
         'InvoiceLayoutController.php' => 'Invoice layout management.',
         'InvoiceSchemeController.php' => 'Invoice numbering scheme management.',
+        'KitchenController.php' => 'Kitchen display and food-order preparation flows.',
         'LabelsController.php' => 'Label generation and printing.',
         'LedgerDiscountController.php' => 'Ledger discount maintenance.',
         'LocationSettingsController.php' => 'Location-specific settings.',
+        'LoginController.php' => 'Login and logout flows.',
         'ManageUserController.php' => 'Admin user management and sign-in-as-user flows.',
+        'ModifierSetsController.php' => 'Restaurant modifier-set management.',
+        'ModulesController.php' => 'Module activation checks during install and update.',
         'MyFatoorahController.php' => 'MyFatoorah payment integration callbacks and redirects.',
         'NotificationController.php' => 'Notification listing and read/update flows.',
         'NotificationTemplateController.php' => 'Notification template management.',
         'OpeningStockController.php' => 'Opening stock CRUD flows.',
+        'OrderController.php' => 'Restaurant order and table-service flows.',
         'PesaPalController.php' => 'PesaPal payment integration callbacks and redirects.',
         'PrinterController.php' => 'Printer management.',
         'ProductController.php' => 'Product catalog CRUD, bulk actions, and detail flows.',
+        'ProductModifierSetController.php' => 'Product-to-modifier-set assignment flows.',
         'ProductQuoteController.php' => 'Quote creation entry points tied to products.',
         'ProductSalesOrderController.php' => 'Product-specific sales order entry points.',
         'PublicQuoteController.php' => 'Public quote viewing flows.',
@@ -1009,8 +1115,12 @@ function controllerPurpose(string $controllerFile): string
         'PurchaseOrderController.php' => 'Purchase order workflows.',
         'PurchaseRequisitionController.php' => 'Purchase requisition workflows.',
         'PurchaseReturnController.php' => 'Purchase return workflows.',
+        'RegisterController.php' => 'Registration and first-account setup flows.',
         'ReportController.php' => 'Business reporting endpoints.',
+        'ResetPasswordController.php' => 'Reset-token password update flows.',
         'RoleController.php' => 'Role and permission management.',
+        'BookingController.php' => 'Restaurant booking and reservation flows.',
+        'RestaurantController.php' => 'Restaurant settings, service areas, and dining flows.',
         'SalesCommissionAgentController.php' => 'Sales commission agent management.',
         'SalesOrderController.php' => 'Sales order workflows.',
         'SellController.php' => 'Sales transaction workflows and sell screens.',
@@ -1019,6 +1129,7 @@ function controllerPurpose(string $controllerFile): string
         'SellReturnController.php' => 'Sell return workflows.',
         'StockAdjustmentController.php' => 'Stock adjustment workflows.',
         'StockTransferController.php' => 'Stock transfer workflows.',
+        'TableController.php' => 'Restaurant table management and seating flows.',
         'TaxonomyController.php' => 'Taxonomy maintenance.',
         'TaxRateController.php' => 'Tax rate management.',
         'TransactionPaymentController.php' => 'Transaction payment actions.',
@@ -1028,6 +1139,7 @@ function controllerPurpose(string $controllerFile): string
         'UserController.php' => 'User profile and account updates.',
         'VariationTemplateController.php' => 'Variation template management.',
         'WarrantyController.php' => 'Warranty management.',
+        'VerificationController.php' => 'Email verification notice, resend, and confirmation flows.',
     ];
 
     if (isset($purposeMap[$controllerFile])) {
@@ -1092,6 +1204,63 @@ function utilPurpose(string $utilFile): string
     $humanized = preg_replace('/([a-z])([A-Z])/', '$1 $2', preg_replace('/Util$/', '', $base) ?? $base);
 
     return 'Shared helper logic for ' . strtolower((string) $humanized) . '.';
+}
+
+function utilHint(string $utilFile): string
+{
+    $stem = basename($utilFile, '.php');
+    $short = preg_replace('/Util$/', '', $stem) ?? $stem;
+
+    return grepHintForTerms([$stem, $short]);
+}
+
+function otherUtilPurpose(string $file): string
+{
+    $purposeMap = [
+        'ContactFeedProviderInterface.php' => 'Contract for contact-feed provider adapters.',
+        'FacebookContactFeedProvider.php' => 'Facebook contact-feed provider adapter.',
+        'GoogleContactFeedProvider.php' => 'Google contact-feed provider adapter.',
+        'LinkedInContactFeedProvider.php' => 'LinkedIn contact-feed provider adapter.',
+        'QuoteDisplayPresenter.php' => 'Quote display and presentation formatting helpers.',
+        'QuoteInvoiceReleaseService.php' => 'Service that releases quotes into invoice-ready state.',
+        'SerpApiGoogleContactFeedProvider.php' => 'SerpApi-backed Google contact-feed provider adapter.',
+    ];
+
+    if (isset($purposeMap[$file])) {
+        return $purposeMap[$file];
+    }
+
+    $base = basename($file, '.php');
+    $humanized = preg_replace('/([a-z])([A-Z])/', '$1 $2', $base) ?? $base;
+
+    return 'Support class for ' . strtolower((string) $humanized) . '.';
+}
+
+function otherUtilHint(string $file): string
+{
+    $stem = basename($file, '.php');
+    $short = preg_replace('/(Interface|Service|Presenter)$/', '', $stem) ?? $stem;
+
+    return grepHintForTerms([$stem, $short, str_contains($stem, 'ContactFeedProvider') ? 'ContactFeedProvider' : '']);
+}
+
+/**
+ * @param array<int, string> $terms
+ */
+function grepHintForTerms(array $terms): string
+{
+    $filtered = [];
+    foreach ($terms as $term) {
+        if ($term === '') {
+            continue;
+        }
+
+        if (!in_array($term, $filtered, true)) {
+            $filtered[] = $term;
+        }
+    }
+
+    return "rg -n '" . implode('|', $filtered) . "' app routes Modules";
 }
 
 /**

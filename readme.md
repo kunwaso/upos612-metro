@@ -75,3 +75,7 @@ php artisan vendor:publish --tag=cms-assets --force
 php mcp/semantic-code-search-mcp/bin/index-codebase --force
 
 
+composer entrypoints:generate
+composer entrypoints:check
+
+
