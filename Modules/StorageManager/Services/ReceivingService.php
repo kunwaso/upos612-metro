@@ -9,6 +9,8 @@ use App\Utils\TransactionUtil;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Entities\StorageDocumentLine;
@@ -205,12 +207,14 @@ class ReceivingService
         if (! in_array((string) $document->status, ['completed', 'closed'], true)) {
             $reopenReason = 'Receipt can only be reopened after confirmation.';
         } elseif ((string) $document->sync_status === 'posted') {
-            $reopenReason = 'Receipt is already posted to accounting and cannot be reopened.';
+            $reopenReason = 'Receipt is already posted to accounting. Unlink accounting first, then reopen.';
         } elseif ($putawayDocument && in_array((string) $putawayDocument->status, ['closed', 'completed'], true)) {
             $reopenReason = 'Reverse putaway first before reopening this receipt.';
         } else {
             $canReopen = true;
         }
+
+        $vasFlags = $this->resolveVasSyncFlags($document);
 
         $lineRows = $document->lines->map(function (StorageDocumentLine $line) use ($businessId, $document) {
             $suggestedDestination = $this->putawayService->suggestSlotForProduct(
@@ -256,6 +260,12 @@ class ReceivingService
                 'putaway_document_id' => $putawayDocument?->id,
                 'can_reopen' => $canReopen,
                 'reopen_reason' => $reopenReason,
+                'can_sync_vas' => $vasFlags['can_sync'],
+                'sync_vas_block_reason' => $vasFlags['sync_block_reason'],
+                'can_unlink_vas' => $vasFlags['can_unlink'],
+                'unlink_vas_block_reason' => $vasFlags['unlink_block_reason'],
+                'vas_inventory_document_id' => $vasFlags['vas_inventory_document_id'],
+                'vas_document_show_route' => $vasFlags['vas_document_show_route'],
             ],
             'lineRows' => $lineRows,
             'stagingSlotOptions' => $stagingSlotOptions,
@@ -265,6 +275,52 @@ class ReceivingService
     public function loadSourceDocument(StorageDocument $document)
     {
         return $this->loadSourceDocumentByKey((int) $document->business_id, (string) $document->source_type, (int) $document->source_id);
+    }
+
+    protected function resolveVasSyncFlags(StorageDocument $document): array
+    {
+        $isCompleted = in_array((string) $document->status, ['completed', 'closed'], true);
+        $syncStatus = (string) ($document->sync_status ?? 'not_required');
+        $hasVasLink = ! empty($document->vas_inventory_document_id);
+        $vasTablesExist = Schema::hasTable('vas_inventory_documents') && Schema::hasTable('vas_warehouses');
+
+        $canSync = false;
+        $syncBlockReason = null;
+        $canUnlink = false;
+        $unlinkBlockReason = null;
+
+        if (! $vasTablesExist) {
+            $syncBlockReason = __('lang_v1.vas_tables_not_available');
+            $unlinkBlockReason = $syncBlockReason;
+        } elseif (! $isCompleted) {
+            $syncBlockReason = __('lang_v1.receipt_must_be_completed_before_sync');
+            $unlinkBlockReason = $syncBlockReason;
+        } elseif ($syncStatus === 'posted') {
+            $syncBlockReason = __('lang_v1.already_posted_to_accounting');
+            $canUnlink = true;
+        } elseif (in_array($syncStatus, ['synced_unposted'], true)) {
+            $canSync = true;
+            $canUnlink = true;
+        } else {
+            $canSync = true;
+            if ($hasVasLink) {
+                $canUnlink = true;
+            }
+        }
+
+        $vasDocumentShowRoute = null;
+        if ($hasVasLink && Route::has('vasaccounting.inventory.documents.show')) {
+            $vasDocumentShowRoute = route('vasaccounting.inventory.documents.show', $document->vas_inventory_document_id);
+        }
+
+        return [
+            'can_sync' => $canSync,
+            'sync_block_reason' => $syncBlockReason,
+            'can_unlink' => $canUnlink,
+            'unlink_block_reason' => $unlinkBlockReason,
+            'vas_inventory_document_id' => $hasVasLink ? (int) $document->vas_inventory_document_id : null,
+            'vas_document_show_route' => $vasDocumentShowRoute,
+        ];
     }
 
     public function confirmReceipt(
@@ -418,10 +474,11 @@ class ReceivingService
 
         $this->putawayService->ensureDocumentForReceipt($receiptDocument, $userId);
 
-        try {
-            $this->warehouseSyncService->syncDocument($receiptDocument, $userId);
-        } catch (\Throwable $exception) {
-            // Sync errors are already logged in StorageSyncLog and surfaced in Control Tower.
+        if (config('storagemanager.inbound_vas_sync', 'manual') === 'auto') {
+            try {
+                $this->warehouseSyncService->syncDocument($receiptDocument, $userId);
+            } catch (\Throwable $exception) {
+            }
         }
 
         return $receiptDocument->fresh([

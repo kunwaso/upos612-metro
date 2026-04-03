@@ -19,6 +19,29 @@
             <div class="d-flex align-items-center gap-2 gap-lg-3">
                 <a href="{{ route('storage-manager.inbound.index') }}" class="btn btn-sm btn-light">@lang('messages.back')</a>
                 <a href="{{ route('storage-manager.putaway.index') }}" class="btn btn-sm btn-light-primary">Putaway Queue</a>
+                @if(!empty($sourceSummary['can_sync_vas']))
+                    <form method="POST" action="{{ route('storage-manager.inbound.sync-vas', $document->id) }}" class="d-inline-block">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-light-success"
+                                onclick="return confirm('{{ __('lang_v1.confirm_sync_to_accounting') }}');">
+                            @lang('lang_v1.sync_to_accounting')
+                        </button>
+                    </form>
+                @endif
+                @if(!empty($sourceSummary['can_unlink_vas']))
+                    <form method="POST" action="{{ route('storage-manager.inbound.unlink-vas', $document->id) }}" class="d-inline-block">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-light-warning"
+                                onclick="return confirm('{{ __('lang_v1.confirm_unlink_accounting') }}');">
+                            @lang('lang_v1.unlink_accounting')
+                        </button>
+                    </form>
+                @endif
+                @if(!empty($sourceSummary['vas_document_show_route']))
+                    <a href="{{ $sourceSummary['vas_document_show_route'] }}" class="btn btn-sm btn-light-info">
+                        @lang('lang_v1.view_accounting_document')
+                    </a>
+                @endif
                 @if(auth()->user()->can('storage_manager.operate') && in_array((string) ($document->status ?? ''), ['completed', 'closed'], true))
                     <form method="POST" action="{{ route('storage-manager.inbound.reopen', $document->id) }}" class="d-inline-block">
                         @csrf
@@ -71,9 +94,15 @@
                 <div class="col-lg-4">
                     <div class="card card-flush h-100">
                         <div class="card-body">
-                            <div class="text-gray-500 fs-7">Sync Status</div>
+                            <div class="text-gray-500 fs-7">@lang('lang_v1.vas_sync')</div>
                             <div class="fs-4 fw-bold text-gray-900">{{ $document->sync_status ?? 'not_required' }}</div>
-                            <div class="text-muted fs-7">{{ $sourceSummary['status'] ?? '—' }}</div>
+                            @if(!empty($sourceSummary['sync_vas_block_reason']))
+                                <div class="text-muted fs-7">{{ $sourceSummary['sync_vas_block_reason'] }}</div>
+                            @elseif(!empty($sourceSummary['unlink_vas_block_reason']))
+                                <div class="text-muted fs-7">{{ $sourceSummary['unlink_vas_block_reason'] }}</div>
+                            @else
+                                <div class="text-muted fs-7">{{ $sourceSummary['status'] ?? '—' }}</div>
+                            @endif
                         </div>
                     </div>
                 </div>

@@ -6,14 +6,20 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\ConfirmReceiptRequest;
+use Modules\StorageManager\Http\Requests\SyncInboundReceiptVasRequest;
+use Modules\StorageManager\Http\Requests\UnlinkInboundReceiptVasRequest;
 use Modules\StorageManager\Services\ReceivingService;
+use Modules\StorageManager\Services\WarehouseSyncService;
 use Modules\StorageManager\Utils\StorageManagerUtil;
+use Modules\StorageManager\Utils\StorageVasReceiptSyncUtil;
 
 class InboundController extends Controller
 {
     public function __construct(
         protected ReceivingService $receivingService,
-        protected StorageManagerUtil $storageManagerUtil
+        protected StorageManagerUtil $storageManagerUtil,
+        protected WarehouseSyncService $warehouseSyncService,
+        protected StorageVasReceiptSyncUtil $vasReceiptSyncUtil
     ) {
     }
 
@@ -123,6 +129,72 @@ class InboundController extends Controller
                 ->with('status', [
                     'success' => true,
                     'msg' => 'Receipt reopened successfully.',
+                ]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->back()
+                ->with('status', [
+                    'success' => false,
+                    'msg' => $exception->getMessage(),
+                ]);
+        }
+    }
+
+    public function syncVas(SyncInboundReceiptVasRequest $request, int $document)
+    {
+        $businessId = (int) $request->session()->get('user.business_id');
+        $userId = (int) $request->session()->get('user.id');
+
+        $documentModel = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'receipt')
+            ->whereIn('status', ['completed', 'closed'])
+            ->findOrFail($document);
+
+        try {
+            $this->warehouseSyncService->syncDocument($documentModel, $userId);
+
+            return redirect()
+                ->route('storage-manager.inbound.show', [
+                    'sourceType' => $documentModel->source_type,
+                    'sourceId' => $documentModel->source_id,
+                ])
+                ->with('status', [
+                    'success' => true,
+                    'msg' => __('lang_v1.vas_sync_completed'),
+                ]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->back()
+                ->with('status', [
+                    'success' => false,
+                    'msg' => $exception->getMessage(),
+                ]);
+        }
+    }
+
+    public function unlinkVas(UnlinkInboundReceiptVasRequest $request, int $document)
+    {
+        $businessId = (int) $request->session()->get('user.business_id');
+        $userId = (int) $request->session()->get('user.id');
+
+        $documentModel = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'receipt')
+            ->whereIn('status', ['completed', 'closed'])
+            ->findOrFail($document);
+
+        try {
+            $this->vasReceiptSyncUtil->unlinkReceiptVasSync($businessId, $documentModel, $userId);
+
+            return redirect()
+                ->route('storage-manager.inbound.show', [
+                    'sourceType' => $documentModel->source_type,
+                    'sourceId' => $documentModel->source_id,
+                ])
+                ->with('status', [
+                    'success' => true,
+                    'msg' => __('lang_v1.vas_unlink_completed'),
                 ]);
         } catch (\Throwable $exception) {
             return redirect()

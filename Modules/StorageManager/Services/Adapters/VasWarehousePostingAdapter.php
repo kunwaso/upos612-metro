@@ -8,6 +8,7 @@ use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Entities\StorageDocumentLink;
 use Modules\StorageManager\Entities\StorageSyncLog;
 use Modules\VasAccounting\Entities\VasInventoryDocument;
+use Modules\VasAccounting\Entities\VasInventoryDocumentLine;
 use Modules\VasAccounting\Entities\VasWarehouse;
 use Modules\VasAccounting\Services\VasWarehouseDocumentService;
 use RuntimeException;
@@ -52,6 +53,8 @@ class VasWarehousePostingAdapter implements WarehousePostingAdapterInterface
                     $payload,
                     $userId
                 );
+            } elseif (in_array($existing->status, ['draft', 'pending_approval', 'approved'], true)) {
+                $this->refreshInventoryDocumentLines($existing, $document);
             }
 
             if (in_array($document->status, ['closed', 'completed'], true) && $existing->status !== 'posted') {
@@ -200,6 +203,31 @@ class VasWarehousePostingAdapter implements WarehousePostingAdapterInterface
             'description' => $document->notes ?: ('Storage document ' . $document->document_no),
             'lines' => $lines,
         ];
+    }
+
+    protected function refreshInventoryDocumentLines(VasInventoryDocument $vasDocument, StorageDocument $storageDocument): void
+    {
+        $payload = $this->payloadForDocument($storageDocument);
+        $newLines = (array) ($payload['lines'] ?? []);
+
+        $vasDocument->lines()->delete();
+
+        foreach (array_values($newLines) as $index => $line) {
+            VasInventoryDocumentLine::create([
+                'business_id' => (int) $vasDocument->business_id,
+                'inventory_document_id' => (int) $vasDocument->id,
+                'line_no' => $index + 1,
+                'product_id' => (int) $line['product_id'],
+                'variation_id' => $line['variation_id'] ?? null,
+                'quantity' => round((float) $line['quantity'], 4),
+                'unit_cost' => round((float) $line['unit_cost'], 4),
+                'amount' => round((float) ($line['amount'] ?? ((float) $line['quantity'] * (float) $line['unit_cost'])), 4),
+                'direction' => $line['direction'] ?? null,
+                'meta' => ['source' => 'storage_sync_refresh'],
+            ]);
+        }
+
+        $vasDocument->load('lines');
     }
 
     protected function resolveWarehouseId(int $businessId, int $locationId): ?int

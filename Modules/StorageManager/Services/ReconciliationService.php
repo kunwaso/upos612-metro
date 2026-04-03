@@ -135,6 +135,13 @@ class ReconciliationService
             ->get(['id', 'status', 'sync_status']);
 
         $errorCount = $documents->whereIn('sync_status', ['sync_error', 'reconcile_error'])->count();
+        $completedNotPosted = $documents
+            ->whereIn('status', ['completed', 'closed'])
+            ->whereNotIn('sync_status', ['posted', 'not_required'])
+            ->count();
+        $unsyncedCompleted = $enforceVasSync
+            ? $documents->whereIn('status', ['completed', 'closed'])->where('sync_status', 'not_required')->count()
+            : 0;
 
         return [
             'document_count' => $documents->count(),
@@ -142,8 +149,10 @@ class ReconciliationService
             'sync_errors' => $documents->where('sync_status', 'sync_error')->count(),
             'reconcile_errors' => $documents->where('sync_status', 'reconcile_error')->count(),
             'posted' => $documents->where('sync_status', 'posted')->count(),
+            'completed_not_posted' => $completedNotPosted,
+            'unsynced_completed' => $unsyncedCompleted,
             'enforce_vas_sync' => $enforceVasSync,
-            'has_errors' => $enforceVasSync && $errorCount > 0,
+            'has_errors' => $enforceVasSync && ($errorCount > 0 || $unsyncedCompleted > 0),
         ];
     }
 }

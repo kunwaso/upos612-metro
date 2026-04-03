@@ -58,6 +58,8 @@ Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezo
             Route::get('/receipts/{sourceType}/{sourceId}', [InboundController::class, 'show'])->name('show');
             Route::post('/receipts/{document}/confirm', [InboundController::class, 'confirm'])->name('confirm');
             Route::post('/receipts/{document}/reopen', [InboundController::class, 'reopen'])->name('reopen');
+            Route::post('/receipts/{document}/sync-vas', [InboundController::class, 'syncVas'])->name('sync-vas');
+            Route::post('/receipts/{document}/unlink-vas', [InboundController::class, 'unlinkVas'])->name('unlink-vas');
         });
 
         Route::prefix('putaway')->name('putaway.')->group(function () {

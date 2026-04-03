@@ -149,12 +149,19 @@
                                 <td>{{ optional($link->synced_at)->format('Y-m-d H:i') ?: '-' }}</td>
                                 <td class="text-end">
                                     @if($canOpenStorageDocument && !empty($link->document_id))
-                                        <a href="#"
-                                            class="btn-modal btn btn-sm btn-light-primary"
-                                            data-container=".view_modal"
-                                            data-href="{{ route('storage-manager.documents.show', $link->document_id) }}">
-                                            {{ __('vasaccounting::lang.views.inventory.document_links.open_storage_document') }}
-                                        </a>
+                                        @if($storageDocument && $storageDocument->document_type === 'receipt' && $storageDocument->source_type && $storageDocument->source_id && \Illuminate\Support\Facades\Route::has('storage-manager.inbound.show'))
+                                            <a href="{{ route('storage-manager.inbound.show', ['sourceType' => $storageDocument->source_type, 'sourceId' => $storageDocument->source_id]) }}"
+                                               class="btn btn-sm btn-light-primary">
+                                                @lang('lang_v1.inbound_receipt')
+                                            </a>
+                                        @else
+                                            <a href="#"
+                                                class="btn-modal btn btn-sm btn-light-primary"
+                                                data-container=".view_modal"
+                                                data-href="{{ route('storage-manager.documents.show', $link->document_id) }}">
+                                                {{ __('vasaccounting::lang.views.inventory.document_links.open_storage_document') }}
+                                            </a>
+                                        @endif
                                     @else
                                         <span class="text-muted fs-8">-</span>
                                     @endif

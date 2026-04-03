@@ -29,6 +29,8 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('storage-manager.inbound.show'));
         $this->assertTrue($router->has('storage-manager.inbound.confirm'));
         $this->assertTrue($router->has('storage-manager.inbound.reopen'));
+        $this->assertTrue($router->has('storage-manager.inbound.sync-vas'));
+        $this->assertTrue($router->has('storage-manager.inbound.unlink-vas'));
         $this->assertTrue($router->has('storage-manager.putaway.index'));
         $this->assertTrue($router->has('storage-manager.putaway.show'));
         $this->assertTrue($router->has('storage-manager.putaway.complete'));
@@ -93,6 +95,8 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertSame('storage-manager/inbound/receipts/{sourceType}/{sourceId}', $routes->getByName('storage-manager.inbound.show')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/confirm', $routes->getByName('storage-manager.inbound.confirm')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/reopen', $routes->getByName('storage-manager.inbound.reopen')->uri());
+        $this->assertSame('storage-manager/inbound/receipts/{document}/sync-vas', $routes->getByName('storage-manager.inbound.sync-vas')->uri());
+        $this->assertSame('storage-manager/inbound/receipts/{document}/unlink-vas', $routes->getByName('storage-manager.inbound.unlink-vas')->uri());
         $this->assertSame('storage-manager/putaway', $routes->getByName('storage-manager.putaway.index')->uri());
         $this->assertSame('storage-manager/putaway/{document}', $routes->getByName('storage-manager.putaway.show')->uri());
         $this->assertSame('storage-manager/putaway/{document}/complete', $routes->getByName('storage-manager.putaway.complete')->uri());

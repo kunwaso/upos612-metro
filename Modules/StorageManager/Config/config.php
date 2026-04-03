@@ -78,6 +78,8 @@ return [
         'stock_adjustment' => \Modules\StorageManager\Services\Adapters\StockAdjustmentSourceAdapter::class,
         'sales_order' => \Modules\StorageManager\Services\Adapters\SalesOrderSourceAdapter::class,
     ],
+    'inbound_vas_sync' => 'manual',
+
     'posting_adapters' => [
         'vas' => \Modules\StorageManager\Services\Adapters\VasWarehousePostingAdapter::class,
     ],
