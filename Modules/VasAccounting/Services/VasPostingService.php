@@ -48,6 +48,11 @@ class VasPostingService
         try {
             $adapter = $this->adapterManager->resolve($sourceType);
             $sourceDocument = $adapter->loadSourceDocument($sourceId, $context);
+
+            if (! empty($context['is_deleted'])) {
+                return $this->cleanupDeletedSourceDocument($sourceType, $sourceId, $context, $sourceDocument);
+            }
+
             $payload = $adapter->toVoucherPayload($sourceDocument, $context);
 
             return $this->postVoucherPayload($payload);
@@ -371,6 +376,82 @@ class VasPostingService
             ->first();
     }
 
+    protected function cleanupDeletedSourceDocument(string $sourceType, int $sourceId, array $context, $sourceDocument): VasVoucher
+    {
+        $businessId = $this->resolveDeletedSourceBusinessId($context, $sourceDocument);
+        if ($businessId <= 0) {
+            throw new RuntimeException('VAS delete cleanup is missing business_id.');
+        }
+
+        $sourceVouchers = VasVoucher::query()
+            ->with('lines')
+            ->where('business_id', $businessId)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->orderByDesc('version_no')
+            ->get();
+
+        $placeholder = $sourceVouchers->first() ?: $this->makeDeletedSourcePlaceholderVoucher($businessId, $sourceType, $sourceId);
+
+        if ($sourceVouchers->isEmpty()) {
+            $this->markPostingFailuresResolved(
+                $businessId,
+                $sourceType,
+                $sourceId,
+                $this->resolveDeletedSourceUserId($context, $sourceDocument)
+            );
+
+            return $placeholder;
+        }
+
+        $reversalVouchers = VasVoucher::query()
+            ->with('lines')
+            ->where('business_id', $businessId)
+            ->whereIn('reversed_voucher_id', $sourceVouchers->pluck('id')->all())
+            ->get();
+
+        $vouchersToDelete = $sourceVouchers
+            ->concat($reversalVouchers)
+            ->unique(fn (VasVoucher $voucher) => (int) $voucher->id)
+            ->values();
+
+        $accountIdsByPeriod = [];
+        foreach ($vouchersToDelete as $voucher) {
+            $periodId = (int) $voucher->accounting_period_id;
+            if ($periodId <= 0) {
+                continue;
+            }
+
+            foreach ($voucher->lines as $line) {
+                $accountId = (int) $line->account_id;
+                if ($accountId <= 0) {
+                    continue;
+                }
+
+                $accountIdsByPeriod[$periodId][$accountId] = true;
+            }
+        }
+
+        DB::transaction(function () use ($vouchersToDelete, $accountIdsByPeriod, $businessId, $sourceType, $sourceId, $context, $sourceDocument) {
+            foreach ($vouchersToDelete as $voucher) {
+                $this->deleteVoucherRecords($voucher);
+            }
+
+            foreach ($accountIdsByPeriod as $periodId => $accountIdMap) {
+                $this->syncLedgerBalances($businessId, (int) $periodId, array_map('intval', array_keys($accountIdMap)));
+            }
+
+            $this->markPostingFailuresResolved(
+                $businessId,
+                $sourceType,
+                $sourceId,
+                $this->resolveDeletedSourceUserId($context, $sourceDocument)
+            );
+        });
+
+        return $placeholder;
+    }
+
     protected function createReversalVoucher(VasVoucher $voucher, int $userId): VasVoucher
     {
         if ($voucher->reversed_at) {
@@ -634,6 +715,18 @@ class VasPostingService
         $businessId = (int) $voucher->business_id;
         $voucherId = (int) $voucher->id;
 
+        VasVoucherLine::query()
+            ->where('business_id', $businessId)
+            ->where('voucher_id', $voucherId)
+            ->delete();
+
+        if (Schema::hasTable('vas_journal_entries')) {
+            DB::table('vas_journal_entries')
+                ->where('business_id', $businessId)
+                ->where('voucher_id', $voucherId)
+                ->delete();
+        }
+
         VasDocumentApproval::query()
             ->where('business_id', $businessId)
             ->where('entity_type', VasVoucher::class)
@@ -653,6 +746,50 @@ class VasPostingService
             ->delete();
 
         $voucher->delete();
+    }
+
+    protected function resolveDeletedSourceBusinessId(array $context, $sourceDocument): int
+    {
+        $snapshot = (array) ($context['source_snapshot'] ?? []);
+
+        return (int) (($context['business_id'] ?? 0)
+            ?: ($snapshot['business_id'] ?? 0)
+            ?: ($sourceDocument->business_id ?? 0));
+    }
+
+    protected function resolveDeletedSourceUserId(array $context, $sourceDocument): ?int
+    {
+        $snapshot = (array) ($context['source_snapshot'] ?? []);
+
+        $userId = (int) (($context['created_by'] ?? 0)
+            ?: ($snapshot['created_by'] ?? 0)
+            ?: ($sourceDocument->created_by ?? 0));
+
+        return $userId > 0 ? $userId : null;
+    }
+
+    protected function markPostingFailuresResolved(int $businessId, string $sourceType, int $sourceId, ?int $resolvedBy = null): void
+    {
+        VasPostingFailure::query()
+            ->where('business_id', $businessId)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereNull('resolved_at')
+            ->update([
+                'resolved_at' => now(),
+                'resolved_by' => $resolvedBy,
+            ]);
+    }
+
+    protected function makeDeletedSourcePlaceholderVoucher(int $businessId, string $sourceType, int $sourceId): VasVoucher
+    {
+        $voucher = new VasVoucher();
+        $voucher->business_id = $businessId;
+        $voucher->source_type = $sourceType;
+        $voucher->source_id = $sourceId;
+        $voucher->status = 'deleted';
+
+        return $voucher;
     }
 
     protected function blockedDeletionStatus(string $code, string $reason, array $meta = []): array

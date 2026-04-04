@@ -1,6 +1,6 @@
 # AGENTS.md — AI Coding Guide for This Project
 
-**Last verified:** 2026-04-04
+**Last verified:** 2026-03-28
 **Owner:** UPOS Engineering (AI Workflow Maintainers)
 
 This file is the complete policy reference for any AI coding agent working on this codebase.
@@ -235,8 +235,6 @@ Apply this short gate before every final answer, including plan-only turns:
 
 ### 0.4 Tools you can use when reasoning
 
-> For exact MCP server routing, health fallback, and startup rules, see the canonical reference: `ai/agent-tools-and-mcp.md`. The list below is a working quick-reference; the full routing contract lives there.
-
 When you reason again and need more information or another step, choose from these tools (use them instead of guessing):
 
 **Search and discovery**
@@ -286,15 +284,31 @@ Use tools in sequence when one step depends on the previous (e.g. search -> read
 
 ### 0.4d Tool health fallback (unavailable vs degraded)
 
-When a tool is degraded (timeouts, empty/partial content, stale index) or unavailable, switch immediately to the next fastest repo-aware tool (exact → grep, meaning → semantic/codebase, content → read); do not retry in a loop. If semantic is `EMBEDDER_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip it for that step and continue with `grep` → `read_file` → `laravel_mysql`.
+Treat tool state as one of three states:
 
-Full fallback rules and degraded-tool escalation path: `ai/agent-tools-and-mcp.md §2.5` and `§2.11`.
+1. **Available + healthy** — preferred output shape and stable responses
+2. **Available but degraded** — timeouts, empty/partial content, metadata-only payloads, stale index loops, repeated call failures
+3. **Unavailable** — tool/server not present in this environment
+
+Fallback rule:
+
+1. Use preferred tool when healthy.
+2. If degraded or unavailable, switch immediately to the next fastest repo-aware tool for that step (search, read, verify).
+3. Keep the behavior split: exact via grep, meaning via semantic/codebase, content via read tools.
+4. State the fallback briefly when it materially affects speed or confidence.
+
+If semantic tooling is `EMBEDDER_UNAVAILABLE`, `NOT_INDEXED`, or `STALE`, skip semantic for that step immediately and continue with `grep` → `read_file` → `laravel_mysql` only when repo-aware structure or schema truth is still required.
 
 ### 0.4d.1 Hard routing for `grep` vs semantic search
 
-Exact query (symbol, ID, route, translation key, literal string) → start with `grep`. Behavior-level ("where/how is this done?") with unknown symbol → semantic search only when health says `READY`; skip immediately if `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE` and fall back to `grep` + `read_file_cache`. Confirm edit locations with `grep` before changing files.
+Use this guardrail when agents choose tools in Codex/Cursor:
 
-Full routing table and examples: `ai/agent-tools-and-mcp.md §0.3b` and `AGENTS-FAST.md §5.1a`.
+1. If the query is exact (ID, selector, class/function name, route, translation key, literal string, or regex), start with **`grep`**.
+2. Use semantic search only for behavior-level discovery ("where/how is this done?") when the exact symbol is unknown.
+3. Before semantic search, verify readiness (`index_status` or startup health). If status is `NOT_INDEXED`, `STALE`, or `EMBEDDER_UNAVAILABLE`, skip semantic immediately.
+4. If semantic is skipped or degraded, fall back to `grep` + `read_file_cache` without retry loops.
+5. If `grep` MCP is unavailable in the host client, use that client's native repo search (e.g. Cursor Grep). Use shell `rg` only as last fallback when no repo-aware grep/search tool is exposed.
+6. For mixed discovery tasks, semantic may find candidates first, but confirm edit locations with `grep` before changing files.
 
 ### 0.4e Scan Laravel log and autofix
 
@@ -1054,7 +1068,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (16947 symbols, 35086 relationships, 92 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (17023 symbols, 35316 relationships, 92 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

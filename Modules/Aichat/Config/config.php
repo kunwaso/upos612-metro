@@ -125,6 +125,9 @@ return [
                     'qwen/qwen3-4b:free' => 'Qwen3 4B (free)',
                     'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
                     'openai/gpt-4o' => 'OpenAI GPT-4o',
+                    'xiaomi/mimo-v2-pro' => 'Xiaomi MiMo V2 Pro',
+                    'xiaomi/mimo-v2-flash' => 'Xiaomi MiMo V2 Flash',
+                    'xiaomi/mimo-v2-flash:free' => 'Xiaomi MiMo V2 Flash (free)',
                 ],
             ],
             'deepseek' => [
