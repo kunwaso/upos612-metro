@@ -8,6 +8,7 @@ use App\Contact;
 use App\CustomerGroup;
 use App\Media;
 use App\PurchaseLine;
+use App\Services\PurchaseOrderDeletionService;
 use App\TaxRate;
 use App\Transaction;
 use App\User;
@@ -743,30 +744,15 @@ class PurchaseOrderController extends Controller
         try {
             if (request()->ajax()) {
                 $business_id = request()->session()->get('user.business_id');
+                $user_id = request()->session()->get('user.id');
 
-                $transaction = Transaction::where('business_id', $business_id)
-                                ->where('type', 'purchase_order')
-                                ->with('purchase_lines')
-                                ->findOrFail($id);
-
-                //unset purchase_order_line_id if set
-                PurchaseLine::whereIn('purchase_order_line_id', $transaction->purchase_lines->pluck('id'))
-                        ->update(['purchase_order_line_id' => null]);
-
-                $log_properities = [
-                    'id' => $transaction->id,
-                    'ref_no' => $transaction->ref_no,
-                ];
-                $this->transactionUtil->activityLog($transaction, 'po_deleted', null, $log_properities);
-
-                $transaction->delete();
-
-                $output = ['success' => true,
-                    'msg' => __('lang_v1.purchase_order_delete_success'),
-                ];
+                $output = app(PurchaseOrderDeletionService::class)->delete(
+                    (int) $business_id,
+                    (int) $id,
+                    (int) $user_id
+                );
             }
         } catch (\Exception $e) {
-            DB::rollBack();
             \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
 
             $output = ['success' => false,

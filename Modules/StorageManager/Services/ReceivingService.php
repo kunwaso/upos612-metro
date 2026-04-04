@@ -4,6 +4,7 @@ namespace Modules\StorageManager\Services;
 
 use App\PurchaseLine;
 use App\Transaction;
+use App\User;
 use App\Utils\ProductUtil;
 use App\Utils\TransactionUtil;
 use Carbon\Carbon;
@@ -21,6 +22,8 @@ use RuntimeException;
 
 class ReceivingService
 {
+    public const GENERATED_PURCHASE_SOURCE = 'storage_manager_purchase_order_receiving';
+
     public function __construct(
         protected SourceDocumentAdapterManager $adapterManager,
         protected InventoryMovementService $inventoryMovementService,
@@ -54,6 +57,25 @@ class ReceivingService
             ->get()
             ->keyBy(fn (StorageDocument $document) => $document->source_type . ':' . $document->source_id);
 
+        $openGeneratedPurchasesByOrderId = Transaction::query()
+            ->with(['contact', 'location', 'purchase_lines'])
+            ->where('business_id', $businessId)
+            ->where('type', 'purchase')
+            ->where('source', self::GENERATED_PURCHASE_SOURCE)
+            ->whereIn('status', ['pending', 'ordered'])
+            ->orderByDesc('id')
+            ->get()
+            ->reduce(function (array $carry, Transaction $transaction) {
+                foreach ((array) $transaction->purchase_order_ids as $purchaseOrderId) {
+                    $purchaseOrderId = (int) $purchaseOrderId;
+                    if ($purchaseOrderId > 0 && ! isset($carry[$purchaseOrderId])) {
+                        $carry[$purchaseOrderId] = $transaction;
+                    }
+                }
+
+                return $carry;
+            }, []);
+
         $purchases = Transaction::query()
             ->with(['contact', 'location', 'purchase_lines'])
             ->where('business_id', $businessId)
@@ -64,6 +86,7 @@ class ReceivingService
             ->orderByDesc('id')
             ->get()
             ->filter(fn (Transaction $transaction) => $transaction->purchase_lines->isNotEmpty())
+            ->reject(fn (Transaction $transaction) => (string) $transaction->source === self::GENERATED_PURCHASE_SOURCE)
             ->map(function (Transaction $transaction) use ($receiptDocuments, $settings) {
                 $document = $receiptDocuments->get('purchase:' . $transaction->id);
                 $setting = $settings->get($transaction->location_id);
@@ -107,10 +130,12 @@ class ReceivingService
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
             ->get()
-            ->map(function (Transaction $transaction) use ($receiptDocuments, $settings) {
+            ->map(function (Transaction $transaction) use ($receiptDocuments, $settings, $openGeneratedPurchasesByOrderId) {
                 $document = $receiptDocuments->get('purchase_order:' . $transaction->id);
                 $setting = $settings->get($transaction->location_id);
                 $executionMode = (string) ($setting?->execution_mode ?: 'off');
+                $executionEnabled = $executionMode !== 'off';
+                $generatedPurchase = $openGeneratedPurchasesByOrderId[(int) $transaction->id] ?? null;
                 $remainingQty = round((float) $transaction->purchase_lines->sum(function (PurchaseLine $line) {
                     return max((float) $line->quantity - (float) $line->po_quantity_purchased, 0);
                 }), 4);
@@ -134,25 +159,29 @@ class ReceivingService
                     'receipt_document_no' => $document?->document_no,
                     'receipt_status' => $document?->status,
                     'execution_mode' => $executionMode,
-                    'ready_for_execution' => false,
-                    'planning_only' => true,
-                    'can_open' => $remainingQty > 0,
-                    'action_note' => $remainingQty > 0
-                        ? 'Planning only. Confirm receipt and putaway become available after creating/receiving the purchase from this PO.'
-                        : 'No remaining quantity on this PO.',
+                    'ready_for_execution' => $executionEnabled && $remainingQty > 0,
+                    'planning_only' => false,
+                    'can_open' => $executionEnabled && $remainingQty > 0,
+                    'has_open_generated_purchase' => (bool) $generatedPurchase,
+                    'generated_purchase_id' => $generatedPurchase?->id,
+                    'action_note' => ! $executionEnabled
+                        ? 'Enable storage execution for this location to receive goods from this purchase order.'
+                        : ($remainingQty > 0
+                            ? null
+                            : 'No remaining quantity on this purchase order.'),
+                    'receive_action_label' => $generatedPurchase
+                        ? 'Continue Receiving'
+                        : 'Receive Goods',
+                    'receive_action_note' => $generatedPurchase
+                        ? 'Reopen the existing warehouse receipt for this purchase order.'
+                        : 'Create a warehouse receipt from this purchase order.',
                 ];
             })
             ->values();
 
-        $planningPurchases = $purchases
-            ->filter(fn (array $row) => ! empty($row['planning_only']))
-            ->values();
         $purchases = $purchases
             ->reject(fn (array $row) => ! empty($row['planning_only']))
             ->values();
-        if ($planningPurchases->isNotEmpty()) {
-            $purchaseOrders = $planningPurchases->concat($purchaseOrders)->values();
-        }
 
         return [
             'executionSummary' => [
@@ -163,6 +192,37 @@ class ReceivingService
             'purchases' => $purchases,
             'purchaseOrders' => $purchaseOrders,
         ];
+    }
+
+    public function startPurchaseOrderReceiving(int $businessId, int $purchaseOrderId, int $userId): Transaction
+    {
+        $purchaseOrder = $this->loadSourceDocumentByKey($businessId, 'purchase_order', $purchaseOrderId);
+        $purchaseOrder->loadMissing(['contact', 'location', 'purchase_lines.product', 'purchase_lines.variations']);
+        $settings = $this->locationSettingForSource($businessId, (int) $purchaseOrder->location_id);
+
+        $remainingLines = $this->remainingPurchaseOrderLines($purchaseOrder);
+        if ($remainingLines->isEmpty()) {
+            throw new RuntimeException('This purchase order has no remaining quantity available to receive.');
+        }
+
+        return DB::transaction(function () use ($businessId, $purchaseOrder, $settings, $remainingLines, $userId) {
+            $generatedPurchase = $this->findOpenGeneratedPurchaseForOrder($businessId, (int) $purchaseOrder->id);
+            $purchaseLineLinks = [];
+
+            if (! $generatedPurchase) {
+                [$generatedPurchase, $purchaseLineLinks] = $this->createGeneratedPurchaseFromPurchaseOrder(
+                    $businessId,
+                    $purchaseOrder,
+                    $remainingLines,
+                    $userId
+                );
+            }
+
+            $receiptDocument = $this->ensureReceiptDocument($businessId, 'purchase', $generatedPurchase, $settings, $userId);
+            $this->syncGeneratedReceiptMetadata($receiptDocument, $purchaseOrder, $purchaseLineLinks);
+
+            return $generatedPurchase->fresh(['contact', 'location', 'purchase_lines.product', 'purchase_lines.variations']);
+        });
     }
 
     public function getReceiptWorkbench(int $businessId, string $sourceType, int $sourceId, int $userId): array
@@ -202,10 +262,14 @@ class ReceivingService
             ->where('parent_document_id', $document->id)
             ->first();
 
+        $generatedReceiptMeta = $this->generatedPurchaseOrderReceiptMeta($document);
+        $generatedFromPurchaseOrder = ! empty($generatedReceiptMeta['generated_from_purchase_order']);
         $canReopen = false;
         $reopenReason = null;
         if (! in_array((string) $document->status, ['completed', 'closed'], true)) {
             $reopenReason = 'Receipt can only be reopened after confirmation.';
+        } elseif ($generatedFromPurchaseOrder) {
+            $reopenReason = 'Receipts generated from purchase orders cannot be reopened in this phase.';
         } elseif ((string) $document->sync_status === 'posted') {
             $reopenReason = 'Receipt is already posted to accounting. Unlink accounting first, then reopen.';
         } elseif ($putawayDocument && in_array((string) $putawayDocument->status, ['closed', 'completed'], true)) {
@@ -235,9 +299,17 @@ class ReceivingService
                 'staging_slot_id' => $line->to_slot_id,
                 'staging_area_label' => (string) (optional($line->toArea)->name ?: '—'),
                 'source_status' => (string) $document->status,
+                'received_qty' => (float) $line->executed_qty,
                 'destination_hint' => $suggestedDestination ? ($suggestedDestination->slot_code ?: $suggestedDestination->id) : '—',
             ];
         })->values();
+
+        $grnFields = $this->defaultGrnFields($document, $userId, $sourceDocument);
+        $grnRoute = in_array((string) $document->status, ['completed', 'closed'], true)
+            && $document->source_type === 'purchase'
+            && Route::has('storage-manager.inbound.grn.show')
+            ? route('storage-manager.inbound.grn.show', $document->id)
+            : null;
 
         return [
             'document' => $document,
@@ -253,9 +325,14 @@ class ReceivingService
                 'location_name' => (string) optional($sourceDocument->location)->name,
                 'execution_mode' => (string) $settings->execution_mode,
                 'planning_only' => $sourceType === 'purchase_order',
+                'generated_from_purchase_order' => $generatedFromPurchaseOrder,
+                'purchase_order_id' => ! empty($generatedReceiptMeta['purchase_order_id']) ? (int) $generatedReceiptMeta['purchase_order_id'] : null,
+                'purchase_order_ref' => $generatedReceiptMeta['purchase_order_ref'] ?? null,
                 'can_confirm' => $sourceType === 'purchase'
                     && ! in_array($document->status, ['completed', 'closed', 'cancelled'], true),
-                'requires_purchase_permission' => $sourceType === 'purchase' && $sourceDocument->status !== 'received',
+                'requires_purchase_permission' => $sourceType === 'purchase'
+                    && $sourceDocument->status !== 'received'
+                    && ! $generatedFromPurchaseOrder,
                 'has_putaway_document' => (bool) $putawayDocument,
                 'putaway_document_id' => $putawayDocument?->id,
                 'can_reopen' => $canReopen,
@@ -266,15 +343,86 @@ class ReceivingService
                 'unlink_vas_block_reason' => $vasFlags['unlink_block_reason'],
                 'vas_inventory_document_id' => $vasFlags['vas_inventory_document_id'],
                 'vas_document_show_route' => $vasFlags['vas_document_show_route'],
+                'can_view_grn' => ! empty($grnRoute),
+                'grn_route' => $grnRoute,
             ],
             'lineRows' => $lineRows,
             'stagingSlotOptions' => $stagingSlotOptions,
+            'grnFields' => $grnFields,
         ];
     }
 
     public function loadSourceDocument(StorageDocument $document)
     {
         return $this->loadSourceDocumentByKey((int) $document->business_id, (string) $document->source_type, (int) $document->source_id);
+    }
+
+    public function goodsReceivedNoteContext(int $businessId, StorageDocument $document): array
+    {
+        if ($document->business_id !== $businessId || $document->document_type !== 'receipt') {
+            throw new RuntimeException('Goods received notes are only available for warehouse receipt documents.');
+        }
+
+        if (! in_array((string) $document->status, ['completed', 'closed'], true)) {
+            throw new RuntimeException('Complete the receipt before printing the goods received note.');
+        }
+
+        if ((string) $document->source_type !== 'purchase') {
+            throw new RuntimeException('Goods received notes are only available for purchase receipts in this phase.');
+        }
+
+        $document = $document->fresh(['lines.product.unit', 'lines.variation']);
+        $sourceDocument = $this->loadSourceDocument($document);
+        $sourceDocument->loadMissing(['contact', 'location', 'purchase_lines']);
+
+        $grn = $this->defaultGrnFields($document, (int) ($document->approved_by ?: $document->created_by), $sourceDocument);
+        $supplier = $sourceDocument->contact;
+        $supplierAddress = collect([
+            $supplier?->supplier_business_name,
+            $supplier?->name,
+            $supplier?->address_line_1,
+            $supplier?->address_line_2,
+            $supplier?->city,
+            $supplier?->state,
+            $supplier?->country,
+            $supplier?->zip_code,
+        ])->filter()->unique()->implode(', ');
+        $supplierContact = collect([
+            $supplier?->mobile,
+            $supplier?->landline,
+            $supplier?->email,
+        ])->filter()->implode(' | ');
+
+        $purchaseLines = $sourceDocument->purchase_lines->keyBy('id');
+        $items = $document->lines->map(function (StorageDocumentLine $line) use ($purchaseLines) {
+            /** @var \App\PurchaseLine|null $purchaseLine */
+            $purchaseLine = $purchaseLines->get($line->source_line_id);
+            $unitPrice = round((float) ($purchaseLine?->purchase_price ?: $line->unit_cost), 4);
+            $receivedQty = round((float) $line->executed_qty, 4);
+            $orderedQty = round((float) $line->expected_qty, 4);
+
+            return [
+                'item' => (string) (optional($line->product)->name ?: '—'),
+                'description' => (string) (optional($line->variation)->name ?: optional($line->variation)->sub_sku ?: ''),
+                'unit_of_measure' => (string) (optional(optional($line->product)->unit)->short_name ?: ''),
+                'quantity_ordered' => $orderedQty,
+                'quantity_received' => $receivedQty,
+                'unit_price' => $unitPrice,
+                'total_price' => round($receivedQty * $unitPrice, 4),
+            ];
+        })->values();
+
+        return [
+            'document' => $document,
+            'sourceDocument' => $sourceDocument,
+            'grn' => $grn,
+            'supplierName' => (string) ($supplier?->supplier_business_name ?: $supplier?->name ?: '—'),
+            'supplierAddress' => $supplierAddress ?: '—',
+            'supplierContact' => $supplierContact ?: '—',
+            'items' => $items,
+            'totalItems' => round((float) $items->sum('quantity_received'), 4),
+            'totalAmount' => round((float) $items->sum('total_price'), 4),
+        ];
     }
 
     protected function resolveVasSyncFlags(StorageDocument $document): array
@@ -343,10 +491,11 @@ class ReceivingService
             throw new RuntimeException('Purchase orders are planning-only in this phase. Create or link a purchase before receiving stock.');
         }
 
+        $generatedFromPurchaseOrder = $this->isGeneratedPurchaseOrderReceipt($document);
         $settings = $this->locationSettingForSource($businessId, (int) $document->location_id);
         $lineInputs = (array) ($payload['lines'] ?? []);
 
-        DB::transaction(function () use ($businessId, $document, $sourceDocument, $settings, $lineInputs, $userId, $allowSourceStatusUpdate) {
+        DB::transaction(function () use ($businessId, $document, $sourceDocument, $settings, $lineInputs, $userId, $allowSourceStatusUpdate, $payload, $generatedFromPurchaseOrder) {
             $document->loadMissing(['lines']);
             $sourceDocument->loadMissing('purchase_lines');
             $documentMeta = (array) $document->meta;
@@ -356,6 +505,8 @@ class ReceivingService
             $sourceStatusBeforeReceipt = (string) $sourceDocument->status;
             $documentMeta['source_status_before_receipt'] = $sourceStatusBeforeReceipt;
             $documentMeta['source_status_changed_by_receipt'] = false;
+            $documentMeta['grn'] = $this->normalizeGrnPayload($document, $payload, $userId, $sourceDocument);
+            $receivedLineCount = 0;
 
             foreach ($document->lines as $line) {
                 $input = (array) ($lineInputs[$line->id] ?? []);
@@ -373,7 +524,11 @@ class ReceivingService
                     throw new RuntimeException("Executed quantity must be greater than zero for receipt line [{$line->id}].");
                 }
 
-                if ($executedQty !== $expectedQty) {
+                if ($generatedFromPurchaseOrder && $executedQty > $expectedQty) {
+                    throw new RuntimeException('Received quantity cannot exceed the remaining purchase order quantity.');
+                }
+
+                if (! $generatedFromPurchaseOrder && $executedQty !== $expectedQty) {
                     throw new RuntimeException('This phase requires executed receipt quantity to match the purchase quantity exactly.');
                 }
 
@@ -400,24 +555,42 @@ class ReceivingService
                     throw new RuntimeException('Expiry date is required for this warehouse location.');
                 }
 
+                if ($executedQty > 0) {
+                    $receivedLineCount++;
+                }
+
                 $line->forceFill([
                     'to_area_id' => $stagingSlot->area_id,
                     'to_slot_id' => $stagingSlotId,
                     'executed_qty' => $executedQty,
-                    'variance_qty' => 0,
+                    'variance_qty' => round($expectedQty - $executedQty, 4),
                     'inventory_status' => 'staged_in',
                     'result_status' => 'received',
                     'lot_number' => $lotNumber,
                     'expiry_date' => $expiryDate,
                 ])->save();
 
-                PurchaseLine::query()
-                    ->where('id', $line->source_line_id)
-                    ->where('transaction_id', $sourceDocument->id)
-                    ->update([
-                        'lot_number' => $lotNumber !== '' ? $lotNumber : null,
-                        'exp_date' => $expiryDate,
-                    ]);
+                if (! $generatedFromPurchaseOrder) {
+                    PurchaseLine::query()
+                        ->where('id', $line->source_line_id)
+                        ->where('transaction_id', $sourceDocument->id)
+                        ->update([
+                            'lot_number' => $lotNumber !== '' ? $lotNumber : null,
+                            'exp_date' => $expiryDate,
+                        ]);
+                }
+            }
+
+            if ($generatedFromPurchaseOrder && $receivedLineCount === 0) {
+                throw new RuntimeException('Enter at least one received quantity before confirming this purchase order receipt.');
+            }
+
+            if ($generatedFromPurchaseOrder) {
+                $this->applyGeneratedPurchaseReceiptAdjustments($sourceDocument, $document);
+                $purchaseOrderId = (int) data_get($documentMeta, 'storage_manager.purchase_order_id', 0);
+                if ($purchaseOrderId > 0) {
+                    $this->transactionUtil->updatePurchaseOrderStatus([$purchaseOrderId]);
+                }
             }
 
             if ($sourceDocument->status !== 'received') {
@@ -461,6 +634,7 @@ class ReceivingService
                 'workflow_state' => 'putaway_pending',
                 'completed_at' => now(),
                 'approved_by' => $userId,
+                'notes' => $documentMeta['grn']['comments'] ?? $document->notes,
                 'meta' => $documentMeta,
             ])->save();
         });
@@ -491,6 +665,22 @@ class ReceivingService
 
     public function reopenReceipt(int $businessId, StorageDocument $document, int $userId): StorageDocument
     {
+        return $this->reopenReceiptInternal($businessId, $document, $userId, false, true);
+    }
+
+    public function reopenGeneratedPurchaseOrderReceiptForDeletion(int $businessId, StorageDocument $document, int $userId): StorageDocument
+    {
+        return $this->reopenReceiptInternal($businessId, $document, $userId, true, false);
+    }
+
+    protected function reopenReceiptInternal(
+        int $businessId,
+        StorageDocument $document,
+        int $userId,
+        bool $allowGeneratedPurchaseOrderReversal,
+        bool $ensurePutawayDocument
+    ): StorageDocument
+    {
         if ($document->document_type !== 'receipt') {
             throw new RuntimeException('Only receipt documents can be reopened from inbound receiving.');
         }
@@ -501,6 +691,10 @@ class ReceivingService
 
         if ((string) $document->sync_status === 'posted') {
             throw new RuntimeException('This receipt is already posted to accounting and cannot be reopened.');
+        }
+
+        if ($this->isGeneratedPurchaseOrderReceipt($document) && ! $allowGeneratedPurchaseOrderReversal) {
+            throw new RuntimeException('Receipts generated from purchase orders cannot be reopened in this phase.');
         }
 
         $putawayDocument = StorageDocument::query()
@@ -613,7 +807,9 @@ class ReceivingService
             'lines.toSlot',
         ]);
 
-        $this->putawayService->ensureDocumentForReceipt($receiptDocument, $userId);
+        if ($ensurePutawayDocument) {
+            $this->putawayService->ensureDocumentForReceipt($receiptDocument, $userId);
+        }
 
         return $receiptDocument->fresh([
             'lines.product',
@@ -704,6 +900,14 @@ class ReceivingService
         $activeLineIds = [];
 
         foreach ($sourceLines as $index => $sourceLine) {
+            $lineMeta = [
+                'source_status' => $sourceDocument->status,
+            ];
+            $purchaseOrderLineId = (int) data_get($document->meta, 'storage_manager.purchase_line_links.' . $sourceLine['source_line_id'], 0);
+            if ($purchaseOrderLineId > 0) {
+                $lineMeta['source_purchase_order_line_id'] = $purchaseOrderLineId;
+            }
+
             $line = StorageDocumentLine::query()->updateOrCreate(
                 [
                     'business_id' => $document->business_id,
@@ -724,9 +928,7 @@ class ReceivingService
                     'result_status' => 'pending',
                     'lot_number' => $sourceLine['lot_number'],
                     'expiry_date' => $sourceLine['expiry_date'],
-                    'meta' => [
-                        'source_status' => $sourceDocument->status,
-                    ],
+                    'meta' => $lineMeta,
                 ]
             );
 
@@ -765,6 +967,245 @@ class ReceivingService
             })
             ->filter(fn (array $line) => $line['expected_qty'] > 0)
             ->values();
+    }
+
+    protected function remainingPurchaseOrderLines(Transaction $purchaseOrder): Collection
+    {
+        $purchaseOrder->loadMissing(['purchase_lines.product', 'purchase_lines.variations']);
+
+        return $purchaseOrder->purchase_lines
+            ->map(function (PurchaseLine $line) {
+                $remainingQty = round(max((float) $line->quantity - (float) $line->po_quantity_purchased, 0), 4);
+                $secondaryUnitQuantity = round((float) $line->secondary_unit_quantity, 4);
+                if ((float) $line->quantity > 0 && $secondaryUnitQuantity > 0) {
+                    $secondaryUnitQuantity = round($secondaryUnitQuantity * ($remainingQty / (float) $line->quantity), 4);
+                }
+
+                return [
+                    'purchase_order_line_id' => (int) $line->id,
+                    'product_id' => (int) $line->product_id,
+                    'variation_id' => $line->variation_id ? (int) $line->variation_id : null,
+                    'quantity' => $remainingQty,
+                    'secondary_unit_quantity' => $secondaryUnitQuantity,
+                    'pp_without_discount' => round((float) $line->pp_without_discount, 4),
+                    'discount_percent' => round((float) $line->discount_percent, 4),
+                    'purchase_price' => round((float) $line->purchase_price, 4),
+                    'purchase_price_inc_tax' => round((float) $line->purchase_price_inc_tax, 4),
+                    'item_tax' => round((float) $line->item_tax, 4),
+                    'tax_id' => $line->tax_id ? (int) $line->tax_id : null,
+                    'lot_number' => (string) ($line->lot_number ?: ''),
+                    'exp_date' => $line->exp_date,
+                    'sub_unit_id' => $line->sub_unit_id ? (int) $line->sub_unit_id : null,
+                    'product_unit_id' => optional($line->product)->unit_id ? (int) optional($line->product)->unit_id : null,
+                ];
+            })
+            ->filter(fn (array $line) => $line['quantity'] > 0)
+            ->values();
+    }
+
+    protected function findOpenGeneratedPurchaseForOrder(int $businessId, int $purchaseOrderId): ?Transaction
+    {
+        return Transaction::query()
+            ->with(['contact', 'location', 'purchase_lines.product', 'purchase_lines.variations'])
+            ->where('business_id', $businessId)
+            ->where('type', 'purchase')
+            ->where('source', self::GENERATED_PURCHASE_SOURCE)
+            ->whereIn('status', ['pending', 'ordered'])
+            ->orderByDesc('id')
+            ->get()
+            ->first(function (Transaction $transaction) use ($purchaseOrderId) {
+                return collect((array) $transaction->purchase_order_ids)
+                    ->map(fn ($id) => (int) $id)
+                    ->contains($purchaseOrderId);
+            });
+    }
+
+    protected function createGeneratedPurchaseFromPurchaseOrder(
+        int $businessId,
+        Transaction $purchaseOrder,
+        Collection $remainingLines,
+        int $userId
+    ): array {
+        $refCount = $this->productUtil->setAndGetReferenceCount('purchase');
+        $refNo = $this->productUtil->generateReferenceNumber('purchase', $refCount);
+        $totalBeforeTax = round((float) $remainingLines->sum(fn (array $line) => $line['purchase_price'] * $line['quantity']), 4);
+        $taxAmount = round((float) $remainingLines->sum(fn (array $line) => $line['item_tax'] * $line['quantity']), 4);
+        $finalTotal = round((float) $remainingLines->sum(fn (array $line) => $line['purchase_price_inc_tax'] * $line['quantity']), 4);
+        $sourceRef = (string) ($purchaseOrder->ref_no ?: $purchaseOrder->invoice_no ?: ('PO-' . $purchaseOrder->id));
+
+        $purchase = Transaction::create([
+            'business_id' => $businessId,
+            'location_id' => $purchaseOrder->location_id,
+            'type' => 'purchase',
+            'status' => 'pending',
+            'payment_status' => 'due',
+            'contact_id' => $purchaseOrder->contact_id,
+            'ref_no' => $refNo,
+            'source' => self::GENERATED_PURCHASE_SOURCE,
+            'transaction_date' => ! empty($purchaseOrder->transaction_date)
+                ? Carbon::parse($purchaseOrder->transaction_date)
+                : now(),
+            'total_before_tax' => $totalBeforeTax,
+            'tax_id' => $purchaseOrder->tax_id,
+            'tax_amount' => $taxAmount,
+            'discount_type' => null,
+            'discount_amount' => 0,
+            'shipping_details' => $purchaseOrder->shipping_details,
+            'shipping_address' => $purchaseOrder->shipping_address,
+            'delivery_date' => $purchaseOrder->delivery_date,
+            'shipping_charges' => 0,
+            'additional_notes' => 'Generated by StorageManager from purchase order ' . $sourceRef,
+            'final_total' => $finalTotal,
+            'exchange_rate' => $purchaseOrder->exchange_rate ?: 1,
+            'created_by' => $userId,
+            'pay_term_number' => $purchaseOrder->pay_term_number,
+            'pay_term_type' => $purchaseOrder->pay_term_type,
+            'purchase_order_ids' => [(int) $purchaseOrder->id],
+        ]);
+
+        $purchaseLineLinks = [];
+        foreach ($remainingLines as $line) {
+            $purchaseLine = $purchase->purchase_lines()->create([
+                'product_id' => $line['product_id'],
+                'variation_id' => $line['variation_id'],
+                'quantity' => $line['quantity'],
+                'secondary_unit_quantity' => $line['secondary_unit_quantity'],
+                'pp_without_discount' => $line['pp_without_discount'],
+                'discount_percent' => $line['discount_percent'],
+                'purchase_price' => $line['purchase_price'],
+                'purchase_price_inc_tax' => $line['purchase_price_inc_tax'],
+                'item_tax' => $line['item_tax'],
+                'tax_id' => $line['tax_id'],
+                'purchase_order_line_id' => null,
+                'lot_number' => $line['lot_number'] !== '' ? $line['lot_number'] : null,
+                'exp_date' => $line['exp_date'],
+                'sub_unit_id' => $line['sub_unit_id'],
+            ]);
+
+            $purchaseLineLinks[(string) $purchaseLine->id] = (int) $line['purchase_order_line_id'];
+        }
+
+        return [$purchase->fresh(['contact', 'location', 'purchase_lines.product', 'purchase_lines.variations']), $purchaseLineLinks];
+    }
+
+    protected function syncGeneratedReceiptMetadata(
+        StorageDocument $document,
+        Transaction $purchaseOrder,
+        array $purchaseLineLinks = []
+    ): void {
+        $documentMeta = (array) $document->meta;
+        $storageManagerMeta = (array) data_get($documentMeta, 'storage_manager', []);
+        $mergedLinks = (array) ($storageManagerMeta['purchase_line_links'] ?? []);
+        foreach ($purchaseLineLinks as $purchaseLineId => $purchaseOrderLineId) {
+            if ((int) $purchaseOrderLineId > 0) {
+                $mergedLinks[(string) $purchaseLineId] = (int) $purchaseOrderLineId;
+            }
+        }
+
+        $storageManagerMeta['generated_from_purchase_order'] = true;
+        $storageManagerMeta['purchase_order_id'] = (int) $purchaseOrder->id;
+        $storageManagerMeta['purchase_order_ref'] = (string) ($purchaseOrder->ref_no ?: $purchaseOrder->invoice_no ?: ('PO-' . $purchaseOrder->id));
+        $storageManagerMeta['purchase_line_links'] = $mergedLinks;
+        $documentMeta['storage_manager'] = $storageManagerMeta;
+
+        $document->forceFill(['meta' => $documentMeta])->save();
+    }
+
+    protected function generatedPurchaseOrderReceiptMeta(StorageDocument $document): array
+    {
+        return (array) data_get((array) $document->meta, 'storage_manager', []);
+    }
+
+    protected function isGeneratedPurchaseOrderReceipt(StorageDocument $document): bool
+    {
+        return (bool) data_get((array) $document->meta, 'storage_manager.generated_from_purchase_order', false);
+    }
+
+    protected function defaultGrnFields(StorageDocument $document, int $userId, ?Transaction $sourceDocument = null): array
+    {
+        $stored = (array) data_get((array) $document->meta, 'grn', []);
+        $userName = $this->displayUserName(User::find($userId));
+
+        return [
+            'grn_number' => (string) $document->document_no,
+            'grn_date' => optional($document->completed_at)->toDateString() ?: now()->toDateString(),
+            'delivery_note_number' => (string) ($stored['delivery_note_number'] ?? ''),
+            'delivery_date' => ! empty($stored['delivery_date'])
+                ? Carbon::parse($stored['delivery_date'])->toDateString()
+                : (! empty($sourceDocument?->delivery_date) ? Carbon::parse($sourceDocument->delivery_date)->toDateString() : ''),
+            'carrier_driver_name' => (string) ($stored['carrier_driver_name'] ?? ''),
+            'received_by_name' => (string) ($stored['received_by_name'] ?? $userName),
+            'receiving_department' => (string) ($stored['receiving_department'] ?? 'Warehouse Receiving'),
+            'received_condition' => (string) ($stored['received_condition'] ?? ''),
+            'comments' => (string) ($stored['comments'] ?? ''),
+        ];
+    }
+
+    protected function normalizeGrnPayload(StorageDocument $document, array $payload, int $userId, ?Transaction $sourceDocument = null): array
+    {
+        $defaults = $this->defaultGrnFields($document, $userId, $sourceDocument);
+
+        return [
+            'delivery_note_number' => trim((string) ($payload['delivery_note_number'] ?? $defaults['delivery_note_number'] ?? '')),
+            'delivery_date' => ! empty($payload['delivery_date'])
+                ? Carbon::parse($payload['delivery_date'])->toDateString()
+                : ($defaults['delivery_date'] ?: null),
+            'carrier_driver_name' => trim((string) ($payload['carrier_driver_name'] ?? $defaults['carrier_driver_name'] ?? '')),
+            'received_by_name' => trim((string) ($payload['received_by_name'] ?? $defaults['received_by_name'] ?? '')),
+            'receiving_department' => trim((string) ($payload['receiving_department'] ?? $defaults['receiving_department'] ?? '')),
+            'received_condition' => trim((string) ($payload['received_condition'] ?? $defaults['received_condition'] ?? '')),
+            'comments' => trim((string) ($payload['comments'] ?? $defaults['comments'] ?? '')),
+        ];
+    }
+
+    protected function displayUserName(?User $user): string
+    {
+        if (! $user) {
+            return '';
+        }
+
+        $parts = array_filter([
+            $user->surname,
+            $user->first_name,
+            $user->last_name,
+        ]);
+
+        return trim(implode(' ', $parts));
+    }
+
+    protected function applyGeneratedPurchaseReceiptAdjustments(Transaction $purchase, StorageDocument $document): void
+    {
+        $purchase->loadMissing('purchase_lines');
+        $document->loadMissing('lines');
+        $purchaseLineLinks = (array) data_get((array) $document->meta, 'storage_manager.purchase_line_links', []);
+
+        foreach ($document->lines as $line) {
+            /** @var \App\PurchaseLine|null $purchaseLine */
+            $purchaseLine = $purchase->purchase_lines->firstWhere('id', (int) $line->source_line_id);
+            if (! $purchaseLine) {
+                throw new RuntimeException("Unable to match purchase line [{$line->source_line_id}] for generated PO receipt.");
+            }
+
+            $purchaseLine->quantity = round((float) $line->executed_qty, 4);
+            $purchaseLine->lot_number = $line->lot_number !== '' ? $line->lot_number : null;
+            $purchaseLine->exp_date = optional($line->expiry_date)->toDateString();
+            $purchaseLine->purchase_order_line_id = ! empty($purchaseLineLinks[(string) $purchaseLine->id])
+                ? (int) $purchaseLineLinks[(string) $purchaseLine->id]
+                : null;
+            $purchaseLine->save();
+
+            if (! empty($purchaseLine->purchase_order_line_id)) {
+                $this->productUtil->updatePurchaseOrderLine($purchaseLine->purchase_order_line_id, $purchaseLine->quantity, 0);
+            }
+        }
+
+        $purchase->unsetRelation('purchase_lines');
+        $purchase->load('purchase_lines');
+        $purchase->forceFill([
+            'total_before_tax' => round((float) $purchase->purchase_lines->sum(fn (PurchaseLine $line) => (float) $line->purchase_price * (float) $line->quantity), 4),
+            'tax_amount' => round((float) $purchase->purchase_lines->sum(fn (PurchaseLine $line) => (float) $line->item_tax * (float) $line->quantity), 4),
+            'final_total' => round((float) $purchase->purchase_lines->sum(fn (PurchaseLine $line) => (float) $line->purchase_price_inc_tax * (float) $line->quantity), 4),
+        ])->save();
     }
 
     protected function loadSourceDocumentByKey(int $businessId, string $sourceType, int $sourceId): Transaction

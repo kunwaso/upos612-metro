@@ -3,12 +3,23 @@
 namespace Modules\VasAccounting\Services\Adapters;
 
 use App\Transaction;
+use RuntimeException;
 
 class PurchaseReturnDocumentAdapter extends AbstractSourceDocumentAdapter
 {
     public function loadSourceDocument(int $sourceId, array $context = [])
     {
-        return Transaction::findOrFail($sourceId);
+        $transaction = Transaction::find($sourceId);
+        if ($transaction) {
+            return $transaction;
+        }
+
+        $snapshot = (array) ($context['source_snapshot'] ?? []);
+        if (! empty($context['is_deleted']) && (int) ($snapshot['id'] ?? $sourceId) > 0) {
+            return (object) array_merge(['id' => $sourceId], $snapshot);
+        }
+
+        throw new RuntimeException("Purchase return [{$sourceId}] could not be loaded for VAS posting.");
     }
 
     public function toVoucherPayload($sourceDocument, array $context = []): array
@@ -18,29 +29,44 @@ class PurchaseReturnDocumentAdapter extends AbstractSourceDocumentAdapter
         $gross = $this->money($transaction->final_total);
         $tax = $this->money($transaction->tax_amount);
         $net = max($this->money($gross - $tax), 0);
+        $isDeleted = (bool) ($context['is_deleted'] ?? false);
+        $reference = $transaction->ref_no ?? $transaction->invoice_no ?? null;
+        $documentLabel = $transaction->ref_no ?? $transaction->invoice_no ?? $transaction->id;
 
-        $lines = [
-            $this->line($this->postingMapAccount($settings, 'accounts_payable'), 'Trade payable reduction from purchase return', $gross, 0),
-            $this->line($this->postingMapAccount($settings, 'inventory'), 'Inventory reduction from purchase return', 0, $net),
-        ];
+        if ($isDeleted) {
+            $lines = [
+                $this->line($this->postingMapAccount($settings, 'inventory'), 'Purchase return rollback inventory', $net, 0),
+                $this->line($this->postingMapAccount($settings, 'accounts_payable'), 'Purchase return rollback payable', 0, $gross),
+            ];
+        } else {
+            $lines = [
+                $this->line($this->postingMapAccount($settings, 'accounts_payable'), 'Trade payable reduction from purchase return', $gross, 0),
+                $this->line($this->postingMapAccount($settings, 'inventory'), 'Inventory reduction from purchase return', 0, $net),
+            ];
+        }
 
         if ($tax > 0) {
-            $lines[] = $this->line($this->postingMapAccount($settings, 'vat_input'), 'VAT input reversal', 0, $tax);
+            $lines[] = $this->line(
+                $this->postingMapAccount($settings, 'vat_input'),
+                $isDeleted ? 'Purchase return VAT rollback' : 'VAT input reversal',
+                $isDeleted ? $tax : 0,
+                $isDeleted ? 0 : $tax
+            );
         }
 
         return $this->payload([
             'business_id' => (int) $transaction->business_id,
-            'voucher_type' => 'purchase_return',
+            'voucher_type' => $isDeleted ? 'purchase_return_reversal' : 'purchase_return',
             'sequence_key' => 'purchase_invoice',
             'source_type' => 'purchase_return',
             'source_id' => (int) $transaction->id,
-            'transaction_id' => (int) $transaction->id,
+            'transaction_id' => $isDeleted ? null : (int) $transaction->id,
             'contact_id' => (int) ($transaction->contact_id ?? 0) ?: null,
             'business_location_id' => (int) ($transaction->location_id ?? 0) ?: null,
             'posting_date' => $transaction->transaction_date,
             'document_date' => $transaction->transaction_date,
-            'description' => 'Auto-posted purchase return ' . ($transaction->ref_no ?: $transaction->invoice_no ?: $transaction->id),
-            'reference' => $transaction->ref_no ?: $transaction->invoice_no,
+            'description' => ($isDeleted ? 'Reversed purchase return ' : 'Auto-posted purchase return ') . $documentLabel,
+            'reference' => $reference,
             'status' => 'posted',
             'currency_code' => 'VND',
             'created_by' => (int) ($transaction->created_by ?? 0),
@@ -51,7 +77,7 @@ class PurchaseReturnDocumentAdapter extends AbstractSourceDocumentAdapter
                 'contact_id' => (int) ($transaction->contact_id ?? 0) ?: null,
                 'document_date' => $transaction->transaction_date,
                 'due_date' => $transaction->transaction_date,
-                'reference' => $transaction->ref_no ?: $transaction->invoice_no,
+                'reference' => $reference,
                 'requires_approval' => false,
                 'legacy_source_type' => 'purchase_return',
                 'legacy_source_id' => (int) $transaction->id,
@@ -59,8 +85,8 @@ class PurchaseReturnDocumentAdapter extends AbstractSourceDocumentAdapter
                 'coexistence_mode' => 'parallel',
                 'legacy_links' => [
                     'transaction_id' => (int) $transaction->id,
-                    'invoice_no' => $transaction->invoice_no,
-                    'ref_no' => $transaction->ref_no,
+                    'invoice_no' => $transaction->invoice_no ?? null,
+                    'ref_no' => $transaction->ref_no ?? null,
                 ],
                 'tax_summary' => [
                     'gross_amount' => $gross,

@@ -56,6 +56,37 @@ class InboundController extends Controller
         return view('storagemanager::inbound.show', $context);
     }
 
+    public function startPurchaseOrderReceiving(Request $request, int $purchaseOrder)
+    {
+        if (! auth()->user()->can('storage_manager.operate')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $businessId = $request->session()->get('user.business_id');
+        $userId = (int) $request->session()->get('user.id');
+
+        try {
+            $generatedPurchase = $this->receivingService->startPurchaseOrderReceiving($businessId, $purchaseOrder, $userId);
+
+            return redirect()
+                ->route('storage-manager.inbound.show', [
+                    'sourceType' => 'purchase',
+                    'sourceId' => $generatedPurchase->id,
+                ])
+                ->with('status', [
+                    'success' => true,
+                    'msg' => 'Purchase order opened in inbound receiving.',
+                ]);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->back()
+                ->with('status', [
+                    'success' => false,
+                    'msg' => $exception->getMessage(),
+                ]);
+        }
+    }
+
     public function confirm(ConfirmReceiptRequest $request, int $document)
     {
         $businessId = $request->session()->get('user.business_id');
@@ -67,7 +98,9 @@ class InboundController extends Controller
             ->findOrFail($document);
 
         $sourceDocument = $this->receivingService->loadSourceDocument($documentModel);
-        $allowSourceStatusUpdate = $sourceDocument->status === 'received'
+        $generatedFromPurchaseOrder = (bool) data_get((array) $documentModel->meta, 'storage_manager.generated_from_purchase_order', false);
+        $allowSourceStatusUpdate = $generatedFromPurchaseOrder
+            || $sourceDocument->status === 'received'
             || auth()->user()->can('purchase.update')
             || auth()->user()->can('purchase.update_status');
 
@@ -98,6 +131,27 @@ class InboundController extends Controller
                     'msg' => $exception->getMessage(),
                 ]);
         }
+    }
+
+    public function showGrn(Request $request, int $document)
+    {
+        if (! auth()->user()->can('storage_manager.view') && ! auth()->user()->can('storage_manager.operate')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $businessId = (int) $request->session()->get('user.business_id');
+
+        $documentModel = StorageDocument::query()
+            ->where('business_id', $businessId)
+            ->where('document_type', 'receipt')
+            ->whereIn('status', ['completed', 'closed'])
+            ->findOrFail($document);
+
+        if ((string) $documentModel->source_type !== 'purchase') {
+            abort(404);
+        }
+
+        return view('storagemanager::inbound.grn', $this->receivingService->goodsReceivedNoteContext($businessId, $documentModel));
     }
 
     public function reopen(Request $request, int $document)

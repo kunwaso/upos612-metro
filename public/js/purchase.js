@@ -733,6 +733,10 @@ $(document).ready(function() {
         }).then(willDelete => {
             if (willDelete) {
                 var href = $(this).attr('href');
+                if (!href) {
+                    toastr.error(LANG.something_went_wrong);
+                    return;
+                }
                 $.ajax({
                     method: 'DELETE',
                     url: href,
@@ -744,6 +748,12 @@ $(document).ready(function() {
                         } else {
                             toastr.error(result.msg);
                         }
+                    },
+                    error: function(xhr) {
+                        var msg =
+                            (xhr.responseJSON && (xhr.responseJSON.msg || xhr.responseJSON.message)) ||
+                            LANG.something_went_wrong;
+                        toastr.error(msg);
                     },
                 });
             }
@@ -1393,5 +1403,4 @@ $("#purchase_requisition_ids").on("select2:unselect", function (e) {
         }
     });
 });
-
 

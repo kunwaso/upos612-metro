@@ -19,6 +19,14 @@
             <div class="d-flex align-items-center gap-2 gap-lg-3">
                 <a href="{{ route('storage-manager.inbound.index') }}" class="btn btn-sm btn-light">@lang('messages.back')</a>
                 <a href="{{ route('storage-manager.putaway.index') }}" class="btn btn-sm btn-light-primary">Putaway Queue</a>
+                @if(!empty($sourceSummary['can_view_grn']) && !empty($sourceSummary['grn_route']))
+                    <a href="{{ $sourceSummary['grn_route'] }}" class="btn btn-sm btn-light-info">
+                        View GRN
+                    </a>
+                    <a href="{{ $sourceSummary['grn_route'] }}?print=1" target="_blank" rel="noopener" class="btn btn-sm btn-light-success">
+                        Print GRN
+                    </a>
+                @endif
                 @if(!empty($sourceSummary['can_sync_vas']))
                     <form method="POST" action="{{ route('storage-manager.inbound.sync-vas', $document->id) }}" class="d-inline-block">
                         @csrf
@@ -130,6 +138,11 @@
                                 <span class="badge {{ !empty($sourceSummary['planning_only']) ? 'badge-light-info' : 'badge-light-success' }}">
                                     {{ !empty($sourceSummary['planning_only']) ? 'Planning Only' : 'Execution' }}
                                 </span>
+                                @if(!empty($sourceSummary['generated_from_purchase_order']))
+                                    <div class="text-muted fs-8 mt-2">
+                                        Generated from PO {{ $sourceSummary['purchase_order_ref'] ?? $sourceSummary['purchase_order_id'] }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -162,6 +175,9 @@
                                 <span class="badge {{ !empty($sourceSummary['can_confirm']) ? 'badge-light-success' : 'badge-light-secondary' }}">
                                     {{ !empty($sourceSummary['can_confirm']) ? 'Yes' : 'No' }}
                                 </span>
+                                @if(!empty($sourceSummary['can_view_grn']))
+                                    <div class="text-muted fs-8 mt-2">Goods received note is ready.</div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -179,6 +195,45 @@
                             </div>
                         </div>
                         <div class="card-body pt-0">
+                            <div class="row g-5 mb-8">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">GRN Number</label>
+                                    <input type="text" class="form-control form-control-solid" value="{{ $grnFields['grn_number'] ?? $document->document_no }}" disabled>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Receipt Date</label>
+                                    <input type="text" class="form-control form-control-solid" value="{{ $grnFields['grn_date'] ?? now()->toDateString() }}" disabled>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Delivery Note Number</label>
+                                    <input type="text" name="delivery_note_number" class="form-control form-control-solid" value="{{ old('delivery_note_number', $grnFields['delivery_note_number'] ?? '') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Delivery Date</label>
+                                    <input type="text" name="delivery_date" class="form-control form-control-solid js-storage-datepicker" value="{{ old('delivery_date', $grnFields['delivery_date'] ?? '') }}" data-date-format="Y-m-d" autocomplete="off" placeholder="YYYY-MM-DD">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Carrier / Driver Name</label>
+                                    <input type="text" name="carrier_driver_name" class="form-control form-control-solid" value="{{ old('carrier_driver_name', $grnFields['carrier_driver_name'] ?? '') }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Received By</label>
+                                    <input type="text" name="received_by_name" class="form-control form-control-solid" value="{{ old('received_by_name', $grnFields['received_by_name'] ?? '') }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Receiving Department</label>
+                                    <input type="text" name="receiving_department" class="form-control form-control-solid" value="{{ old('receiving_department', $grnFields['receiving_department'] ?? '') }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Received Condition</label>
+                                    <textarea name="received_condition" class="form-control form-control-solid" rows="2">{{ old('received_condition', $grnFields['received_condition'] ?? '') }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Comments</label>
+                                    <textarea name="comments" class="form-control form-control-solid" rows="2">{{ old('comments', $grnFields['comments'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle">
                                     <thead>
@@ -208,19 +263,13 @@
                                                     <input type="text" name="lines[{{ $line['id'] }}][lot_number]" class="form-control form-control-sm form-control-solid" value="{{ $line['lot_number'] ?? '' }}">
                                                 </td>
                                                 <td>
-                                                    <div class="position-relative">
-                                                        <i class="ki-duotone ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500">
-                                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
-                                                            <span class="path4"></span><span class="path5"></span><span class="path6"></span>
-                                                        </i>
-                                                        <input type="text"
-                                                               name="lines[{{ $line['id'] }}][expiry_date]"
-                                                               class="form-control form-control-sm form-control-solid ps-12 js-storage-expiry-datepicker"
-                                                               value="{{ $line['expiry_date'] ?? '' }}"
-                                                               data-date-format="Y-m-d"
-                                                               autocomplete="off"
-                                                               placeholder="YYYY-MM-DD">
-                                                    </div>
+                                                    <input type="text"
+                                                           name="lines[{{ $line['id'] }}][expiry_date]"
+                                                           class="form-control form-control-sm form-control-solid js-storage-datepicker"
+                                                           value="{{ $line['expiry_date'] ?? '' }}"
+                                                           data-date-format="Y-m-d"
+                                                           autocomplete="off"
+                                                           placeholder="YYYY-MM-DD">
                                                 </td>
                                                 <td>{{ $line['staging_area_label'] ?? '—' }}</td>
                                                 <td>
@@ -248,6 +297,14 @@
                 @if(!empty($sourceSummary['planning_only']))
                     <div class="alert alert-info">
                         This purchase order is planning-only in this phase. Inbound confirmation and putaway become available after creating/receiving the purchase from this PO.
+                    </div>
+                @elseif(!empty($sourceSummary['can_view_grn']) && !empty($sourceSummary['grn_route']))
+                    <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <span>Receipt completed. The goods received note is ready.</span>
+                        <span class="d-flex gap-2">
+                            <a href="{{ $sourceSummary['grn_route'] }}" class="btn btn-sm btn-light-info">View GRN</a>
+                            <a href="{{ $sourceSummary['grn_route'] }}?print=1" target="_blank" rel="noopener" class="btn btn-sm btn-light-success">Print GRN</a>
+                        </span>
                     </div>
                 @else
                     <div class="alert alert-info">
@@ -300,8 +357,8 @@
 
 @section('javascript')
 <script>
-    (function () {
-        const selector = '.js-storage-expiry-datepicker';
+(function () {
+        const selector = '.js-storage-datepicker';
         const inputs = document.querySelectorAll(selector);
         if (!inputs.length) {
             return;

@@ -237,9 +237,15 @@ class VasAccountingServiceProvider extends ServiceProvider
         });
 
         Event::listen(PurchaseCreatedOrModified::class, function (PurchaseCreatedOrModified $event) {
-            app(VasPostingService::class)->queueSourceDocument('purchase', $event->transaction, [
+            $context = [
                 'is_deleted' => (bool) $event->isDeleted,
-            ]);
+            ];
+
+            if ($event->isDeleted) {
+                $context['source_snapshot'] = $this->transactionSnapshot($event->transaction);
+            }
+
+            app(VasPostingService::class)->queueSourceDocument('purchase', $event->transaction, $context);
         });
 
         Event::listen(ExpenseCreatedOrModified::class, function (ExpenseCreatedOrModified $event) {
@@ -302,9 +308,27 @@ class VasAccountingServiceProvider extends ServiceProvider
         });
 
         Event::listen(TransactionPaymentDeleted::class, function (TransactionPaymentDeleted $event) {
-            app(VasPostingService::class)->queueSourceDocument('transaction_payment', $event->transactionPayment, [
+            $payment = $event->transactionPayment;
+            $context = [
                 'is_deleted' => (bool) $event->isDeleted,
-            ]);
+            ];
+
+            if ($event->isDeleted) {
+                $context['source_snapshot'] = $this->paymentSnapshot($payment);
+
+                $transaction = null;
+                if (method_exists($payment, 'relationLoaded') && $payment->relationLoaded('transaction')) {
+                    $transaction = $payment->transaction;
+                } elseif (! empty($payment->transaction_id)) {
+                    $transaction = Transaction::find((int) $payment->transaction_id);
+                }
+
+                if ($transaction instanceof Transaction) {
+                    $context['transaction_snapshot'] = $this->transactionSnapshot($transaction);
+                }
+            }
+
+            app(VasPostingService::class)->queueSourceDocument('transaction_payment', $payment, $context);
         });
     }
 
@@ -387,5 +411,37 @@ class VasAccountingServiceProvider extends ServiceProvider
             $view->with('vasAccountingBusinessContext', $vasUtil->businessContext($businessId));
             $view->with('vasAccountingCurrentPeriod', $vasUtil->currentPeriodContext($businessId));
         });
+    }
+
+    protected function transactionSnapshot(Transaction $transaction): array
+    {
+        return [
+            'id' => (int) $transaction->id,
+            'business_id' => (int) $transaction->business_id,
+            'location_id' => (int) ($transaction->location_id ?? 0),
+            'contact_id' => (int) ($transaction->contact_id ?? 0),
+            'transaction_date' => $transaction->transaction_date,
+            'ref_no' => $transaction->ref_no,
+            'invoice_no' => $transaction->invoice_no,
+            'status' => (string) ($transaction->status ?? ''),
+            'type' => (string) ($transaction->type ?? ''),
+            'final_total' => (float) ($transaction->final_total ?? 0),
+            'tax_amount' => (float) ($transaction->tax_amount ?? 0),
+            'created_by' => (int) ($transaction->created_by ?? 0),
+        ];
+    }
+
+    protected function paymentSnapshot($payment): array
+    {
+        return [
+            'id' => (int) ($payment->id ?? 0),
+            'transaction_id' => (int) ($payment->transaction_id ?? 0),
+            'amount' => (float) ($payment->amount ?? 0),
+            'method' => $payment->method ?? null,
+            'paid_on' => $payment->paid_on ?? null,
+            'payment_ref_no' => $payment->payment_ref_no ?? null,
+            'transaction_no' => $payment->transaction_no ?? null,
+            'created_by' => (int) ($payment->created_by ?? 0),
+        ];
     }
 }

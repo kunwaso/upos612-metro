@@ -123,10 +123,10 @@
                                     <div class="card card-flush h-100">
                                         {{-- Decorative hatched header strip (matches mockup) --}}
                                         <div class="card-header pt-4 pb-0 border-0">
-                                            @if(($zone['category'] ?? null) === 'damaged')
-                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#ff6262,#e10e0e0 4px,#ffcc0a 4px,#d8ff00 10px);"></div>
+                                            @if(($zone['area_type'] ?? null) === 'damaged')
+                                            <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg, #ffbc00, #e3d600 4px, #e30000 4px, #b70000 10px);"></div>
                                             @elseif (($zone['area_type'] ?? null) === 'staging_in')
-                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#91ff01,#007a25 4px,#76ff05 4px,#1df5d1 10px);"></div>
+                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg, #ffffff, #7ee500 4px, #1f9d24 4px, #58c39c 10px);"></div>
                                             @else
                                             <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
                                             @endif
@@ -180,8 +180,13 @@
                                             </div>
 
                                             {{-- Decorative hatched footer strip --}}
+                                            @if(($zone['area_type'] ?? null) === 'damaged')
+                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg, #ffbc00, #e3d600 4px, #e30000 4px, #b70000 10px);"></div>
+                                            @elseif (($zone['area_type'] ?? null) === 'staging_in')
+                                                <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg, #ffffff, #7ee500 4px, #1f9d24 4px, #58c39c 10px);"></div>
+                                            @else
                                             <div class="w-100 rounded-2 mb-3" style="height:10px;background:repeating-linear-gradient(-45deg,#e0e0e0,#e0e0e0 4px,#f5f5f5 4px,#f5f5f5 10px);"></div>
-
+                                            @endif
                                             {{-- Capacity footer --}}
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <span class="text-muted fs-7">

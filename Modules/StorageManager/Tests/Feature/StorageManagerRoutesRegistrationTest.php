@@ -26,7 +26,9 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('storage-manager.planning.store'));
         $this->assertTrue($router->has('storage-manager.planning.store-grouped'));
         $this->assertTrue($router->has('storage-manager.inbound.index'));
+        $this->assertTrue($router->has('storage-manager.inbound.purchase-orders.start-receiving'));
         $this->assertTrue($router->has('storage-manager.inbound.show'));
+        $this->assertTrue($router->has('storage-manager.inbound.grn.show'));
         $this->assertTrue($router->has('storage-manager.inbound.confirm'));
         $this->assertTrue($router->has('storage-manager.inbound.reopen'));
         $this->assertTrue($router->has('storage-manager.inbound.sync-vas'));
@@ -92,7 +94,9 @@ class StorageManagerRoutesRegistrationTest extends TestCase
         $this->assertSame('storage-manager/planning/purchasing/{rule}/purchase-requisition', $routes->getByName('storage-manager.planning.store')->uri());
         $this->assertSame('storage-manager/planning/purchasing/location/{location}/purchase-requisition', $routes->getByName('storage-manager.planning.store-grouped')->uri());
         $this->assertSame('storage-manager/inbound/expected-receipts', $routes->getByName('storage-manager.inbound.index')->uri());
+        $this->assertSame('storage-manager/inbound/purchase-orders/{purchaseOrder}/receive-goods', $routes->getByName('storage-manager.inbound.purchase-orders.start-receiving')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{sourceType}/{sourceId}', $routes->getByName('storage-manager.inbound.show')->uri());
+        $this->assertSame('storage-manager/inbound/receipts/{document}/grn', $routes->getByName('storage-manager.inbound.grn.show')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/confirm', $routes->getByName('storage-manager.inbound.confirm')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/reopen', $routes->getByName('storage-manager.inbound.reopen')->uri());
         $this->assertSame('storage-manager/inbound/receipts/{document}/sync-vas', $routes->getByName('storage-manager.inbound.sync-vas')->uri());

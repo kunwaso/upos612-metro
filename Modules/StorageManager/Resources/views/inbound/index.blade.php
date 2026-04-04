@@ -129,7 +129,7 @@
 
             <div class="card card-flush">
                 <div class="card-header pt-6">
-                    <h3 class="card-title fw-bold text-gray-900">Purchase Orders (Planning Only)</h3>
+                    <h3 class="card-title fw-bold text-gray-900">Purchase Orders</h3>
                 </div>
                 <div class="card-body pt-0">
                     <div class="table-responsive">
@@ -155,22 +155,28 @@
                                         <td>{{ !empty($row['transaction_date']) ? \Illuminate\Support\Carbon::parse($row['transaction_date'])->format('Y-m-d') : '—' }}</td>
                                         <td>{{ format_quantity_value($row['expected_qty'] ?? 0) }} <span class="text-muted fs-8">({{ (int) ($row['line_count'] ?? 0) }} lines)</span></td>
                                         <td>
-                                            <span class="badge badge-light-info">
-                                                {{ !empty($row['planning_only']) ? 'Planning Only' : 'Execution' }}
+                                            <span class="badge {{ !empty($row['has_open_generated_purchase']) ? 'badge-light-warning' : 'badge-light-info' }}">
+                                                {{ !empty($row['has_open_generated_purchase']) ? 'In Progress' : 'Ready to Receive' }}
                                             </span>
+                                            @if(!empty($row['receive_action_note']))
+                                                <div class="text-muted fs-8 mt-1">{{ $row['receive_action_note'] }}</div>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge {{ !empty($row['ready_for_execution']) ? 'badge-light-success' : 'badge-light-warning' }}">
-                                                {{ !empty($row['ready_for_execution']) ? 'Ready' : 'Pending' }}
+                                                {{ !empty($row['ready_for_execution']) ? 'Ready' : 'Blocked' }}
                                             </span>
                                         </td>
                                         <td class="text-end">
                                             @if(!empty($row['can_open']))
-                                                <a href="{{ route('storage-manager.inbound.show', ['sourceType' => $row['source_type'], 'sourceId' => $row['source_id']]) }}" class="btn btn-sm btn-light-primary">
-                                                    @lang('messages.view')
-                                                </a>
+                                                <form method="POST" action="{{ route('storage-manager.inbound.purchase-orders.start-receiving', $row['source_id']) }}" class="d-inline-block">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm {{ !empty($row['has_open_generated_purchase']) ? 'btn-light-warning' : 'btn-light-primary' }}">
+                                                        {{ $row['receive_action_label'] ?? 'Receive Goods' }}
+                                                    </button>
+                                                </form>
                                             @else
-                                                <span class="text-muted fs-8">{{ $row['action_note'] ?? 'Planning Only' }}</span>
+                                                <span class="text-muted fs-8">{{ $row['action_note'] ?? 'Receiving unavailable' }}</span>
                                             @endif
                                         </td>
                                     </tr>

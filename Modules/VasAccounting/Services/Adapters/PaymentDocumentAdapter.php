@@ -4,18 +4,29 @@ namespace Modules\VasAccounting\Services\Adapters;
 
 use App\Transaction;
 use App\TransactionPayment;
+use RuntimeException;
 
 class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
 {
     public function loadSourceDocument(int $sourceId, array $context = [])
     {
-        return TransactionPayment::findOrFail($sourceId);
+        $payment = TransactionPayment::find($sourceId);
+        if ($payment) {
+            return $payment;
+        }
+
+        $snapshot = (array) ($context['source_snapshot'] ?? []);
+        if (! empty($context['is_deleted']) && (int) ($snapshot['id'] ?? $sourceId) > 0) {
+            return (object) array_merge(['id' => $sourceId], $snapshot);
+        }
+
+        throw new RuntimeException("Transaction payment [{$sourceId}] could not be loaded for VAS posting.");
     }
 
     public function toVoucherPayload($sourceDocument, array $context = []): array
     {
         $payment = $sourceDocument;
-        $transaction = $this->loadTransaction((int) $payment->transaction_id);
+        $transaction = $this->loadTransaction((int) $payment->transaction_id, $context);
         $settings = $this->settings((int) $transaction->business_id);
         $amount = $this->money($payment->amount);
         $usesBankAccount = in_array((string) $payment->method, ['bank_transfer', 'card', 'cheque', 'bank'], true);
@@ -31,11 +42,12 @@ class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
         $voucherType = $isDeleted
             ? ($isPayrollPayment ? 'payroll_payment_reversal' : ($isPayableType ? 'payment_reversal' : 'receipt_reversal'))
             : $sequenceKey;
+        $paymentReference = $payment->payment_ref_no ?? $payment->transaction_no ?? $payment->id;
 
         if ($isDeleted) {
             $lines = [
-                $this->line($this->postingMapAccount($settings, $isPayableType ? 'accounts_payable' : 'accounts_receivable'), $isPayrollPayment ? 'Payroll payment rollback' : 'Payment rollback', $amount, 0),
-                $this->line($this->postingMapAccount($settings, $cashAccountKey), 'Cash or bank rollback', 0, $amount),
+                $this->line($this->postingMapAccount($settings, $cashAccountKey), 'Cash or bank rollback', $amount, 0),
+                $this->line($this->postingMapAccount($settings, $isPayableType ? 'accounts_payable' : 'accounts_receivable'), $isPayrollPayment ? 'Payroll payment rollback' : 'Payment rollback', 0, $amount),
             ];
         } elseif ($isPayableType) {
             $lines = [
@@ -61,9 +73,9 @@ class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
             'business_location_id' => (int) ($transaction->location_id ?? 0) ?: null,
             'posting_date' => $payment->paid_on ?: $transaction->transaction_date,
             'document_date' => $payment->paid_on ?: $transaction->transaction_date,
-            'description' => ($isDeleted ? 'Reversed ' : 'Auto-posted ') . str_replace('_', ' ', $sequenceKey) . ' ' . ($payment->payment_ref_no ?: $payment->transaction_no ?: $payment->id),
-            'reference' => $payment->payment_ref_no ?: $payment->transaction_no,
-            'external_reference' => $payment->payment_ref_no ?: $payment->transaction_no,
+            'description' => ($isDeleted ? 'Reversed ' : 'Auto-posted ') . str_replace('_', ' ', $sequenceKey) . ' ' . $paymentReference,
+            'reference' => $payment->payment_ref_no ?? $payment->transaction_no ?? null,
+            'external_reference' => $payment->payment_ref_no ?? $payment->transaction_no ?? null,
             'status' => 'posted',
             'currency_code' => 'VND',
             'created_by' => (int) ($payment->created_by ?? $transaction->created_by ?? 0),
@@ -75,19 +87,19 @@ class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
                     'payment_kind' => $sequenceKey,
                     'contact_id' => (int) ($transaction->contact_id ?? 0) ?: null,
                     'document_date' => $payment->paid_on ?: $transaction->transaction_date,
-                    'reference' => $payment->payment_ref_no ?: $payment->transaction_no ?: $payment->id,
+                    'reference' => $paymentReference,
                     'requires_approval' => false,
                     'legacy_source_type' => 'transaction_payment',
                     'legacy_source_id' => (int) $payment->id,
                     'business_event_uid' => 'legacy:transaction_payment:' . (int) $payment->id,
                     'coexistence_mode' => 'parallel',
-                    'external_reference' => $payment->payment_ref_no ?: $payment->transaction_no,
+                    'external_reference' => $payment->payment_ref_no ?? $payment->transaction_no ?? null,
                     'payment_instrument' => $payment->method,
                     'legacy_links' => [
                         'transaction_id' => (int) $transaction->id,
                         'transaction_payment_id' => (int) $payment->id,
-                        'payment_ref_no' => $payment->payment_ref_no,
-                        'transaction_no' => $payment->transaction_no,
+                        'payment_ref_no' => $payment->payment_ref_no ?? null,
+                        'transaction_no' => $payment->transaction_no ?? null,
                     ],
                     'settlement_targets' => [[
                         'transaction_id' => (int) $transaction->id,
@@ -103,8 +115,18 @@ class PaymentDocumentAdapter extends AbstractSourceDocumentAdapter
         ], $lines);
     }
 
-    protected function loadTransaction(int $transactionId)
+    protected function loadTransaction(int $transactionId, array $context = [])
     {
-        return Transaction::findOrFail($transactionId);
+        $transaction = Transaction::find($transactionId);
+        if ($transaction) {
+            return $transaction;
+        }
+
+        $snapshot = (array) ($context['transaction_snapshot'] ?? []);
+        if (! empty($context['is_deleted']) && (int) ($snapshot['id'] ?? $transactionId) > 0) {
+            return (object) array_merge(['id' => $transactionId], $snapshot);
+        }
+
+        throw new RuntimeException("Transaction [{$transactionId}] could not be loaded for payment VAS posting.");
     }
 }
