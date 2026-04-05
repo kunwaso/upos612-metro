@@ -55,7 +55,7 @@ Pick one lane first:
 | `external-adapt` | Adapt a pattern or example from an external repo | project_map -> closest local example -> fetch upstream docs -> map into route/Form Request/Util/controller/view/module |
 | `investigate` | "doesn't work", "stops after X" | restate flow -> grep exact identifier -> targeted read -> compare bind vs DOM update -> fix or answer |
 | `review` | User asks for review/audit | findings first -> evidence -> brief summary |
-| `implement` | Default for fix/feature | if location unknown open `ai/entrypoints/INDEX.md` -> inspect -> plan with files/verification -> edit -> verify changed scope first, then broader checks if needed |
+| `implement` | Default for fix/feature | **Clarification Gate first** (restate + assumptions + ≤3 blocking questions, wait) -> if location unknown open `ai/entrypoints/INDEX.md` -> inspect -> plan with files/verification -> edit -> verify changed scope first, then broader checks if needed |
 | `log-scan` | User asks to scan/fix Laravel log or fix issues from `storage/logs` | glob latest `storage/logs/laravel-*.log` -> read -> parse errors -> investigate -> fix -> verify |
 | `lint-fix` | User asks to fix linter errors, IDE diagnostics, or "fix lint" | Read lints (scope) -> fix each finding -> re-run lints |
 | `test-fix` | User asks to fix failing tests or pastes test output | parse output -> locate failure -> fix test or code -> re-run tests |
@@ -105,7 +105,7 @@ Stop conditions for the most common lanes:
 
 For anything larger than `tiny`, use this compact sequence:
 
-1. Clarify intent and pick the lane.
+1. **Clarify intent and pick the lane.** For `implement` and multi-file work, apply the **Clarification Gate** (`AGENTS.md §0.2b`) before any edit: output (a) one-sentence restatement, (b) bullet list of assumptions, (c) at most 3 blocking questions in multiple-choice or yes/no format. Wait for user confirmation. Skip for `tiny` or when user said "just implement" / "go ahead."
 2. Design in chunks instead of guessing the whole solution at once.
 3. Write a verification-aware plan.
 4. Execute in bounded tasks with clear file responsibility.

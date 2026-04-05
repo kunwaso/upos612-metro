@@ -211,6 +211,36 @@ Before searching or editing, **restate and structure the user's request** so the
 
 Example: User says "when im in fabric-manager/fabric/... open budget can ai chat. then i switch to setting and i close the ai chat after that when i re click again on kt_drawer_chat_toggle button but the chat drawer no respones" → Restate as: (1) On fabric-manager Budget, AI chat works. (2) User switches to Settings tab and closes the chat. (3) User clicks the chat toggle again; the drawer does not open. Then search for the toggle handler and where that button is rendered and updated.
 
+### 0.2b Clarification Gate (before first edit on non-trivial work)
+
+**Purpose:** Prevent wasted code, wrong-scope edits, and silently wrong assumptions before starting any `implement`, multi-file, or higher-risk task.
+
+**When to apply:** Any task that is **not** `tiny` (i.e. more than one file, or scope is genuinely ambiguous after reading the message and checking the codebase for 1–2 targeted searches). Skip for `tiny` single-file changes and when the user has already said "just implement" or "no questions."
+
+**Gate output (output this before any code edit):**
+
+1. **Restate** — One or two sentences: what the user wants, in which area, and what success looks like. If you got it wrong, the user can correct you here before you touch files.
+2. **Assumptions** — Bullet list of every default or inferred choice you are about to rely on (e.g. "Web channel only, not Telegram", "No new DB migration", "Existing permissions, no new role"). State these so the user can catch wrong ones.
+3. **Blocking questions** — At most **3** questions where a wrong answer would change which files you edit or the design direction. Prefer **multiple-choice or yes/no** format. Do not ask about things you can resolve from the codebase; do not ask for preferences that do not affect code.
+4. **Wait** — Do not start editing until the user confirms or answers. If the user says "go ahead" or "looks right", proceed immediately.
+
+**Anti-patterns to avoid:**
+
+- Do not ask about things grep or semantic search can answer (e.g. "which controller handles this route?").
+- Do not ask more than 3 questions at once — pick only the blocking ones.
+- Do not skip the gate and then explain assumptions silently in code comments.
+- Do not run the gate on `tiny` tasks or pure `explain`/`investigate` turns.
+
+**Example gate output (implement lane, non-trivial):**
+
+> **Restate:** Add a per-tenant rate-limit setting to Aichat so admins can configure max messages per minute from the settings page.
+>
+> **Assumptions:** Web channel only; Telegram uses existing `AICHAT_TELEGRAM_CHAT_RATE_LIMIT_PER_MINUTE` env; new column in `aichat_chat_settings`; Metronic form field in the existing settings Blade.
+>
+> **Questions:**
+> 1. Should the limit apply per-conversation or across all conversations for a user? (A: per-user, B: per-conversation, C: per-business)
+> 2. Should changing the limit take effect immediately (no cache) or only on next page load?
+
 ### 0.3 Before you respond: five checks
 
 Before you answer or stop, verify:
@@ -410,7 +440,7 @@ Apply these so tool use and conclusions match evidence and avoid guesswork:
 - **Parallel tool use** — When steps do not depend on each other (e.g. reading three files, grepping two areas), run multiple tools in the same turn. For analyze/scan tasks (audit, clone, understand codebase): grep first to narrow to files and line numbers, then read only the needed files or line ranges in parallel (e.g. 3–5 reads per turn); full-file read only when editing. Use sequence only when one step’s result informs the next.
 - **When to delegate to a subagent** — Use `explore` for broad or parallel discovery, `shell` for command-heavy work, and `generalPurpose` for multi-step search or reasoning. Give the subagent a discrete task, what evidence to collect, and what it must return. Run verification after it completes.
 - **Mandatory post-edit verification** — After every code edit, run **Read lints** on the changed file(s) before considering the task done. If lints report any diagnostics, treat them as a **lint-fix subtask**: fix (or list unfixable items) before concluding. For logic or route changes, run the relevant tests when they exist.
-- **When to ask the user vs keep searching** — Always try grep/semantic search first. Only ask the user if a critical fact (e.g. which page, which role, which branch) is **genuinely unknowable from the codebase** after searching. If the codebase gives enough signal to make a reasonable choice, make it and state the assumption — do not stop to ask.
+- **When to ask the user vs keep searching** — For non-trivial implement tasks, apply the **Clarification Gate (0.2b)** first: output restatement + assumptions + at most 3 blocking questions, then wait. For investigation/explain turns and for facts answerable from the codebase, try grep/semantic search first. Only ask the user if a critical fact (e.g. which page, which role, which branch) is **genuinely unknowable from the codebase** after searching. If the codebase gives enough signal to make a reasonable choice, make it and state the assumption — do not stop to ask for things the codebase can answer.
 - **Tie fix to evidence** — When proposing a fix, reference the evidence that led to the diagnosis (file and place, e.g. “in `projectx-ai-chat.js` the handler is on a node that gets replaced”) and state how the fix follows (e.g. “→ use event delegation on a stable parent”).
 - **When to use a todo list** — For 3+ distinct steps or multiple files, create a todo list and update status (pending / in progress / completed) as each step is done. Use it to avoid dropping steps and to show progress.
 - **Empty or wrong search results** — If the first grep or semantic search returns nothing or the wrong area, try alternate symbols, names, or a different query (e.g. semantic if grep failed, or a different identifier) before concluding the code does not exist.
@@ -430,7 +460,7 @@ For a trivial single-file task, a short numbered micro-plan is acceptable:
 2. Inspect the exact file/area
 3. Edit and verify
 
-1. **Design** — Restate goal and context (0.2a). Resolve unknowns (search or one focused question). For large features, present the design in short chunks so the user can validate before you implement. Do not start coding until the goal and scope are clear.
+1. **Design** — Restate goal and context (0.2a). Apply the **Clarification Gate (0.2b)**: output restatement + assumptions + at most 3 blocking questions and wait for user confirmation before editing. Resolve unknowns (search or one focused question). For large features, present the design in short chunks so the user can validate before you implement. Do not start coding until the goal and scope are clear.
 2. **Plan** — Write a numbered list of tasks. Each task should have: what to do, which file(s) or area, and a **verification step** (e.g. “run lints,” “run `php artisan test --filter=X`”). Use a todo list and update status as you go (0.4c). The plan should be clear enough to execute in order without guessing.
 3. **Execute** — Implement in plan order. After each task (or each batch of related edits), run the verification step for that task (lints, tests). For large plans, work in batches and verify between batches so you don’t drift.
 4. **TDD when adding or changing behavior** — For new business logic (Util method, new endpoint, new feature behavior): write or run a failing test first (or run existing tests to see the failure), then add minimal code to pass, then run tests again. For bug fixes: establish the failing case (reproduce or test), then fix, then verify the test or scenario passes. Prefer **evidence over claims** — don’t declare “fixed” without running the relevant test or check.
