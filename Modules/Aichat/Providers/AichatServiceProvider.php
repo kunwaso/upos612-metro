@@ -6,6 +6,7 @@ use App\Utils\ModuleUtil;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Modules\Aichat\Console\Commands\EncryptChatMemoryCommand;
+use Modules\Aichat\Console\Commands\ExportChatAuditCommand;
 use Modules\Aichat\Console\Commands\PruneChatConversationsCommand;
 use Modules\Aichat\Utils\ChatUtil;
 
@@ -84,6 +85,7 @@ class AichatServiceProvider extends ServiceProvider
         $this->commands([
             PruneChatConversationsCommand::class,
             EncryptChatMemoryCommand::class,
+            ExportChatAuditCommand::class,
         ]);
     }
 

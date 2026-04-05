@@ -14,6 +14,7 @@ use App\Transaction;
 use App\User;
 use App\Utils\BusinessUtil;
 use App\Utils\ModuleUtil;
+use App\Utils\PurchaseViewDataBuilder;
 use App\Utils\ProductUtil;
 use App\Utils\TransactionUtil;
 use Illuminate\Http\Request;
@@ -32,18 +33,27 @@ class PurchaseOrderController extends Controller
 
     protected $moduleUtil;
 
+    protected $purchaseViewDataBuilder;
+
     /**
      * Constructor
      *
      * @param  ProductUtils  $product
      * @return void
      */
-    public function __construct(ProductUtil $productUtil, TransactionUtil $transactionUtil, BusinessUtil $businessUtil, ModuleUtil $moduleUtil)
+    public function __construct(
+        ProductUtil $productUtil,
+        TransactionUtil $transactionUtil,
+        BusinessUtil $businessUtil,
+        ModuleUtil $moduleUtil,
+        PurchaseViewDataBuilder $purchaseViewDataBuilder
+    )
     {
         $this->productUtil = $productUtil;
         $this->transactionUtil = $transactionUtil;
         $this->businessUtil = $businessUtil;
         $this->moduleUtil = $moduleUtil;
+        $this->purchaseViewDataBuilder = $purchaseViewDataBuilder;
 
         $this->purchaseOrderStatuses = [
             'ordered' => [
@@ -259,8 +269,17 @@ class PurchaseOrderController extends Controller
         $business_locations = BusinessLocation::forDropdown($business_id, false, true);
         $bl_attributes = $business_locations['attributes'];
         $business_locations = $business_locations['locations'];
+        $location_config = $this->purchaseViewDataBuilder->buildLocationConfig($business_locations);
 
         $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
+        $custom_labels = $this->purchaseViewDataBuilder->getCustomLabelsFromSession();
+        $ui_flags = $this->purchaseViewDataBuilder->buildUiFlags();
+        $shipping_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'shipping',
+            'shipping_custom_field_',
+            5
+        );
 
         $types = [];
         if (auth()->user()->can('supplier.create')) {
@@ -285,7 +304,21 @@ class PurchaseOrderController extends Controller
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
 
         return view('purchase_order.create')
-            ->with(compact('taxes', 'business_locations', 'currency_details', 'customer_groups', 'types', 'shortcuts', 'bl_attributes', 'shipping_statuses', 'users', 'common_settings'));
+            ->with(compact(
+                'taxes',
+                'business_locations',
+                'currency_details',
+                'customer_groups',
+                'types',
+                'shortcuts',
+                'bl_attributes',
+                'shipping_statuses',
+                'users',
+                'common_settings',
+                'location_config',
+                'ui_flags',
+                'shipping_custom_fields'
+            ));
     }
 
     /**
@@ -572,6 +605,22 @@ class PurchaseOrderController extends Controller
         $delivery_date = ! empty($purchase->delivery_date) ? $this->productUtil->format_date($purchase->delivery_date, true) : null;
 
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
+        $ui_flags = $this->purchaseViewDataBuilder->buildUiFlags();
+        $custom_labels = $this->purchaseViewDataBuilder->getCustomLabelsFromSession();
+        $shipping_custom_values = [
+            'shipping_custom_field_1' => $purchase->shipping_custom_field_1,
+            'shipping_custom_field_2' => $purchase->shipping_custom_field_2,
+            'shipping_custom_field_3' => $purchase->shipping_custom_field_3,
+            'shipping_custom_field_4' => $purchase->shipping_custom_field_4,
+            'shipping_custom_field_5' => $purchase->shipping_custom_field_5,
+        ];
+        $shipping_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'shipping',
+            'shipping_custom_field_',
+            5,
+            $shipping_custom_values
+        );
 
         $purchase_requisitions = null;
         if (! empty($common_settings['enable_purchase_requisition'])) {
@@ -584,9 +633,23 @@ class PurchaseOrderController extends Controller
                                             if (! empty($purchase->purchase_requisition_ids)) {
                                                 $q->orWhereIn('id', $purchase->purchase_requisition_ids);
                                             }
-                                        })
+                                        }) 
                                         ->pluck('ref_no', 'id');
         }
+
+        $edit_rows = $this->purchaseViewDataBuilder->buildRowsForPurchaseEdit(
+            $purchase->purchase_lines,
+            $purchase,
+            $taxes,
+            $currency_details,
+            [
+                'is_purchase_order' => true,
+                'common_settings' => $common_settings,
+            ]
+        );
+        $row_models = $edit_rows['row_models'];
+        $next_row_count = $edit_rows['next_row_count'];
+        $shipping_document_medias = $purchase->media->where('model_media_type', 'shipping_document')->all();
 
         return view('purchase_order.edit')
             ->with(compact(
@@ -601,7 +664,12 @@ class PurchaseOrderController extends Controller
                 'shipping_statuses', 'users',
                 'delivery_date',
                 'common_settings',
-                'purchase_requisitions'
+                'purchase_requisitions',
+                'ui_flags',
+                'shipping_custom_fields',
+                'row_models',
+                'next_row_count',
+                'shipping_document_medias'
             ));
     }
 

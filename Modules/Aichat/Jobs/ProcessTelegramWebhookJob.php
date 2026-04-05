@@ -609,6 +609,11 @@ class ProcessTelegramWebhookJob implements ShouldQueue
 
         $workflowContext = $chatWorkflowUtil->prepareSendOrStreamContext((int) $bot->business_id, $userId, $conversation, $payload);
         if (! ($workflowContext['success'] ?? false)) {
+            $chatUtil->audit((int) $bot->business_id, $userId, 'chat_message_pipeline_rejected', (string) $conversation->id, null, null, [
+                'error_type' => $workflowContext['error_type'] ?? 'unknown',
+                'channel' => 'telegram',
+            ]);
+
             $this->safeSendText(
                 $telegramApi,
                 $chatUtil,

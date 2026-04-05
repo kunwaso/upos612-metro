@@ -160,6 +160,11 @@ class ChatController extends Controller
         $workflowContext = $this->chatWorkflowUtil->prepareSendOrStreamContext($business_id, $user_id, $conversation, $request->validated());
 
         if (! ($workflowContext['success'] ?? false)) {
+            $this->chatUtil->audit($business_id, $user_id, 'chat_message_pipeline_rejected', $conversation->id, null, null, [
+                'error_type' => $workflowContext['error_type'] ?? 'unknown',
+                'channel' => 'web',
+            ]);
+
             if (($workflowContext['error_type'] ?? '') === 'credential_missing') {
                 return response()->json([
                     'success' => false,
@@ -248,6 +253,11 @@ class ChatController extends Controller
         $workflowContext = $this->chatWorkflowUtil->prepareSendOrStreamContext($business_id, $user_id, $conversation, $request->validated());
 
         if (! ($workflowContext['success'] ?? false)) {
+            $this->chatUtil->audit($business_id, $user_id, 'chat_message_pipeline_rejected', $conversation->id, null, null, [
+                'error_type' => $workflowContext['error_type'] ?? 'unknown',
+                'channel' => 'web',
+            ]);
+
             return $this->sseErrorResponse((string) ($workflowContext['error_message'] ?? __('aichat::lang.chat_provider_error')));
         }
 
@@ -368,6 +378,11 @@ class ChatController extends Controller
 
         $workflowContext = $this->chatWorkflowUtil->prepareRegenerateContext($business_id, $user_id, $conversation, $assistantMessage, $request->validated());
         if (! ($workflowContext['success'] ?? false)) {
+            $this->chatUtil->audit($business_id, $user_id, 'chat_message_pipeline_rejected', (string) $conversation->id, null, null, [
+                'error_type' => $workflowContext['error_type'] ?? 'unknown',
+                'channel' => 'web',
+            ]);
+
             return $this->sseErrorResponse((string) ($workflowContext['error_message'] ?? __('aichat::lang.chat_provider_error')));
         }
 

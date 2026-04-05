@@ -15,7 +15,7 @@ Apply the first matching rule:
 4. Domain docs in `ai/*.md`
 5. Existing local code patterns
 
-If there is still conflict, apply the safest interpretation and note the assumption — only stop and ask if the conflict would cause data loss, a destructive action, or a security violation.
+If there is still conflict, apply the safest interpretation and note the assumption — only stop and ask if the conflict would cause data loss, a destructive action, or a security violation. For the full conflict-resolution rule see `AGENTS.md` §0.1.
 
 ## 1.1) Document Ownership
 
@@ -63,7 +63,7 @@ Pick one lane first:
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area -> apply mitigations/fixes |
 | `full-autofix` | "run all autofixes", "check project", "health check", "autofix everything" | log-scan -> lint-fix -> optional tenant-audit / known-issues-fix |
 | `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome -> interactive `audit_web` -> read persisted report -> optional Chrome DevTools escalation -> fix -> Playwright + `audit_web` verify |
-| `product-copilot-eval` | User asks about an in-app assistant, guided UI helper, or ERP copilot | read `ai/product-copilot-patterns.md` -> `ai/security-and-auth.md` -> `ai/ui-components.md` -> `ai/aichat-authz-baseline.md` + `Modules/Aichat/README.md` when Aichat is in scope -> define safe first use case |
+| `product-copilot-eval` | User asks about an in-app assistant, guided UI helper, or ERP copilot | read `ai/product-copilot-patterns.md` -> `ai/aichat-authz-baseline.md` + `Modules/Aichat/README.md` when Aichat is in scope -> define approval boundaries, safe first use case, and rollout scope; no `project_map` or `warm_cache` unless explicitly scoping for this repo |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade -> checklist (focus, contrast, structure, assets) -> report (and fix within Metronic if implement mode) |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components -> improve hierarchy, spacing, copy within Metronic only; no new classes |
 | `design-critique` | User asks for UX/review of a screen or flow | read view -> assess clarity, hierarchy, empty/error states -> short critique + Metronic-safe suggestions |

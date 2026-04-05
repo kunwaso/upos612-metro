@@ -41,6 +41,38 @@
             });
         };
 
+        const isLocalTableLayoutCompatible = function ($table) {
+            const headerColumns = $table.find('thead tr').first().children('th,td').length;
+            if (headerColumns <= 0) {
+                return false;
+            }
+
+            let hasBodyCells = false;
+            let isCompatible = true;
+
+            $table.find('tbody tr').each(function () {
+                const $cells = $(this).children('th,td');
+                if ($cells.length === 0) {
+                    return;
+                }
+
+                hasBodyCells = true;
+
+                const hasSpanCells = $cells.filter(function () {
+                    const colspan = Number($(this).attr('colspan') || 1);
+                    const rowspan = Number($(this).attr('rowspan') || 1);
+                    return colspan > 1 || rowspan > 1;
+                }).length > 0;
+
+                if (hasSpanCells || $cells.length !== headerColumns) {
+                    isCompatible = false;
+                    return false;
+                }
+            });
+
+            return hasBodyCells && isCompatible;
+        };
+
         const initLocalDataTable = function (selector, options) {
             if (typeof $.fn.DataTable !== 'function') {
                 return null;
@@ -55,15 +87,24 @@
                 return $table.DataTable();
             }
 
-            return $table.DataTable($.extend(true, {
-                order: [],
-                pageLength: 10,
-                responsive: true,
-                autoWidth: false,
-                dom: "<'row align-items-center'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6 text-md-end'l>>" +
-                    "<'table-responsive'tr>" +
-                    "<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
-            }, options || {}));
+            if (!isLocalTableLayoutCompatible($table)) {
+                return null;
+            }
+
+            try {
+                return $table.DataTable($.extend(true, {
+                    order: [],
+                    pageLength: 10,
+                    responsive: true,
+                    autoWidth: false,
+                    dom: "<'row align-items-center'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6 text-md-end'l>>" +
+                        "<'table-responsive'tr>" +
+                        "<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+                }, options || {}));
+            } catch (error) {
+                console.warn('VAS local datatable init skipped:', selector, error);
+                return null;
+            }
         };
 
         const initAjaxDataTable = function (selector, ajaxUrl, columns, options) {

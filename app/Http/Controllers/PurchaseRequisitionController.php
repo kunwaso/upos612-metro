@@ -10,6 +10,7 @@ use App\TaxRate;
 use App\Transaction;
 use App\Utils\TransactionUtil;
 use App\Utils\Util;
+use App\Utils\PurchaseViewDataBuilder;
 use App\VariationLocationDetails;
 use DB;
 use Illuminate\Http\Request;
@@ -23,16 +24,19 @@ class PurchaseRequisitionController extends Controller
 
     protected $transactionUtil;
 
+    protected $purchaseViewDataBuilder;
+
     /**
      * Constructor
      *
      * @param  Util  $commonUtil
      * @return void
      */
-    public function __construct(Util $commonUtil, TransactionUtil $transactionUtil)
+    public function __construct(Util $commonUtil, TransactionUtil $transactionUtil, PurchaseViewDataBuilder $purchaseViewDataBuilder)
     {
         $this->commonUtil = $commonUtil;
         $this->transactionUtil = $transactionUtil;
+        $this->purchaseViewDataBuilder = $purchaseViewDataBuilder;
 
         $this->purchaseRequisitionStatuses = [
             'ordered' => [
@@ -501,20 +505,27 @@ class PurchaseRequisitionController extends Controller
         foreach ($purchase_requisition->purchase_lines as $pl) {
             $sub_units_array[$pl->id] = $this->transactionUtil->getSubUnits($business_id, $pl->product->unit->id, false, $pl->product_id);
         }
-        $hide_tax = request()->session()->get('business.enable_inline_tax') == 1 ? '' : 'hide';
         $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
-        $row_count = request()->input('row_count');
-        $is_purchase_order = true;
+        $row_count = (int) request()->input('row_count');
+
+        $rows = $this->purchaseViewDataBuilder->buildRowsFromSourceLines(
+            $purchase_requisition->purchase_lines,
+            $row_count,
+            $taxes,
+            $currency_details,
+            [
+                'source_type' => 'purchase_requisition',
+                'source_transaction' => $purchase_requisition,
+                'sub_units_array' => $sub_units_array,
+                'is_purchase_order' => true,
+            ]
+        );
+
         $html = view('purchase_requisition.partials.purchase_requisition_lines')
-                ->with(compact(
-                    'purchase_requisition',
-                    'taxes',
-                    'hide_tax',
-                    'currency_details',
-                    'row_count',
-                    'sub_units_array',
-                    'is_purchase_order'
-                ))->render();
+                ->with([
+                    'row_models' => $rows['row_models'],
+                    'next_row_count' => $rows['next_row_count'],
+                ])->render();
 
         return [
             'html' => $html,

@@ -45,6 +45,62 @@ Storefront checkout/cart pages are replaced by a product-level RFQ flow at `/sho
 
 README is only the entry point. It should link to the canonical docs above instead of duplicating policy.
 
+## Aichat: Improving the Assistant (Logs + Audit)
+
+Use this workflow whenever users report unhelpful, vague, or wrong Aichat responses. The goal is to correlate engineering-detail logs with DB audit signals, identify the failure type, and apply the right fix.
+
+For the full failure-type-to-file reference, complete audit action catalog, and SQL examples see [`Modules/Aichat/docs/developer-improvement-workflow.md`](Modules/Aichat/docs/developer-improvement-workflow.md).
+
+### Step 1 — Check Laravel logs for exception detail
+
+```bash
+# Replace the date with today's or the relevant date
+grep -i "Aichat\|message_send\|message_stream" storage/logs/laravel-2026-04-05.log
+```
+
+Look for: provider HTTP errors, exception stack traces (class + file + line), `message_send_error`, `message_stream_error`.
+
+### Step 2 — Query the audit DB for signal
+
+```sql
+-- Top actions last 7 days (quick triage)
+SELECT action, COUNT(*) AS cnt
+FROM aichat_chat_audit_logs
+WHERE created_at >= NOW() - INTERVAL 7 DAY
+GROUP BY action ORDER BY cnt DESC LIMIT 20;
+
+-- Pipeline rejections by error_type and channel
+SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.error_type')) AS error_type,
+       JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.channel')) AS channel,
+       COUNT(*) AS cnt
+FROM aichat_chat_audit_logs
+WHERE action = 'chat_message_pipeline_rejected'
+  AND created_at >= NOW() - INTERVAL 7 DAY
+GROUP BY error_type, channel;
+```
+
+Export via artisan (no DB client needed):
+
+```bash
+php artisan aichat:audit-export --since="-7 days" --format=json
+php artisan aichat:audit-export --business_id=1 --action=chat_message_pipeline_rejected --format=csv
+```
+
+### Step 3 — Map signal to code and fix
+
+| Signal | Root cause area | File to open |
+|--------|----------------|--------------|
+| `chat_message_pipeline_rejected` + `error_type=model_invalid` | Model not in business allowlist | `ChatWorkflowUtil`, `ChatUtil::isModelAllowedForBusiness` |
+| `chat_message_pipeline_rejected` + `error_type=pii_blocked` | PII policy rejecting prompt | `ChatWorkflowUtil::applyPiiPolicy`, `aichat_chat_settings.pii_policy` |
+| `chat_message_pipeline_rejected` + `error_type=credential_missing` | API key not set for provider | `ChatUtil::resolveCredentialForChat`, `aichat_chat_credentials` |
+| `message_send_error` / `message_stream_error` | Provider API failure | `AIChatUtil`, Laravel log for stack trace |
+| `chat_action_denied` | Permission gap | `ChatCapabilityResolver`, Spatie permissions |
+| `message_feedback_saved` with low thumbs-down ratio | Prompt / context quality | `ChatUtil::buildOrganizationContext`, system prompt in `aichat_chat_settings` |
+
+### Step 4 — Verify the fix
+
+Re-run the same audit query after deploying and confirm the target action count drops. See [`ai/aichat-authz-baseline.md`](ai/aichat-authz-baseline.md) for capability resolver details and [`ai/agent-team-policy.md`](ai/agent-team-policy.md) for approved MCP and PII policy.
+
 ## Request A Phased Plan
 
 Use a prompt like this when you want a plan another agent can execute directly:

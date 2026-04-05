@@ -39,8 +39,16 @@ class DashboardController extends VasBaseController
             ->get();
         $periods = VasAccountingPeriod::query()->where('business_id', $businessId)->latest('start_date')->take(6)->get();
         $failures = VasPostingFailure::query()->where('business_id', $businessId)->whereNull('resolved_at')->latest()->take(5)->get();
+        $failureWidgetItems = $failures->map(function (VasPostingFailure $failure) {
+            return [
+                'title' => $this->displayFailureMessage((string) $failure->error_message),
+                'description' => $this->failureSourceLabel($failure),
+                'icon' => 'ki-outline ki-information-4',
+                'badgeVariant' => 'light-warning',
+            ];
+        })->all();
 
-        return view('vasaccounting::dashboard.index', compact('metrics', 'inventoryTotals', 'recentVouchers', 'periods', 'failures') + [
+        return view('vasaccounting::dashboard.index', compact('metrics', 'inventoryTotals', 'recentVouchers', 'periods', 'failures', 'failureWidgetItems') + [
             'autoBootstrapped' => $bootstrap['bootstrapped'],
             'locationOptions' => BusinessLocation::forDropdown($businessId),
             'selectedLocationId' => $selectedLocationId,
@@ -234,13 +242,10 @@ class DashboardController extends VasBaseController
             ->limit(12)
             ->get()
             ->map(function (VasPostingFailure $failure) {
-                $sourceType = (string) $failure->source_type;
-                $sourceId = (string) $failure->source_id;
-
                 return [
                     'id' => $failure->id,
-                    'message' => str((string) $failure->error_message)->limit(120)->toString(),
-                    'source' => $sourceType . ':' . $sourceId,
+                    'message' => $this->displayFailureMessage((string) $failure->error_message),
+                    'source' => $this->failureSourceLabel($failure),
                     'occurred_at' => optional(Carbon::parse((string) $failure->created_at))->toDateTimeString(),
                 ];
             })
@@ -262,5 +267,29 @@ class DashboardController extends VasBaseController
         }
 
         return round((($current - $previous) / abs($previous)) * 100, 1);
+    }
+
+    protected function failureSourceLabel(VasPostingFailure $failure): string
+    {
+        return (string) $failure->source_type . ':' . (string) $failure->source_id;
+    }
+
+    protected function displayFailureMessage(string $message): string
+    {
+        $normalized = trim(preg_replace('/\s+/', ' ', $message) ?: '');
+        if ($normalized === '') {
+            return 'Posting failed. Open the source document and retry.';
+        }
+
+        $lower = strtolower($normalized);
+        if (
+            str_contains($lower, 'sqlstate[23000]')
+            || str_contains($lower, 'integrity constraint violation')
+            || str_contains($lower, 'cannot add or update a child row')
+        ) {
+            return 'Posting blocked by missing linked data. Check account, product, warehouse, and mapping references.';
+        }
+
+        return str($normalized)->limit(120)->toString();
     }
 }

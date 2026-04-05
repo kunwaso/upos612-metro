@@ -853,6 +853,7 @@ Always read the relevant document before writing code in that domain:
 | Formatting (currency, quantity, numbers) in root or modules | `ai/laravel-conventions.md` §5.3 and §6.4; modules follow the same session-driven rules via `ModuleUtil` |
 | ProjectX or any module extending core (root) via hooks/views | [Section 10.6](#106-projectx-integration-with-root-core) and `ai/projectx-integration.md` |
 | ProjectAuto wizard workflow | `ai/projectauto-workflow-wizard.md` |
+| Approved MCP servers, data-handling rules, CI and local machine policy | `ai/agent-team-policy.md` |
 
 Current repo-local helpers:
 
@@ -1068,7 +1069,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (17023 symbols, 35316 relationships, 92 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (17038 symbols, 35427 relationships, 86 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

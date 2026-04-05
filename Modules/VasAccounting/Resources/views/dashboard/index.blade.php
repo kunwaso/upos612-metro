@@ -52,14 +52,7 @@
             ],
         ];
 
-        $failureWidgetItems = collect($failures)->map(function ($failure) {
-            return [
-                'title' => \Illuminate\Support\Str::limit((string) $failure->error_message, 90),
-                'description' => (string) $failure->source_type . ':' . (string) $failure->source_id,
-                'icon' => 'ki-outline ki-information-4',
-                'badgeVariant' => 'light-warning',
-            ];
-        })->all();
+        $failureWidgetItems = $failureWidgetItems ?? [];
 
         $trendToolbar = '
             <select id="vas-dashboard-range" class="form-select form-select-solid form-select-sm w-140px">

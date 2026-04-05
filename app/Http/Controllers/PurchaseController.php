@@ -14,6 +14,7 @@ use App\Transaction;
 use App\User;
 use App\Utils\BusinessUtil;
 use App\Utils\ModuleUtil;
+use App\Utils\PurchaseViewDataBuilder;
 use App\Utils\ProductUtil;
 use App\Utils\TransactionUtil;
 use App\Variation;
@@ -35,18 +36,27 @@ class PurchaseController extends Controller
 
     protected $moduleUtil;
 
+    protected $purchaseViewDataBuilder;
+
     /**
      * Constructor
      *
      * @param  ProductUtils  $product
      * @return void
      */
-    public function __construct(ProductUtil $productUtil, TransactionUtil $transactionUtil, BusinessUtil $businessUtil, ModuleUtil $moduleUtil)
+    public function __construct(
+        ProductUtil $productUtil,
+        TransactionUtil $transactionUtil,
+        BusinessUtil $businessUtil,
+        ModuleUtil $moduleUtil,
+        PurchaseViewDataBuilder $purchaseViewDataBuilder
+    )
     {
         $this->productUtil = $productUtil;
         $this->transactionUtil = $transactionUtil;
         $this->businessUtil = $businessUtil;
         $this->moduleUtil = $moduleUtil;
+        $this->purchaseViewDataBuilder = $purchaseViewDataBuilder;
 
         $this->dummyPaymentLine = ['method' => 'cash', 'amount' => 0, 'note' => '', 'card_transaction_number' => '', 'card_number' => '', 'card_type' => '', 'card_holder_name' => '', 'card_month' => '', 'card_year' => '', 'card_security' => '', 'cheque_number' => '', 'bank_account_number' => '',
             'is_return' => 0, 'transaction_no' => '', ];
@@ -264,8 +274,24 @@ class PurchaseController extends Controller
         $business_locations = BusinessLocation::forDropdown($business_id, false, true);
         $bl_attributes = $business_locations['attributes'];
         $business_locations = $business_locations['locations'];
+        $location_config = $this->purchaseViewDataBuilder->buildLocationConfig($business_locations);
 
         $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
+        $custom_labels = $this->purchaseViewDataBuilder->getCustomLabelsFromSession();
+        $ui_flags = $this->purchaseViewDataBuilder->buildUiFlags();
+
+        $purchase_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'purchase',
+            'custom_field_',
+            4
+        );
+        $shipping_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'purchase_shipping',
+            'shipping_custom_field_',
+            5
+        );
 
         $default_purchase_status = null;
         if (request()->session()->get('business.enable_purchase_status') != 1) {
@@ -299,7 +325,26 @@ class PurchaseController extends Controller
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
 
         return view('purchase.create')
-            ->with(compact('taxes', 'orderStatuses', 'business_locations', 'currency_details', 'default_purchase_status', 'customer_groups', 'types', 'shortcuts', 'payment_line', 'payment_types', 'accounts', 'bl_attributes', 'common_settings', 'users'));
+            ->with(compact(
+                'taxes',
+                'orderStatuses',
+                'business_locations',
+                'currency_details',
+                'default_purchase_status',
+                'customer_groups',
+                'types',
+                'shortcuts',
+                'payment_line',
+                'payment_types',
+                'accounts',
+                'bl_attributes',
+                'common_settings',
+                'users',
+                'location_config',
+                'ui_flags',
+                'purchase_custom_fields',
+                'shipping_custom_fields'
+            ));
     }
 
     /**
@@ -621,9 +666,53 @@ class PurchaseController extends Controller
         $shortcuts = json_decode($business_details->keyboard_shortcuts, true);
 
         $common_settings = ! empty(session('business.common_settings')) ? session('business.common_settings') : [];
+        $custom_labels = $this->purchaseViewDataBuilder->getCustomLabelsFromSession();
+        $ui_flags = $this->purchaseViewDataBuilder->buildUiFlags();
 
         //Added check because $users is of no use if enable_contact_assign if false
         $users = config('constants.enable_contact_assign') ? User::forDropdown($business_id, false, false, false, false) : [];
+
+        $purchase_custom_values = [
+            'custom_field_1' => $purchase->custom_field_1,
+            'custom_field_2' => $purchase->custom_field_2,
+            'custom_field_3' => $purchase->custom_field_3,
+            'custom_field_4' => $purchase->custom_field_4,
+        ];
+        $shipping_custom_values = [
+            'shipping_custom_field_1' => $purchase->shipping_custom_field_1,
+            'shipping_custom_field_2' => $purchase->shipping_custom_field_2,
+            'shipping_custom_field_3' => $purchase->shipping_custom_field_3,
+            'shipping_custom_field_4' => $purchase->shipping_custom_field_4,
+            'shipping_custom_field_5' => $purchase->shipping_custom_field_5,
+        ];
+
+        $purchase_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'purchase',
+            'custom_field_',
+            4,
+            $purchase_custom_values
+        );
+        $shipping_custom_fields = $this->purchaseViewDataBuilder->buildCustomFieldConfigs(
+            $custom_labels,
+            'purchase_shipping',
+            'shipping_custom_field_',
+            5,
+            $shipping_custom_values
+        );
+
+        $edit_rows = $this->purchaseViewDataBuilder->buildRowsForPurchaseEdit(
+            $purchase->purchase_lines,
+            $purchase,
+            $taxes,
+            $currency_details,
+            [
+                'is_purchase_order' => false,
+                'common_settings' => $common_settings,
+            ]
+        );
+        $row_models = $edit_rows['row_models'];
+        $next_row_count = $edit_rows['next_row_count'];
 
         $purchase_orders = null;
         if (! empty($common_settings['enable_purchase_order'])) {
@@ -654,7 +743,12 @@ class PurchaseController extends Controller
                 'shortcuts',
                 'purchase_orders',
                 'common_settings',
-                'users'
+                'users',
+                'ui_flags',
+                'purchase_custom_fields',
+                'shipping_custom_fields',
+                'row_models',
+                'next_row_count'
             ));
     }
 
@@ -1061,11 +1155,6 @@ class PurchaseController extends Controller
             $is_purchase_order = $request->has('is_purchase_order');
             $supplier_id = $request->input('supplier_id');
 
-            $hide_tax = 'hide';
-            if ($request->session()->get('business.enable_inline_tax') == 1) {
-                $hide_tax = '';
-            }
-
             $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
 
             if (! empty($product_id)) {
@@ -1093,20 +1182,24 @@ class PurchaseController extends Controller
                             ->get();
 
                 $last_purchase_line = $this->getLastPurchaseLine($variation_id, $location_id, $supplier_id);
+                $rows = $this->purchaseViewDataBuilder->buildRowsForVariationSelection(
+                    $product,
+                    $variations,
+                    (int) $row_count,
+                    $taxes,
+                    $currency_details,
+                    [
+                        'sub_units' => $sub_units,
+                        'is_purchase_order' => $is_purchase_order,
+                        'last_purchase_line' => $last_purchase_line,
+                    ]
+                );
 
                 return view('purchase.partials.purchase_entry_row')
-                    ->with(compact(
-                        'product',
-                        'variations',
-                        'row_count',
-                        'variation_id',
-                        'taxes',
-                        'currency_details',
-                        'hide_tax',
-                        'sub_units',
-                        'is_purchase_order',
-                        'last_purchase_line'
-                    ));
+                    ->with([
+                        'row_models' => $rows['row_models'],
+                        'next_row_count' => $rows['next_row_count'],
+                    ]);
             }
         }
     }
@@ -1228,19 +1321,31 @@ class PurchaseController extends Controller
                 ];
             }
 
-            $hide_tax = 'hide';
-            if ($request->session()->get('business.enable_inline_tax') == 1) {
-                $hide_tax = '';
-            }
-
             $taxes = TaxRate::where('business_id', $business_id)
                             ->ExcludeForTaxGroup()
                             ->get();
 
             $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
+            $row_models = [];
+            $next_row_count = (int) $row_count;
+            foreach ($formatted_data as $data) {
+                $built_rows = $this->purchaseViewDataBuilder->buildRowsForVariationSelection(
+                    $data['product'],
+                    [$data['variation']],
+                    $next_row_count,
+                    $taxes,
+                    $currency_details,
+                    [
+                        'sub_units' => $data['sub_units'] ?? [],
+                        'imported_data' => $data,
+                    ]
+                );
+                $row_models = array_merge($row_models, $built_rows['row_models']);
+                $next_row_count = $built_rows['next_row_count'];
+            }
 
             $html = view('purchase.partials.imported_purchase_product_rows')
-                        ->with(compact('formatted_data', 'taxes', 'currency_details', 'hide_tax', 'row_count'))->render();
+                        ->with(compact('row_models', 'next_row_count'))->render();
 
             return [
                 'success' => true,
@@ -1273,19 +1378,26 @@ class PurchaseController extends Controller
         foreach ($purchase_order->purchase_lines as $pl) {
             $sub_units_array[$pl->id] = $this->productUtil->getSubUnits($business_id, $pl->product->unit->id, false, $pl->product_id);
         }
-        $hide_tax = request()->session()->get('business.enable_inline_tax') == 1 ? '' : 'hide';
         $currency_details = $this->transactionUtil->purchaseCurrencyDetails($business_id);
-        $row_count = request()->input('row_count');
+        $row_count = (int) request()->input('row_count');
+
+        $rows = $this->purchaseViewDataBuilder->buildRowsFromSourceLines(
+            $purchase_order->purchase_lines,
+            $row_count,
+            $taxes,
+            $currency_details,
+            [
+                'source_type' => 'purchase_order',
+                'source_transaction' => $purchase_order,
+                'sub_units_array' => $sub_units_array,
+            ]
+        );
 
         $html = view('purchase.partials.purchase_order_lines')
-                ->with(compact(
-                    'purchase_order',
-                    'taxes',
-                    'hide_tax',
-                    'currency_details',
-                    'row_count',
-                    'sub_units_array'
-                ))->render();
+                ->with([
+                    'row_models' => $rows['row_models'],
+                    'next_row_count' => $rows['next_row_count'],
+                ])->render();
 
         return [
             'html' => $html,
