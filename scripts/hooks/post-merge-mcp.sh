@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# Managed MCP post-merge hook payload.
+# Managed MCP post-merge hook payload (optional legacy).
+# Default install uses pre-push-mcp.sh only — see scripts/manage-mcp-hooks.ps1 install.
 # Runs in the background and refreshes fast local MCP indexes.
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"

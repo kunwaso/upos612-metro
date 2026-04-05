@@ -1,15 +1,21 @@
 #!/bin/sh
 
-# Managed MCP post-commit hook payload (optional legacy).
-# Default install uses pre-push-mcp.sh only — see scripts/manage-mcp-hooks.ps1 install.
-# Runs in the background and never blocks commit completion.
+# Managed MCP pre-push hook payload.
+# Runs semantic reindex + GitNexus analyze only when refs you push include changes
+# under the same path rules as the former post-commit hook.
+# Work runs in the background and exits 0 immediately so the push is not blocked.
+# Semantic indexer is invoked WITHOUT --force (incremental); full rebuild when needed:
+#   php mcp/semantic-code-search-mcp/bin/index-codebase --force
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ -z "$REPO_ROOT" ] && exit 0
 
 VERSION="${1:-1.4.8}"
+# $2 / $3 are remote name and URL from git (for logs only)
+REMOTE_NAME="${2:-}"
+
 LOG_DIR="$REPO_ROOT/.cache/mcp-hooks"
-LOG_FILE="$LOG_DIR/post-commit.log"
+LOG_FILE="$LOG_DIR/pre-push.log"
 
 mkdir -p "$LOG_DIR"
 
@@ -35,7 +41,36 @@ should_gitnexus_analyze() {
   esac
 }
 
-CHANGED_FILES="$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)"
+ZERO="0000000000000000000000000000000000000000"
+
+# stdin: lines "<local_ref> <local_oid> <remote_ref> <remote_oid>" (git pre-push protocol)
+CHANGED_FILES="$(
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    [ -z "$local_sha" ] && continue
+    [ "$local_sha" = "$ZERO" ] && continue
+
+    if [ "$remote_sha" = "$ZERO" ]; then
+      base=""
+      base=$(git -C "$REPO_ROOT" merge-base "$local_sha" '@{u}' 2>/dev/null) || true
+      if [ -z "$base" ]; then
+        base=$(git -C "$REPO_ROOT" merge-base "$local_sha" 'refs/remotes/origin/HEAD' 2>/dev/null) || true
+      fi
+      if [ -z "$base" ]; then
+        base=$(git -C "$REPO_ROOT" merge-base "$local_sha" 'origin/main' 2>/dev/null) || true
+      fi
+      if [ -z "$base" ]; then
+        base=$(git -C "$REPO_ROOT" merge-base "$local_sha" 'origin/master' 2>/dev/null) || true
+      fi
+      if [ -z "$base" ]; then
+        base=$(git -C "$REPO_ROOT" rev-list --max-parents=0 "$local_sha" 2>/dev/null | tail -n 1)
+      fi
+      [ -z "$base" ] && continue
+      git -C "$REPO_ROOT" diff --name-only "$base" "$local_sha" 2>/dev/null || true
+    else
+      git -C "$REPO_ROOT" diff --name-only "$remote_sha" "$local_sha" 2>/dev/null || true
+    fi
+  done | sort -u
+)"
 RUN_SEMANTIC=0
 RUN_GITNEXUS=0
 
@@ -53,8 +88,9 @@ done
 unset IFS
 
 (
-  echo "--- post-commit MCP sync at $(date) ---"
-  echo "changed_files: $(printf '%s\n' "$CHANGED_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
+  echo "--- pre-push MCP sync at $(date) ---"
+  echo "remote: ${REMOTE_NAME:-unknown}"
+  echo "changed_paths: $(printf '%s\n' "$CHANGED_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
 
   SEMANTIC_BIN="$REPO_ROOT/mcp/semantic-code-search-mcp/bin/index-codebase"
   SEMANTIC_VENDOR="$REPO_ROOT/mcp/semantic-code-search-mcp/vendor/autoload.php"
@@ -66,7 +102,7 @@ unset IFS
       PYTHON_BIN="$(python -c 'import sys; print(sys.executable)' 2>/dev/null | tr -d '\r')"
       [ -z "$PYTHON_BIN" ] && PYTHON_BIN="$(command -v python)"
     fi
-    echo "semantic: indexing with BAAI/bge-small-en"
+    echo "semantic: incremental index (no --force), BAAI/bge-small-en"
     MCP_SEMANTIC_EMBED_MODEL="BAAI/bge-small-en" \
     MCP_SEMANTIC_HF_DEVICE="cpu" \
     MCP_SEMANTIC_HF_BATCH_SIZE="12" \
@@ -80,7 +116,7 @@ unset IFS
     MCP_SEMANTIC_PYTHON_BIN="$PYTHON_BIN" \
       php "$SEMANTIC_BIN" >/dev/null 2>&1 || true
   elif [ "$RUN_SEMANTIC" -eq 0 ]; then
-    echo "semantic: skipped, no indexed-scope files changed"
+    echo "semantic: skipped, no indexed-scope paths in this push"
   else
     echo "semantic: skipped, vendor missing"
   fi
@@ -97,7 +133,7 @@ unset IFS
       }
     )
   elif [ "$RUN_GITNEXUS" -eq 0 ]; then
-    echo "gitnexus: skipped, no graph-relevant files changed"
+    echo "gitnexus: skipped, no graph-relevant paths in this push"
   elif [ ! -f "$REPO_ROOT/.gitnexus/meta.json" ]; then
     echo "gitnexus: skipped, repo is not indexed yet"
   else

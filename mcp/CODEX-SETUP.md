@@ -81,7 +81,11 @@ Windows helper:
 
 The script writes logs to `.cache/mcp-automation/`.
 
-## 4. Hook automation (post-commit + post-merge)
+## 4. Hook automation (pre-push only)
+
+`install` adds a **pre-push** hook so semantic reindex + GitNexus analyze run **only when you `git push`**, and only if the commits being pushed touch indexed paths. Work runs **in the background** (push is not blocked). Semantic uses an **incremental** index (no `--force`); use `index-codebase --force` manually when you need a full rebuild.
+
+`install` also **removes** managed blocks from **post-commit** and **post-merge** so you do not reindex on every local commit or after `git pull`.
 
 Install managed blocks:
 
@@ -95,12 +99,16 @@ Check status:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\manage-mcp-hooks.ps1 -Action status
 ```
 
-Managed hook payloads live in:
+Managed hook payload:
+
+- `scripts/hooks/pre-push-mcp.sh`
+
+Legacy payloads (not installed by default):
 
 - `scripts/hooks/post-commit-mcp.sh`
 - `scripts/hooks/post-merge-mcp.sh`
 
-Hook logs are written to `.cache/mcp-hooks/`.
+Hook logs are written to `.cache/mcp-hooks/` (e.g. `pre-push.log`).
 
 ## 5. Semantic and GitNexus cadence
 

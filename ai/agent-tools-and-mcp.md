@@ -407,7 +407,7 @@ Remember:
 
 - semantic search needs an index; grep does **not**
 - **Pre-flight check (required):** Before calling `search_code`, always call `index_status` first. If the response is `INDEX_NOT_READY`, run `index_codebase` before searching. If `INDEX_STALE`, run `index_codebase --force` before searching. Do **not** call `search_code` on a stale index — results will reflect an outdated codebase and can silently mislead.
-- The index is automatically kept fresh by the post-commit git hook (`scripts/warm-cache.ps1` or `.git/hooks/post-commit`). If the hook is not installed, re-run `php mcp/semantic-code-search-mcp/bin/index-codebase` manually after significant code changes.
+- The index can be kept fresh by the **pre-push** git hook (`scripts/manage-mcp-hooks.ps1` install → `.git/hooks/pre-push` → `scripts/hooks/pre-push-mcp.sh`), which reindexes only when you push commits that touch indexed paths (incremental; no `--force`). `scripts/warm-cache.ps1` can still refresh indexes on demand. If hooks are not installed, re-run `php mcp/semantic-code-search-mcp/bin/index-codebase` manually after significant code changes.
 - For embedding model upgrade options (better quality, still local) see `mcp/semantic-code-search-mcp/README.md`.
 
 ### 3.5 GitNexus MCP

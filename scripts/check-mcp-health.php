@@ -109,6 +109,51 @@ function readJsonFile(string $path): ?array
     return is_array($decoded) ? $decoded : null;
 }
 
+/**
+ * When CLI env omits MCP_SEMANTIC_* vars, align with .cursor/mcp.json so index status
+ * matches what the Cursor semantic_code_search server uses (avoids false STALE).
+ *
+ * @param array<string, mixed>|null $cursorMcpConfig
+ */
+function applySemanticEnvDefaultsFromCursorMcp(?array $cursorMcpConfig): void
+{
+    if ($cursorMcpConfig === null) {
+        return;
+    }
+
+    $servers = $cursorMcpConfig['mcpServers'] ?? null;
+    if (!is_array($servers)) {
+        return;
+    }
+
+    $semanticEnv = $servers['semantic_code_search']['env'] ?? null;
+    if (!is_array($semanticEnv)) {
+        return;
+    }
+
+    foreach ($semanticEnv as $key => $value) {
+        if (!is_string($key) || $key === '') {
+            continue;
+        }
+        if (!str_starts_with($key, 'MCP_SEMANTIC_')) {
+            continue;
+        }
+        $current = getenv($key);
+        if ($current !== false && trim((string) $current) !== '') {
+            continue;
+        }
+        if (!is_string($value) && !is_int($value) && !is_float($value)) {
+            continue;
+        }
+        $stringValue = (string) $value;
+        if (trim($stringValue) === '') {
+            continue;
+        }
+        putenv($key . '=' . $stringValue);
+        $_ENV[$key] = $stringValue;
+    }
+}
+
 $results = [];
 $requiredFailure = false;
 $optionalFailure = false;
@@ -397,6 +442,8 @@ if ($auditWebMissing !== []) {
         );
     }
 }
+
+applySemanticEnvDefaultsFromCursorMcp($cursorMcpConfig);
 
 $semanticServerRoot = $repoRoot.'/mcp/semantic-code-search-mcp';
 if (!is_file($semanticServerRoot . '/vendor/autoload.php')) {
