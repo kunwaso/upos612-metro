@@ -15,6 +15,31 @@ services:
       timeout: 5s
       retries: 5
 
+  # Phase 3: optional Redis queue for scan jobs (set CYBER_REDIS_URL on api + run scan-worker).
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  scan-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m cyber_worker.consumer
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@postgres:5432/cyber
+      CYBER_REDIS_URL: redis://redis:6379/0
+      CYBER_POLICY_PATH: /app/configs/default.policy.yaml
+    volumes:
+      - ./configs:/app/configs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    profiles:
+      - ha-scans
+
   api:
     build:
       context: .
@@ -25,6 +50,7 @@ services:
       DATABASE_URL_SYNC: postgresql://cyber:cyber@postgres:5432/cyber
       CYBER_REQUIRE_ALLOWLIST: "true"
       CYBER_POLICY_PATH: /app/configs/default.policy.yaml
+      # CYBER_REDIS_URL: redis://redis:6379/0
     volumes:
       - ./configs:/app/configs:ro
     depends_on:

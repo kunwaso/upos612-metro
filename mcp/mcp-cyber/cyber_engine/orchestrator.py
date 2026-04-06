@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import structlog
 from cyber_engine.adapters.base import Adapter, ScanContext
+from cyber_engine.adapters.active_controlled_stub import ActiveControlledStubAdapter
 from cyber_engine.adapters.headers_cookies import HeadersCookiesAdapter
 from cyber_engine.adapters.openapi_lint import OpenAPILintAdapter
 from cyber_engine.adapters.playwright_session import PlaywrightSessionAdapter
@@ -16,6 +17,7 @@ DEFAULT_ADAPTERS: dict[str, type[Adapter]] = {
     HeadersCookiesAdapter.id: HeadersCookiesAdapter,
     OpenAPILintAdapter.id: OpenAPILintAdapter,
     PlaywrightSessionAdapter.id: PlaywrightSessionAdapter,
+    ActiveControlledStubAdapter.id: ActiveControlledStubAdapter,
 }
 
 

@@ -20,7 +20,19 @@ if settings.require_allowlist is not None:
     os.environ["CYBER_REQUIRE_ALLOWLIST"] = "true" if settings.require_allowlist else "false"
 
 from cyber_api.logging_setup import setup_app_logging
-from cyber_api.routers import audit, dashboard, environments, findings, profiles, projects, reports, scans
+from cyber_api.routers import (
+    analytics,
+    approvals,
+    audit,
+    dashboard,
+    environments,
+    findings,
+    profiles,
+    projects,
+    reports,
+    scans,
+    suppressions,
+)
 from cyber_api.security import create_dev_token
 from cyber_core.logging import configure_logging
 
@@ -52,8 +64,11 @@ app.include_router(projects.router)
 app.include_router(environments.router)
 app.include_router(profiles.router)
 app.include_router(scans.router)
+app.include_router(approvals.router)
+app.include_router(suppressions.router)
 app.include_router(findings.router)
 app.include_router(reports.router)
+app.include_router(analytics.router)
 app.include_router(audit.router)
 
 

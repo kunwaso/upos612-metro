@@ -19,6 +19,7 @@ from cyber_engine.adapters.base import ScanContext
 from cyber_engine.credentials.vault import resolve_credential_ref
 from cyber_engine.orchestrator import Orchestrator
 from cyber_engine.rate_limit import AsyncRateLimiter
+from cyber_worker.suppression_check import is_fingerprint_suppressed
 
 log = structlog.get_logger()
 
@@ -130,6 +131,8 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
             rows = deduped
 
             for row in rows:
+                if await is_fingerprint_suppressed(session, row["project_id"], row["fingerprint"]):
+                    continue
                 session.add(
                     Finding(
                         id=uuid.uuid4(),

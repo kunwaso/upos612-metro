@@ -13,6 +13,6 @@ COPY cyber_mcp cyber_mcp
 COPY configs configs
 COPY alembic.ini ./
 COPY cyber_db/alembic cyber_db/alembic
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e ".[phase3]"
 EXPOSE 8000
 CMD ["uvicorn", "cyber_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

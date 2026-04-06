@@ -155,8 +155,55 @@ class FindingOut(BaseModel):
 
 
 class FindingTransition(BaseModel):
-    status: str
+    status: str = Field(
+        ...,
+        pattern="^(open|in_progress|accepted_risk|fixed|suppressed|regressed)$",
+    )
     reason: str | None = None
+
+
+class ApprovalCreate(BaseModel):
+    profile_id: UUID
+    reason: str | None = Field(default=None, max_length=2000)
+    payload_tier: str = Field(default="safe", pattern="^(safe|standard)$")
+    expires_in_hours: int = Field(default=72, ge=1, le=720)
+
+
+class ApprovalOut(BaseModel):
+    id: UUID
+    profile_id: UUID
+    requester_id: UUID
+    approver_id: UUID | None
+    status: str
+    reason: str | None
+    payload_tier: str
+    created_at: datetime
+    expires_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApprovalResolve(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class SuppressionCreate(BaseModel):
+    project_id: UUID
+    fingerprint: str = Field(..., min_length=8, max_length=512)
+    reason: str = Field(..., min_length=1, max_length=2000)
+    expires_at: datetime | None = None
+
+
+class SuppressionOut(BaseModel):
+    id: UUID
+    project_id: UUID
+    fingerprint: str
+    reason: str
+    created_by: UUID
+    expires_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class OpenAPIImport(BaseModel):

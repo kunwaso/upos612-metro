@@ -11,7 +11,9 @@ from cyber_api.deps import DbSession
 from cyber_api.principals import actor_uuid
 from cyber_api.schemas import CompareOut, FindingOut, ScanCreate, ScanOut
 from cyber_api.security import TokenUser, get_current_user
+from cyber_api.settings import settings
 from cyber_db.models import Environment, Finding, Project, ScanProfile, ScanRun
+from cyber_worker.redis_jobs import enqueue_scan
 from cyber_worker.tasks import execute_scan
 
 router = APIRouter(prefix="/v1/scans", tags=["scans"])
@@ -68,7 +70,11 @@ async def create_scan(
     )
     await session.commit()
     await session.refresh(run)
-    background_tasks.add_task(execute_scan, run.id)
+    if (settings.redis_url or "").strip():
+        if not await enqueue_scan(settings.redis_url, run.id):
+            background_tasks.add_task(execute_scan, run.id)
+    else:
+        background_tasks.add_task(execute_scan, run.id)
     return run
 
 

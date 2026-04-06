@@ -51,5 +51,12 @@ class Settings(BaseSettings):
     oidc_security_groups: str = "security,security_engineer,sec-eng"
     oidc_manager_groups: str = "manager,product-manager"
 
+    # Phase 3: optional Redis LPUSH for scan jobs (API enqueues; run cyber_worker.consumer separately).
+    redis_url: str = Field(default="", validation_alias=AliasChoices("CYBER_REDIS_URL", "REDIS_URL"))
+
+    # Phase 4: analytics / SLA defaults
+    sla_high_critical_days: int = 14
+    analytics_max_trend_days: int = 90
+
 
 settings = Settings()

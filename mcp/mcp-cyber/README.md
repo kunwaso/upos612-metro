@@ -80,6 +80,38 @@ Authorization: Bearer <token with sub, org_id, role>
 
 **Scan profile (mode `authenticated_passive`):** set `credential_ref` to a vault key; add options such as `playwright_login_url`, `playwright_username_selector`, `playwright_password_selector`, `playwright_submit_selector`. The login URL must be allowlisted for the environment (included in policy checks). If the vault entry has only `token`, the adapter performs Bearer-authenticated passive checks without Playwright. Install browser support: `pip install -e ".[phase2]"` and `playwright install chromium`.
 
+### Phase 3 (enterprise workflow, queue, suppressions)
+
+| Piece | Description |
+|-------|-------------|
+| **`CYBER_REDIS_URL`** | If set, new scans are **enqueued** on Redis list `cyber:scans:queue` instead of only `BackgroundTasks`. Run **`python -m cyber_worker.consumer`** or **`mcp-cyber-scan-worker`** (requires `pip install -e ".[phase3]"`). If LPUSH fails, the API falls back to in-process execution. |
+| **Approvals** | `POST /v1/approvals` for an **`active_controlled`** profile → `approve` / `reject` by `security_engineer` or `admin`. Requires a **`users`** row matching your JWT email (see `scripts/seed_demo.py`). |
+| **`active_controlled_stub`** | Adapter id for safe Phase 3 runs: records an **info** finding only (no intrusive payloads). Add it to the profile’s `adapter_ids` with mode `active_controlled` and pass `approval_id` on `POST /v1/scans`. |
+| **Suppressions** | `POST /v1/suppressions` (fingerprint + project) — worker **skips persisting** matching findings on future scans. |
+| **Finding status** | `POST /v1/findings/{id}/transition` — allowed: `open`, `in_progress`, `accepted_risk`, `fixed`, `suppressed`, `regressed`. |
+| **Docker** | `redis` service is defined; **`scan-worker`** uses Compose **profile** `ha-scans` (`docker compose --profile ha-scans up`). Set `CYBER_REDIS_URL` on **api** when using the queue. |
+
+**MCP (Phase 3 tools):** `run_controlled_active_scan`, `request_scan_approval`, `list_approvals`, `approve_scan_approval`, `reject_scan_approval`, `get_audit_log`, `mark_finding_status`, `create_suppression`, `list_suppressions`, `delete_suppression`.
+
+### Phase 4 (analytics, trends, SLA signals)
+
+| API | Description |
+|-----|-------------|
+| `GET /v1/analytics/fleet` | Per-project **open** counts by severity (org-scoped). |
+| `GET /v1/analytics/trends/findings?days=30` | Daily buckets of **first_seen_at** volume by severity (PostgreSQL `to_char`). |
+| `GET /v1/analytics/trends/scans?days=30` | Successful **scan runs** completed per day. |
+| `GET /v1/analytics/sla/open-high-critical` | **manager+**: open **critical/high** older than `CYBER_SLA_HIGH_CRITICAL_DAYS` (optional `max_age_days`). |
+| `GET /v1/analytics/top-rules?limit=20` | Top **rule_id** values among open findings. |
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `CYBER_SLA_HIGH_CRITICAL_DAYS` | `14` | SLA window for breach detection. |
+| `CYBER_ANALYTICS_MAX_TREND_DAYS` | `90` | Cap for `days` on trend endpoints (still pass `days=` query; server clamps). |
+
+**MCP (Phase 4):** `get_fleet_posture`, `get_finding_trends`, `get_scan_volume_trends`, `get_sla_breach_summary`, `get_top_open_rules`.
+
+*Future (not implemented here):* fleet HTML dashboards, custom YAML business-rule engines, allowlisted fuzzing harness hooks — see platform plan Phase 4.
+
 Optional: `mcp/mcp-cyber/.env` — see `.env.example`; `python -m cyber_api` loads it when the file exists.
 
 ## MCP (Cursor / Claude)
@@ -94,7 +126,7 @@ python -m cyber_mcp.server
 
 Or use the console script `mcp-cyber-mcp` if your `Scripts` directory is on PATH.
 
-Tools: `run_passive_scan`, `run_authenticated_scan` (same HTTP call; use a profile in `authenticated_passive` mode with vault + optional Playwright), `list_findings`, `export_report`, etc.
+Tools include passive/authenticated scans, reports, compare, Phase 3 approvals/suppressions/audit (`README` Phase 3 table).
 
 Example `.cursor/mcp.json` fragment:
 

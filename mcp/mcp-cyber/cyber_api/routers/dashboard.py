@@ -19,6 +19,7 @@ from cyber_api.schemas import CompareOut
 from cyber_api.settings import settings
 from cyber_db.models import AuditLog, Environment, Finding, Project, ScanEvent, ScanProfile, ScanRun
 from cyber_reports.markdown import render_markdown_report
+from cyber_worker.redis_jobs import enqueue_scan
 from cyber_worker.tasks import execute_scan
 
 router = APIRouter(tags=["dashboard"])
@@ -360,7 +361,11 @@ async def dashboard_run_scan(
     )
     await session.commit()
     await session.refresh(run)
-    background_tasks.add_task(execute_scan, run.id)
+    if (settings.redis_url or "").strip():
+        if not await enqueue_scan(settings.redis_url, run.id):
+            background_tasks.add_task(execute_scan, run.id)
+    else:
+        background_tasks.add_task(execute_scan, run.id)
     return {"id": str(run.id), "status": run.status, "trace_id": run.trace_id}
 
 

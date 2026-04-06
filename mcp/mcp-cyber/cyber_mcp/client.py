@@ -25,8 +25,19 @@ class CyberApiClient:
             r.raise_for_status()
             return r.json()
 
-    async def get(self, path: str) -> dict[str, Any] | list:
+    async def get(
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> dict[str, Any] | list:
         async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.get(f"{self.base_url}{path}", headers=self._headers())
+            r = await client.get(
+                f"{self.base_url}{path}",
+                headers=self._headers(),
+                params=params or {},
+            )
             r.raise_for_status()
             return r.json()
+
+    async def delete(self, path: str) -> None:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            r = await client.delete(f"{self.base_url}{path}", headers=self._headers())
+            r.raise_for_status()

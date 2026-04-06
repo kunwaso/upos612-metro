@@ -98,7 +98,7 @@
                              data-basealign="slide"
                              data-responsive_offset="on"
                              data-responsive="on">
-                            <img src="https://placehold.co/1678x740" alt="background-pattern" data-ww="100%" data-hh="auto">
+                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-slider-01-img-04.jpg') }}" alt="background-pattern" data-ww="100%" data-hh="auto">
                         </div>
                         <!-- end product image layer -->
                         <!-- start row zone -->
@@ -179,7 +179,7 @@
                                          data-paddingright="[0,0,200,0]"
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,200,0]">
-                                        Màng Cuộn PE
+                                        Màng Quấn PE
                                     </div>
                                     <!-- end title  layer -->
                                     <!-- start subtitle layer -->
@@ -208,7 +208,7 @@
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,0,0]"
                                          style="color: rgba(22,32,44,0.8)">
-                                        Price starting from <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">$199.00</span>
+                                        Chiều dài từ <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">10cm - 50cm</span>
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
@@ -238,7 +238,7 @@
                                        data-paddingbottom="[16,12,12,12]"
                                        data-paddingleft="[25,18,16,16]"
                                        style="color: rgba(22,32,44,0.8)">
-                                        <i class="feather icon-feather-shopping-bag pe-10px icon-small"></i>Shop Now
+                                        <i class="feather icon-feather-shopping-bag pe-10px icon-small"></i>Xem chi tiết
                                     </a>
                                     <!-- end button layer -->
                                 </div>
@@ -274,7 +274,7 @@
                             <!-- end row layer -->
                         </div>
                         <!-- end row zone -->
-                        <!-- start sub text layer -->
+                        <!-- infor text  -->
                         <div class="tp-caption alt-font d-flex align-items-center" 
                              id="slide-1-layer-11"
                              data-x="['right','right','left','left']" data-hoffset="['0','0','0','0']" 
@@ -302,9 +302,9 @@
                              data-paddingright="[0,0,0,0]"
                              data-paddingbottom="[0,0,0,0]"
                              data-paddingleft="[0,0,0,0]">
-                            <span class="pe-20px">More information</span><a href="#" class="d-flex justify-content-center align-items-center icon-box w-45px h-45px rounded-circle border border-color-transparent-dark-very-light border-2"><i class="bi bi-info icon-extra-medium text-dark-gray"></i></a>
+                            <span class="pe-20px">infor</span><a href="#" class="d-flex justify-content-center align-items-center icon-box w-45px h-45px rounded-circle border border-color-transparent-dark-very-light border-2"><i class="bi bi-info icon-extra-medium text-dark-gray"></i></a>
                         </div>
-                        <!-- end sub text layer -->
+                        <!-- end infor text  -->
                         <!-- start tooltip layer -->
                         <div class="tp-caption tooltip-arrow" 
                              id="slide-1-layer-12"
@@ -331,7 +331,7 @@
                              data-paddingbottom="[30,25,0,0]"
                              data-paddingleft="[35,25,0,0]"
                              data-lasttriggerstate="reset"
-                             style="z-index: 36; background-color: rgba(22,32,44,0.85); color: rgba(255,255,255,0.8); border-radius: 6px;">The three-seater works not just as the primary seating option, but also as an elegant statement piece.</div>
+                             style="z-index: 36; background-color: rgba(22,32,44,0.85); color: rgba(255,255,255,0.8); border-radius: 6px;">Màng PE hay còn có cách gọi khác là màng chít có khả năng co dãn, có tính đàn hồi tốt, độ bám dính tốt trên mọi bề mặt nên luôn là sự lựa chọn hàng đầu trong khâu đóng gói sản phẩm công nghiệp và vận chuyển hàng hóa</div>
                         <!-- end tooltip layer -->
                         <!-- start arrow group layer -->
                         <div class="navigation-arrow">
@@ -364,7 +364,7 @@
                                  data-marginbottom="[0,0,0,0]"
                                  data-marginleft="[0,0,0,0]"
                                  style="border: none;"
-                                 >Next<span class="bg-dark-gray"></span>
+                                 >Tiếp<span class="bg-dark-gray"></span>
                             </div>
                             <!-- end next text layer -->
                             <!-- start slider thumb layer -->
