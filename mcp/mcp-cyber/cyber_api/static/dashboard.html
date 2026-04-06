@@ -247,8 +247,8 @@
         } else {
           scansBody.innerHTML = scans.map(function (s) {
             const targets = (s.target_urls || []).join(", ");
-            const repMd = "/v1/reports/" + s.id + ".md";
-            const repJson = "/v1/reports/" + s.id + ".json";
+            const repMd = "/dashboard/reports/" + s.id + "/md";
+            const repJson = "/dashboard/reports/" + s.id + "/json";
             return (
               "<tr>" +
               "<td><span class=\"status " + esc(statusClass(s.status)) + "\">" + esc(s.status) + "</span></td>" +

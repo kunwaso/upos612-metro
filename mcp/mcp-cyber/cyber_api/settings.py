@@ -33,5 +33,8 @@ class Settings(BaseSettings):
     # CYBER_RELOAD=true enables uvicorn --reload (dev only)
     reload: bool = False
 
+    # Unauthenticated / + /dashboard/api/* (read-only). Disable when API is reachable beyond localhost.
+    dashboard_enabled: bool = True
+
 
 settings = Settings()

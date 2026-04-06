@@ -34,6 +34,8 @@ python -m cyber_api
 # or: mcp-cyber-api
 ```
 
+**Dev dashboard:** open [http://127.0.0.1:8686/](http://127.0.0.1:8686/) for a read-only HTML view of recent **scans**, **scan event log** (adapter/orchestrator events), and **audit** tail. Data refreshes every 5 seconds. Report links use `/dashboard/reports/{scan_id}/md|json` (no JWT) while the dashboard is enabled. Set `CYBER_DASHBOARD_ENABLED=false` if the API is reachable beyond localhost.
+
 Equivalent manual uvicorn:
 
 ```bash
@@ -60,6 +62,7 @@ Authorization: Bearer <token with sub, org_id, role>
 | `CYBER_DEV_SECRET` | HS256 secret for dev JWT |
 | `CYBER_API_URL` | MCP client base URL (**must match** API host:port) |
 | `CYBER_API_TOKEN` | Bearer token for MCP → API |
+| `CYBER_DASHBOARD_ENABLED` | `true` (default): serve `/` HTML + `/dashboard/api/*` without JWT; use `false` when exposed |
 
 Optional: `mcp/mcp-cyber/.env` — see `.env.example`; `python -m cyber_api` loads it when the file exists.
 
