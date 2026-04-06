@@ -1,0 +1,35 @@
+global:
+  require_allowlist: true
+  kill_switch: false
+
+environment_rules:
+  prod:
+    allowed_modes: [passive]
+    max_rps: 1
+  local:
+    allowed_modes: [passive, authenticated_passive, active_controlled]
+    active_requires_approval: true
+  dev:
+    allowed_modes: [passive, authenticated_passive, active_controlled]
+    active_requires_approval: true
+  staging:
+    allowed_modes: [passive, authenticated_passive, active_controlled]
+    active_requires_approval: true
+  uat:
+    allowed_modes: [passive, authenticated_passive, active_controlled]
+    active_requires_approval: true
+
+active_scan:
+  payload_tier: safe
+  forbid_payloads_matching:
+    - "'; drop"
+    - "sleep("
+    - "/etc/passwd"
+
+gates:
+  ci_default:
+    block_if:
+      - severity: high
+        status: open
+        categories: [authz, injection]
+    allow_suppressions: true

@@ -39,6 +39,10 @@
         "MCP_SEMANTIC_INCLUDE_ROOTS": "app,Modules,routes,resources/views,config,ai,mcp,.cursor",
         "MCP_SEMANTIC_INCLUDE_ROOT_FILES": "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json"
       }
-    }
+    },
+    "env": {
+  "CYBER_API_URL": "http://127.0.0.1:8686",
+  "CYBER_API_TOKEN": "<JWT from seed_demo.py>"
+}
   }
 }

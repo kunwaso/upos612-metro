@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mcp-cyber — dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --ok: #3ecf8e;
+      --warn: #f0c14b;
+      --err: #f07178;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+      --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+    header .meta { color: var(--muted); font-size: 0.85rem; }
+    header a { color: var(--accent); text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    .toolbar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .pill {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .pill.live { border-color: var(--ok); color: var(--ok); }
+    main { padding: 1rem 1.25rem 2rem; max-width: 1400px; margin: 0 auto; }
+    section {
+      margin-bottom: 1.75rem;
+    }
+    section h2 {
+      margin: 0 0 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(0,0,0,0.2);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    code, .mono { font-family: var(--mono); font-size: 0.8em; }
+    .status {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: lowercase;
+    }
+    .status.succeeded { background: rgba(62, 207, 142, 0.15); color: var(--ok); }
+    .status.failed { background: rgba(240, 113, 120, 0.15); color: var(--err); }
+    .status.running, .status.queued { background: rgba(61, 139, 253, 0.15); color: var(--accent); }
+    .status.cancelled { background: rgba(139, 156, 179, 0.2); color: var(--muted); }
+    .level-error { color: var(--err); }
+    .level-warn, .level-warning { color: var(--warn); }
+    .level-info { color: var(--muted); }
+    .err-banner {
+      padding: 0.75rem 1rem;
+      background: rgba(240, 113, 120, 0.12);
+      border: 1px solid var(--err);
+      border-radius: 8px;
+      color: var(--err);
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .err-banner.show { display: block; }
+    .truncate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .truncate { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>mcp-cyber</h1>
+    <span class="meta">Local dashboard — recent scans and scan event log</span>
+    <div class="toolbar">
+      <span id="refresh-pill" class="pill">…</span>
+      <span id="live-pill" class="pill live">auto-refresh 5s</span>
+      <a href="/docs">OpenAPI docs</a>
+      <a href="/openapi.json">openapi.json</a>
+      <a href="/health">health</a>
+    </div>
+  </header>
+  <main>
+    <div id="error-banner" class="err-banner"></div>
+    <section>
+      <h2>Recent scans</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Started</th>
+              <th>Project / env</th>
+              <th>Targets</th>
+              <th>Trace</th>
+              <th>Reports</th>
+            </tr>
+          </thead>
+          <tbody id="scans-body">
+            <tr><td colspan="6" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section>
+      <h2>Scan event log</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Level</th>
+              <th>Scan</th>
+              <th>Adapter</th>
+              <th>Event</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody id="events-body">
+            <tr><td colspan="6">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section>
+      <h2>Audit log (tail)</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Action</th>
+              <th>Object</th>
+              <th>Payload</th>
+            </tr>
+          </thead>
+          <tbody id="audit-body">
+            <tr><td colspan="4">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    const scansBody = document.getElementById("scans-body");
+    const eventsBody = document.getElementById("events-body");
+    const auditBody = document.getElementById("audit-body");
+    const errBanner = document.getElementById("error-banner");
+    const refreshPill = document.getElementById("refresh-pill");
+
+    function esc(s) {
+      if (s == null) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function statusClass(st) {
+      const x = (st || "").toLowerCase();
+      if (x === "succeeded") return "succeeded";
+      if (x === "failed") return "failed";
+      if (x === "running" || x === "queued") return x;
+      if (x === "cancelled") return "cancelled";
+      return "";
+    }
+
+    async function loadFeed() {
+      errBanner.classList.remove("show");
+      errBanner.textContent = "";
+      try {
+        const r = await fetch("/dashboard/api/feed");
+        if (r.status === 404) {
+          errBanner.textContent = "Dashboard API disabled (set CYBER_DASHBOARD_ENABLED=true in .env). Open /docs for the API.";
+          errBanner.classList.add("show");
+          scansBody.innerHTML = "<tr><td colspan=\"6\">—</td></tr>";
+          eventsBody.innerHTML = "<tr><td colspan=\"6\">—</td></tr>";
+          auditBody.innerHTML = "<tr><td colspan=\"4\">—</td></tr>";
+          return;
+        }
+        if (!r.ok) throw new Error(r.status + " " + r.statusText);
+        const data = await r.json();
+        refreshPill.textContent = "updated " + new Date().toLocaleTimeString();
+
+        const scans = data.scans || [];
+        if (!scans.length) {
+          scansBody.innerHTML = "<tr><td colspan=\"6\" style=\"color:var(--muted)\">No scans yet.</td></tr>";
+        } else {
+          scansBody.innerHTML = scans.map(function (s) {
+            const targets = (s.target_urls || []).join(", ");
+            const repMd = "/v1/reports/" + s.id + ".md";
+            const repJson = "/v1/reports/" + s.id + ".json";
+            return (
+              "<tr>" +
+              "<td><span class=\"status " + esc(statusClass(s.status)) + "\">" + esc(s.status) + "</span></td>" +
+              "<td class=\"mono\">" + esc(s.started_at && s.started_at.replace("T", " ").slice(0, 19)) + "</td>" +
+              "<td>" + esc(s.project_slug) + " / " + esc(s.environment_name) + "<br/><span class=\"mono\" style=\"color:var(--muted);font-size:0.85em\">" + esc(s.base_url) + "</span></td>" +
+              "<td class=\"truncate\" title=\"" + esc(targets) + "\">" + esc(targets || "—") + "</td>" +
+              "<td class=\"mono truncate\" title=\"" + esc(s.trace_id) + "\">" + esc(s.trace_id) + "</td>" +
+              "<td class=\"mono\"><a href=\"" + esc(repMd) + "\">md</a> · <a href=\"" + esc(repJson) + "\">json</a></td>" +
+              "</tr>"
+            );
+          }).join("");
+        }
+
+        const events = data.events || [];
+        if (!events.length) {
+          eventsBody.innerHTML = "<tr><td colspan=\"6\" style=\"color:var(--muted)\">No events yet.</td></tr>";
+        } else {
+          eventsBody.innerHTML = events.map(function (e) {
+            const lv = (e.level || "info").toLowerCase();
+            const lc = lv === "error" ? "level-error" : lv === "warn" || lv === "warning" ? "level-warn" : "level-info";
+            return (
+              "<tr>" +
+              "<td class=\"mono\">" + esc(e.ts && e.ts.replace("T", " ").slice(0, 19)) + "</td>" +
+              "<td class=\"" + lc + "\">" + esc(e.level) + "</td>" +
+              "<td class=\"mono truncate\" title=\"" + esc(e.scan_id) + "\">" + esc(String(e.scan_id).slice(0, 8)) + "…</td>" +
+              "<td>" + esc(e.adapter) + "</td>" +
+              "<td class=\"mono\">" + esc(e.event_type) + "</td>" +
+              "<td class=\"truncate\" title=\"" + esc(e.message) + "\">" + esc(e.message) + "</td>" +
+              "</tr>"
+            );
+          }).join("");
+        }
+
+        const audit = data.audit || [];
+        if (!audit.length) {
+          auditBody.innerHTML = "<tr><td colspan=\"4\" style=\"color:var(--muted)\">No audit entries.</td></tr>";
+        } else {
+          auditBody.innerHTML = audit.map(function (a) {
+            const payload = typeof a.payload === "object" ? JSON.stringify(a.payload) : String(a.payload);
+            return (
+              "<tr>" +
+              "<td class=\"mono\">" + esc(a.ts && a.ts.replace("T", " ").slice(0, 19)) + "</td>" +
+              "<td>" + esc(a.action) + "</td>" +
+              "<td class=\"mono\">" + esc(a.object_type) + " <span title=\"" + esc(a.object_id) + "\">" + esc(String(a.object_id).slice(0, 12)) + "…</span></td>" +
+              "<td class=\"mono truncate\" title=\"" + esc(payload) + "\">" + esc(payload) + "</td>" +
+              "</tr>"
+            );
+          }).join("");
+        }
+      } catch (e) {
+        errBanner.textContent = "Failed to load feed: " + e.message;
+        errBanner.classList.add("show");
+      }
+    }
+
+    loadFeed();
+    setInterval(loadFeed, 5000);
+  </script>
+</body>
+</html>

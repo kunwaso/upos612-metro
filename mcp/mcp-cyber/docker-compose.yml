@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: cyber
+      POSTGRES_PASSWORD: cyber
+      POSTGRES_DB: cyber
+    ports:
+      - "5432:5432"
+    volumes:
+      - mcp_cyber_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyber -d cyber"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn cyber_api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cyber:cyber@postgres:5432/cyber
+      DATABASE_URL_SYNC: postgresql://cyber:cyber@postgres:5432/cyber
+      CYBER_REQUIRE_ALLOWLIST: "true"
+      CYBER_POLICY_PATH: /app/configs/default.policy.yaml
+    volumes:
+      - ./configs:/app/configs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  mcp_cyber_pgdata: {}

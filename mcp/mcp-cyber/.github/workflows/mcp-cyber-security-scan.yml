@@ -1,0 +1,45 @@
+# Example CI: call mcp-cyber API against a preview URL, upload SARIF (requires running control plane).
+# Set secrets: MCP_CYBER_URL, MCP_CYBER_TOKEN, MCP_CYBER_PROFILE_ID
+
+name: mcp-cyber security scan
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trigger passive scan
+        env:
+          URL: ${{ secrets.MCP_CYBER_URL }}
+          TOKEN: ${{ secrets.MCP_CYBER_TOKEN }}
+          PROFILE: ${{ secrets.MCP_CYBER_PROFILE_ID }}
+        run: |
+          test -n "$URL" && test -n "$TOKEN" && test -n "$PROFILE" || { echo "Set MCP_CYBER_* secrets"; exit 0; }
+          RESP=$(curl -sS -X POST "$URL/v1/scans" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"profile_id\": \"$PROFILE\", \"target_urls\": [\"${PREVIEW_URL:-https://example.com}\"] }")
+          echo "$RESP"
+          SCAN_ID=$(echo "$RESP" | python -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
+          test -n "$SCAN_ID"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            ST=$(curl -sS -H "Authorization: Bearer $TOKEN" "$URL/v1/scans/$SCAN_ID" | python -c "import sys,json; print(json.load(sys.stdin).get('status',''))")
+            echo "status=$ST"
+            test "$ST" = "succeeded" && break
+            test "$ST" = "failed" && exit 1
+            sleep 3
+          done
+          curl -sS -H "Authorization: Bearer $TOKEN" "$URL/v1/reports/$SCAN_ID.sarif" -o sarif.json
+          test -s sarif.json
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: success()
+        continue-on-error: true
+        with:
+          sarif_file: sarif.json

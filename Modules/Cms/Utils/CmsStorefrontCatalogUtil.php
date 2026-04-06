@@ -3,6 +3,7 @@
 namespace Modules\Cms\Utils;
 
 use App\Business;
+use App\Media;
 use App\Product;
 use App\Utils\Util;
 use Carbon\Carbon;
@@ -144,7 +145,7 @@ class CmsStorefrontCatalogUtil
         /** @var Product|null $product */
         $product = $this->catalogQuery($businessId)
             ->where('products.id', $productId)
-            ->with(['media'])
+            ->with(['media', 'variations.media'])
             ->first();
 
         return $product;
@@ -221,21 +222,98 @@ class CmsStorefrontCatalogUtil
     }
 
     /**
+     * Storefront gallery: main product image, product-level image media, then variation image media.
+     * Non-image product media (e.g. PDF detail files) is skipped so {@see single_product_body} img tags stay valid.
+     *
      * @return list<string>
      */
     public function buildGalleryUrls(Product $product): array
     {
-        $urls = $product->media
-            ->sortBy('id')
-            ->map(fn ($m) => $m->display_url)
-            ->filter()
-            ->values()
-            ->all();
-        if ($urls !== []) {
-            return array_values(array_unique($urls));
+        $ordered = [];
+
+        $main = $this->resolveMainProductImageUrl($product);
+        if ($main !== null) {
+            $ordered[] = $main;
         }
 
-        return [$product->image_url];
+        foreach ($product->media->sortBy('id') as $media) {
+            if (! $media instanceof Media) {
+                continue;
+            }
+            $url = $this->imageMediaDisplayUrl($media);
+            if ($url !== null) {
+                $ordered[] = $url;
+            }
+        }
+
+        foreach ($product->variations->sortBy('id') as $variation) {
+            foreach ($variation->media->sortBy('id') as $media) {
+                if (! $media instanceof Media) {
+                    continue;
+                }
+                $url = $this->imageMediaDisplayUrl($media);
+                if ($url !== null) {
+                    $ordered[] = $url;
+                }
+            }
+        }
+
+        $unique = [];
+        $seen = [];
+        foreach ($ordered as $url) {
+            if ($url === '' || isset($seen[$url])) {
+                continue;
+            }
+            $seen[$url] = true;
+            $unique[] = $url;
+        }
+
+        if ($unique === []) {
+            return [$product->image_url];
+        }
+
+        return $unique;
+    }
+
+    /**
+     * Primary catalog image when the product row has an image filename set (not variation-only photos).
+     */
+    protected function resolveMainProductImageUrl(Product $product): ?string
+    {
+        $raw = $product->getAttributes()['image'] ?? $product->image ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        return $product->image_url;
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function imageFileExtensions(): array
+    {
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+    }
+
+    protected function mediaFileIsImage(?string $fileName): bool
+    {
+        if ($fileName === null || $fileName === '') {
+            return false;
+        }
+        $ext = strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION));
+
+        return in_array($ext, self::imageFileExtensions(), true);
+    }
+
+    protected function imageMediaDisplayUrl(Media $media): ?string
+    {
+        if (! $this->mediaFileIsImage($media->file_name)) {
+            return null;
+        }
+        $url = $media->display_url;
+
+        return $url !== '' ? $url : null;
     }
 
     /**
