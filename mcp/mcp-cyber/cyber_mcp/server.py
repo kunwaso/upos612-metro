@@ -31,6 +31,16 @@ async def run_passive_scan(profile_id: str, target_urls: str | None = None) -> s
 
 
 @mcp.tool()
+async def run_authenticated_scan(profile_id: str, target_urls: str | None = None) -> str:
+    """Start a scan whose profile uses mode authenticated_passive (vault credential_ref, optional Playwright). Same API as run_passive_scan."""
+    body: dict = {"profile_id": profile_id}
+    if target_urls:
+        body["target_urls"] = json.loads(target_urls)
+    out = await _client().post("/v1/scans", json=body)
+    return json.dumps(out, indent=2)
+
+
+@mcp.tool()
 async def list_findings(scan_id: str) -> str:
     """List findings for a completed scan run."""
     out = await _client().get(f"/v1/scans/{scan_id}/findings")

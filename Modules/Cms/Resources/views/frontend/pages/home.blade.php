@@ -179,7 +179,7 @@
                                          data-paddingright="[0,0,200,0]"
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,200,0]">
-                                        Corby sofas
+                                        Màng Cuộn PE
                                     </div>
                                     <!-- end title  layer -->
                                     <!-- start subtitle layer -->

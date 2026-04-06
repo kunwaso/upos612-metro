@@ -3,18 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>mcp-cyber — dashboard</title>
+  <title>mcp-cyber — security test dashboard</title>
   <style>
     :root {
-      --bg: #0f1419;
-      --panel: #1a2332;
-      --border: #2d3a4d;
-      --text: #e7ecf3;
+      --bg: #0b0f14;
+      --panel: #151c28;
+      --panel2: #1c2636;
+      --border: #2a3548;
+      --text: #e8edf4;
       --muted: #8b9cb3;
-      --accent: #3d8bfd;
+      --accent: #5b9fd4;
       --ok: #3ecf8e;
-      --warn: #f0c14b;
-      --err: #f07178;
+      --warn: #e8c547;
+      --high: #f0a030;
+      --crit: #f07178;
+      --med: #7eb8ff;
+      --low: #9aa7b8;
       --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
       --sans: system-ui, "Segoe UI", Roboto, sans-serif;
     }
@@ -24,7 +28,7 @@
       font-family: var(--sans);
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
+      line-height: 1.5;
       font-size: 14px;
     }
     header {
@@ -37,174 +41,457 @@
     }
     header h1 {
       margin: 0;
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       font-weight: 600;
+      letter-spacing: -0.02em;
     }
-    header .meta { color: var(--muted); font-size: 0.85rem; }
+    header .meta { color: var(--muted); font-size: 0.88rem; max-width: 420px; }
     header a { color: var(--accent); text-decoration: none; }
     header a:hover { text-decoration: underline; }
     .toolbar {
       margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
+      flex-wrap: wrap;
     }
     .pill {
-      font-size: 0.75rem;
-      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
       border-radius: 999px;
-      background: var(--panel);
+      background: var(--panel2);
       border: 1px solid var(--border);
       color: var(--muted);
     }
-    .pill.live { border-color: var(--ok); color: var(--ok); }
-    main { padding: 1rem 1.25rem 2rem; max-width: 1400px; margin: 0 auto; }
-    section {
-      margin-bottom: 1.75rem;
-    }
-    section h2 {
-      margin: 0 0 0.6rem;
-      font-size: 0.95rem;
-      font-weight: 600;
+    .pill.live { border-color: rgba(62, 207, 142, 0.5); color: var(--ok); }
+    main { padding: 1rem 1.25rem 2.5rem; max-width: 1180px; margin: 0 auto; }
+    section { margin-bottom: 2rem; }
+    section > h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.08em;
     }
     .card {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: hidden;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8125rem;
+    .card-pad { padding: 1rem 1.15rem; }
+    .test-panel .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 0.75rem; }
+    .test-panel label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .test-panel select, .test-panel textarea {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
     }
-    th, td {
-      text-align: left;
-      padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-    th {
-      color: var(--muted);
+    .test-panel select { min-width: min(100%, 320px); flex: 1; }
+    .test-panel textarea { width: 100%; min-height: 72px; resize: vertical; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    button.btn {
+      font-family: var(--sans);
+      font-size: 0.85rem;
       font-weight: 600;
-      background: rgba(0,0,0,0.2);
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #2a384f 0%, #243044 100%);
+      color: var(--text);
+      cursor: pointer;
     }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.03); }
-    code, .mono { font-family: var(--mono); font-size: 0.8em; }
-    .status {
-      display: inline-block;
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: lowercase;
+    button.btn:hover { border-color: var(--accent); color: #fff; }
+    button.btn-primary {
+      background: linear-gradient(180deg, #2d6a9e 0%, #245a88 100%);
+      border-color: #3d7ab0;
     }
-    .status.succeeded { background: rgba(62, 207, 142, 0.15); color: var(--ok); }
-    .status.failed { background: rgba(240, 113, 120, 0.15); color: var(--err); }
-    .status.running, .status.queued { background: rgba(61, 139, 253, 0.15); color: var(--accent); }
-    .status.cancelled { background: rgba(139, 156, 179, 0.2); color: var(--muted); }
-    .level-error { color: var(--err); }
-    .level-warn, .level-warning { color: var(--warn); }
-    .level-info { color: var(--muted); }
-    .err-banner {
-      padding: 0.75rem 1rem;
-      background: rgba(240, 113, 120, 0.12);
-      border: 1px solid var(--err);
+    button.btn-primary:hover { border-color: #6bb3e8; }
+    button.btn-danger {
+      border-color: rgba(240, 113, 120, 0.55);
+      color: #ffb4b9;
+      background: rgba(240, 113, 120, 0.1);
+    }
+    button.btn-danger:hover { border-color: var(--crit); color: #fff; background: rgba(240, 113, 120, 0.28); }
+    button.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .danger-zone {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px dashed var(--border);
+    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; line-height: 1.4; }
+    .ok-banner, .err-banner {
+      padding: 0.65rem 0.9rem;
       border-radius: 8px;
-      color: var(--err);
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.88rem;
       display: none;
     }
-    .err-banner.show { display: block; }
-    .truncate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    @media (max-width: 900px) {
-      .truncate { max-width: 160px; }
+    .ok-banner.show { display: block; background: rgba(62, 207, 142, 0.12); border: 1px solid var(--ok); color: var(--ok); }
+    .err-banner.show { display: block; background: rgba(240, 113, 120, 0.12); border: 1px solid var(--crit); color: var(--crit); }
+    .global-err { margin-bottom: 1rem; }
+
+    .scan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
     }
+    .scan-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .scan-card .posture {
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      border-left: 4px solid var(--border);
+    }
+    .scan-card .posture h3 { margin: 0 0 0.25rem; font-size: 1rem; font-weight: 700; }
+    .scan-card .posture p { margin: 0; font-size: 0.82rem; color: var(--muted); line-height: 1.45; }
+    .posture--crit { border-left-color: var(--crit); background: rgba(240, 113, 120, 0.08); }
+    .posture--crit h3 { color: var(--crit); }
+    .posture--high { border-left-color: var(--high); background: rgba(240, 160, 48, 0.08); }
+    .posture--high h3 { color: var(--high); }
+    .posture--med { border-left-color: var(--med); background: rgba(126, 184, 255, 0.08); }
+    .posture--med h3 { color: var(--med); }
+    .posture--low { border-left-color: var(--low); background: rgba(154, 167, 184, 0.08); }
+    .posture--low h3 { color: var(--low); }
+    .posture--clean { border-left-color: var(--ok); background: rgba(62, 207, 142, 0.08); }
+    .posture--clean h3 { color: var(--ok); }
+    .posture--fail { border-left-color: var(--crit); background: rgba(240, 113, 120, 0.1); }
+    .posture--fail h3 { color: var(--crit); }
+    .posture--progress { border-left-color: var(--accent); background: rgba(91, 159, 212, 0.1); }
+    .posture--progress h3 { color: var(--accent); }
+
+    .sev-row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .sev-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .sev-chip--critical { background: rgba(240, 113, 120, 0.25); color: #ffb4b9; }
+    .sev-chip--high { background: rgba(240, 160, 48, 0.22); color: #ffd49a; }
+    .sev-chip--medium { background: rgba(126, 184, 255, 0.2); color: #c5ddff; }
+    .sev-chip--low { background: rgba(154, 167, 184, 0.2); color: #d5dde8; }
+    .sev-chip--info { background: rgba(139, 156, 179, 0.2); color: var(--muted); }
+    .sev-chip--zero { opacity: 0.35; }
+
+    .meta-line { font-size: 0.8rem; color: var(--muted); }
+    .meta-line strong { color: var(--text); font-weight: 600; }
+    .finding-list { margin: 0; padding-left: 0; list-style: none; font-size: 0.82rem; }
+    .finding-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .finding-row:last-child { border-bottom: none; }
+    .finding-main { flex: 1; min-width: 0; }
+    .finding-title-line { line-height: 1.35; }
+    .finding-url {
+      margin-top: 0.2rem;
+      font-size: 0.78em;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .btn-copy-finding {
+      flex-shrink: 0;
+      align-self: flex-start;
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.3rem 0.55rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-copy-finding:hover { border-color: var(--accent); color: #fff; }
+    .btn-copy-finding.copied { border-color: var(--ok); color: var(--ok); }
+    .compare-card-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn-compare-set {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .btn-compare-set:hover { border-color: var(--accent); color: var(--accent); }
+    .compare-panel .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .compare-panel label { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .compare-panel select {
+      width: 100%;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.45rem 0.5rem;
+    }
+    #compare-result { margin-top: 0.85rem; font-size: 0.88rem; }
+    .compare-summary p { margin: 0.35rem 0; }
+    .compare-summary .accent { color: var(--accent); }
+    .compare-summary .ok { color: var(--ok); }
+    .compare-subhd { margin: 0.65rem 0 0.25rem; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .fp-list { margin: 0; padding-left: 1.1rem; font-size: 0.75rem; color: var(--muted); max-height: 160px; overflow-y: auto; }
+    .err-inline { color: var(--crit); margin: 0.35rem 0; }
+    .sev-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+      text-transform: uppercase;
+    }
+    .sev-tag.critical { background: var(--crit); color: #1a0505; }
+    .sev-tag.high { background: var(--high); color: #1a1005; }
+    .sev-tag.medium { background: var(--med); color: #0a1520; }
+    .sev-tag.low { background: var(--low); color: #0f1419; }
+    .sev-tag.info { background: var(--muted); color: var(--bg); }
+
+    .exports { font-size: 0.78rem; margin-top: 0.25rem; }
+    .exports a { color: var(--accent); margin-right: 0.75rem; }
+
+    .log-stream { max-height: 340px; overflow-y: auto; font-size: 0.8rem; }
+    .log-line {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 128px 56px 88px 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+    }
+    .log-line:last-child { border-bottom: none; }
+    .log-line:hover { background: rgba(255,255,255,0.02); }
+    @media (max-width: 700px) {
+      .log-line { grid-template-columns: 1fr; }
+    }
+    .log-time { font-family: var(--mono); color: var(--muted); font-size: 0.75rem; }
+    .log-level { font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
+    .log-adapter { color: var(--muted); font-size: 0.75rem; }
+    .log-msg { color: var(--text); }
+
+    .audit-list { font-size: 0.82rem; }
+    .audit-item {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .audit-item:last-child { border-bottom: none; }
+    .audit-item .when { font-family: var(--mono); color: var(--muted); font-size: 0.76rem; }
+    .audit-item .what { margin-top: 0.2rem; }
+    .audit-item .what strong { color: var(--accent); font-weight: 600; }
+
+    details.phase2-doc {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.85rem;
+      background: var(--panel2);
+    }
+    details.phase2-doc summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.88rem;
+    }
+    details.phase2-doc .phase2-body {
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    details.phase2-doc .phase2-body h4 {
+      margin: 0.75rem 0 0.35rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text);
+    }
+    details.phase2-doc .phase2-body h4:first-child { margin-top: 0; }
+    details.phase2-doc ul { margin: 0.25rem 0 0; padding-left: 1.15rem; }
+    .profile-hint-box {
+      display: none;
+      margin-top: 0.65rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid rgba(91, 159, 212, 0.45);
+      font-size: 0.82rem;
+      background: rgba(91, 159, 212, 0.08);
+      line-height: 1.45;
+    }
+    .profile-hint-box.show { display: block; }
+    .profile-hint-box.warn {
+      border-color: rgba(232, 197, 71, 0.55);
+      background: rgba(232, 197, 71, 0.1);
+    }
+    .profile-hint-box strong { color: var(--text); }
+
+    code, .mono { font-family: var(--mono); font-size: 0.85em; }
   </style>
 </head>
 <body>
   <header>
     <h1>mcp-cyber</h1>
-    <span class="meta">Local dashboard — recent scans and scan event log</span>
+    <span class="meta">Security test dashboard — queue passive or Phase 2 authenticated scans, read posture, compare runs, and tail engine events.</span>
     <div class="toolbar">
       <span id="refresh-pill" class="pill">…</span>
-      <span id="live-pill" class="pill live">auto-refresh 5s</span>
-      <a href="/docs">OpenAPI docs</a>
-      <a href="/openapi.json">openapi.json</a>
+      <span class="pill live">auto-refresh 5s</span>
+      <a href="/docs">API docs</a>
       <a href="/health">health</a>
     </div>
   </header>
   <main>
-    <div id="error-banner" class="err-banner"></div>
+    <div id="global-error" class="err-banner global-err"></div>
+
     <section>
-      <h2>Recent scans</h2>
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Started</th>
-              <th>Project / env</th>
-              <th>Targets</th>
-              <th>Trace</th>
-              <th>Reports</th>
-            </tr>
-          </thead>
-          <tbody id="scans-body">
-            <tr><td colspan="6" class="muted">Loading…</td></tr>
-          </tbody>
-        </table>
+      <h2>Run scan</h2>
+      <div class="card test-panel">
+        <div class="card-pad">
+          <div id="run-ok" class="ok-banner"></div>
+          <div id="run-err" class="err-banner"></div>
+          <div class="row">
+            <div style="flex:1;min-width:220px">
+              <label for="profile-select">Scan profile</label>
+              <select id="profile-select" aria-label="Scan profile">
+                <option value="">Loading profiles…</option>
+              </select>
+            </div>
+          </div>
+          <div id="profile-hint" class="profile-hint-box" role="status" aria-live="polite"></div>
+          <div class="row" style="flex-direction:column;align-items:stretch">
+            <label for="target-urls">Target URLs (one per line or comma-separated)</label>
+            <textarea id="target-urls" placeholder="https://your-site.example/"></textarea>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="btn-run">Run scan</button>
+            <button type="button" class="btn" id="btn-home">Homepage only</button>
+            <button type="button" class="btn" id="btn-two">Home + /shop</button>
+            <button type="button" class="btn" id="btn-reload-meta">Reload profiles</button>
+          </div>
+          <details class="phase2-doc">
+            <summary>Phase 2 — OIDC, vault credentials, Playwright, evidence</summary>
+            <div class="phase2-body">
+              <h4>API authentication</h4>
+              <p>Configure <span class="mono">CYBER_OIDC_ISSUER</span>, <span class="mono">CYBER_OIDC_AUDIENCE</span>, and <span class="mono">CYBER_OIDC_JWKS_URL</span> for RS256/ES256 bearer tokens. Map IdP groups to roles; use <span class="mono">CYBER_OIDC_DEFAULT_ORG_ID</span> if tokens omit <span class="mono">org_id</span>. With OIDC on, <span class="mono">CYBER_AUTH_DEV_JWT_ALONGSIDE_OIDC=false</span> disables HS256 dev JWT in production.</p>
+              <h4>Authenticated scans (<span class="mono">authenticated_passive</span>)</h4>
+              <ul>
+                <li>Set profile <strong>credential_ref</strong> to a vault key; resolve secrets only on the <strong>worker</strong> via <span class="mono">CYBER_VAULT_JSON</span>, <span class="mono">CYBER_VAULT_FILE</span>, or HashiCorp KV (<span class="mono">VAULT_ADDR</span> + <span class="mono">VAULT_TOKEN</span>).</li>
+                <li><strong>Bearer token</strong> in vault (username/password empty): passive checks run with <span class="mono">Authorization: Bearer …</span> — no Playwright.</li>
+                <li><strong>Password login</strong>: set <span class="mono">CYBER_PLAYWRIGHT_ADAPTER=1</span>, install Chromium (<span class="mono">pip install -e ".[phase2]"</span> + <span class="mono">playwright install chromium</span>), and profile options <span class="mono">playwright_login_url</span> + selectors. The login URL must be allowlisted.</li>
+                <li>Screenshots go under <span class="mono">CYBER_EVIDENCE_DIR</span> as <span class="mono">file:…</span> evidence on findings.</li>
+              </ul>
+              <h4>MCP</h4>
+              <p>Tool <span class="mono">run_authenticated_scan</span> calls the same scan API as passive runs — pick a profile already in <span class="mono">authenticated_passive</span> mode.</p>
+            </div>
+          </details>
+          <div class="danger-zone">
+            <div class="btn-row">
+              <button type="button" class="btn btn-danger" id="btn-clear-history" title="Deletes all scan runs, findings, events, and scan/finding audit rows">Clear all scan history</button>
+            </div>
+            <p class="hint">Removes every <strong>scan run</strong>, <strong>finding</strong>, <strong>scan event</strong>, and audit rows for <span class="mono">scan_run</span> / <span class="mono">finding</span>. <strong>Does not</strong> delete projects, environments, or scan profiles. Requires typing <span class="mono">CLEAR</span>. API: <span class="mono">POST /dashboard/api/clear-scan-history</span>.</p>
+          </div>
+          <p class="hint">Uses <span class="mono">POST /dashboard/api/run-scan</span> (no JWT while the dev dashboard is enabled). Same endpoint for passive and Phase 2 profiles — the profile <strong>mode</strong> and worker env (vault, Playwright) determine behavior. Only use on localhost. Set <span class="mono">CYBER_DASHBOARD_ENABLED=false</span> when the API is exposed.</p>
+        </div>
       </div>
     </section>
-    <section>
-      <h2>Scan event log</h2>
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Level</th>
-              <th>Scan</th>
-              <th>Adapter</th>
-              <th>Event</th>
-              <th>Message</th>
-            </tr>
-          </thead>
-          <tbody id="events-body">
-            <tr><td colspan="6">Loading…</td></tr>
-          </tbody>
-        </table>
+
+    <section id="compare-section">
+      <h2>Compare scan runs</h2>
+      <p class="hint">Same fingerprint diff as MCP <span class="mono">compare_scan_runs</span> / API <span class="mono">GET /v1/scans/{a}/compare/{b}</span> (needs JWT there). On this page: <span class="mono">GET /dashboard/api/compare/{a}/{b}</span> while the dev dashboard is enabled. Pick an <strong>older</strong> baseline (A) and a <strong>newer</strong> run (B).</p>
+      <div class="card compare-panel">
+        <div class="card-pad">
+          <div class="compare-grid">
+            <div>
+              <label for="compare-scan-a">Baseline scan (A)</label>
+              <select id="compare-scan-a" aria-label="Baseline scan A">
+                <option value="">— load feed first —</option>
+              </select>
+            </div>
+            <div>
+              <label for="compare-scan-b">Compare scan (B)</label>
+              <select id="compare-scan-b" aria-label="Compare scan B">
+                <option value="">— load feed first —</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="btn-compare">Compare runs</button>
+          </div>
+          <div id="compare-result"></div>
+        </div>
       </div>
     </section>
+
     <section>
-      <h2>Audit log (tail)</h2>
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Action</th>
-              <th>Object</th>
-              <th>Payload</th>
-            </tr>
-          </thead>
-          <tbody id="audit-body">
-            <tr><td colspan="4">Loading…</td></tr>
-          </tbody>
-        </table>
+      <h2>Security posture (recent scans)</h2>
+      <div id="scans-container" class="scan-grid">
+        <p style="color:var(--muted);grid-column:1/-1">Loading…</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Engine &amp; adapter log</h2>
+      <div class="card log-stream" id="events-container">
+        <div class="log-line"><span class="log-time">—</span><span class="log-level">—</span><span class="log-adapter">—</span><span class="log-msg">Loading…</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Audit trail</h2>
+      <div class="card audit-list" id="audit-container">
+        <div class="audit-item"><span class="when">—</span><div class="what">Loading…</div></div>
       </div>
     </section>
   </main>
   <script>
-    const scansBody = document.getElementById("scans-body");
-    const eventsBody = document.getElementById("events-body");
-    const auditBody = document.getElementById("audit-body");
-    const errBanner = document.getElementById("error-banner");
+    const globalError = document.getElementById("global-error");
     const refreshPill = document.getElementById("refresh-pill");
+    const profileSelect = document.getElementById("profile-select");
+    const targetUrls = document.getElementById("target-urls");
+    const scansContainer = document.getElementById("scans-container");
+    const eventsContainer = document.getElementById("events-container");
+    const auditContainer = document.getElementById("audit-container");
+    const runOk = document.getElementById("run-ok");
+    const runErr = document.getElementById("run-err");
+    const profileHint = document.getElementById("profile-hint");
 
     function esc(s) {
       if (s == null) return "";
@@ -215,26 +502,558 @@
         .replace(/"/g, "&quot;");
     }
 
-    function statusClass(st) {
-      const x = (st || "").toLowerCase();
-      if (x === "succeeded") return "succeeded";
-      if (x === "failed") return "failed";
-      if (x === "running" || x === "queued") return x;
-      if (x === "cancelled") return "cancelled";
-      return "";
+    function postureFromScan(s) {
+      const st = (s.status || "").toLowerCase();
+      const counts = s.severity_counts || {};
+      const summary = s.summary || {};
+      if (st === "failed") {
+        let detail = "See the event log below for technical detail.";
+        if (summary.error) detail = esc(String(summary.error).slice(0, 280));
+        return { cls: "posture--fail", title: "Scan failed", detail: detail };
+      }
+      if (st === "queued" || st === "running") {
+        return { cls: "posture--progress", title: "Scan in progress", detail: "Adapters are running (passive headers, OpenAPI, Phase 2 session, etc.). This card updates when the run finishes." };
+      }
+      const cr = counts.critical || 0, hi = counts.high || 0, med = counts.medium || 0, lo = counts.low || 0, inf = counts.info || 0;
+      const chipSum = cr + hi + med + lo + inf;
+      const total =
+        s.total_findings != null && s.total_findings !== undefined
+          ? Number(s.total_findings)
+          : chipSum;
+      const previewLen = (s.findings_preview && s.findings_preview.length) || 0;
+      if (cr > 0) return { cls: "posture--crit", title: "Critical findings", detail: "At least one critical-severity finding was stored for this run." };
+      if (hi > 0) return { cls: "posture--high", title: "High-severity issues", detail: "Review headers, transport, and session cookies." };
+      if (med > 0) return { cls: "posture--med", title: "Medium issues", detail: "Worth scheduling fixes before the next release." };
+      if (lo > 0 || inf > 0) return { cls: "posture--low", title: "Minor / informational", detail: "Low-priority or informational findings only." };
+      if (total > 0 || previewLen > 0) {
+        return {
+          cls: "posture--low",
+          title: "Findings to review",
+          detail:
+            previewLen > 0 && chipSum === 0
+              ? "Findings are listed below; severity chips will match after the next feed refresh."
+              : "See the sample findings list below for details.",
+        };
+      }
+      if (total === 0) {
+        return {
+          cls: "posture--clean",
+          title: "No findings",
+          detail:
+            "The scan finished successfully and nothing was stored as a finding. That usually means the rules you ran did not flag those URLs (or an adapter had nothing to check — for example OpenAPI lint with no spec uploaded, or Phase 2 session-only checks passed).",
+        };
+      }
+      return { cls: "posture--low", title: "Review summary", detail: "See finding list below." };
     }
 
+    function chipClass(sev) {
+      const x = (sev || "").toLowerCase();
+      if (x === "critical") return "sev-chip--critical";
+      if (x === "high") return "sev-chip--high";
+      if (x === "medium") return "sev-chip--medium";
+      if (x === "low") return "sev-chip--low";
+      return "sev-chip--info";
+    }
+
+    function tagClass(sev) {
+      const x = (sev || "").toLowerCase();
+      if (x === "critical") return "critical";
+      if (x === "high") return "high";
+      if (x === "medium") return "medium";
+      if (x === "low") return "low";
+      return "info";
+    }
+
+    function toB64Url(text) {
+      const bytes = new TextEncoder().encode(text);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function fromB64Url(s) {
+      let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = b64.length % 4;
+      if (pad) b64 += "=".repeat(4 - pad);
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function buildAgentPrompt(f, s) {
+      const sev = (f.severity || "unknown").toLowerCase();
+      const sevNote =
+        sev === "critical"
+          ? "CRITICAL — address before production exposure; likely exploitable or high blast radius."
+          : sev === "high"
+            ? "HIGH — real security weakness; fix soon and treat as release blocker if customer-facing."
+            : sev === "medium"
+              ? "MEDIUM — should be fixed in a planned hardening pass."
+              : sev === "low"
+                ? "LOW — hygiene or defense-in-depth; schedule when convenient."
+                : "Review severity in context of this application.";
+
+      const issuePlain =
+        (f.title || "Security finding") +
+        (f.url && f.url !== "(n/a)" ? " affecting " + f.url : "") +
+        ". " +
+        (f.root_cause ? String(f.root_cause).replace(/\s+$/, "") + " " : "") +
+        "This was reported by an authorized passive HTTP/header scan (mcp-cyber), not by exploiting the app.";
+
+      const lines = [
+        "================================================================================",
+        "SECURITY FIX REQUEST — output from mcp-cyber (authorized passive scan)",
+        "================================================================================",
+        "",
+        "WHO YOU ARE",
+        "  You are a coding agent helping fix a concrete security finding on a system the",
+        "  owner is allowed to test. Implement or specify the fix; do not suggest attacking",
+        "  unrelated third-party sites.",
+        "",
+        "WHAT IS WRONG (plain English)",
+        "  " + issuePlain,
+        "  Scanner rule: " + (f.rule_id || "n/a") + ". Severity: " + (f.severity || "n/a") + " — " + sevNote,
+        "",
+        "WHAT YOU MUST DO (follow in order)",
+        "  1) Confirm you understand the issue and the affected URL or layer (browser headers,",
+        "     cookies, TLS, CORS, etc.) from the sections below.",
+        "  2) Propose the smallest safe change: exact HTTP header(s), server config (nginx,",
+        "     Apache, CDN), framework middleware, or application code — whichever fits the stack.",
+        "  3) List specific files, config snippets, or routes you would edit (paths and names).",
+        "  4) Warn about break-risk (e.g. CSP breaking inline scripts) and prefer staged rollout",
+        "     (e.g. Content-Security-Policy-Report-Only first) when appropriate.",
+        "  5) Describe how the owner can verify: e.g. curl -I <URL> and expect header X, or",
+        "     re-run the same passive scan so this rule ID clears.",
+        "",
+        "SCAN CONTEXT (where this was observed)",
+        "  Project / environment: " + (s.project_slug || "—") + " / " + (s.environment_name || "—"),
+        "  Base URL: " + (s.base_url || "—"),
+        "  Targets scanned: " + ((s.target_urls || []).join(", ") || "—"),
+        "  Scan ID: " + (s.id || "—") + "  |  Trace ID: " + (s.trace_id || "—"),
+        "",
+        "FINDING RECORD (technical)",
+        "  Finding ID: " + (f.finding_id || "—"),
+        "  Rule ID: " + (f.rule_id || "—"),
+        "  Title: " + (f.title || "—"),
+        "  URL: " + (f.url || "—"),
+        "  Component: " + (f.component || "—"),
+        "  Parameter: " + (f.parameter || "—"),
+        "  Fingerprint: " + (f.fingerprint || "—"),
+      ];
+      if (f.reproduction) {
+        lines.push("", "HOW TO REPRODUCE (from scanner)", "  " + String(f.reproduction).replace(/\n/g, "\n  "));
+      }
+      if (f.root_cause) {
+        lines.push("", "ROOT CAUSE (from scanner)", "  " + String(f.root_cause).replace(/\n/g, "\n  "));
+      }
+      if (f.remediation_text) {
+        lines.push("", "SUGGESTED REMEDIATION (from scanner — expand into your concrete plan)", "  " + String(f.remediation_text).replace(/\n/g, "\n  "));
+      }
+      if (f.references_text) {
+        lines.push("", "REFERENCES", "  " + String(f.references_text).replace(/\n/g, "\n  "));
+      }
+      lines.push(
+        "",
+        "================================================================================",
+        "END — respond with: summary of issue, proposed fix, files/config to change, verification steps.",
+        "================================================================================",
+      );
+      return lines.join("\n");
+    }
+
+    scansContainer.addEventListener("click", function (ev) {
+      const setBtn = ev.target.closest("button.btn-compare-set");
+      if (setBtn && scansContainer.contains(setBtn)) {
+        const sid = setBtn.getAttribute("data-scan-id");
+        const slot = setBtn.getAttribute("data-slot");
+        const sel = document.getElementById(slot === "a" ? "compare-scan-a" : "compare-scan-b");
+        if (sel && sid) sel.value = sid;
+        return;
+      }
+      const btn = ev.target.closest("button.btn-copy-finding");
+      if (!btn || !scansContainer.contains(btn)) return;
+      const b64 = btn.getAttribute("data-copy-b64");
+      if (!b64) return;
+      let text;
+      try {
+        text = fromB64Url(b64);
+      } catch (e) {
+        runErr.textContent = "Copy decode failed.";
+        runErr.classList.add("show");
+        return;
+      }
+      function flashOk() {
+        btn.classList.add("copied");
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(function () {
+          btn.classList.remove("copied");
+          btn.textContent = prev;
+        }, 1800);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(flashOk).catch(function () {
+          window.prompt("Copy this text (Ctrl+C):", text);
+        });
+      } else {
+        window.prompt("Copy this text (Ctrl+C):", text);
+      }
+    });
+
+    function renderScanCard(s) {
+      const p = postureFromScan(s);
+      const c = s.severity_counts || {};
+      const keys = ["critical", "high", "medium", "low", "info"];
+      const chips = keys.map(function (k) {
+        const n = c[k] || 0;
+        const z = n === 0 ? " sev-chip--zero" : "";
+        return "<span class=\"sev-chip " + chipClass(k) + z + "\">" + esc(k) + " " + n + "</span>";
+      }).join("");
+
+      const targets = (s.target_urls || []).join(", ");
+      const previews = s.findings_preview || [];
+      let listHtml = "";
+      if (previews.length) {
+        listHtml = "<p style=\"margin:0.4rem 0 0.2rem;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em\">Sample findings <span style=\"font-weight:400\">— Copy for agent: role, issue summary, numbered fix tasks, then technical evidence</span></p><ul class=\"finding-list\">";
+        previews.forEach(function (f) {
+          const prompt = buildAgentPrompt(f, s);
+          const b64 = toB64Url(prompt);
+          listHtml +=
+            "<li class=\"finding-row\">" +
+            "<div class=\"finding-main\">" +
+            "<div class=\"finding-title-line\"><span class=\"sev-tag " + tagClass(f.severity) + "\">" + esc(f.severity) + "</span> " + esc(f.title) + "</div>" +
+            (f.url ? "<div class=\"finding-url mono\">" + esc(f.url) + "</div>" : "") +
+            "</div>" +
+            "<button type=\"button\" class=\"btn-copy-finding\" data-copy-b64=\"" + esc(b64) + "\" title=\"Copy security fix brief: tells the agent what is wrong and what steps to take\">Copy for agent</button>" +
+            "</li>";
+        });
+        listHtml += "</ul>";
+      } else if ((s.status || "").toLowerCase() === "succeeded") {
+        listHtml = "<p style=\"margin:0.35rem 0 0;font-size:0.82rem;color:var(--muted)\">No individual finding rows (or none in preview window).</p>";
+      }
+
+      const repMd = "/dashboard/reports/" + s.id + "/md";
+      const repJson = "/dashboard/reports/" + s.id + "/json";
+
+      return (
+        "<article class=\"scan-card\">" +
+        "<div class=\"posture " + p.cls + "\"><h3>" + esc(p.title) + "</h3><p>" + p.detail + "</p></div>" +
+        "<div class=\"sev-row\">" + chips + "</div>" +
+        "<div class=\"meta-line\"><strong>" + esc(s.status) + "</strong> · " + esc(s.started_at && s.started_at.replace("T", " ").slice(0, 19)) +
+        " · <span class=\"mono\">" + esc(s.project_slug) + "</span> / " + esc(s.environment_name) + "</div>" +
+        "<div class=\"meta-line\">Profile: <strong>" + esc(s.profile_name) + "</strong>" +
+        (s.profile_mode ? " · mode <span class=\"mono\">" + esc(s.profile_mode) + "</span>" : "") +
+        " · Base <span class=\"mono\">" + esc(s.base_url) + "</span></div>" +
+        "<div class=\"meta-line\">Targets: <span class=\"mono\">" + esc(targets || "—") + "</span></div>" +
+        listHtml +
+        "<div class=\"exports\"><span style=\"color:var(--muted)\">Exports:</span> <a href=\"" + esc(repMd) + "\">Markdown report</a><a href=\"" + esc(repJson) + "\">Raw JSON</a></div>" +
+        "<div class=\"compare-card-actions\"><span style=\"color:var(--muted);font-size:0.7rem\">Compare runs:</span>" +
+        "<button type=\"button\" class=\"btn-compare-set\" data-scan-id=\"" + esc(s.id) + "\" data-slot=\"a\" title=\"Set as baseline scan A\">Baseline A</button>" +
+        "<button type=\"button\" class=\"btn-compare-set\" data-scan-id=\"" + esc(s.id) + "\" data-slot=\"b\" title=\"Set as compare scan B\">Compare B</button></div>" +
+        "</article>"
+      );
+    }
+
+    function populateCompareSelects(scans) {
+      const sa = document.getElementById("compare-scan-a");
+      const sb = document.getElementById("compare-scan-b");
+      if (!sa || !sb) return;
+      const va = sa.value;
+      const vb = sb.value;
+      sa.innerHTML = "<option value=\"\">— choose baseline (A) —</option>";
+      sb.innerHTML = "<option value=\"\">— choose newer run (B) —</option>";
+      scans.forEach(function (s) {
+        const label =
+          (s.started_at || "").replace("T", " ").slice(0, 19) +
+          " · " +
+          s.status +
+          " · " +
+          String(s.id).slice(0, 8) +
+          "…";
+        const oa = document.createElement("option");
+        oa.value = s.id;
+        oa.textContent = label;
+        sa.appendChild(oa);
+        const ob = document.createElement("option");
+        ob.value = s.id;
+        ob.textContent = label;
+        sb.appendChild(ob);
+      });
+      if (va && Array.prototype.some.call(sa.options, function (o) { return o.value === va; })) sa.value = va;
+      if (vb && Array.prototype.some.call(sb.options, function (o) { return o.value === vb; })) sb.value = vb;
+    }
+
+    function updateProfileHint() {
+      if (!profileHint) return;
+      const opt = profileSelect.selectedOptions[0];
+      if (!opt || !opt.value) {
+        profileHint.classList.remove("show", "warn");
+        profileHint.innerHTML = "";
+        return;
+      }
+      const mode = opt.getAttribute("data-mode") || "";
+      if (mode !== "authenticated_passive") {
+        profileHint.classList.remove("show", "warn");
+        profileHint.innerHTML = "";
+        return;
+      }
+      const cref = opt.getAttribute("data-credential-ref") || "";
+      const adaptersRaw = opt.getAttribute("data-adapters") || "";
+      const adapters = adaptersRaw.split(",").filter(Boolean);
+      const loginSet = opt.getAttribute("data-login-url-set") === "1";
+      const hasPlaywright = adapters.indexOf("playwright_session") >= 0;
+      const parts = [
+        "<strong>Phase 2 · authenticated_passive</strong> — Worker resolves <span class=\"mono\">credential_ref</span> from vault; this UI never sends passwords.",
+      ];
+      if (!cref) {
+        parts.push("<br><span style=\"color:var(--warn)\">⚠ No <span class=\"mono\">credential_ref</span> on this profile.</span>");
+      }
+      if (hasPlaywright) {
+        if (loginSet) {
+          parts.push(
+            "<br><span class=\"mono\">playwright_login_url</span> is set — allowlist must include that URL; for password login use <span class=\"mono\">CYBER_PLAYWRIGHT_ADAPTER=1</span> and Chromium on the worker."
+          );
+        } else {
+          parts.push(
+            "<br>For <strong>password</strong> login via Playwright, set profile option <span class=\"mono\">playwright_login_url</span> (and selectors if needed). <strong>Token-only</strong> vault entries skip the browser."
+          );
+        }
+      }
+      profileHint.innerHTML = parts.join("");
+      profileHint.classList.add("show");
+      profileHint.classList.toggle("warn", !cref);
+    }
+
+    async function loadMeta() {
+      try {
+        const r = await fetch("/dashboard/api/meta");
+        if (!r.ok) throw new Error(r.status + " " + r.statusText);
+        const data = await r.json();
+        const profiles = data.profiles || [];
+        profileSelect.innerHTML = "";
+        if (!profiles.length) {
+          profileSelect.innerHTML = "<option value=\"\">No scan profiles — create one via API or quick_scan_remote</option>";
+          updateProfileHint();
+          return;
+        }
+        profiles.forEach(function (p) {
+          const opt = document.createElement("option");
+          opt.value = p.profile_id;
+          opt.setAttribute("data-base", p.base_url || "");
+          opt.setAttribute("data-mode", p.mode || "");
+          opt.setAttribute("data-credential-ref", p.credential_ref || "");
+          opt.setAttribute("data-adapters", (p.adapter_ids || []).join(","));
+          opt.setAttribute("data-login-url-set", p.playwright_login_url_set ? "1" : "");
+          const tag = p.mode === "authenticated_passive" ? " [P2]" : "";
+          opt.textContent = p.project_slug + " · " + p.environment_name + " · " + p.profile_name + " (" + p.mode + ")" + tag;
+          profileSelect.appendChild(opt);
+        });
+        syncTargetsFromProfile();
+        updateProfileHint();
+      } catch (e) {
+        profileSelect.innerHTML = "<option value=\"\">Failed to load profiles</option>";
+        runErr.textContent = "Meta: " + e.message;
+        runErr.classList.add("show");
+        updateProfileHint();
+      }
+    }
+
+    function syncTargetsFromProfile() {
+      const opt = profileSelect.selectedOptions[0];
+      if (!opt || !opt.value) return;
+      const bu = opt.getAttribute("data-base");
+      if (bu) targetUrls.value = bu.replace(/\/?$/, "/");
+    }
+
+    profileSelect.addEventListener("change", function () {
+      syncTargetsFromProfile();
+      updateProfileHint();
+    });
+
+    function parseTargetsFromField() {
+      const raw = targetUrls.value.trim();
+      if (!raw) return null;
+      return raw.split(/[\n,]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+
+    async function runScan(presetUrls) {
+      runOk.classList.remove("show");
+      runErr.classList.remove("show");
+      const pid = profileSelect.value;
+      if (!pid) {
+        runErr.textContent = "Choose a scan profile first.";
+        runErr.classList.add("show");
+        return;
+      }
+      const urls = presetUrls != null ? presetUrls : parseTargetsFromField();
+      const btn = document.getElementById("btn-run");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/dashboard/api/run-scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ profile_id: pid, target_urls: urls }),
+        });
+        const text = await r.text();
+        let body = {};
+        try { body = JSON.parse(text); } catch (x) { body = { raw: text }; }
+        if (!r.ok) {
+          throw new Error(body.detail || body.message || text || r.statusText);
+        }
+        runOk.innerHTML = "Queued scan <strong class=\"mono\">" + esc(body.id) + "</strong> (trace <span class=\"mono\">" + esc(body.trace_id) + "</span>). Status: <strong>" + esc(body.status) + "</strong>.";
+        runOk.classList.add("show");
+        loadFeed();
+      } catch (e) {
+        runErr.textContent = esc(e.message);
+        runErr.classList.add("show");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById("btn-run").addEventListener("click", function () { runScan(null); });
+    document.getElementById("btn-home").addEventListener("click", function () {
+      const opt = profileSelect.selectedOptions[0];
+      const bu = opt && opt.getAttribute("data-base");
+      if (bu) targetUrls.value = bu.replace(/\/?$/, "/");
+      runScan(parseTargetsFromField());
+    });
+    document.getElementById("btn-two").addEventListener("click", function () {
+      const opt = profileSelect.selectedOptions[0];
+      const bu = opt && opt.getAttribute("data-base");
+      if (!bu) return;
+      const root = bu.replace(/\/?$/, "/");
+      const shop = bu.replace(/\/?$/, "") + "/shop";
+      targetUrls.value = root + "\n" + shop;
+      runScan([root, shop]);
+    });
+    document.getElementById("btn-reload-meta").addEventListener("click", loadMeta);
+
+    document.getElementById("btn-clear-history").addEventListener("click", async function () {
+      runErr.classList.remove("show");
+      runOk.classList.remove("show");
+      if (
+        !window.confirm(
+          "Delete ALL scan history?\n\nThis removes every scan run, finding, scan event, and related audit rows (scan_run / finding). Projects, environments, and profiles stay.\n\nThis cannot be undone."
+        )
+      ) {
+        return;
+      }
+      const typed = window.prompt('Type CLEAR (all caps) to confirm:');
+      if (typed !== "CLEAR") {
+        runErr.textContent = typed == null ? "Cancelled." : 'Confirmation must be exactly CLEAR.';
+        runErr.classList.add("show");
+        return;
+      }
+      const btn = document.getElementById("btn-clear-history");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/dashboard/api/clear-scan-history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ confirm: "CLEAR" }),
+        });
+        const text = await r.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (x2) {
+          data = {};
+        }
+        if (!r.ok) {
+          const msg = typeof data.detail === "string" ? data.detail : Array.isArray(data.detail) ? JSON.stringify(data.detail) : text || r.statusText;
+          throw new Error(msg);
+        }
+        runOk.innerHTML =
+          "Cleared: <strong>" +
+          esc(String(data.deleted_runs ?? 0)) +
+          "</strong> run(s), <strong>" +
+          esc(String(data.deleted_findings ?? 0)) +
+          "</strong> finding(s), <strong>" +
+          esc(String(data.deleted_events ?? 0)) +
+          "</strong> event(s), <strong>" +
+          esc(String(data.deleted_audit_rows ?? 0)) +
+          "</strong> audit row(s).";
+        runOk.classList.add("show");
+        loadFeed();
+        loadMeta();
+      } catch (e) {
+        runErr.textContent = esc(e.message);
+        runErr.classList.add("show");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("btn-compare").addEventListener("click", async function () {
+      const out = document.getElementById("compare-result");
+      const sa = document.getElementById("compare-scan-a");
+      const sb = document.getElementById("compare-scan-b");
+      const a = sa && sa.value;
+      const b = sb && sb.value;
+      if (!a || !b) {
+        out.innerHTML = "<p class=\"err-inline\">Select both scan A and scan B.</p>";
+        return;
+      }
+      if (a === b) {
+        out.innerHTML = "<p class=\"err-inline\">Choose two different scans.</p>";
+        return;
+      }
+      out.innerHTML = "<p style=\"color:var(--muted)\">Comparing…</p>";
+      try {
+        const r = await fetch(
+          "/dashboard/api/compare/" + encodeURIComponent(a) + "/" + encodeURIComponent(b),
+          { headers: { Accept: "application/json" } }
+        );
+        const text = await r.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (x1) {
+          data = {};
+        }
+        if (!r.ok) {
+          const msg = typeof data.detail === "string" ? data.detail : Array.isArray(data.detail) ? JSON.stringify(data.detail) : text || r.statusText;
+          throw new Error(msg);
+        }
+        const nNew = (data.new_fingerprints || []).length;
+        const nRes = (data.resolved_fingerprints || []).length;
+        const unch = data.unchanged_count != null ? data.unchanged_count : 0;
+        let html = "<div class=\"compare-summary\">";
+        html += "<p><strong>New in B</strong> (not in A): <span class=\"mono accent\">" + nNew + "</span> finding fingerprint(s)</p>";
+        html += "<p><strong>Resolved</strong> (in A, gone in B): <span class=\"mono ok\">" + nRes + "</span> fingerprint(s)</p>";
+        html += "<p><strong>Unchanged</strong> (both runs): <span class=\"mono\">" + unch + "</span> fingerprint(s)</p>";
+        html += "</div>";
+        function fpBlock(title, arr) {
+          if (!arr || !arr.length) return "";
+          let h = "<p class=\"compare-subhd\">" + title + "</p><ul class=\"fp-list\">";
+          arr.slice(0, 25).forEach(function (fp) {
+            h += "<li>" + esc(fp) + "</li>";
+          });
+          if (arr.length > 25) h += "<li>… +" + (arr.length - 25) + " more</li>";
+          h += "</ul>";
+          return h;
+        }
+        html += fpBlock("New fingerprints", data.new_fingerprints || []);
+        html += fpBlock("Resolved fingerprints", data.resolved_fingerprints || []);
+        out.innerHTML = html;
+      } catch (e) {
+        out.innerHTML = "<p class=\"err-inline\">" + esc(e.message) + "</p>";
+      }
+    });
+
     async function loadFeed() {
-      errBanner.classList.remove("show");
-      errBanner.textContent = "";
+      globalError.classList.remove("show");
+      globalError.textContent = "";
       try {
         const r = await fetch("/dashboard/api/feed");
         if (r.status === 404) {
-          errBanner.textContent = "Dashboard API disabled (set CYBER_DASHBOARD_ENABLED=true in .env). Open /docs for the API.";
-          errBanner.classList.add("show");
-          scansBody.innerHTML = "<tr><td colspan=\"6\">—</td></tr>";
-          eventsBody.innerHTML = "<tr><td colspan=\"6\">—</td></tr>";
-          auditBody.innerHTML = "<tr><td colspan=\"4\">—</td></tr>";
+          globalError.textContent = "Dashboard feed disabled. Set CYBER_DASHBOARD_ENABLED=true or open /docs.";
+          globalError.classList.add("show");
+          scansContainer.innerHTML = "<p style=\"color:var(--muted)\">—</p>";
+          populateCompareSelects([]);
           return;
         }
         if (!r.ok) throw new Error(r.status + " " + r.statusText);
@@ -242,68 +1061,53 @@
         refreshPill.textContent = "updated " + new Date().toLocaleTimeString();
 
         const scans = data.scans || [];
+        populateCompareSelects(scans);
         if (!scans.length) {
-          scansBody.innerHTML = "<tr><td colspan=\"6\" style=\"color:var(--muted)\">No scans yet.</td></tr>";
+          scansContainer.innerHTML = "<p style=\"color:var(--muted);grid-column:1/-1\">No scans yet. Run a scan above.</p>";
         } else {
-          scansBody.innerHTML = scans.map(function (s) {
-            const targets = (s.target_urls || []).join(", ");
-            const repMd = "/dashboard/reports/" + s.id + "/md";
-            const repJson = "/dashboard/reports/" + s.id + "/json";
-            return (
-              "<tr>" +
-              "<td><span class=\"status " + esc(statusClass(s.status)) + "\">" + esc(s.status) + "</span></td>" +
-              "<td class=\"mono\">" + esc(s.started_at && s.started_at.replace("T", " ").slice(0, 19)) + "</td>" +
-              "<td>" + esc(s.project_slug) + " / " + esc(s.environment_name) + "<br/><span class=\"mono\" style=\"color:var(--muted);font-size:0.85em\">" + esc(s.base_url) + "</span></td>" +
-              "<td class=\"truncate\" title=\"" + esc(targets) + "\">" + esc(targets || "—") + "</td>" +
-              "<td class=\"mono truncate\" title=\"" + esc(s.trace_id) + "\">" + esc(s.trace_id) + "</td>" +
-              "<td class=\"mono\"><a href=\"" + esc(repMd) + "\">md</a> · <a href=\"" + esc(repJson) + "\">json</a></td>" +
-              "</tr>"
-            );
-          }).join("");
+          scansContainer.innerHTML = scans.map(renderScanCard).join("");
         }
 
         const events = data.events || [];
         if (!events.length) {
-          eventsBody.innerHTML = "<tr><td colspan=\"6\" style=\"color:var(--muted)\">No events yet.</td></tr>";
+          eventsContainer.innerHTML = "<div class=\"log-line\"><span class=\"log-time\">—</span><span class=\"log-level\">—</span><span class=\"log-adapter\">—</span><span class=\"log-msg\" style=\"color:var(--muted)\">No events yet.</span></div>";
         } else {
-          eventsBody.innerHTML = events.map(function (e) {
+          eventsContainer.innerHTML = events.map(function (e) {
             const lv = (e.level || "info").toLowerCase();
-            const lc = lv === "error" ? "level-error" : lv === "warn" || lv === "warning" ? "level-warn" : "level-info";
+            const col = lv === "error" ? "var(--crit)" : lv === "warn" || lv === "warning" ? "var(--warn)" : "var(--muted)";
             return (
-              "<tr>" +
-              "<td class=\"mono\">" + esc(e.ts && e.ts.replace("T", " ").slice(0, 19)) + "</td>" +
-              "<td class=\"" + lc + "\">" + esc(e.level) + "</td>" +
-              "<td class=\"mono truncate\" title=\"" + esc(e.scan_id) + "\">" + esc(String(e.scan_id).slice(0, 8)) + "…</td>" +
-              "<td>" + esc(e.adapter) + "</td>" +
-              "<td class=\"mono\">" + esc(e.event_type) + "</td>" +
-              "<td class=\"truncate\" title=\"" + esc(e.message) + "\">" + esc(e.message) + "</td>" +
-              "</tr>"
+              "<div class=\"log-line\">" +
+              "<span class=\"log-time\">" + esc(e.ts && e.ts.replace("T", " ").slice(0, 19)) + "</span>" +
+              "<span class=\"log-level\" style=\"color:" + col + "\">" + esc(e.level) + "</span>" +
+              "<span class=\"log-adapter\">" + esc(e.adapter) + "</span>" +
+              "<span class=\"log-msg\"><strong class=\"mono\">" + esc(e.event_type) + "</strong> — " + esc(e.message) + "</span>" +
+              "</div>"
             );
           }).join("");
         }
 
         const audit = data.audit || [];
         if (!audit.length) {
-          auditBody.innerHTML = "<tr><td colspan=\"4\" style=\"color:var(--muted)\">No audit entries.</td></tr>";
+          auditContainer.innerHTML = "<div class=\"audit-item\"><div class=\"what\" style=\"color:var(--muted)\">No audit entries.</div></div>";
         } else {
-          auditBody.innerHTML = audit.map(function (a) {
+          auditContainer.innerHTML = audit.map(function (a) {
             const payload = typeof a.payload === "object" ? JSON.stringify(a.payload) : String(a.payload);
             return (
-              "<tr>" +
-              "<td class=\"mono\">" + esc(a.ts && a.ts.replace("T", " ").slice(0, 19)) + "</td>" +
-              "<td>" + esc(a.action) + "</td>" +
-              "<td class=\"mono\">" + esc(a.object_type) + " <span title=\"" + esc(a.object_id) + "\">" + esc(String(a.object_id).slice(0, 12)) + "…</span></td>" +
-              "<td class=\"mono truncate\" title=\"" + esc(payload) + "\">" + esc(payload) + "</td>" +
-              "</tr>"
+              "<div class=\"audit-item\">" +
+              "<div class=\"when\">" + esc(a.ts && a.ts.replace("T", " ").slice(0, 19)) + "</div>" +
+              "<div class=\"what\"><strong>" + esc(a.action) + "</strong> on " + esc(a.object_type) + " <span class=\"mono\">" + esc(String(a.object_id).slice(0, 14)) + "…</span></div>" +
+              "<div class=\"meta-line mono\" style=\"margin-top:0.25rem\">" + esc(payload) + "</div>" +
+              "</div>"
             );
           }).join("");
         }
       } catch (e) {
-        errBanner.textContent = "Failed to load feed: " + e.message;
-        errBanner.classList.add("show");
+        globalError.textContent = "Feed error: " + e.message;
+        globalError.classList.add("show");
       }
     }
 
+    loadMeta();
     loadFeed();
     setInterval(loadFeed, 5000);
   </script>

@@ -1,4 +1,4 @@
-"""Dev JWT auth; replace with OIDC in enterprise phase."""
+"""Bearer auth: OIDC (JWKS) when configured, else HS256 dev JWT."""
 
 from __future__ import annotations
 
@@ -10,18 +10,10 @@ from uuid import UUID
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
-
 from cyber_api.settings import settings
+from cyber_api.token_user import TokenUser
 
 security = HTTPBearer(auto_error=False)
-
-
-class TokenUser(BaseModel):
-    sub: str
-    org_id: UUID
-    email: str
-    role: str
 
 
 def create_dev_token(
@@ -45,7 +37,7 @@ def create_dev_token(
     return jwt.encode(payload, secret, algorithm="HS256")
 
 
-def decode_token(token: str) -> TokenUser:
+def decode_dev_jwt(token: str) -> TokenUser:
     secret = os.environ.get("CYBER_DEV_SECRET", settings.dev_secret)
     try:
         data = jwt.decode(token, secret, algorithms=["HS256"])
@@ -56,7 +48,23 @@ def decode_token(token: str) -> TokenUser:
             role=data.get("role", "developer"),
         )
     except Exception as e:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token") from e
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid dev token") from e
+
+
+def decode_token(token: str) -> TokenUser:
+    """Try OIDC (JWKS) when configured, then optional dev HS256 JWT."""
+    from cyber_api import oidc
+
+    if oidc.oidc_is_configured():
+        try:
+            return oidc.verify_oidc_token(token)
+        except Exception:
+            if not settings.auth_dev_jwt_alongside_oidc:
+                raise HTTPException(
+                    status.HTTP_401_UNAUTHORIZED,
+                    "Invalid or untrusted bearer token (OIDC)",
+                ) from None
+    return decode_dev_jwt(token)
 
 
 async def get_current_user(

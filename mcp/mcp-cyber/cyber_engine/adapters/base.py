@@ -29,6 +29,8 @@ class ScanContext:
     project_id: str
     options: dict[str, Any] = field(default_factory=dict)
     target_urls: list[str] = field(default_factory=list)
+    # Extra URLs that must be allowlisted (e.g. Playwright login page) — policy check only.
+    policy_extra_urls: list[str] = field(default_factory=list)
     http_client: httpx.AsyncClient | None = None
     rate_limiter: AsyncRateLimiter | None = None
 

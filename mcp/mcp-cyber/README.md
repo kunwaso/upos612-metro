@@ -34,7 +34,7 @@ python -m cyber_api
 # or: mcp-cyber-api
 ```
 
-**Dev dashboard:** open [http://127.0.0.1:8686/](http://127.0.0.1:8686/) for a read-only HTML view of recent **scans**, **scan event log** (adapter/orchestrator events), and **audit** tail. Data refreshes every 5 seconds. Report links use `/dashboard/reports/{scan_id}/md|json` (no JWT) while the dashboard is enabled. Set `CYBER_DASHBOARD_ENABLED=false` if the API is reachable beyond localhost.
+**Dev dashboard:** open [http://127.0.0.1:8686/](http://127.0.0.1:8686/) for an HTML **test console**: **Run passive scan** (uses `POST /dashboard/api/run-scan` — no JWT while the dashboard is on), **security posture** cards (critical / high / medium / low counts and plain-language summaries, plus sample findings), **engine log**, and **audit** tail. Data refreshes every 5 seconds. Exports: `/dashboard/reports/{scan_id}/md|json`. Set `CYBER_DASHBOARD_ENABLED=false` if the API is reachable beyond localhost.
 
 Equivalent manual uvicorn:
 
@@ -64,6 +64,22 @@ Authorization: Bearer <token with sub, org_id, role>
 | `CYBER_API_TOKEN` | Bearer token for MCP → API |
 | `CYBER_DASHBOARD_ENABLED` | `true` (default): serve `/` HTML + `/dashboard/api/*` without JWT; use `false` when exposed |
 
+### Phase 2 (authenticated scans, OIDC, vault, evidence)
+
+| Variable | Description |
+|----------|-------------|
+| `CYBER_OIDC_ISSUER` | OIDC issuer string (must match JWT `iss`) |
+| `CYBER_OIDC_AUDIENCE` | Expected JWT `aud` |
+| `CYBER_OIDC_JWKS_URL` | JWKS endpoint for signature verification |
+| `CYBER_OIDC_DEFAULT_ORG_ID` | UUID when tokens have no `org_id` claim |
+| `CYBER_AUTH_DEV_JWT_ALONGSIDE_OIDC` | `true` (default): allow HS256 dev JWT when OIDC is configured; set `false` in prod |
+| `CYBER_VAULT_JSON` / `CYBER_VAULT_FILE` | Map `credential_ref` → `username` / `password` / `token` (JSON object) |
+| `VAULT_ADDR` + `VAULT_TOKEN` + `CYBER_VAULT_KV_MOUNT` | Optional HashiCorp KV v2 (`…/v1/{mount}/data/{ref}`) |
+| `CYBER_PLAYWRIGHT_ADAPTER` | `1` / `true` to allow password-based browser login in `playwright_session` adapter |
+| `CYBER_EVIDENCE_DIR` | Directory for screenshot artifacts (`file:…` URIs on findings) |
+
+**Scan profile (mode `authenticated_passive`):** set `credential_ref` to a vault key; add options such as `playwright_login_url`, `playwright_username_selector`, `playwright_password_selector`, `playwright_submit_selector`. The login URL must be allowlisted for the environment (included in policy checks). If the vault entry has only `token`, the adapter performs Bearer-authenticated passive checks without Playwright. Install browser support: `pip install -e ".[phase2]"` and `playwright install chromium`.
+
 Optional: `mcp/mcp-cyber/.env` — see `.env.example`; `python -m cyber_api` loads it when the file exists.
 
 ## MCP (Cursor / Claude)
@@ -77,6 +93,8 @@ python -m cyber_mcp.server
 ```
 
 Or use the console script `mcp-cyber-mcp` if your `Scripts` directory is on PATH.
+
+Tools: `run_passive_scan`, `run_authenticated_scan` (same HTTP call; use a profile in `authenticated_passive` mode with vault + optional Playwright), `list_findings`, `export_report`, etc.
 
 Example `.cursor/mcp.json` fragment:
 

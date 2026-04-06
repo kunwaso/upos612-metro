@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from cyber_db.models import Approval, Environment, Finding, OpenAPIArtifact, ScanEvent, ScanProfile, ScanRun
 from cyber_db.session import async_session_factory
 from cyber_engine.adapters.base import ScanContext
+from cyber_engine.credentials.vault import resolve_credential_ref
 from cyber_engine.orchestrator import Orchestrator
 from cyber_engine.rate_limit import AsyncRateLimiter
 
@@ -66,6 +67,29 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
 
             target_urls = opts.get("target_urls") or []
 
+            profile_opts = dict(profile.options or {})
+            merged_options: dict[str, Any] = {
+                **profile_opts,
+                "openapi_json": openapi_json,
+                "approval_id": str(aid) if aid else None,
+                "approval_status": approval_status,
+            }
+            merged_options.pop("resolved_credentials", None)
+            skip_run_keys = {"target_urls", "openapi_artifact_id", "approval_id", "resolved_credentials"}
+            for k, v in opts.items():
+                if k in skip_run_keys:
+                    continue
+                merged_options[k] = v
+
+            resolved = resolve_credential_ref(profile.credential_ref)
+            if resolved:
+                merged_options["resolved_credentials"] = resolved
+
+            policy_extra: list[str] = []
+            login_url = merged_options.get("playwright_login_url")
+            if login_url:
+                policy_extra.append(str(login_url).strip())
+
             orch = Orchestrator()
             limiter = AsyncRateLimiter(float(profile.rate_limit_rps or 2))
             async with httpx.AsyncClient(
@@ -86,13 +110,9 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
                     base_url=env.base_url,
                     allowlist=dict(env.allowlist or {}),
                     project_id=str(project.id),
-                    options={
-                        **dict(profile.options or {}),
-                        "openapi_json": openapi_json,
-                        "approval_id": str(aid) if aid else None,
-                        "approval_status": approval_status,
-                    },
+                    options=merged_options,
                     target_urls=list(target_urls) if target_urls else [],
+                    policy_extra_urls=policy_extra,
                     http_client=client,
                     rate_limiter=limiter,
                 )

@@ -31,12 +31,14 @@ class Orchestrator:
         self._registry = adapters or DEFAULT_ADAPTERS
 
     async def run(self, ctx: ScanContext) -> list[dict]:
+        base_targets = ctx.target_urls or [ctx.base_url]
+        policy_urls = list(dict.fromkeys([*base_targets, *ctx.policy_extra_urls]))
         self.policy.assert_scan_permitted(
             environment_class=ctx.environment_class,
             mode=ctx.mode,
             base_url=ctx.base_url,
             allowlist=ctx.allowlist,
-            target_urls=ctx.target_urls or [ctx.base_url],
+            target_urls=policy_urls,
             approval_id=ctx.options.get("approval_id"),
             approval_status=ctx.options.get("approval_status"),
         )

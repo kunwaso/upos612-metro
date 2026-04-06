@@ -36,5 +36,20 @@ class Settings(BaseSettings):
     # Unauthenticated / + /dashboard/api/* (read-only). Disable when API is reachable beyond localhost.
     dashboard_enabled: bool = True
 
+    # --- OIDC (Phase 2): when issuer + audience + JWKS URL are all set, RS256/ES256 tokens are accepted first.
+    oidc_issuer: str = ""
+    oidc_audience: str = ""
+    oidc_jwks_url: str = ""
+    # If true, HS256 dev JWT is still accepted when OIDC is configured (local ergonomics; disable in prod).
+    auth_dev_jwt_alongside_oidc: bool = True
+    oidc_default_org_id: str = ""
+    oidc_email_claim: str = "email"
+    oidc_org_id_claim: str = "org_id"
+    oidc_groups_claim: str = "groups"
+    # Comma-separated group names (case-insensitive exact match) → admin
+    oidc_admin_groups: str = "admin,cyber-admin,mcp-cyber-admin"
+    oidc_security_groups: str = "security,security_engineer,sec-eng"
+    oidc_manager_groups: str = "manager,product-manager"
+
 
 settings = Settings()
