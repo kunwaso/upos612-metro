@@ -131,6 +131,9 @@ php artisan vendor:publish --tag=cms-assets --force
 
 php mcp/semantic-code-search-mcp/bin/index-codebase --force
 
+cd mcp/mcp-cyber
+python -m cyber_api
+
 
 
 composer entrypoints:generate

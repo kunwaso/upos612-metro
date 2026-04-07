@@ -365,6 +365,225 @@
     .profile-hint-box strong { color: var(--text); }
 
     code, .mono { font-family: var(--mono); font-size: 0.85em; }
+
+    /* ── Sidebar layout ─────────────────────────────────── */
+    .page-wrap {
+      display: flex;
+      align-items: flex-start;
+    }
+    .dash-main {
+      flex: 1 1 0%;
+      min-width: 0;
+      padding: 1rem 1.25rem 2.5rem;
+    }
+    .tool-sidebar {
+      width: 348px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.22s ease, opacity 0.18s ease;
+    }
+    .tool-sidebar.hidden {
+      width: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    #sidebar-toggle-btn {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.28rem 0.75rem;
+      border-radius: 20px;
+      background: rgba(91,159,212,0.12);
+      border: 1px solid rgba(91,159,212,0.4);
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #sidebar-toggle-btn:hover { background: rgba(91,159,212,0.22); border-color: var(--accent); }
+    #sidebar-toggle-btn.active { background: rgba(91,159,212,0.25); border-color: var(--accent); color: #fff; }
+    /* Sidebar structure */
+    .sb-head {
+      padding: 0.75rem 1rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .sb-head h2 { margin: 0; font-size: 0.82rem; font-weight: 700; flex: 1; letter-spacing: -0.01em; }
+    .sb-count { font-size: 0.72rem; color: var(--muted); flex-shrink: 0; }
+    .sb-token-wrap { padding: 0.55rem 1rem 0; flex-shrink: 0; }
+    .sb-token-wrap label { display: block; font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.22rem; }
+    .sb-token-input {
+      width: 100%;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 5px;
+      padding: 0.32rem 0.5rem;
+    }
+    .sb-token-input:focus { outline: 1px solid var(--accent); color: var(--text); }
+    .sb-search-wrap { padding: 0.45rem 0.75rem; flex-shrink: 0; }
+    .sb-search {
+      width: 100%;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.38rem 0.6rem;
+    }
+    .sb-search::placeholder { color: var(--muted); }
+    .sb-search:focus { outline: 1px solid var(--accent); }
+    .sb-scroll { flex: 1; overflow-y: auto; }
+    /* Tool groups */
+    .sb-group { }
+    .sb-group-head {
+      padding: 0.38rem 1rem;
+      font-size: 0.66rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      background: rgba(255,255,255,0.025);
+      border-top: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      user-select: none;
+    }
+    .sb-group:first-child .sb-group-head { border-top: none; }
+    .sb-tool-item { }
+    .sb-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.52rem 1rem;
+      background: none;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      text-align: left;
+      cursor: pointer;
+    }
+    .sb-tool-btn:hover { background: rgba(91,159,212,0.07); }
+    .sb-tool-btn.active { background: rgba(91,159,212,0.14); color: #fff; }
+    .sb-method-badge {
+      font-size: 0.58rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.12rem 0.3rem;
+      border-radius: 3px;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+    .badge-GET    { background: rgba(62,207,142,0.18); color: #6de8aa; }
+    .badge-POST   { background: rgba(91,159,212,0.22); color: #8ac8f5; }
+    .badge-DELETE { background: rgba(240,113,120,0.2); color: #ff9fa5; }
+    .sb-tool-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Tool panel (inline expand) */
+    .sb-tool-panel {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+    }
+    .sb-tool-panel.open { max-height: 800px; }
+    .sb-panel-inner { padding: 0.7rem 0.9rem 0.85rem; }
+    .sb-desc { font-size: 0.77rem; color: var(--muted); margin: 0 0 0.6rem; line-height: 1.4; }
+    .sb-field { margin-bottom: 0.45rem; }
+    .sb-field label { display: block; font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.18rem; }
+    .sb-field input,
+    .sb-field select,
+    .sb-field textarea {
+      width: 100%;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 0.32rem 0.5rem;
+    }
+    .sb-field textarea { min-height: 55px; resize: vertical; font-family: var(--mono); font-size: 0.75rem; }
+    .sb-field input[required], .sb-field select[required] { border-color: rgba(91,159,212,0.45); }
+    .sb-run-row { display: flex; gap: 0.45rem; align-items: center; margin-top: 0.55rem; flex-wrap: wrap; }
+    .sb-run-btn {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.38rem 0.82rem;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #2d6a9e 0%, #245a88 100%);
+      border: 1px solid #3d7ab0;
+      color: #fff;
+      cursor: pointer;
+    }
+    .sb-run-btn:hover { border-color: #6bb3e8; }
+    .sb-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sb-status-chip {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 12px;
+    }
+    .sb-status-ok  { background: rgba(62,207,142,0.15); color: var(--ok); }
+    .sb-status-err { background: rgba(240,113,120,0.15); color: var(--crit); }
+    .sb-result {
+      margin-top: 0.6rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      max-height: 260px;
+      overflow-y: auto;
+      word-break: break-all;
+    }
+    /* mobile overlay */
+    @media (max-width: 900px) {
+      .tool-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 200;
+        height: 100vh;
+        width: 320px;
+        box-shadow: -6px 0 28px rgba(0,0,0,0.6);
+        transform: translateX(110%);
+        transition: transform 0.22s ease;
+      }
+      .tool-sidebar.open { transform: translateX(0) !important; width: 320px !important; opacity: 1 !important; }
+      .tool-sidebar.hidden { transform: translateX(110%); width: 320px !important; opacity: 1 !important; }
+      .sb-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 199;
+        background: rgba(0,0,0,0.55);
+      }
+      .sb-backdrop.show { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -374,11 +593,14 @@
     <div class="toolbar">
       <span id="refresh-pill" class="pill">…</span>
       <span class="pill live">auto-refresh 5s</span>
+      <button type="button" id="sidebar-toggle-btn" title="Toggle MCP tools sidebar">⚙ Tools (23)</button>
       <a href="/docs">API docs</a>
       <a href="/health">health</a>
     </div>
   </header>
-  <main>
+  <div id="sb-backdrop" class="sb-backdrop"></div>
+  <div class="page-wrap">
+  <main class="dash-main">
     <div id="global-error" class="err-banner global-err"></div>
 
     <section>
@@ -491,6 +713,26 @@
       </div>
     </section>
   </main>
+
+  <!-- ── MCP Tools Sidebar ─────────────────────────────────────────── -->
+  <aside id="tool-sidebar" class="tool-sidebar hidden" aria-label="MCP tools">
+    <div class="sb-head">
+      <h2>⚙ MCP Tools</h2>
+      <span class="sb-count" id="sb-visible-count">23</span>
+      <button type="button" id="sb-close-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 0.2rem;" title="Close sidebar">✕</button>
+    </div>
+    <div class="sb-token-wrap">
+      <label for="sb-token">Bearer token <span style="color:var(--muted);font-size:0.65rem">(stored locally)</span></label>
+      <input type="password" id="sb-token" class="sb-token-input" placeholder="Paste JWT from seed_demo.py…" autocomplete="off" />
+    </div>
+    <div class="sb-search-wrap">
+      <input type="search" id="sb-search" class="sb-search" placeholder="Search tools…" aria-label="Search tools" />
+    </div>
+    <div class="sb-scroll" id="sb-tool-list">
+      <!-- rendered by JS -->
+    </div>
+  </aside>
+  </div><!-- /.page-wrap -->
   <script>
     const globalError = document.getElementById("global-error");
     const refreshPill = document.getElementById("refresh-pill");
@@ -1141,6 +1383,272 @@
       loadFeed();
       loadFleetSnapshot();
     }, 5000);
+
+    /* ── MCP Tools Sidebar ───────────────────────────────────── */
+    const MCP_TOOLS = [
+      // Scans
+      { group:"Scans", name:"run_passive_scan", label:"Run passive scan", desc:"Start a passive scan. Profile must have mode passive.", method:"POST",
+        buildUrl: function(p){ return "/v1/scans"; },
+        buildBody: function(p){ var b={profile_id:p.profile_id}; if(p.target_urls&&p.target_urls.trim()) try{b.target_urls=JSON.parse(p.target_urls);}catch(e){} return b; },
+        params:[{key:"profile_id",label:"Profile ID",required:true,type:"text"},{key:"target_urls",label:"Target URLs (JSON array, optional)",required:false,type:"textarea",placeholder:'["https://example.com/"]'}]},
+      { group:"Scans", name:"run_authenticated_scan", label:"Run authenticated scan", desc:"Profile must use authenticated_passive mode with credential_ref.", method:"POST",
+        buildUrl: function(p){ return "/v1/scans"; },
+        buildBody: function(p){ var b={profile_id:p.profile_id}; if(p.target_urls&&p.target_urls.trim()) try{b.target_urls=JSON.parse(p.target_urls);}catch(e){} return b; },
+        params:[{key:"profile_id",label:"Profile ID",required:true,type:"text"},{key:"target_urls",label:"Target URLs (JSON array, optional)",required:false,type:"textarea",placeholder:'["https://example.com/"]'}]},
+      { group:"Scans", name:"run_controlled_active_scan", label:"Run controlled active scan", desc:"Requires an approved approval_id. Adapter: active_controlled_stub.", method:"POST",
+        buildUrl: function(p){ return "/v1/scans"; },
+        buildBody: function(p){ var b={profile_id:p.profile_id,approval_id:p.approval_id}; if(p.target_urls&&p.target_urls.trim()) try{b.target_urls=JSON.parse(p.target_urls);}catch(e){} return b; },
+        params:[{key:"profile_id",label:"Profile ID",required:true,type:"text"},{key:"approval_id",label:"Approval ID",required:true,type:"text"},{key:"target_urls",label:"Target URLs (JSON array, optional)",required:false,type:"textarea"}]},
+      // Findings
+      { group:"Findings", name:"list_findings", label:"List findings", desc:"Return all findings for a completed scan.", method:"GET",
+        buildUrl: function(p){ return "/v1/scans/"+p.scan_id+"/findings"; },
+        params:[{key:"scan_id",label:"Scan ID",required:true,type:"text"}]},
+      { group:"Findings", name:"get_finding_detail", label:"Get finding detail", desc:"Full finding with evidence and remediation fields.", method:"GET",
+        buildUrl: function(p){ return "/v1/findings/"+p.finding_id; },
+        params:[{key:"finding_id",label:"Finding ID",required:true,type:"text"}]},
+      { group:"Findings", name:"mark_finding_status", label:"Mark finding status", desc:"Transition workflow status.", method:"POST",
+        buildUrl: function(p){ return "/v1/findings/"+p.finding_id+"/transition"; },
+        buildBody: function(p){ var b={status:p.status}; if(p.reason&&p.reason.trim()) b.reason=p.reason; return b; },
+        params:[{key:"finding_id",label:"Finding ID",required:true,type:"text"},{key:"status",label:"Status",required:true,type:"select",options:["open","in_progress","fixed","accepted_risk","suppressed","regressed"]},{key:"reason",label:"Reason (optional)",required:false,type:"text"}]},
+      // Reports
+      { group:"Reports", name:"export_report", label:"Export report", desc:"Download scan report. Format: md, json, sarif, checklist.", method:"GET",
+        buildUrl: function(p){ return "/v1/reports/"+p.scan_id+"."+(p.fmt||"md"); },
+        rawText:true,
+        params:[{key:"scan_id",label:"Scan ID",required:true,type:"text"},{key:"fmt",label:"Format",required:false,type:"select",options:["md","json","sarif","checklist"],defaultVal:"md"}]},
+      { group:"Reports", name:"summarize_security_posture", label:"Summarize posture", desc:"Executive-style summary of open findings.", method:"GET",
+        buildUrl: function(p){ return "/v1/reports/posture/summary"+(p.project_id&&p.project_id.trim()?"?project_id="+encodeURIComponent(p.project_id):""); },
+        params:[{key:"project_id",label:"Project ID (optional)",required:false,type:"text"}]},
+      { group:"Reports", name:"compare_scan_runs", label:"Compare scan runs", desc:"Fingerprint diff: new vs resolved between two runs.", method:"GET",
+        buildUrl: function(p){ return "/v1/scans/"+p.scan_id_a+"/compare/"+p.scan_id_b; },
+        params:[{key:"scan_id_a",label:"Baseline scan A",required:true,type:"text"},{key:"scan_id_b",label:"Compare scan B",required:true,type:"text"}]},
+      { group:"Reports", name:"compare_openapi_artifacts", label:"Compare OpenAPI artifacts", desc:"Structural diff: paths, operations, schema keys.", method:"GET",
+        buildUrl: function(p){ return "/v1/openapi-artifacts/"+p.artifact_id_a+"/diff/"+p.artifact_id_b; },
+        params:[{key:"artifact_id_a",label:"Artifact A (base)",required:true,type:"text"},{key:"artifact_id_b",label:"Artifact B",required:true,type:"text"}]},
+      // Approvals
+      { group:"Approvals", name:"request_scan_approval", label:"Request approval", desc:"Request approval for an active_controlled profile.", method:"POST",
+        buildUrl: function(p){ return "/v1/approvals"; },
+        buildBody: function(p){ var b={profile_id:p.profile_id,expires_in_hours:parseInt(p.expires_in_hours)||72}; if(p.reason&&p.reason.trim()) b.reason=p.reason; return b; },
+        params:[{key:"profile_id",label:"Profile ID",required:true,type:"text"},{key:"reason",label:"Reason (optional)",required:false,type:"textarea"},{key:"expires_in_hours",label:"Expires in hours",required:false,type:"text",placeholder:"72"}]},
+      { group:"Approvals", name:"list_approvals", label:"List approvals", desc:"List approvals for your org (manager+).", method:"GET",
+        buildUrl: function(p){ var q=new URLSearchParams({limit:p.limit||"50"}); if(p.status_filter&&p.status_filter.trim()) q.set("status",p.status_filter); return "/v1/approvals?"+q; },
+        params:[{key:"status_filter",label:"Status filter (optional)",required:false,type:"select",options:["","pending","approved","rejected"]},{key:"limit",label:"Limit",required:false,type:"text",placeholder:"50"}]},
+      { group:"Approvals", name:"approve_scan_approval", label:"Approve", desc:"Approve a pending request (security_engineer / admin).", method:"POST",
+        buildUrl: function(p){ return "/v1/approvals/"+p.approval_id+"/approve"; },
+        buildBody: function(p){ return p.note&&p.note.trim()?{note:p.note}:{}; },
+        params:[{key:"approval_id",label:"Approval ID",required:true,type:"text"},{key:"note",label:"Note (optional)",required:false,type:"text"}]},
+      { group:"Approvals", name:"reject_scan_approval", label:"Reject", desc:"Reject a pending approval request.", method:"POST",
+        buildUrl: function(p){ return "/v1/approvals/"+p.approval_id+"/reject"; },
+        buildBody: function(p){ return p.note&&p.note.trim()?{note:p.note}:{}; },
+        params:[{key:"approval_id",label:"Approval ID",required:true,type:"text"},{key:"note",label:"Note (optional)",required:false,type:"text"}]},
+      // Suppressions
+      { group:"Suppressions", name:"create_suppression", label:"Create suppression", desc:"Suppress a finding fingerprint for CI/triage.", method:"POST",
+        buildUrl: function(p){ return "/v1/suppressions"; },
+        buildBody: function(p){ var b={project_id:p.project_id,fingerprint:p.fingerprint,reason:p.reason}; if(p.expires_at_iso&&p.expires_at_iso.trim()) b.expires_at=p.expires_at_iso; return b; },
+        params:[{key:"project_id",label:"Project ID",required:true,type:"text"},{key:"fingerprint",label:"Fingerprint (sha256:…)",required:true,type:"text"},{key:"reason",label:"Reason",required:true,type:"text"},{key:"expires_at_iso",label:"Expires at ISO-8601 (optional)",required:false,type:"text",placeholder:"2026-12-31T00:00:00Z"}]},
+      { group:"Suppressions", name:"list_suppressions", label:"List suppressions", desc:"List suppressions for a project.", method:"GET",
+        buildUrl: function(p){ return "/v1/suppressions?project_id="+encodeURIComponent(p.project_id)+"&limit="+(p.limit||100); },
+        params:[{key:"project_id",label:"Project ID",required:true,type:"text"},{key:"limit",label:"Limit",required:false,type:"text",placeholder:"100"}]},
+      { group:"Suppressions", name:"delete_suppression", label:"Delete suppression", desc:"Permanently remove a suppression rule.", method:"DELETE",
+        buildUrl: function(p){ return "/v1/suppressions/"+p.suppression_id; },
+        params:[{key:"suppression_id",label:"Suppression ID",required:true,type:"text"}]},
+      // Analytics
+      { group:"Analytics", name:"get_fleet_posture", label:"Fleet posture", desc:"Per-project open finding counts by severity (org-scoped).", method:"GET",
+        buildUrl: function(p){ return "/v1/analytics/fleet"; },
+        params:[]},
+      { group:"Analytics", name:"get_finding_trends", label:"Finding trends", desc:"Daily new-finding volume by severity.", method:"GET",
+        buildUrl: function(p){ return "/v1/analytics/trends/findings?days="+(p.days||30); },
+        params:[{key:"days",label:"Days (1–366)",required:false,type:"text",placeholder:"30"}]},
+      { group:"Analytics", name:"get_scan_volume_trends", label:"Scan volume trends", desc:"Completed successful scans per day.", method:"GET",
+        buildUrl: function(p){ return "/v1/analytics/trends/scans?days="+(p.days||30); },
+        params:[{key:"days",label:"Days (1–366)",required:false,type:"text",placeholder:"30"}]},
+      { group:"Analytics", name:"get_sla_breach_summary", label:"SLA breach summary", desc:"Open critical/high findings older than SLA window (manager+).", method:"GET",
+        buildUrl: function(p){ return "/v1/analytics/sla/open-high-critical"+(p.max_age_days&&p.max_age_days.trim()?"?max_age_days="+encodeURIComponent(p.max_age_days):""); },
+        params:[{key:"max_age_days",label:"Max age days (optional override)",required:false,type:"text"}]},
+      { group:"Analytics", name:"get_top_open_rules", label:"Top open rules", desc:"Most common rule_ids among open findings.", method:"GET",
+        buildUrl: function(p){ return "/v1/analytics/top-rules?limit="+(p.limit||20); },
+        params:[{key:"limit",label:"Limit",required:false,type:"text",placeholder:"20"}]},
+      // Audit
+      { group:"Audit", name:"get_audit_log", label:"Get audit log", desc:"Read audit log entries (security_engineer or admin).", method:"GET",
+        buildUrl: function(p){ return "/v1/audit-log?limit="+(p.limit||100); },
+        params:[{key:"limit",label:"Limit",required:false,type:"text",placeholder:"100"}]},
+    ];
+
+    var _openTool = null;
+
+    function sbGetToken() {
+      return document.getElementById("sb-token").value.trim();
+    }
+
+    function sbBuildField(tool, field) {
+      var id = "sbf_" + tool.name + "_" + field.key;
+      var html = "<div class=\"sb-field\" data-field=\"" + esc(field.key) + "\">";
+      html += "<label for=\"" + esc(id) + "\">" + esc(field.label) + (field.required ? " <span style=\"color:var(--crit)\">*</span>" : "") + "</label>";
+      if (field.type === "select") {
+        html += "<select id=\"" + esc(id) + "\" data-key=\"" + esc(field.key) + "\"" + (field.required ? " required" : "") + ">";
+        (field.options || []).forEach(function(o) {
+          var sel = (field.defaultVal && o === field.defaultVal) ? " selected" : "";
+          html += "<option value=\"" + esc(o) + "\"" + sel + ">" + esc(o || "(all)") + "</option>";
+        });
+        html += "</select>";
+      } else if (field.type === "textarea") {
+        html += "<textarea id=\"" + esc(id) + "\" data-key=\"" + esc(field.key) + "\" placeholder=\"" + esc(field.placeholder || "") + "\"" + (field.required ? " required" : "") + "></textarea>";
+      } else {
+        html += "<input type=\"text\" id=\"" + esc(id) + "\" data-key=\"" + esc(field.key) + "\" placeholder=\"" + esc(field.placeholder || "") + "\"" + (field.required ? " required" : "") + " />";
+      }
+      html += "</div>";
+      return html;
+    }
+
+    function sbRenderTools(filter) {
+      var q = (filter || "").toLowerCase();
+      var groups = {};
+      var total = 0;
+      MCP_TOOLS.forEach(function(t) {
+        if (q && t.name.toLowerCase().indexOf(q) === -1 && t.label.toLowerCase().indexOf(q) === -1 && t.group.toLowerCase().indexOf(q) === -1) return;
+        if (!groups[t.group]) groups[t.group] = [];
+        groups[t.group].push(t);
+        total++;
+      });
+      document.getElementById("sb-visible-count").textContent = total;
+
+      var html = "";
+      Object.keys(groups).forEach(function(g) {
+        html += "<div class=\"sb-group\">";
+        html += "<div class=\"sb-group-head\">" + esc(g) + "</div>";
+        groups[g].forEach(function(t) {
+          var isOpen = _openTool === t.name;
+          html += "<div class=\"sb-tool-item\" id=\"sbitem_" + esc(t.name) + "\">";
+          html += "<button type=\"button\" class=\"sb-tool-btn" + (isOpen ? " active" : "") + "\" data-tool=\"" + esc(t.name) + "\">";
+          html += "<span class=\"sb-method-badge badge-" + esc(t.method) + "\">" + esc(t.method) + "</span>";
+          html += "<span class=\"sb-tool-label\">" + esc(t.label) + "</span>";
+          html += "<span style=\"color:var(--muted);font-size:0.75rem\">" + (isOpen ? "▲" : "▼") + "</span>";
+          html += "</button>";
+          // panel
+          html += "<div class=\"sb-tool-panel" + (isOpen ? " open" : "") + "\" id=\"sbpanel_" + esc(t.name) + "\">";
+          html += "<div class=\"sb-panel-inner\">";
+          html += "<p class=\"sb-desc\">" + esc(t.desc) + "</p>";
+          t.params.forEach(function(f) { html += sbBuildField(t, f); });
+          html += "<div class=\"sb-run-row\">";
+          html += "<button type=\"button\" class=\"sb-run-btn\" data-run=\"" + esc(t.name) + "\">▶ Run</button>";
+          html += "<span class=\"sb-status-chip\" id=\"sbstatus_" + esc(t.name) + "\"></span>";
+          html += "</div>";
+          html += "<div class=\"sb-result\" id=\"sbresult_" + esc(t.name) + "\" style=\"display:none\"></div>";
+          html += "</div></div>";
+          html += "</div>";
+        });
+        html += "</div>";
+      });
+      if (!total) html = "<div style=\"padding:1rem;color:var(--muted);font-size:0.82rem\">No tools match <em>" + esc(filter) + "</em></div>";
+      document.getElementById("sb-tool-list").innerHTML = html;
+    }
+
+    function sbToggleTool(toolName) {
+      if (_openTool === toolName) {
+        _openTool = null;
+      } else {
+        _openTool = toolName;
+      }
+      sbRenderTools(document.getElementById("sb-search").value);
+      if (_openTool) {
+        var panel = document.getElementById("sbpanel_" + _openTool);
+        if (panel) setTimeout(function(){ panel.scrollIntoView({ behavior:"smooth", block:"nearest" }); }, 80);
+      }
+    }
+
+    async function sbRunTool(toolName) {
+      var tool = MCP_TOOLS.find(function(t){ return t.name === toolName; });
+      if (!tool) return;
+      var panel = document.getElementById("sbpanel_" + toolName);
+      if (!panel) return;
+      var params = {};
+      panel.querySelectorAll("[data-key]").forEach(function(el) { params[el.dataset.key] = el.value; });
+      var token = sbGetToken();
+      var statusEl = document.getElementById("sbstatus_" + toolName);
+      var resultEl = document.getElementById("sbresult_" + toolName);
+      var runBtn = panel.querySelector("[data-run]");
+      if (runBtn) runBtn.disabled = true;
+      statusEl.textContent = "…";
+      statusEl.className = "sb-status-chip";
+      resultEl.style.display = "none";
+      try {
+        var url = tool.buildUrl(params);
+        var opts = {
+          method: tool.method,
+          headers: { "Content-Type": "application/json" },
+        };
+        if (token) opts.headers["Authorization"] = "Bearer " + token;
+        if (tool.buildBody && tool.method !== "GET" && tool.method !== "DELETE") {
+          opts.body = JSON.stringify(tool.buildBody(params));
+        }
+        var r = await fetch(url, opts);
+        statusEl.textContent = r.status + " " + r.statusText;
+        statusEl.className = "sb-status-chip " + (r.ok ? "sb-status-ok" : "sb-status-err");
+        var text = await r.text();
+        var displayText = text;
+        if (!tool.rawText) {
+          try { displayText = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+        }
+        resultEl.textContent = displayText;
+        resultEl.style.display = "block";
+      } catch (e) {
+        statusEl.textContent = "Error";
+        statusEl.className = "sb-status-chip sb-status-err";
+        resultEl.textContent = String(e);
+        resultEl.style.display = "block";
+      } finally {
+        if (runBtn) runBtn.disabled = false;
+      }
+    }
+
+    // Event delegation for sidebar tool list
+    document.getElementById("sb-tool-list").addEventListener("click", function(ev) {
+      var btn = ev.target.closest("[data-tool]");
+      if (btn) { sbToggleTool(btn.dataset.tool); return; }
+      var run = ev.target.closest("[data-run]");
+      if (run) { sbRunTool(run.dataset.run); }
+    });
+
+    // Search
+    document.getElementById("sb-search").addEventListener("input", function() {
+      _openTool = null;
+      sbRenderTools(this.value);
+    });
+
+    // Token persistence
+    var sbTokenEl = document.getElementById("sb-token");
+    var _savedToken = localStorage.getItem("mcp_cyber_token") || "";
+    if (_savedToken) sbTokenEl.value = _savedToken;
+    sbTokenEl.addEventListener("change", function() {
+      localStorage.setItem("mcp_cyber_token", this.value);
+    });
+
+    // Sidebar toggle
+    var sidebarEl = document.getElementById("tool-sidebar");
+    var toggleBtn = document.getElementById("sidebar-toggle-btn");
+    var closeBtn = document.getElementById("sb-close-btn");
+    var backdrop = document.getElementById("sb-backdrop");
+    var _sbOpen = false;
+
+    function sbOpen() {
+      _sbOpen = true;
+      sidebarEl.classList.remove("hidden");
+      sidebarEl.classList.add("open");
+      toggleBtn.classList.add("active");
+      backdrop.classList.add("show");
+    }
+    function sbClose() {
+      _sbOpen = false;
+      sidebarEl.classList.remove("open");
+      sidebarEl.classList.add("hidden");
+      toggleBtn.classList.remove("active");
+      backdrop.classList.remove("show");
+    }
+    toggleBtn.addEventListener("click", function() { _sbOpen ? sbClose() : sbOpen(); });
+    closeBtn.addEventListener("click", sbClose);
+    backdrop.addEventListener("click", sbClose);
+
+    // Initial render
+    sbRenderTools("");
   </script>
 </body>
 </html>
