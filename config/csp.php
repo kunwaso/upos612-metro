@@ -10,17 +10,17 @@
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
  */
 
-$defaultPolicy = implode(' ', [
+$defaultPolicy = implode('; ', [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'self'",
     "object-src 'none'",
     'upgrade-insecure-requests',
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.amcharts.com https://oss.maxcdn.com https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
     "img-src 'self' data: https:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "connect-src 'self' https: wss:",
     "worker-src 'self' blob:",
     "manifest-src 'self'",

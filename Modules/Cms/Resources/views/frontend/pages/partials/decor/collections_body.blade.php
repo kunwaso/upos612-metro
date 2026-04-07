@@ -23,10 +23,10 @@
                     <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-01.jpg') }}" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/bao-bi-cuon.png') }}" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">02</div>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Designer stool</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Bao Bì dạng cuộn</a>
                         </div>
                     </div>
                     <!-- end categories item -->
@@ -34,10 +34,10 @@
                     <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-02.jpg') }}" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/thung-hop.png') }}" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Modern chair</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Thùng - hộp</a>
                         </div>
                     </div>
                     <!-- end categories item -->
@@ -45,10 +45,10 @@
                     <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-03.jpg') }}" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/day-dai.png') }}" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">05</div>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Table clock</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Dây dai - cuộn</a>
                         </div>
                     </div>
                     <!-- end categories item -->
@@ -56,10 +56,10 @@
                     <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-04.jpg') }}" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/chong-soc-silicagel.png') }}" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">07</div>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Home decor</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Chống sốc - Gel</a>
                         </div>
                     </div>
                     <!-- end categories item -->
@@ -67,43 +67,10 @@
                     <div class="col categories-style-01 text-center md-mb-50px xs-mb-35px">
                         <div class="categories-box">
                             <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-05.jpg') }}" alt=""/></a>
+                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/pallet-dung-cu-dong-goi.png') }}" alt=""/></a>
                                 <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">08</div>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Ceramic pots</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center md-mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-06.jpg') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">04</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Table lamp</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-07.jpg') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">02</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Wooden table</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-collections-08.jpg') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">05</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Designer sofa</a>
+                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Dụng cụ đóng gói</a>
                         </div>
                     </div>
                     <!-- end categories item -->

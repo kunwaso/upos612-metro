@@ -41,10 +41,10 @@
                 <div class="d-flex flex-column gap-7">
                     <div class="fv-row">
                         {!! Form::label('supplier_id', __('purchase.supplier') . ':*', ['class' => 'form-label']) !!}
-                        <div class="input-group">
+                        <div class="input-group flex-nowrap">
                             <span class="input-group-text"><i class="fa fa-user"></i></span>
                             {!! Form::select('contact_id', [], null, ['class' => 'form-select form-select-solid', 'placeholder' => __('messages.please_select'), 'required', 'id' => 'supplier_id']) !!}
-                            <button type="button" class="btn btn-light add_new_supplier" data-name="">
+                            <button type="button" class="btn btn-light add_new_supplier flex-shrink-0" data-name="">
                                 <i class="fa fa-plus-circle text-primary"></i>
                             </button>
                         </div>

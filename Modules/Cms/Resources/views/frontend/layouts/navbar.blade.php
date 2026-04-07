@@ -81,7 +81,7 @@
                                 <div class="row row-cols-2 row-cols-lg-6 row-cols-sm-3 md-pt-15px align-items-center justify-content-center mb-60px md-mb-30px sm-mb-0">
                                     <div class="col md-mb-30px">
                                         <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-01.jpg') }}" alt="">  
+                                            <img src="{{ asset('modules/cms/assets/danhmuc/bao-bi-cuon.png') }}" alt="">  
                                         </a>
                                         <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
@@ -92,7 +92,7 @@
                                     </div>
                                     <div class="col md-mb-30px">
                                         <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-02.jpg') }}" alt="">  
+                                            <img src="{{ asset('modules/cms/assets/danhmuc/thung-hop.png') }}" alt="">  
                                         </a>
                                         <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
@@ -103,7 +103,7 @@
                                     </div>
                                     <div class="col md-mb-30px">
                                         <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-03.jpg') }}" alt="">  
+                                            <img src="{{ asset('modules/cms/assets/danhmuc/day-dai.png') }}" alt="">  
                                         </a>
                                         <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
@@ -114,7 +114,7 @@
                                     </div>
                                     <div class="col md-mb-30px">
                                         <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-04.jpg') }}" alt="">  
+                                            <img src="{{ asset('modules/cms/assets/danhmuc/chong-soc-silicagel.png') }}" alt="">  
                                         </a>
                                         <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
@@ -123,20 +123,10 @@
                                             </span>
                                         </a> 
                                     </div>
+                                    
                                     <div class="col md-mb-30px">
                                         <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-05.jpg') }}" alt="">  
-                                        </a>
-                                        <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
-                                            <span> 
-                                                <span class="btn-text text-dark-gray fs-16">Bao bì khác</span> 
-                                                <span class="btn-icon"><i class="fa-solid fa-arrow-right m-0"></i></span>
-                                            </span>
-                                        </a>
-                                    </div>
-                                    <div class="col md-mb-30px">
-                                        <a href="{{ route('cms.store.collections') }}" class="text-center"> 
-                                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-category-06.jpg') }}" alt="">  
+                                            <img src="{{ asset('modules/cms/assets/danhmuc/pallet-dung-cu-dong-goi.png') }}" alt="">  
                                         </a>
                                         <a href="{{ route('cms.store.collections') }}" class="btn btn-hover-animation text-uppercase-inherit fw-600 ls-0px justify-content-center">
                                             <span> 
