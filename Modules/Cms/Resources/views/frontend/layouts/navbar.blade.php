@@ -148,7 +148,7 @@
                                 </div>
                                 <div class="row row-cols-1 row-cols-md-2">
                                     <div class="col">
-                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-03.jpg') }}" alt=""></a>
+                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/other/air-pack-nav.jpg') }}" alt=""></a>
                                     </div>
                                     <div class="col">
                                         <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-04.jpg') }}" alt=""></a>

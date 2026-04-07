@@ -110,7 +110,26 @@ Authorization: Bearer <token with sub, org_id, role>
 
 **MCP (Phase 4):** `get_fleet_posture`, `get_finding_trends`, `get_scan_volume_trends`, `get_sla_breach_summary`, `get_top_open_rules`.
 
-*Future (not implemented here):* fleet HTML dashboards, custom YAML business-rule engines, allowlisted fuzzing harness hooks — see platform plan Phase 4.
+### Phase 5 (business rules, fuzz hook, dashboard fleet view)
+
+| Piece | Description |
+|-------|-------------|
+| **`CYBER_BUSINESS_RULES_PATH`** | Optional YAML: tag raw findings after all adapters, before normalize (see `configs/business_rules.sample.yaml`). Rules must include at least one match key (`rule_id_prefix`, `rule_id_regex`, `category_equals`, `severity_equals`). |
+| **`fuzz_harness_stub`** | Adapter id: emits a single **info** finding when `enable_fuzz_harness_stub` is set on the profile options or `CYBER_FUZZ_STUB_ENABLED=1`. No traffic; documents an integration slot for an allowlisted external harness. |
+| **Dev dashboard** | **Fleet snapshot** section calls `GET /dashboard/api/analytics/fleet` (no JWT when dashboard is on; not org-scoped — same model as the feed). |
+
+Orchestrator now aggregates adapter output, applies business rules, then runs **`normalize_batch` once** (fingerprint dedup in the worker is unchanged).
+
+### Plan gap closures (adapters, OpenAPI diff, CI routes)
+
+| Piece | Description |
+|-------|-------------|
+| **`tls_basic`** | For **HTTPS** targets (not `localhost`), opens a verified TLS connection: handshake/verify failures, **expired** cert, **expiring within 30 days**. No-op for `http://` bases (header adapter still flags `tls.http_base`). |
+| **`routes_json_lint`** | When `routes_json` is present (profile options or **`routes_artifact_id`** on `POST /v1/scans`), lints a CI `{"routes":[...]}` export for sensitive paths marked public or missing auth middleware markers. |
+| **Routes artifacts** | `POST /v1/environments/{id}/routes-json` with body `routes_json` (+ optional `label`) → `routes_artifact_id`. Run migration **`003`** for table `routes_artifacts`. |
+| **OpenAPI diff** | `GET /v1/openapi-artifacts/{id_a}/diff/{id_b}` — structural diff (paths, HTTP operations, `components.schemas` keys). **MCP:** `compare_openapi_artifacts`. |
+
+**MCP:** `compare_openapi_artifacts` (plus adapters above when listed on the scan profile).
 
 Optional: `mcp/mcp-cyber/.env` — see `.env.example`; `python -m cyber_api` loads it when the file exists.
 

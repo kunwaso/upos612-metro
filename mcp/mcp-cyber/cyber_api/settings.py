@@ -58,5 +58,8 @@ class Settings(BaseSettings):
     sla_high_critical_days: int = 14
     analytics_max_trend_days: int = 90
 
+    # Phase 5: optional YAML tags on raw findings before normalize
+    business_rules_path: str | None = None
+
 
 settings = Settings()

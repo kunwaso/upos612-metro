@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import structlog
+
+from cyber_core.models.finding import RawFinding
 from cyber_engine.adapters.base import Adapter, ScanContext
 from cyber_engine.adapters.active_controlled_stub import ActiveControlledStubAdapter
 from cyber_engine.adapters.headers_cookies import HeadersCookiesAdapter
 from cyber_engine.adapters.openapi_lint import OpenAPILintAdapter
+from cyber_engine.adapters.fuzz_harness_stub import FuzzHarnessStubAdapter
 from cyber_engine.adapters.playwright_session import PlaywrightSessionAdapter
+from cyber_engine.adapters.routes_json_lint import RoutesJsonLintAdapter
+from cyber_engine.adapters.tls_basic import TlsBasicAdapter
+from cyber_engine.business_rules import apply_business_rules
 from cyber_engine.normalizer import Normalizer
 from cyber_engine.policy_engine import PolicyEngine
 
@@ -15,9 +21,12 @@ log = structlog.get_logger()
 
 DEFAULT_ADAPTERS: dict[str, type[Adapter]] = {
     HeadersCookiesAdapter.id: HeadersCookiesAdapter,
+    TlsBasicAdapter.id: TlsBasicAdapter,
     OpenAPILintAdapter.id: OpenAPILintAdapter,
+    RoutesJsonLintAdapter.id: RoutesJsonLintAdapter,
     PlaywrightSessionAdapter.id: PlaywrightSessionAdapter,
     ActiveControlledStubAdapter.id: ActiveControlledStubAdapter,
+    FuzzHarnessStubAdapter.id: FuzzHarnessStubAdapter,
 }
 
 
@@ -49,7 +58,7 @@ class Orchestrator:
             "project_id": ctx.project_id,
             "environment_id": ctx.environment_id,
         }
-        out: list[dict] = []
+        all_raw: list[RawFinding] = []
         for adapter_id in ctx.adapter_ids:
             cls = self._registry.get(adapter_id)
             if not cls:
@@ -57,6 +66,12 @@ class Orchestrator:
                 continue
             adapter = cls()
             log.info("adapter_start", adapter=adapter_id, scan_id=ctx.scan_id)
-            raw_findings = await adapter.run(ctx)
-            out.extend(self.norm.normalize_batch(raw_findings, norm_ctx))
-        return out
+            all_raw.extend(await adapter.run(ctx))
+
+        path = ctx.business_rules_path or (ctx.options or {}).get("business_rules_path")
+        if isinstance(path, str):
+            path = path.strip() or None
+        else:
+            path = None
+        all_raw = apply_business_rules(all_raw, path)
+        return self.norm.normalize_batch(all_raw, norm_ctx)

@@ -74,6 +74,7 @@ class ScanCreate(BaseModel):
     profile_id: UUID
     target_urls: list[str] | None = None
     openapi_artifact_id: UUID | None = None
+    routes_artifact_id: UUID | None = None
     baseline_scan_id: UUID | None = None
     idempotency_key: str | None = Field(default=None, max_length=128)
     approval_id: UUID | None = None
@@ -209,6 +210,19 @@ class SuppressionOut(BaseModel):
 class OpenAPIImport(BaseModel):
     version: str | None = None
     spec_json: str
+
+
+class RoutesImport(BaseModel):
+    label: str | None = Field(default=None, max_length=256)
+    routes_json: str = Field(..., description="JSON object with a top-level 'routes' array")
+
+
+class OpenAPIDiffOut(BaseModel):
+    artifact_id_a: UUID
+    artifact_id_b: UUID
+    sha256_a: str
+    sha256_b: str
+    diff: dict[str, Any]
 
 
 class CompareOut(BaseModel):

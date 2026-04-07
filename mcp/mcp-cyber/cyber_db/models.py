@@ -89,6 +89,19 @@ class OpenAPIArtifact(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class RoutesArtifact(Base):
+    """CI-exported route list (e.g. Laravel route:list JSON) for RBAC-style linting."""
+
+    __tablename__ = "routes_artifacts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    environment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("environments.id"), nullable=False)
+    label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    storage_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class ScanProfile(Base):
     __tablename__ = "scan_profiles"
 

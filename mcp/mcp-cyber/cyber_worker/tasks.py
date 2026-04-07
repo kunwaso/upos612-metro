@@ -10,10 +10,11 @@ from typing import Any
 
 import httpx
 import structlog
+from cyber_api.settings import settings
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from cyber_db.models import Approval, Environment, Finding, OpenAPIArtifact, ScanEvent, ScanProfile, ScanRun
+from cyber_db.models import Approval, Environment, Finding, OpenAPIArtifact, RoutesArtifact, ScanEvent, ScanProfile, ScanRun
 from cyber_db.session import async_session_factory
 from cyber_engine.adapters.base import ScanContext
 from cyber_engine.credentials.vault import resolve_credential_ref
@@ -66,17 +67,35 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
                     if p.is_file():
                         openapi_json = p.read_text(encoding="utf-8")
 
+            routes_json: str | None = None
+            raid = opts.get("routes_artifact_id")
+            if raid:
+                rart = await session.get(RoutesArtifact, uuid.UUID(str(raid)))
+                if rart:
+                    rp = Path(rart.storage_uri)
+                    if rp.is_file():
+                        routes_json = rp.read_text(encoding="utf-8")
+
             target_urls = opts.get("target_urls") or []
 
             profile_opts = dict(profile.options or {})
             merged_options: dict[str, Any] = {
                 **profile_opts,
-                "openapi_json": openapi_json,
                 "approval_id": str(aid) if aid else None,
                 "approval_status": approval_status,
             }
+            if openapi_json is not None:
+                merged_options["openapi_json"] = openapi_json
+            if routes_json is not None:
+                merged_options["routes_json"] = routes_json
             merged_options.pop("resolved_credentials", None)
-            skip_run_keys = {"target_urls", "openapi_artifact_id", "approval_id", "resolved_credentials"}
+            skip_run_keys = {
+                "target_urls",
+                "openapi_artifact_id",
+                "routes_artifact_id",
+                "approval_id",
+                "resolved_credentials",
+            }
             for k, v in opts.items():
                 if k in skip_run_keys:
                     continue
@@ -114,6 +133,7 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
                     options=merged_options,
                     target_urls=list(target_urls) if target_urls else [],
                     policy_extra_urls=policy_extra,
+                    business_rules_path=settings.business_rules_path,
                     http_client=client,
                     rate_limiter=limiter,
                 )

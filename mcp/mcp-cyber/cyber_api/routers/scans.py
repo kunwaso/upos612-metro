@@ -45,6 +45,8 @@ async def create_scan(
         opts["target_urls"] = body.target_urls
     if body.openapi_artifact_id:
         opts["openapi_artifact_id"] = str(body.openapi_artifact_id)
+    if body.routes_artifact_id:
+        opts["routes_artifact_id"] = str(body.routes_artifact_id)
     if body.approval_id:
         opts["approval_id"] = str(body.approval_id)
     if body.note:

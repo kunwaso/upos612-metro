@@ -1,0 +1,15 @@
+# Phase 5 — optional tag enrichment (CYBER_BUSINESS_RULES_PATH).
+# Applied after adapters aggregate raw findings, before normalization.
+# Each rule needs at least one of: rule_id_prefix, rule_id_regex, category_equals, severity_equals.
+version: 1
+rules:
+  - name: Example — header policy findings
+    match:
+      rule_id_prefix: "hdr."
+    add_tags:
+      - quick_review
+  - name: Example — regex on rule ids
+    match:
+      rule_id_regex: "^openapi\\."
+    add_tags:
+      - contract_hygiene

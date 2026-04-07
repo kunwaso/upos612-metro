@@ -460,6 +460,16 @@
       </div>
     </section>
 
+    <section id="fleet-section">
+      <h2>Fleet snapshot (open findings)</h2>
+      <p class="hint">Phase 4–5: per-project open counts by severity — <span class="mono">GET /dashboard/api/analytics/fleet</span> (no JWT). Same visibility as the feed; not org-scoped. For JWT + org scope use <span class="mono">GET /v1/analytics/fleet</span>.</p>
+      <div class="card">
+        <div class="card-pad">
+          <pre id="fleet-json" class="mono" style="white-space:pre-wrap;font-size:12px;margin:0;max-height:14rem;overflow:auto">Loading…</pre>
+        </div>
+      </div>
+    </section>
+
     <section>
       <h2>Security posture (recent scans)</h2>
       <div id="scans-container" class="scan-grid">
@@ -489,6 +499,7 @@
     const scansContainer = document.getElementById("scans-container");
     const eventsContainer = document.getElementById("events-container");
     const auditContainer = document.getElementById("audit-container");
+    const fleetJson = document.getElementById("fleet-json");
     const runOk = document.getElementById("run-ok");
     const runErr = document.getElementById("run-err");
     const profileHint = document.getElementById("profile-hint");
@@ -1107,9 +1118,29 @@
       }
     }
 
+    async function loadFleetSnapshot() {
+      if (!fleetJson) return;
+      try {
+        const r = await fetch("/dashboard/api/analytics/fleet");
+        if (r.status === 404) {
+          fleetJson.textContent = "—";
+          return;
+        }
+        if (!r.ok) throw new Error(r.status + " " + r.statusText);
+        const data = await r.json();
+        fleetJson.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        fleetJson.textContent = esc(e.message);
+      }
+    }
+
     loadMeta();
     loadFeed();
-    setInterval(loadFeed, 5000);
+    loadFleetSnapshot();
+    setInterval(function () {
+      loadFeed();
+      loadFleetSnapshot();
+    }, 5000);
   </script>
 </body>
 </html>

@@ -94,7 +94,12 @@ async def main() -> None:
                     environment_id=env.id,
                     name="default-passive",
                     mode="passive",
-                    adapter_ids=["headers_cookies", "openapi_lint"],
+                    adapter_ids=[
+                        "headers_cookies",
+                        "tls_basic",
+                        "openapi_lint",
+                        "routes_json_lint",
+                    ],
                     rate_limit_rps=2,
                     max_concurrency=2,
                     options={},

@@ -3,19 +3,19 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from cyber_db.models import (
-    Organization, User, Project, Environment, Asset, OpenAPIArtifact,
+    Organization, User, Project, Environment, Asset, OpenAPIArtifact, RoutesArtifact,
     ScanProfile, Approval, ScanRun, ScanEvent, Finding, Suppression, AuditLog
 )
 
 plan_tables = [
     "organizations", "users", "projects", "environments", "assets",
-    "openapi_artifacts", "scan_profiles", "approvals", "scan_runs",
+    "openapi_artifacts", "routes_artifacts", "scan_profiles", "approvals", "scan_runs",
     "scan_events", "findings", "suppressions", "audit_log",
 ]
 actual = [
     Organization.__tablename__, User.__tablename__, Project.__tablename__,
     Environment.__tablename__, Asset.__tablename__, OpenAPIArtifact.__tablename__,
-    ScanProfile.__tablename__, Approval.__tablename__, ScanRun.__tablename__,
+    RoutesArtifact.__tablename__, ScanProfile.__tablename__, Approval.__tablename__, ScanRun.__tablename__,
     ScanEvent.__tablename__, Finding.__tablename__, Suppression.__tablename__,
     AuditLog.__tablename__,
 ]

@@ -31,6 +31,8 @@ class ScanContext:
     target_urls: list[str] = field(default_factory=list)
     # Extra URLs that must be allowlisted (e.g. Playwright login page) — policy check only.
     policy_extra_urls: list[str] = field(default_factory=list)
+    # Optional YAML (CYBER_BUSINESS_RULES_PATH); applied after all adapters, before normalize.
+    business_rules_path: str | None = None
     http_client: httpx.AsyncClient | None = None
     rate_limiter: AsyncRateLimiter | None = None
 

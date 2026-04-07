@@ -84,6 +84,13 @@ async def compare_scan_runs(scan_id_a: str, scan_id_b: str) -> str:
 
 
 @mcp.tool()
+async def compare_openapi_artifacts(artifact_id_a: str, artifact_id_b: str) -> str:
+    """Structural diff between two stored OpenAPI JSON artifacts (paths, operations, component schema keys)."""
+    out = await _client().get(f"/v1/openapi-artifacts/{artifact_id_a}/diff/{artifact_id_b}")
+    return json.dumps(out, indent=2)
+
+
+@mcp.tool()
 async def run_controlled_active_scan(
     profile_id: str,
     approval_id: str,

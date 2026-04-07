@@ -98,7 +98,7 @@
                              data-basealign="slide"
                              data-responsive_offset="on"
                              data-responsive="on">
-                            <img src="{{ asset('modules/cms/assets/images/demo-decor-store-slider-01-img-04.jpg') }}" alt="background-pattern" data-ww="100%" data-hh="auto">
+                            <img src="{{ asset('modules/cms/assets/slider/mang-chit-pe.png') }}" alt="background-pattern" data-ww="100%" data-hh="auto">
                         </div>
                         <!-- end product image layer -->
                         <!-- start row zone -->
@@ -208,7 +208,7 @@
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,0,0]"
                                          style="color: rgba(22,32,44,0.8)">
-                                        Chiều dài từ <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">10cm - 50cm</span>
+                                        Khổ rộng từ <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">100mm - 500mm</span>
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
@@ -1146,7 +1146,7 @@
                                  data-frames='[{"delay":2600,"speed":1000,"sfxcolor":"#ffffff","sfx_effect":"blockfromright","frame":"0","from":"z:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
                                  data-textAlign="['center','center','center','center']"
                                  data-basealign="grid"
-                                 style="border: none; background-image: url(https://placehold.co/200x115);">
+                                 style="border: none; background-image: url({{ asset('modules/cms/assets/slider/200115-mangchitpe.jpg') }});">
                             </div>
                             <!-- end slider thumb layer -->
                         </div>

@@ -11,11 +11,11 @@ from sqlalchemy import select
 
 from cyber_api.audit import write_audit
 from cyber_api.deps import DbSession
-from cyber_api.schemas import EnvironmentCreate, EnvironmentOut, OpenAPIImport
+from cyber_api.schemas import EnvironmentCreate, EnvironmentOut, OpenAPIImport, RoutesImport
 from cyber_api.principals import actor_uuid
 from cyber_api.security import TokenUser, get_current_user
 from cyber_api.settings import settings
-from cyber_db.models import Environment, OpenAPIArtifact, Project
+from cyber_db.models import Environment, OpenAPIArtifact, Project, RoutesArtifact
 
 router = APIRouter(prefix="/v1", tags=["environments"])
 
@@ -105,3 +105,47 @@ async def import_openapi(
     )
     await session.commit()
     return {"openapi_artifact_id": str(art.id), "sha256": sha}
+
+
+@router.post(
+    "/environments/{environment_id}/routes-json",
+    status_code=status.HTTP_201_CREATED,
+)
+async def import_routes_json(
+    environment_id: UUID,
+    body: RoutesImport,
+    session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
+):
+    """Upload CI-exported route list JSON (RBAC lint). Same storage layout as OpenAPI artifacts."""
+    env = await session.get(Environment, environment_id)
+    if not env:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Environment not found")
+    proj = await session.get(Project, env.project_id)
+    if not proj or proj.org_id != user.org_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Environment not found")
+    raw = body.routes_json.encode("utf-8")
+    sha = hashlib.sha256(raw).hexdigest()
+    base = Path(settings.artifacts_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    rid = u.uuid4()
+    path = base / f"routes-{rid}.json"
+    path.write_text(body.routes_json, encoding="utf-8")
+    art = RoutesArtifact(
+        id=rid,
+        environment_id=environment_id,
+        label=body.label,
+        storage_uri=str(path.resolve()),
+        sha256=sha,
+    )
+    session.add(art)
+    await write_audit(
+        session,
+        actor_id=actor_uuid(user),
+        action="routes_json.import",
+        object_type="routes_artifact",
+        object_id=str(art.id),
+        payload={"sha256": sha, "label": body.label},
+    )
+    await session.commit()
+    return {"routes_artifact_id": str(art.id), "sha256": sha}

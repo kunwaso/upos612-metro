@@ -18,6 +18,7 @@ from cyber_api.deps import DbSession
 from cyber_api.schemas import CompareOut
 from cyber_api.settings import settings
 from cyber_db.models import AuditLog, Environment, Finding, Project, ScanEvent, ScanProfile, ScanRun
+from cyber_reports.analytics_format import fold_fleet_rows
 from cyber_reports.markdown import render_markdown_report
 from cyber_worker.redis_jobs import enqueue_scan
 from cyber_worker.tasks import execute_scan
@@ -322,6 +323,32 @@ async def dashboard_meta(session: DbSession) -> dict[str, Any]:
             }
         )
     return {"profiles": profiles}
+
+
+@router.get("/dashboard/api/analytics/fleet", include_in_schema=False)
+async def dashboard_analytics_fleet(session: DbSession) -> dict[str, Any]:
+    """
+    Phase 4–5 fleet snapshot for the dev HTML console (no JWT).
+    Not org-scoped — same visibility model as /dashboard/api/feed; disable dashboard when exposed.
+    """
+    if not settings.dashboard_enabled:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
+    stmt = (
+        select(
+            Finding.project_id,
+            Project.slug,
+            Project.name,
+            Finding.severity,
+            func.count().label("cnt"),
+        )
+        .join(Project, Finding.project_id == Project.id)
+        .where(Finding.status == "open")
+        .group_by(Finding.project_id, Project.slug, Project.name, Finding.severity)
+        .order_by(Project.slug)
+    )
+    res = await session.execute(stmt)
+    raw = [(r[0], r[1], r[2], r[3], int(r[4])) for r in res.all()]
+    return {"projects": fold_fleet_rows(raw)}
 
 
 @router.post("/dashboard/api/run-scan", include_in_schema=False, response_model=None)

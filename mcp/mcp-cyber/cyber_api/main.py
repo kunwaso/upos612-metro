@@ -27,6 +27,7 @@ from cyber_api.routers import (
     dashboard,
     environments,
     findings,
+    openapi_compare,
     profiles,
     projects,
     reports,
@@ -62,6 +63,7 @@ app.add_middleware(
 app.include_router(dashboard.router)
 app.include_router(projects.router)
 app.include_router(environments.router)
+app.include_router(openapi_compare.router)
 app.include_router(profiles.router)
 app.include_router(scans.router)
 app.include_router(approvals.router)
