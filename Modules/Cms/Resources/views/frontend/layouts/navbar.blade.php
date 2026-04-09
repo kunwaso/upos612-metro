@@ -153,8 +153,6 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink3"> 
                             <li><a href="{{ route('cms.about.us') }}">About</a></li>
                             <li><a href="{{ route('cms.store.faq') }}">FAQs</a></li>
-                            <li><a href="{{ route('cms.store.wishlist') }}">Wishlist</a></li>
-                            <li><a href="{{ route('cms.store.account') }}">Account</a></li>
                             <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
                         </ul>
                     </li>

@@ -40,8 +40,6 @@ Route::post('shop/product/{id}/request-quote', [Modules\Cms\Http\Controllers\Cms
     ->name('cms.store.rfq.store');
 Route::redirect('shop/cart', '/shop/catalog', 301)->name('cms.store.cart');
 Route::redirect('shop/checkout', '/shop/catalog', 301)->name('cms.store.checkout');
-Route::get('shop/account', [Modules\Cms\Http\Controllers\CmsController::class, 'shopAccount'])->name('cms.store.account');
-Route::get('shop/wishlist', [Modules\Cms\Http\Controllers\CmsController::class, 'shopWishlist'])->name('cms.store.wishlist');
 Route::get('shop/faq', [Modules\Cms\Http\Controllers\CmsController::class, 'shopFaq'])->name('cms.store.faq');
 
 // products routes

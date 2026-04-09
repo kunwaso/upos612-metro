@@ -28,8 +28,18 @@
                                 <a href="#"><img src="{{ asset('modules/cms/assets/images/shop-list.svg') }}" class="opacity-5" alt="" /></a>
                             </div>
                             <div class="ms-20px xs-ms-0">{{ $resultsSummary ?? '' }}</div>
+                            @if(!empty($catalogCategory))
+                            <div class="ms-20px xs-ms-0">
+                                <span class="badge border border-color-extra-medium-gray text-dark-gray fw-500">
+                                    Category: {{ $catalogCategory }}
+                                </span>
+                            </div>
+                            @endif
                             <div class="mx-auto me-sm-0">
                                 <form method="get" action="{{ route('cms.store.shop') }}" class="d-inline-block">
+                                    @if(!empty($catalogCategory))
+                                        <input type="hidden" name="category" value="{{ $catalogCategory }}">
+                                    @endif
                                     <select name="sort" class="form-select border-0 background-position-right" aria-label="Sorting" onchange="this.form.submit()">
                                         <option value="latest" @selected(($catalogSort ?? 'latest') === 'latest')>Sort by latest</option>
                                         <option value="name" @selected(($catalogSort ?? '') === 'name')>Sort by name</option>
@@ -49,7 +59,7 @@
                         </ul>
                         @if(isset($products) && $products->hasPages())
                         <div class="w-100 d-flex mt-3 justify-content-center" data-anime='{ "translateY": [0, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
-                            {{ $products->links() }}
+                            {{ $products->appends(request()->except('page'))->links() }}
                         </div>
                         @endif
                     </div>
@@ -57,13 +67,12 @@
                         <div class="mb-30px">
                             <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by categories</span>
                             <ul class="fs-15 shop-filter category-filter">
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Chairs</a><span class="item-qty">22</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Decor</a><span class="item-qty">28</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Furnitures</a><span class="item-qty">36</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Lighting</a><span class="item-qty">24</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Sofas</a><span class="item-qty">26</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Stools</a><span class="item-qty">33</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Mirrors</a><span class="item-qty">22</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Bao Bì dạng cuộn']) }}"><span class="product-cb product-category-cb"></span>Bao Bì dạng cuộn</a><span class="item-qty">02</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Thùng - hộp']) }}"><span class="product-cb product-category-cb"></span>Thùng - hộp</a><span class="item-qty">03</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Dây dai - cuộn']) }}"><span class="product-cb product-category-cb"></span>Dây dai - cuộn</a><span class="item-qty">05</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Chống sốc - Gel']) }}"><span class="product-cb product-category-cb"></span>Chống sốc - Gel</a><span class="item-qty">07</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Bao bì khác']) }}"><span class="product-cb product-category-cb"></span>Bao bì khác</a><span class="item-qty">08</span></li>
+                                <li><a href="{{ route('cms.store.shop', ['category' => 'Dụng cụ']) }}"><span class="product-cb product-category-cb"></span>Dụng cụ</a><span class="item-qty">09</span></li>
                             </ul>
                         </div>
                         <div class="mb-30px">
@@ -84,16 +93,6 @@
                                 <li><a href="#"><span class="product-cb product-fabric-cb"></span>Jute fabric</a><span class="item-qty">03</span></li>
                                 <li><a href="#"><span class="product-cb product-fabric-cb"></span>Crepe fabric</a><span class="item-qty">20</span></li>
                                 <li><a href="#"><span class="product-cb product-fabric-cb"></span>Wollen fabric</a><span class="item-qty">08</span></li>
-                            </ul>
-                        </div>
-                        <div class="mb-30px">
-                            <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by price</span>
-                            <ul class="fs-15 shop-filter price-filter">
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>Under $25</a><span class="item-qty">08</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>$25 to $50</a><span class="item-qty">05</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>$50 to $100</a><span class="item-qty">25</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>$100 to $200</a><span class="item-qty">18</span></li>
-                                <li><a href="#"><span class="product-cb product-category-cb"></span>$200 & Above</a><span class="item-qty">36</span></li>  
                             </ul>
                         </div>
                         <div class="mb-30px">

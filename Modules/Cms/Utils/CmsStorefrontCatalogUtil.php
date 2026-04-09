@@ -65,6 +65,17 @@ class CmsStorefrontCatalogUtil
         }
 
         $query = $this->catalogQuery($businessId);
+        $categoryName = trim((string) $request->query('category', ''));
+        if ($categoryName !== '') {
+            $query->whereHas('category', function (Builder $categoryQuery) use ($businessId, $categoryName) {
+                $categoryQuery
+                    ->where('business_id', $businessId)
+                    ->where('category_type', 'product')
+                    ->where('parent_id', 0)
+                    ->where('name', $categoryName);
+            });
+        }
+
         $query->reorder();
         if ($sort === 'name') {
             $query->orderBy('products.name');
@@ -105,6 +116,62 @@ class CmsStorefrontCatalogUtil
             ->orderByDesc('products.updated_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function getFeaturedCategories(): Collection
+    {
+        $businessId = $this->getStorefrontBusinessId();
+        if ($businessId === null || $this->getStorefrontBusiness() === null) {
+            return collect();
+        }
+
+        $categories = collect([
+            [
+                'name' => 'Bao Bì dạng cuộn',
+                'image_path' => 'modules/cms/assets/danhmuc/bao-bi-cuon.png',
+            ],
+            [
+                'name' => 'Thùng - hộp',
+                'image_path' => 'modules/cms/assets/danhmuc/thung-hop.png',
+            ],
+            [
+                'name' => 'Dây dai - cuộn',
+                'image_path' => 'modules/cms/assets/danhmuc/day-dai.png',
+            ],
+            [
+                'name' => 'Chống sốc - Gel',
+                'image_path' => 'modules/cms/assets/danhmuc/chong-soc-silicagel.png',
+            ],
+            [
+                'name' => 'Dụng cụ đóng gói',
+                'image_path' => 'modules/cms/assets/danhmuc/pallet-dung-cu-dong-goi.png',
+            ],
+        ]);
+
+        $categoryCounts = Product::query()
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->where('products.business_id', $businessId)
+            ->where('categories.business_id', $businessId)
+            ->where('categories.category_type', 'product')
+            ->where('categories.parent_id', 0)
+            ->whereIn('categories.name', $categories->pluck('name')->all())
+            ->active()
+            ->productForSales()
+            ->groupBy('categories.name')
+            ->selectRaw('categories.name as category_name, COUNT(products.id) as total_products')
+            ->pluck('total_products', 'category_name');
+
+        return $categories->map(function (array $category) use ($categoryCounts) {
+            return [
+                'name' => $category['name'],
+                'image_path' => $category['image_path'],
+                'url' => route('cms.store.shop', ['category' => $category['name']]),
+                'count' => (int) ($categoryCounts[$category['name']] ?? 0),
+            ];
+        })->values();
     }
 
     /**

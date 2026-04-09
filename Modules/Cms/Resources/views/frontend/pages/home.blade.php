@@ -1174,61 +1174,18 @@
                 <h6 class="mb-0 fw-700 alt-font text-dark-gray">Featured categories</h6>
             </div>
             <div class="col-xl-10 col-lg-9">
-                <div class="row row-cols-2 row-cols-md-6 row-cols-sm-3 justify-content-center align-items-center" data-anime='{ "el": "childs", "translateX": [50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
-                    <div class="col categories-style-01 text-center sm-mb-30px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">02</div>
+                <div class="row row-cols-2 row-cols-md-5 row-cols-sm-3 justify-content-center align-items-center" data-anime='{ "el": "childs", "translateX": [50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
+                    @foreach($featuredCategories as $category)
+                        <div class="col categories-style-01 text-center sm-mb-30px">
+                            <div class="categories-box">
+                                <div class="icon-box position-relative mb-10px">
+                                    <a href="{{ $category['url'] }}"><img src="{{ asset($category['image_path']) }}" alt="{{ $category['name'] }}"/></a>
+                                    <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">{{ $category['count'] }}</div>
+                                </div>
+                                <a href="{{ $category['url'] }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">{{ $category['name'] }}</a>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Lamp</a>
                         </div>
-                    </div>
-                    <div class="col categories-style-01 text-center sm-mb-30px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Stool</a>
-                        </div>
-                    </div>
-                    <div class="col categories-style-01 text-center sm-mb-30px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">05</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Chair</a>
-                        </div>
-                    </div>
-                    <div class="col categories-style-01 text-center xs-mb-30px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Cabinet</a>
-                        </div>
-                    </div>
-                    <div class="col categories-style-01 text-center">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">08</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Light</a>
-                        </div>
-                    </div>
-                    <div class="col categories-style-01 text-center">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="https://placehold.co/65x65" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">04</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Sofa</a>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
             </div>
         </div>

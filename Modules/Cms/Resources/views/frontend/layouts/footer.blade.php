@@ -41,9 +41,7 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Account</span>
                 <ul>
-                    <li><a href="{{ route('cms.store.account') }}">My account</a></li>
                     <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
-                    <li><a href="{{ route('cms.store.wishlist') }}">My wishlists</a></li>
                 </ul>
             </div>
             <!-- end footer column -->  

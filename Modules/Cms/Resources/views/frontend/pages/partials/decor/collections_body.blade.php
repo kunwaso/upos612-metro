@@ -18,62 +18,18 @@
         <!-- start section -->
         <section class="position-relative">
             <div class="container">
-                <div class="row row-cols-1 row-cols-lg-4 row-cols-md-3 row-cols-sm-2 justify-content-center align-items-center" data-anime='{ "el": "childs", "translateY": [50, 0], "translateX": [-50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/bao-bi-cuon.png') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">02</div>
+                <div class="row row-cols-1 row-cols-lg-5 row-cols-md-3 row-cols-sm-2 justify-content-center align-items-center" data-anime='{ "el": "childs", "translateY": [50, 0], "translateX": [-50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>
+                    @foreach($featuredCategories as $category)
+                        <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
+                            <div class="categories-box">
+                                <div class="icon-box position-relative mb-10px">
+                                    <a href="{{ $category['url'] }}"><img src="{{ asset($category['image_path']) }}" alt="{{ $category['name'] }}"/></a>
+                                    <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">{{ $category['count'] }}</div>
+                                </div>
+                                <a href="{{ $category['url'] }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">{{ $category['name'] }}</a>
                             </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Bao Bì dạng cuộn</a>
                         </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/thung-hop.png') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">03</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Thùng - hộp</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/day-dai.png') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">05</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Dây dai - cuộn</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/chong-soc-silicagel.png') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">07</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Chống sốc - Gel</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
-                    <!-- start categories item -->
-                    <div class="col categories-style-01 text-center md-mb-50px xs-mb-35px">
-                        <div class="categories-box">
-                            <div class="icon-box position-relative mb-10px">
-                                <a href="{{ route('cms.store.shop') }}"><img src="{{ asset('modules/cms/assets/danhmuc/pallet-dung-cu-dong-goi.png') }}" alt=""/></a>
-                                <div class="count-circle d-flex align-items-center justify-content-center w-35px h-35px bg-base-color text-white rounded-circle alt-font fw-600 fs-12">08</div>
-                            </div>
-                            <a href="{{ route('cms.store.shop') }}" class="alt-font fw-600 fs-17 text-dark-gray text-dark-gray-hover">Dụng cụ đóng gói</a>
-                        </div>
-                    </div>
-                    <!-- end categories item -->
+                    @endforeach
                 </div>
             </div>
         </section>

@@ -55,6 +55,7 @@ class CmsController extends Controller
         $homeSliderCards = $homeProducts->take(3)->map(function ($product) use ($business) {
             return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
         })->values();
+        $featuredCategories = $this->storefrontCatalogUtil->getFeaturedCategories();
 
         return view('cms::frontend.pages.home')
             ->with(compact(
@@ -63,7 +64,8 @@ class CmsController extends Controller
                 'statistics',
                 'page',
                 'homeProductCards',
-                'homeSliderCards'
+                'homeSliderCards',
+                'featuredCategories'
             ));
     }
 
@@ -212,6 +214,7 @@ class CmsController extends Controller
     public function shopCatalog(\Illuminate\Http\Request $request)
     {
         $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
+        $catalogCategory = trim((string) $request->query('category', ''));
         $products = $this->storefrontCatalogUtil->paginateCatalog($request, 12);
         $products = $products->through(function ($product) use ($business) {
             return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
@@ -228,12 +231,15 @@ class CmsController extends Controller
         $sidebarSlides = $sidebarCards->chunk(3);
 
         return view('cms::frontend.pages.shop')
-            ->with(compact('products', 'resultsSummary', 'catalogSort', 'sidebarSlides'));
+            ->with(compact('products', 'resultsSummary', 'catalogSort', 'sidebarSlides', 'catalogCategory'));
     }
 
     public function shopCollections()
     {
-        return view('cms::frontend.pages.collections');
+        $featuredCategories = $this->storefrontCatalogUtil->getFeaturedCategories();
+
+        return view('cms::frontend.pages.collections')
+            ->with(compact('featuredCategories'));
     }
 
     public function shopProductShow(int $id)
@@ -296,16 +302,6 @@ class CmsController extends Controller
         return redirect()
             ->route('cms.store.product.show', ['id' => $product->id])
             ->with('status', __('cms::lang.storefront_rfq_submitted'));
-    }
-
-    public function shopAccount()
-    {
-        return view('cms::frontend.pages.account');
-    }
-
-    public function shopWishlist()
-    {
-        return view('cms::frontend.pages.wishlist');
     }
 
     public function shopFaq()
