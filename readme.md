@@ -134,6 +134,14 @@ php mcp/semantic-code-search-mcp/bin/index-codebase --force
 cd mcp/mcp-cyber
 python -m cyber_api
 
+git checkout main
+git pull origin main
+git merge dev-1
+git push origin main
+
+# Go back to dev-1
+git checkout dev-1
+
 
 
 composer entrypoints:generate
