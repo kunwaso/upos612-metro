@@ -99,6 +99,7 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 - [Modules/VasAccounting/Http/Requests](../../Modules/VasAccounting/Http/Requests)
 - [Modules/VasAccounting/Http/Requests/BridgePayrollBatchRequest.php](../../Modules/VasAccounting/Http/Requests/BridgePayrollBatchRequest.php)
 - [Modules/VasAccounting/Http/Requests/DashboardUiDataRequest.php](../../Modules/VasAccounting/Http/Requests/DashboardUiDataRequest.php)
+- [Modules/VasAccounting/Http/Requests/DestroyInventoryDocumentRequest.php](../../Modules/VasAccounting/Http/Requests/DestroyInventoryDocumentRequest.php)
 - [Modules/VasAccounting/Http/Requests/DisburseLoanRequest.php](../../Modules/VasAccounting/Http/Requests/DisburseLoanRequest.php)
 - [Modules/VasAccounting/Http/Requests/DisposeFixedAssetRequest.php](../../Modules/VasAccounting/Http/Requests/DisposeFixedAssetRequest.php)
 - [Modules/VasAccounting/Http/Requests/EInvoiceActionRequest.php](../../Modules/VasAccounting/Http/Requests/EInvoiceActionRequest.php)
@@ -222,6 +223,7 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 - [Modules/VasAccounting/Utils](../../Modules/VasAccounting/Utils)
 - [Modules/VasAccounting/Utils/EnterpriseFinanceReportUtil.php](../../Modules/VasAccounting/Utils/EnterpriseFinanceReportUtil.php)
 - [Modules/VasAccounting/Utils/EnterprisePlanningReportUtil.php](../../Modules/VasAccounting/Utils/EnterprisePlanningReportUtil.php)
+- [Modules/VasAccounting/Utils/InventoryDocumentLifecycleUtil.php](../../Modules/VasAccounting/Utils/InventoryDocumentLifecycleUtil.php)
 - [Modules/VasAccounting/Utils/LedgerPostingUtil.php](../../Modules/VasAccounting/Utils/LedgerPostingUtil.php)
 - [Modules/VasAccounting/Utils/OperationsAssetReportUtil.php](../../Modules/VasAccounting/Utils/OperationsAssetReportUtil.php)
 - [Modules/VasAccounting/Utils/VasAccountingUtil.php](../../Modules/VasAccounting/Utils/VasAccountingUtil.php)
@@ -298,6 +300,7 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 ### Tests
 
 - [Modules/VasAccounting/Tests](../../Modules/VasAccounting/Tests)
+- [Modules/VasAccounting/Tests/Feature/InventoryDocumentDestroyTest.php](../../Modules/VasAccounting/Tests/Feature/InventoryDocumentDestroyTest.php)
 - [Modules/VasAccounting/Tests/Feature/VasAccountingDashboardUiDataTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingDashboardUiDataTest.php)
 - [Modules/VasAccounting/Tests/Feature/VasAccountingLocationFilterTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingLocationFilterTest.php)
 - [Modules/VasAccounting/Tests/Feature/VasAccountingPageRenderContractTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingPageRenderContractTest.php)
@@ -305,12 +308,14 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 - [Modules/VasAccounting/Tests/Feature/VasAccountingReportUiDataTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingReportUiDataTest.php)
 - [Modules/VasAccounting/Tests/Feature/VasAccountingRoutesRegistrationTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingRoutesRegistrationTest.php)
 - [Modules/VasAccounting/Tests/Feature/VasAccountingShellRenderTest.php](../../Modules/VasAccounting/Tests/Feature/VasAccountingShellRenderTest.php)
+- [Modules/VasAccounting/Tests/Feature/VasPostingServiceDeleteCleanupTest.php](../../Modules/VasAccounting/Tests/Feature/VasPostingServiceDeleteCleanupTest.php)
 - [Modules/VasAccounting/Tests/Unit/AccountDerivationServiceTest.php](../../Modules/VasAccounting/Tests/Unit/AccountDerivationServiceTest.php)
 - [Modules/VasAccounting/Tests/Unit/ApprovalDefaultsTest.php](../../Modules/VasAccounting/Tests/Unit/ApprovalDefaultsTest.php)
 - [Modules/VasAccounting/Tests/Unit/ApprovalRuleServiceTest.php](../../Modules/VasAccounting/Tests/Unit/ApprovalRuleServiceTest.php)
 - [Modules/VasAccounting/Tests/Unit/BudgetControlServiceTest.php](../../Modules/VasAccounting/Tests/Unit/BudgetControlServiceTest.php)
 - [Modules/VasAccounting/Tests/Unit/CutoverParityServiceTest.php](../../Modules/VasAccounting/Tests/Unit/CutoverParityServiceTest.php)
 - [Modules/VasAccounting/Tests/Unit/CutoverServiceTest.php](../../Modules/VasAccounting/Tests/Unit/CutoverServiceTest.php)
+- [Modules/VasAccounting/Tests/Unit/DeleteSnapshotAdaptersTest.php](../../Modules/VasAccounting/Tests/Unit/DeleteSnapshotAdaptersTest.php)
 - [Modules/VasAccounting/Tests/Unit/DispatchExpenseApprovalEscalationJobTest.php](../../Modules/VasAccounting/Tests/Unit/DispatchExpenseApprovalEscalationJobTest.php)
 - [Modules/VasAccounting/Tests/Unit/DocumentMatchingServiceTest.php](../../Modules/VasAccounting/Tests/Unit/DocumentMatchingServiceTest.php)
 - [Modules/VasAccounting/Tests/Unit/DocumentWorkflowServiceTest.php](../../Modules/VasAccounting/Tests/Unit/DocumentWorkflowServiceTest.php)
@@ -356,8 +361,18 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 
 ### Requests
 
+- `BridgePayrollBatchRequest`
+- `DashboardUiDataRequest`
+- `DestroyInventoryDocumentRequest`
+- `DisburseLoanRequest`
+- `DisposeFixedAssetRequest`
+- `EInvoiceActionRequest`
+- `ExportTaxRequest`
+- `FinanceDocumentActionRequest`
+- `GenerateReportSnapshotRequest`
 - `Modules\VasAccounting\Http\Requests\BridgePayrollBatchRequest`
 - `Modules\VasAccounting\Http\Requests\DashboardUiDataRequest`
+- `Modules\VasAccounting\Http\Requests\DestroyInventoryDocumentRequest`
 - `Modules\VasAccounting\Http\Requests\DisburseLoanRequest`
 - `Modules\VasAccounting\Http\Requests\DisposeFixedAssetRequest`
 - `Modules\VasAccounting\Http\Requests\EInvoiceActionRequest`
@@ -409,9 +424,62 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 - `Modules\VasAccounting\Http\Requests\UpdateCutoverPersonaRequest`
 - `Modules\VasAccounting\Http\Requests\UpdateNativeInvoiceRequest`
 - `Modules\VasAccounting\Http\Requests\UpdatePaymentDocumentRequest`
+- `NativeDocumentActionRequest`
+- `PostContractMilestoneRequest`
+- `PreviewPostingRequest`
+- `ReopenPeriodRequest`
+- `ReportDatatableRequest`
+- `SettleLoanRepaymentRequest`
+- `StoreAssetCategoryRequest`
+- `StoreBankAccountRequest`
+- `StoreBankStatementImportRequest`
+- `StoreBudgetLineRequest`
+- `StoreBudgetRequest`
+- `StoreCashbookRequest`
+- `StoreContractMilestoneRequest`
+- `StoreContractRequest`
+- `StoreCostCenterRequest`
+- `StoreCutoverSettingsRequest`
+- `StoreDepartmentRequest`
+- `StoreExpenseFinanceDocumentRequest`
+- `StoreFinanceDocumentRequest`
+- `StoreFixedAssetRequest`
+- `StoreIntegrationRunRequest`
+- `StoreIntegrationWebhookRequest`
+- `StoreInventoryDocumentRequest`
+- `StoreLoanRepaymentScheduleRequest`
+- `StoreLoanRequest`
+- `StoreManualVoucherRequest`
+- `StoreNativeInvoiceRequest`
+- `StorePayableAllocationRequest`
+- `StorePaymentDocumentRequest`
+- `StoreProcurementFinanceDocumentRequest`
+- `StoreProjectRequest`
+- `StoreReceivableAllocationRequest`
+- `StoreSetupRequest`
+- `StoreToolRequest`
+- `StoreTreasuryFinanceDocumentRequest`
+- `StoreVasAccountRequest`
+- `StoreVasPeriodRequest`
+- `StoreWarehouseRequest`
+- `TransferFixedAssetRequest`
+- `TreasuryReconciliationActionRequest`
+- `TreasuryReconciliationCandidatesRequest`
+- `UpdateBankStatementLineRequest`
+- `UpdateCutoverPersonaRequest`
+- `UpdateNativeInvoiceRequest`
+- `UpdatePaymentDocumentRequest`
 
 ### Services
 
+- `BudgetControlService`
+- `ContractAccountingService`
+- `CutoverService`
+- `EnterpriseReportingService`
+- `ExpenseApprovalEscalationDispatchService`
+- `ExpenseApprovalMonitorService`
+- `IntegrationHubService`
+- `LoanAccountingService`
 - `Modules\VasAccounting\Services\BankStatementImportAdapterManager`
 - `Modules\VasAccounting\Services\BudgetControlService`
 - `Modules\VasAccounting\Services\ContractAccountingService`
@@ -434,17 +502,36 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 - `Modules\VasAccounting\Services\VasWarehouseDocumentService`
 - `Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalEscalationDispatchService`
 - `Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalMonitorService`
+- `NativeInvoiceService`
+- `PaymentDocumentService`
+- `ProviderHealthService`
+- `ReportSnapshotService`
+- `VasDepreciationService`
+- `VasInventoryValuationService`
+- `VasPayrollBridgeService`
+- `VasPeriodCloseService`
+- `VasPostingService`
+- `VasToolAmortizationService`
+- `VasWarehouseDocumentService`
 
 ### Utils
 
+- `EnterpriseFinanceReportUtil`
+- `EnterprisePlanningReportUtil`
+- `InventoryDocumentLifecycleUtil`
 - `Modules\VasAccounting\Utils\EnterpriseFinanceReportUtil`
 - `Modules\VasAccounting\Utils\EnterprisePlanningReportUtil`
+- `Modules\VasAccounting\Utils\InventoryDocumentLifecycleUtil`
 - `Modules\VasAccounting\Utils\OperationsAssetReportUtil`
 - `Modules\VasAccounting\Utils\VasAccountingUtil`
+- `OperationsAssetReportUtil`
+- `VasAccountingUtil`
 
 ### Models / Entities
 
 - `Modules\Essentials\Entities\PayrollGroup`
+- `Modules\StorageManager\Entities\StorageDocumentLink`
+- `Modules\StorageManager\Entities\StorageSyncLog`
 - `Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocument`
 - `Modules\VasAccounting\Domain\FinanceCore\Models\FinanceDocumentLine`
 - `Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException`
@@ -510,4 +597,4 @@ Entry map for the `vas-accounting` module, including web UI routes, API routes, 
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

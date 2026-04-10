@@ -124,6 +124,7 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 - [Modules/Aichat/Tests](../../Modules/Aichat/Tests)
 - [Modules/Aichat/Tests/Feature/ChatActionControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatActionControllerTest.php)
 - [Modules/Aichat/Tests/Feature/ChatActionLifecycleFeatureTest.php](../../Modules/Aichat/Tests/Feature/ChatActionLifecycleFeatureTest.php)
+- [Modules/Aichat/Tests/Feature/ChatPipelineRejectionAuditTest.php](../../Modules/Aichat/Tests/Feature/ChatPipelineRejectionAuditTest.php)
 - [Modules/Aichat/Tests/Feature/ChatQuoteWizardConfirmControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardConfirmControllerTest.php)
 - [Modules/Aichat/Tests/Feature/ChatQuoteWizardProcessControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardProcessControllerTest.php)
 - [Modules/Aichat/Tests/Feature/ChatQuoteWizardResolutionControllerTest.php](../../Modules/Aichat/Tests/Feature/ChatQuoteWizardResolutionControllerTest.php)
@@ -155,6 +156,16 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 
 ### Requests
 
+- `CancelChatActionRequest`
+- `ConfirmChatActionRequest`
+- `ConfirmProductQuoteDraftRequest`
+- `CreateChatConversationRequest`
+- `DeleteChatConversationRequest`
+- `DeleteChatMemoryFactRequest`
+- `ExportChatConversationRequest`
+- `GetQuoteWizardCostingDefaultsRequest`
+- `ListChatConversationsRequest`
+- `ListQuoteWizardLocationsRequest`
 - `Modules\Aichat\Http\Requests\Chat\CancelChatActionRequest`
 - `Modules\Aichat\Http\Requests\Chat\ConfirmChatActionRequest`
 - `Modules\Aichat\Http\Requests\Chat\ConfirmProductQuoteDraftRequest`
@@ -183,6 +194,24 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 - `Modules\Aichat\Http\Requests\Chat\UpdateTelegramAllowedUsersRequest`
 - `Modules\Aichat\Http\Requests\Chat\UpdateUserChatProfileRequest`
 - `Modules\Aichat\Http\Requests\Chat\WipeBusinessMemoryRequest`
+- `PrepareChatActionRequest`
+- `ProcessQuoteWizardStepRequest`
+- `RegenerateChatMessageRequest`
+- `SaveChatCredentialRequest`
+- `SaveChatMessageFeedbackRequest`
+- `SearchQuoteWizardContactsRequest`
+- `SearchQuoteWizardProductsRequest`
+- `SendChatMessageRequest`
+- `ShareChatConversationRequest`
+- `StoreChatMemoryFactRequest`
+- `StoreTelegramAllowedGroupRequest`
+- `StoreTelegramBotRequest`
+- `UpdateChatBusinessSettingsRequest`
+- `UpdateChatMemoryFactRequest`
+- `UpdatePersistentMemoryNameRequest`
+- `UpdateTelegramAllowedUsersRequest`
+- `UpdateUserChatProfileRequest`
+- `WipeBusinessMemoryRequest`
 
 ### Services
 
@@ -190,13 +219,20 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 
 ### Utils
 
+- `AIChatUtil`
 - `App\Utils\ModuleUtil`
+- `ChatActionUtil`
+- `ChatProductQuoteWizardUtil`
+- `ChatUtil`
+- `ChatWorkflowUtil`
 - `Modules\Aichat\Utils\AIChatUtil`
 - `Modules\Aichat\Utils\ChatActionUtil`
 - `Modules\Aichat\Utils\ChatProductQuoteWizardUtil`
 - `Modules\Aichat\Utils\ChatUtil`
 - `Modules\Aichat\Utils\ChatWorkflowUtil`
 - `Modules\Aichat\Utils\TelegramApiUtil`
+- `ModuleUtil`
+- `TelegramApiUtil`
 
 ### Models / Entities
 
@@ -231,4 +267,4 @@ Tenant-scoped AI chat entry map for web chat, Telegram ingress, shared conversat
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

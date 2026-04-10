@@ -1,11 +1,21 @@
-"""Dashboard HTML is served at / when enabled (no DB for GET /)."""
+"""Dashboard HTML behavior at /."""
 
 from fastapi.testclient import TestClient
 
 from cyber_api.main import app
+from cyber_api.settings import settings
 
 
-def test_dashboard_root_returns_html() -> None:
+def test_dashboard_root_redirects_to_docs_when_disabled(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "dashboard_enabled", False)
+    client = TestClient(app)
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code == 302
+    assert r.headers.get("location") == "/docs"
+
+
+def test_dashboard_root_returns_html_when_enabled(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "dashboard_enabled", True)
     client = TestClient(app)
     r = client.get("/")
     assert r.status_code == 200

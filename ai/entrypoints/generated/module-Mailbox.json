@@ -1,13 +1,11 @@
 {
     "kind": "module",
     "title": "Mailbox",
-    "purpose": "Entry map for the admin mailbox module, including inbox views, account setup, OAuth callback wiring, and compose flows.",
+    "purpose": "Entry map for the admin mailbox module, including inbox views, account setup, OAuth callback wiring, compose flows, and background sync.",
     "triggers": [
-        "compose",
-        "Gmail OAuth",
-        "IMAP",
-        "inbox",
-        "Mailbox"
+        "Account CRUD, Gmail OAuth redirect/callback, IMAP connection test, or sync issues need investigation.",
+        "Compose/send flow or SMTP/Gmail client behavior is involved.",
+        "Inbox listing, thread view, star/trash, or attachment download behavior is changing."
     ],
     "verified_paths": {
         "routes": [
@@ -100,6 +98,8 @@
         "Mailbox",
         "mailbox",
         "oauth",
+        "smtp",
+        "sync",
         "threads"
     ],
     "related_docs": [
@@ -108,23 +108,101 @@
         "ai/ui-components.md",
         "Modules/Mailbox/README.md"
     ],
-    "workflows": [],
-    "edit_bundles": [],
+    "workflows": [
+        {
+            "name": "Inbox and thread view",
+            "paths": [
+                "Modules/Mailbox/Http/Controllers/MailboxController.php",
+                "Modules/Mailbox/Resources/views/inbox",
+                "Modules/Mailbox/Resources/views/partials",
+                "Modules/Mailbox/Utils/MailboxMessageUtil.php"
+            ],
+            "notes": "Inbox listing and thread read/star/trash behavior lives in controller + message util + inbox views."
+        },
+        {
+            "name": "Account setup and OAuth",
+            "paths": [
+                "Modules/Mailbox/Http/Controllers/MailboxAccountController.php",
+                "Modules/Mailbox/Http/Controllers/MailboxOAuthController.php",
+                "Modules/Mailbox/Http/Requests/StoreMailboxAccountRequest.php",
+                "Modules/Mailbox/Http/Requests/TestMailboxConnectionRequest.php",
+                "Modules/Mailbox/Http/Requests/UpdateMailboxAccountRequest.php",
+                "Modules/Mailbox/Resources/views/accounts",
+                "Modules/Mailbox/Utils/MailboxAccountUtil.php"
+            ],
+            "notes": "Account CRUD + OAuth redirect/callback + connection test span controller, form requests, util, and account views."
+        },
+        {
+            "name": "Compose and send",
+            "paths": [
+                "Modules/Mailbox/Http/Controllers/MailboxSendController.php",
+                "Modules/Mailbox/Http/Requests/SendMailboxMessageRequest.php",
+                "Modules/Mailbox/Services/GmailMailboxClient.php",
+                "Modules/Mailbox/Services/SmtpMailboxSender.php",
+                "Modules/Mailbox/Utils/MailboxSendUtil.php"
+            ],
+            "notes": "Send flow: controller validates via FormRequest, delegates to send util, which uses SMTP or Gmail client."
+        },
+        {
+            "name": "Background sync",
+            "paths": [
+                "Modules/Mailbox/Jobs/SyncMailboxAccountJob.php",
+                "Modules/Mailbox/Services/GmailMailboxClient.php",
+                "Modules/Mailbox/Services/ImapMailboxClient.php",
+                "Modules/Mailbox/Utils/MailboxSyncUtil.php"
+            ],
+            "notes": "Sync job dispatches to sync util which uses IMAP or Gmail client per account type."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Inbox UI bundle",
+            "paths": [
+                "Modules/Mailbox/Http/Controllers/MailboxController.php",
+                "Modules/Mailbox/Resources/assets/css/mailbox.css",
+                "Modules/Mailbox/Resources/assets/js/mailbox.js",
+                "Modules/Mailbox/Resources/views/inbox",
+                "Modules/Mailbox/Resources/views/partials",
+                "Modules/Mailbox/Utils/MailboxMessageUtil.php"
+            ],
+            "notes": "Inbox UI changes typically span controller, util, views, and the module JS/CSS assets."
+        },
+        {
+            "name": "Account management bundle",
+            "paths": [
+                "Modules/Mailbox/Http/Controllers/MailboxAccountController.php",
+                "Modules/Mailbox/Http/Controllers/MailboxOAuthController.php",
+                "Modules/Mailbox/Http/Requests/StoreMailboxAccountRequest.php",
+                "Modules/Mailbox/Http/Requests/UpdateMailboxAccountRequest.php",
+                "Modules/Mailbox/Resources/views/accounts",
+                "Modules/Mailbox/Utils/MailboxAccountUtil.php"
+            ],
+            "notes": "Account setup and OAuth wiring should be edited together to avoid auth flow drift."
+        }
+    ],
     "dependencies": {
         "requests": [
             "Modules\\Mailbox\\Http\\Requests\\SendMailboxMessageRequest",
             "Modules\\Mailbox\\Http\\Requests\\StoreMailboxAccountRequest",
             "Modules\\Mailbox\\Http\\Requests\\TestMailboxConnectionRequest",
-            "Modules\\Mailbox\\Http\\Requests\\UpdateMailboxAccountRequest"
+            "Modules\\Mailbox\\Http\\Requests\\UpdateMailboxAccountRequest",
+            "SendMailboxMessageRequest",
+            "StoreMailboxAccountRequest",
+            "TestMailboxConnectionRequest",
+            "UpdateMailboxAccountRequest"
         ],
         "services": [
             "Modules\\Mailbox\\Services\\GmailMailboxClient"
         ],
         "utils": [
             "App\\Utils\\ModuleUtil",
+            "MailboxAccountUtil",
+            "MailboxMessageUtil",
+            "MailboxSendUtil",
             "Modules\\Mailbox\\Utils\\MailboxAccountUtil",
             "Modules\\Mailbox\\Utils\\MailboxMessageUtil",
-            "Modules\\Mailbox\\Utils\\MailboxSendUtil"
+            "Modules\\Mailbox\\Utils\\MailboxSendUtil",
+            "ModuleUtil"
         ],
         "models": [
             "Modules\\Mailbox\\Entities\\MailboxAccount",
@@ -136,7 +214,8 @@
         "Modules/Mailbox/Tests"
     ],
     "verify_commands": [
+        "php artisan route:list --name=mailbox",
         "php artisan test --filter=Mailbox"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

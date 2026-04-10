@@ -5,16 +5,14 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 
 ## Use when
 
-- attendance
-- Essentials
-- HRM
-- leave
-- payroll
-- todo
+- HRM flows (attendance, leave, payroll, shifts, holidays, sales targets) under /hrm/* need investigation or fixes.
+- Todo, document, reminder, messaging, or knowledge-base behavior under /essentials/* is changing.
+- Transcript preview, translation, or storage behavior is involved.
 
 ## Start here
 
-- [Modules/Essentials/Http/Controllers](../../Modules/Essentials/Http/Controllers)
+- [Modules/Essentials/Http/Controllers/EssentialsController.php](../../Modules/Essentials/Http/Controllers/EssentialsController.php)
+- [Modules/Essentials/Http/Controllers/ToDoController.php](../../Modules/Essentials/Http/Controllers/ToDoController.php)
 - [Modules/Essentials/Resources/views](../../Modules/Essentials/Resources/views)
 - [Modules/Essentials/Routes/web.php](../../Modules/Essentials/Routes/web.php)
 
@@ -22,7 +20,7 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 
 ### Routes
 
-- [Modules/Essentials/Routes/web.php](../../Modules/Essentials/Routes/web.php) — dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes
+- [Modules/Essentials/Routes/web.php](../../Modules/Essentials/Routes/web.php) — dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes under `/hrm/*`
 - [Modules/Essentials/Routes/api.php](../../Modules/Essentials/Routes/api.php) — present but empty placeholder in this checkout
 
 ### Controllers
@@ -138,11 +136,15 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 
 ## Common edit bundles
 
-- _None curated yet_
+- **Essentials collaboration bundle** — Collaboration features (todo, docs, reminders, messages) share layout and permission patterns. | [Modules/Essentials/Http/Controllers/DocumentController.php](../../Modules/Essentials/Http/Controllers/DocumentController.php), [Modules/Essentials/Http/Controllers/EssentialsMessageController.php](../../Modules/Essentials/Http/Controllers/EssentialsMessageController.php), [Modules/Essentials/Http/Controllers/ReminderController.php](../../Modules/Essentials/Http/Controllers/ReminderController.php), [Modules/Essentials/Http/Controllers/ToDoController.php](../../Modules/Essentials/Http/Controllers/ToDoController.php), [Modules/Essentials/Resources/views/document](../../Modules/Essentials/Resources/views/document), [Modules/Essentials/Resources/views/messages](../../Modules/Essentials/Resources/views/messages), [Modules/Essentials/Resources/views/reminder](../../Modules/Essentials/Resources/views/reminder), [Modules/Essentials/Resources/views/todo](../../Modules/Essentials/Resources/views/todo)
+- **HRM payroll + attendance bundle** — Payroll calculations depend on attendance + allowance/deduction data. | [Modules/Essentials/Http/Controllers/AttendanceController.php](../../Modules/Essentials/Http/Controllers/AttendanceController.php), [Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php](../../Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php), [Modules/Essentials/Http/Controllers/PayrollController.php](../../Modules/Essentials/Http/Controllers/PayrollController.php), [Modules/Essentials/Http/Controllers/ShiftController.php](../../Modules/Essentials/Http/Controllers/ShiftController.php), [Modules/Essentials/Resources/views/allowance_deduction](../../Modules/Essentials/Resources/views/allowance_deduction), [Modules/Essentials/Resources/views/attendance](../../Modules/Essentials/Resources/views/attendance), [Modules/Essentials/Resources/views/payroll](../../Modules/Essentials/Resources/views/payroll)
 
 ## Primary workflows
 
-- _None curated yet_
+- **Todo and document collaboration** — Todo and document flows share comment/upload/share patterns; check both when editing either. | [Modules/Essentials/Http/Controllers/DocumentController.php](../../Modules/Essentials/Http/Controllers/DocumentController.php), [Modules/Essentials/Http/Controllers/DocumentShareController.php](../../Modules/Essentials/Http/Controllers/DocumentShareController.php), [Modules/Essentials/Http/Controllers/ToDoController.php](../../Modules/Essentials/Http/Controllers/ToDoController.php), [Modules/Essentials/Resources/views/document](../../Modules/Essentials/Resources/views/document), [Modules/Essentials/Resources/views/todo](../../Modules/Essentials/Resources/views/todo)
+- **HRM attendance and payroll** — Attendance feeds payroll; shift assignment affects both. Edit together when changing time/pay logic. | [Modules/Essentials/Http/Controllers/AttendanceController.php](../../Modules/Essentials/Http/Controllers/AttendanceController.php), [Modules/Essentials/Http/Controllers/PayrollController.php](../../Modules/Essentials/Http/Controllers/PayrollController.php), [Modules/Essentials/Http/Controllers/ShiftController.php](../../Modules/Essentials/Http/Controllers/ShiftController.php), [Modules/Essentials/Resources/views/attendance](../../Modules/Essentials/Resources/views/attendance), [Modules/Essentials/Resources/views/payroll](../../Modules/Essentials/Resources/views/payroll)
+- **Leave management** — Leave type config drives leave request validation and status flow. | [Modules/Essentials/Http/Controllers/EssentialsLeaveController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveController.php), [Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php](../../Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php), [Modules/Essentials/Resources/views/leave](../../Modules/Essentials/Resources/views/leave), [Modules/Essentials/Resources/views/leave_type](../../Modules/Essentials/Resources/views/leave_type)
+- **Transcript lifecycle** — Preview, store, and translate share form-request/util/view coupling. | [Modules/Essentials/Http/Controllers/TranscriptController.php](../../Modules/Essentials/Http/Controllers/TranscriptController.php), [Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php](../../Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php), [Modules/Essentials/Http/Requests/StoreTranscriptRequest.php](../../Modules/Essentials/Http/Requests/StoreTranscriptRequest.php), [Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php](../../Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php), [Modules/Essentials/Resources/views/transcript](../../Modules/Essentials/Resources/views/transcript), [Modules/Essentials/Utils/TranscriptTranslationUtil.php](../../Modules/Essentials/Utils/TranscriptTranslationUtil.php), [Modules/Essentials/Utils/TranscriptUtil.php](../../Modules/Essentials/Utils/TranscriptUtil.php)
 
 ## Shared dependencies
 
@@ -151,6 +153,9 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 - `Modules\Essentials\Http\Requests\PreviewTranscriptRequest`
 - `Modules\Essentials\Http\Requests\StoreTranscriptRequest`
 - `Modules\Essentials\Http\Requests\TranslateTranscriptRequest`
+- `PreviewTranscriptRequest`
+- `StoreTranscriptRequest`
+- `TranslateTranscriptRequest`
 
 ### Services
 
@@ -162,9 +167,15 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 - `App\Utils\ModuleUtil`
 - `App\Utils\TransactionUtil`
 - `App\Utils\Util`
+- `BusinessUtil`
+- `EssentialsUtil`
 - `Modules\Essentials\Utils\EssentialsUtil`
 - `Modules\Essentials\Utils\TranscriptTranslationUtil`
 - `Modules\Essentials\Utils\TranscriptUtil`
+- `ModuleUtil`
+- `TransactionUtil`
+- `TranscriptTranslationUtil`
+- `TranscriptUtil`
 
 ### Models / Entities
 
@@ -191,17 +202,24 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 
 ## Tests / verify
 
+- [Modules/Essentials/Tests](../../Modules/Essentials/Tests)
+- `php artisan route:list --name=essentials`
 - `php artisan test --filter=Essentials`
 
 ## Search keywords
 
 - `attendance`
+- `document`
 - `Essentials`
 - `essentials`
+- `holiday`
 - `hrm`
 - `knowledge-base`
 - `leave`
+- `messaging`
 - `payroll`
+- `reminder`
+- `shift`
 - `todo`
 - `transcripts`
 
@@ -213,4 +231,4 @@ Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

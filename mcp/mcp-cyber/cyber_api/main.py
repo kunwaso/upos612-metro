@@ -38,6 +38,19 @@ from cyber_api.security import create_dev_token
 from cyber_core.logging import configure_logging
 
 
+def _parse_cors_origins(raw: str) -> list[str]:
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+def _cors_allow_credentials(origins: list[str]) -> bool:
+    env = os.environ.get("CYBER_CORS_ALLOW_CREDENTIALS", "").strip().lower()
+    if env in ("1", "true", "yes"):
+        return "*" not in origins
+    if env in ("0", "false", "no"):
+        return False
+    return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
@@ -52,10 +65,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 setup_app_logging(app)
+_cors_origins = _parse_cors_origins(os.environ.get("CYBER_CORS_ORIGINS", ""))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("CYBER_CORS_ORIGINS", "*").split(","),
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_allow_credentials(_cors_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )

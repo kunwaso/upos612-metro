@@ -30,6 +30,35 @@ DEFAULT_ADAPTERS: dict[str, type[Adapter]] = {
 }
 
 
+def _iter_strings(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (int, float, bool)):
+        return [str(value)]
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            out.extend(_iter_strings(item))
+        return out
+    if isinstance(value, dict):
+        out: list[str] = []
+        for item in value.values():
+            out.extend(_iter_strings(item))
+        return out
+    return []
+
+
+def _payload_candidates(options: dict[str, object]) -> list[str]:
+    if not isinstance(options, dict):
+        return []
+    keys = ("payload", "probe", "fuzz", "injection")
+    out: list[str] = []
+    for key, value in options.items():
+        if any(token in str(key).lower() for token in keys):
+            out.extend(_iter_strings(value))
+    return [x for x in out if x.strip()]
+
+
 class Orchestrator:
     def __init__(
         self,
@@ -53,6 +82,7 @@ class Orchestrator:
             approval_id=ctx.options.get("approval_id"),
             approval_status=ctx.options.get("approval_status"),
         )
+        self.policy.assert_no_forbidden_payloads(_payload_candidates(ctx.options))
         norm_ctx = {
             "scan_id": ctx.scan_id,
             "project_id": ctx.project_id,

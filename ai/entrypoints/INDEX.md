@@ -7,11 +7,11 @@ Start here when the correct repo area is unclear.
 |---|---|---|
 | `Core (root)`, root routes, `app/Http/Controllers`, `app/Utils` | [core-http-entry.md](./core-http-entry.md) | Deeper root maps: [core-http-controllers.md](./core-http-controllers.md), [core-utils-index.md](./core-utils-index.md) |
 | `Aichat`, chat drawer, Telegram, quote wizard | [module-Aichat.md](./module-Aichat.md) | Local module folder present; admin chat plus shared chat routes |
-| `Cms`, storefront, `shop/*`, blog, contact-us | [module-Cms.md](./module-Cms.md) | Deepest storefront map in this folder |
-| `Essentials`, HRM, attendance, payroll, leave, todo | [module-Essentials.md](./module-Essentials.md) | Local module folder present; `Routes/api.php` exists but is empty in this checkout |
+| `Cms`, storefront, `shop/*`, blog, contact-us, RFQ | [module-Cms.md](./module-Cms.md) | Deepest storefront map in this folder |
+| `Essentials`, HRM, attendance, payroll, leave, todo, knowledge-base | [module-Essentials.md](./module-Essentials.md) | Local module folder present; `Routes/api.php` exists but is empty in this checkout |
 | `Mailbox`, inbox, Gmail OAuth, IMAP, compose | [module-Mailbox.md](./module-Mailbox.md) | Local module folder present; module README exists |
 | `Projectauto`, tasks, workflows, builder | [module-Projectauto.md](./module-Projectauto.md) | Local module folder present; workflow-wizard doc exists |
-| `StorageManager`, warehouse, inbound, putaway, counts | [module-StorageManager.md](./module-StorageManager.md) | Local module folder present; no `Routes/api.php` file in this checkout |
+| `StorageManager`, warehouse, inbound, putaway, counts, outbound, WMS | [module-StorageManager.md](./module-StorageManager.md) | Local module folder present; no `Routes/api.php` file in this checkout |
 | `VasAccounting`, `vas-accounting`, vouchers, budgets, reports | [module-VasAccounting.md](./module-VasAccounting.md) | Local module folder present; API controller subfolder exists |
 | `Accounting` | — | not in checkout |
 | `AiAssistance` | — | not in checkout |
@@ -35,4 +35,4 @@ Start here when the correct repo area is unclear.
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

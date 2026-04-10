@@ -112,6 +112,7 @@
             "Modules/Aichat/Tests",
             "Modules/Aichat/Tests/Feature/ChatActionControllerTest.php",
             "Modules/Aichat/Tests/Feature/ChatActionLifecycleFeatureTest.php",
+            "Modules/Aichat/Tests/Feature/ChatPipelineRejectionAuditTest.php",
             "Modules/Aichat/Tests/Feature/ChatQuoteWizardConfirmControllerTest.php",
             "Modules/Aichat/Tests/Feature/ChatQuoteWizardProcessControllerTest.php",
             "Modules/Aichat/Tests/Feature/ChatQuoteWizardResolutionControllerTest.php",
@@ -197,6 +198,16 @@
     ],
     "dependencies": {
         "requests": [
+            "CancelChatActionRequest",
+            "ConfirmChatActionRequest",
+            "ConfirmProductQuoteDraftRequest",
+            "CreateChatConversationRequest",
+            "DeleteChatConversationRequest",
+            "DeleteChatMemoryFactRequest",
+            "ExportChatConversationRequest",
+            "GetQuoteWizardCostingDefaultsRequest",
+            "ListChatConversationsRequest",
+            "ListQuoteWizardLocationsRequest",
             "Modules\\Aichat\\Http\\Requests\\Chat\\CancelChatActionRequest",
             "Modules\\Aichat\\Http\\Requests\\Chat\\ConfirmChatActionRequest",
             "Modules\\Aichat\\Http\\Requests\\Chat\\ConfirmProductQuoteDraftRequest",
@@ -224,17 +235,42 @@
             "Modules\\Aichat\\Http\\Requests\\Chat\\UpdatePersistentMemoryNameRequest",
             "Modules\\Aichat\\Http\\Requests\\Chat\\UpdateTelegramAllowedUsersRequest",
             "Modules\\Aichat\\Http\\Requests\\Chat\\UpdateUserChatProfileRequest",
-            "Modules\\Aichat\\Http\\Requests\\Chat\\WipeBusinessMemoryRequest"
+            "Modules\\Aichat\\Http\\Requests\\Chat\\WipeBusinessMemoryRequest",
+            "PrepareChatActionRequest",
+            "ProcessQuoteWizardStepRequest",
+            "RegenerateChatMessageRequest",
+            "SaveChatCredentialRequest",
+            "SaveChatMessageFeedbackRequest",
+            "SearchQuoteWizardContactsRequest",
+            "SearchQuoteWizardProductsRequest",
+            "SendChatMessageRequest",
+            "ShareChatConversationRequest",
+            "StoreChatMemoryFactRequest",
+            "StoreTelegramAllowedGroupRequest",
+            "StoreTelegramBotRequest",
+            "UpdateChatBusinessSettingsRequest",
+            "UpdateChatMemoryFactRequest",
+            "UpdatePersistentMemoryNameRequest",
+            "UpdateTelegramAllowedUsersRequest",
+            "UpdateUserChatProfileRequest",
+            "WipeBusinessMemoryRequest"
         ],
         "services": [],
         "utils": [
+            "AIChatUtil",
             "App\\Utils\\ModuleUtil",
+            "ChatActionUtil",
+            "ChatProductQuoteWizardUtil",
+            "ChatUtil",
+            "ChatWorkflowUtil",
             "Modules\\Aichat\\Utils\\AIChatUtil",
             "Modules\\Aichat\\Utils\\ChatActionUtil",
             "Modules\\Aichat\\Utils\\ChatProductQuoteWizardUtil",
             "Modules\\Aichat\\Utils\\ChatUtil",
             "Modules\\Aichat\\Utils\\ChatWorkflowUtil",
-            "Modules\\Aichat\\Utils\\TelegramApiUtil"
+            "Modules\\Aichat\\Utils\\TelegramApiUtil",
+            "ModuleUtil",
+            "TelegramApiUtil"
         ],
         "models": [
             "Modules\\Aichat\\Entities\\ChatConversation",
@@ -250,5 +286,5 @@
         "php artisan route:list --name=aichat",
         "php artisan test --filter=Aichat"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

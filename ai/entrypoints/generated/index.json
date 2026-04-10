@@ -42,7 +42,7 @@
         "composer entrypoints:check",
         "composer entrypoints:test"
     ],
-    "last_reviewed": "2026-04-03",
+    "last_reviewed": "2026-04-10",
     "entries": [
         {
             "trigger": "Core (root), root routes, app/Http/Controllers, app/Utils",
@@ -57,13 +57,13 @@
             "status": "local"
         },
         {
-            "trigger": "Cms, storefront, shop/*, blog, contact-us",
+            "trigger": "Cms, storefront, shop/*, blog, contact-us, RFQ",
             "map": "module-Cms",
             "notes": "Deepest storefront map in this folder",
             "status": "local"
         },
         {
-            "trigger": "Essentials, HRM, attendance, payroll, leave, todo",
+            "trigger": "Essentials, HRM, attendance, payroll, leave, todo, knowledge-base",
             "map": "module-Essentials",
             "notes": "Local module folder present; `Routes/api.php` exists but is empty in this checkout",
             "status": "local"
@@ -81,7 +81,7 @@
             "status": "local"
         },
         {
-            "trigger": "StorageManager, warehouse, inbound, putaway, counts",
+            "trigger": "StorageManager, warehouse, inbound, putaway, counts, outbound, WMS",
             "map": "module-StorageManager",
             "notes": "Local module folder present; no `Routes/api.php` file in this checkout",
             "status": "local"

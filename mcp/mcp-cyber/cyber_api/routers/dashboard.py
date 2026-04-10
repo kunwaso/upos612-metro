@@ -5,17 +5,17 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select, update
-from sqlalchemy.orm import joinedload
-
+from sqlalchemy import and_, delete, func, or_, select, update
 from cyber_api.audit import write_audit
 from cyber_api.deps import DbSession
+from cyber_api.principals import actor_uuid
 from cyber_api.schemas import CompareOut
+from cyber_api.security import TokenUser, get_current_user
 from cyber_api.settings import settings
 from cyber_db.models import AuditLog, Environment, Finding, Project, ScanEvent, ScanProfile, ScanRun
 from cyber_reports.analytics_format import fold_fleet_rows
@@ -84,6 +84,43 @@ def _redact_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _can_run_scan(user: TokenUser) -> bool:
+    return user.role in ("developer", "security_engineer", "manager", "admin")
+
+
+def _can_clear_scan_history(user: TokenUser) -> bool:
+    return user.role in ("security_engineer", "admin")
+
+
+async def _auth_profile_org(
+    session: DbSession,
+    profile_id: uuid.UUID,
+    org_id: uuid.UUID,
+) -> tuple[ScanProfile, Environment, Project]:
+    profile = await session.get(ScanProfile, profile_id)
+    if not profile:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
+    env = await session.get(Environment, profile.environment_id)
+    if not env:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
+    proj = await session.get(Project, env.project_id)
+    if not proj or proj.org_id != org_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
+    return profile, env, proj
+
+
+async def _auth_scan_org(
+    session: DbSession,
+    scan_id: uuid.UUID,
+    org_id: uuid.UUID,
+) -> tuple[ScanRun, ScanProfile, Environment, Project]:
+    run = await session.get(ScanRun, scan_id)
+    if not run:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found")
+    profile, env, proj = await _auth_profile_org(session, run.profile_id, org_id)
+    return run, profile, env, proj
+
+
 @router.get("/", response_class=HTMLResponse, include_in_schema=False, response_model=None)
 async def dashboard_home() -> HTMLResponse | RedirectResponse:
     if not settings.dashboard_enabled:
@@ -92,18 +129,28 @@ async def dashboard_home() -> HTMLResponse | RedirectResponse:
 
 
 @router.get("/dashboard/api/feed", include_in_schema=False)
-async def dashboard_feed(session: DbSession) -> dict[str, Any]:
+async def dashboard_feed(
+    session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
+) -> dict[str, Any]:
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
 
     scan_stmt = (
-        select(ScanRun)
-        .options(joinedload(ScanRun.profile).joinedload(ScanProfile.environment).joinedload(Environment.project))
+        select(ScanRun, ScanProfile, Environment, Project)
+        .join(ScanProfile, ScanRun.profile_id == ScanProfile.id)
+        .join(Environment, ScanProfile.environment_id == Environment.id)
+        .join(Project, Environment.project_id == Project.id)
+        .where(Project.org_id == user.org_id)
         .order_by(ScanRun.started_at.desc())
         .limit(50)
     )
     scan_res = await session.execute(scan_stmt)
-    runs = scan_res.unique().scalars().all()
+    scan_rows = scan_res.all()
+    runs = [row[0] for row in scan_rows]
+    profile_ctx: dict[uuid.UUID, tuple[ScanProfile, Environment, Project]] = {
+        run.id: (profile, env, proj) for run, profile, env, proj in scan_rows
+    }
     scan_ids = [r.id for r in runs]
 
     counts_by_scan: dict[uuid.UUID, dict[str, int]] = {}
@@ -173,9 +220,10 @@ async def dashboard_feed(session: DbSession) -> dict[str, Any]:
 
     scans_out: list[dict[str, Any]] = []
     for run in runs:
-        prof = run.profile
-        env = prof.environment if prof else None
-        proj = env.project if env else None
+        ctx_row = profile_ctx.get(run.id)
+        if not ctx_row:
+            continue
+        prof, env, proj = ctx_row
         opts = dict(run.options or {})
         targets = opts.get("target_urls") or []
         if not isinstance(targets, list):
@@ -229,9 +277,11 @@ async def dashboard_feed(session: DbSession) -> dict[str, Any]:
             }
         )
 
-    ev_stmt = select(ScanEvent).order_by(ScanEvent.ts.desc()).limit(200)
-    ev_res = await session.execute(ev_stmt)
-    events_rows = ev_res.scalars().all()
+    events_rows: list[ScanEvent] = []
+    if scan_ids:
+        ev_stmt = select(ScanEvent).where(ScanEvent.scan_id.in_(scan_ids)).order_by(ScanEvent.ts.desc()).limit(200)
+        ev_res = await session.execute(ev_stmt)
+        events_rows = ev_res.scalars().all()
     events_out = [
         {
             "id": r.id,
@@ -246,9 +296,18 @@ async def dashboard_feed(session: DbSession) -> dict[str, Any]:
         for r in events_rows
     ]
 
-    au_stmt = select(AuditLog).order_by(AuditLog.ts.desc()).limit(80)
-    au_res = await session.execute(au_stmt)
-    audit_rows = au_res.scalars().all()
+    audit_rows: list[AuditLog] = []
+    if scan_ids:
+        audit_filters = [
+            and_(AuditLog.object_type == "scan_run", AuditLog.object_id.in_([str(x) for x in scan_ids]))
+        ]
+        finding_id_res = await session.execute(select(Finding.id).where(Finding.scan_id.in_(scan_ids)))
+        finding_ids = [str(fid) for fid in finding_id_res.scalars().all()]
+        if finding_ids:
+            audit_filters.append(and_(AuditLog.object_type == "finding", AuditLog.object_id.in_(finding_ids)))
+        au_stmt = select(AuditLog).where(or_(*audit_filters)).order_by(AuditLog.ts.desc()).limit(80)
+        au_res = await session.execute(au_stmt)
+        audit_rows = au_res.scalars().all()
     audit_out = [
         {
             "id": r.id,
@@ -270,14 +329,13 @@ async def dashboard_compare_scans(
     scan_id_a: uuid.UUID,
     scan_id_b: uuid.UUID,
     session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
 ) -> CompareOut:
-    """Fingerprint diff between two scans — same logic as GET /v1/scans/.../compare/... (dashboard-gated, no JWT)."""
+    """Fingerprint diff between two scans in the caller's org."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
     for sid in (scan_id_a, scan_id_b):
-        run = await session.get(ScanRun, sid)
-        if not run:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found")
+        await _auth_scan_org(session, sid, user.org_id)
     res_a = await session.execute(select(Finding.fingerprint).where(Finding.scan_id == scan_id_a))
     res_b = await session.execute(select(Finding.fingerprint).where(Finding.scan_id == scan_id_b))
     set_a = set(res_a.scalars().all())
@@ -292,7 +350,10 @@ async def dashboard_compare_scans(
 
 
 @router.get("/dashboard/api/meta", include_in_schema=False)
-async def dashboard_meta(session: DbSession) -> dict[str, Any]:
+async def dashboard_meta(
+    session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
+) -> dict[str, Any]:
     """Scan profiles for the test console (dashboard-gated); includes Phase 2 fields for hints."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
@@ -300,6 +361,7 @@ async def dashboard_meta(session: DbSession) -> dict[str, Any]:
         select(ScanProfile, Environment, Project)
         .join(Environment, ScanProfile.environment_id == Environment.id)
         .join(Project, Environment.project_id == Project.id)
+        .where(Project.org_id == user.org_id)
         .order_by(Project.slug, Environment.name, ScanProfile.name)
     )
     res = await session.execute(stmt)
@@ -326,11 +388,11 @@ async def dashboard_meta(session: DbSession) -> dict[str, Any]:
 
 
 @router.get("/dashboard/api/analytics/fleet", include_in_schema=False)
-async def dashboard_analytics_fleet(session: DbSession) -> dict[str, Any]:
-    """
-    Phase 4–5 fleet snapshot for the dev HTML console (no JWT).
-    Not org-scoped — same visibility model as /dashboard/api/feed; disable dashboard when exposed.
-    """
+async def dashboard_analytics_fleet(
+    session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
+) -> dict[str, Any]:
+    """Phase 4–5 fleet snapshot for the caller's org."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
     stmt = (
@@ -342,7 +404,7 @@ async def dashboard_analytics_fleet(session: DbSession) -> dict[str, Any]:
             func.count().label("cnt"),
         )
         .join(Project, Finding.project_id == Project.id)
-        .where(Finding.status == "open")
+        .where(Finding.status == "open", Project.org_id == user.org_id)
         .group_by(Finding.project_id, Project.slug, Project.name, Finding.severity)
         .order_by(Project.slug)
     )
@@ -356,13 +418,14 @@ async def dashboard_run_scan(
     body: DashboardRunScan,
     session: DbSession,
     background_tasks: BackgroundTasks,
+    user: Annotated[TokenUser, Depends(get_current_user)],
 ) -> dict[str, str]:
-    """Queue a scan like POST /v1/scans but without JWT (only when dashboard is enabled)."""
+    """Queue a scan like POST /v1/scans with org + role checks."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
-    profile = await session.get(ScanProfile, body.profile_id)
-    if not profile:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Profile not found")
+    if not _can_run_scan(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient role")
+    _profile, _env, _proj = await _auth_profile_org(session, body.profile_id, user.org_id)
     trace_id = str(uuid.uuid4())
     opts: dict[str, Any] = {}
     if body.target_urls:
@@ -372,7 +435,7 @@ async def dashboard_run_scan(
         opts["target_urls"] = urls
     run = ScanRun(
         profile_id=body.profile_id,
-        started_by=None,
+        started_by=actor_uuid(user),
         status="queued",
         trace_id=trace_id,
         options=opts,
@@ -380,7 +443,7 @@ async def dashboard_run_scan(
     session.add(run)
     await write_audit(
         session,
-        actor_id=None,
+        actor_id=actor_uuid(user),
         action="scan.create",
         object_type="scan_run",
         object_id=str(run.id),
@@ -400,35 +463,61 @@ async def dashboard_run_scan(
 async def dashboard_clear_scan_history(
     body: DashboardClearScanHistory,
     session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
 ) -> dict[str, int]:
     """Remove all scan runs, findings, events, and scan/finding audit rows (dashboard-gated)."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
+    if not _can_clear_scan_history(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only security_engineer or admin can clear scan history")
     if (body.confirm or "").strip() != "CLEAR":
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             'Body must be {"confirm": "CLEAR"}.',
         )
 
-    n_findings = int(await session.scalar(select(func.count()).select_from(Finding)) or 0)
-    n_events = int(await session.scalar(select(func.count()).select_from(ScanEvent)) or 0)
-    n_runs = int(await session.scalar(select(func.count()).select_from(ScanRun)) or 0)
+    scan_ids_stmt = (
+        select(ScanRun.id)
+        .join(ScanProfile, ScanRun.profile_id == ScanProfile.id)
+        .join(Environment, ScanProfile.environment_id == Environment.id)
+        .join(Project, Environment.project_id == Project.id)
+        .where(Project.org_id == user.org_id)
+    )
+    scan_ids = [sid for sid in (await session.execute(scan_ids_stmt)).scalars().all()]
+    if not scan_ids:
+        return {"deleted_runs": 0, "deleted_findings": 0, "deleted_events": 0, "deleted_audit_rows": 0}
+
+    finding_ids = [
+        str(fid)
+        for fid in (
+            await session.execute(select(Finding.id).where(Finding.scan_id.in_(scan_ids)))
+        ).scalars().all()
+    ]
+    n_findings = len(finding_ids)
+    n_events = int(
+        await session.scalar(select(func.count()).select_from(ScanEvent).where(ScanEvent.scan_id.in_(scan_ids))) or 0
+    )
+    n_runs = len(scan_ids)
+
+    audit_filters = [
+        and_(AuditLog.object_type == "scan_run", AuditLog.object_id.in_([str(sid) for sid in scan_ids]))
+    ]
+    if finding_ids:
+        audit_filters.append(and_(AuditLog.object_type == "finding", AuditLog.object_id.in_(finding_ids)))
+
     n_audit = int(
-        await session.scalar(
-            select(func.count()).select_from(AuditLog).where(AuditLog.object_type.in_(["scan_run", "finding"]))
-        )
-        or 0
+        await session.scalar(select(func.count()).select_from(AuditLog).where(or_(*audit_filters))) or 0
     )
 
-    await session.execute(update(ScanRun).values(baseline_scan_id=None))
-    await session.execute(delete(Finding))
-    await session.execute(delete(ScanEvent))
-    await session.execute(delete(ScanRun))
-    await session.execute(delete(AuditLog).where(AuditLog.object_type.in_(["scan_run", "finding"])))
+    await session.execute(update(ScanRun).where(ScanRun.baseline_scan_id.in_(scan_ids)).values(baseline_scan_id=None))
+    await session.execute(delete(Finding).where(Finding.scan_id.in_(scan_ids)))
+    await session.execute(delete(ScanEvent).where(ScanEvent.scan_id.in_(scan_ids)))
+    await session.execute(delete(ScanRun).where(ScanRun.id.in_(scan_ids)))
+    await session.execute(delete(AuditLog).where(or_(*audit_filters)))
 
     await write_audit(
         session,
-        actor_id=None,
+        actor_id=actor_uuid(user),
         action="dashboard.clear_scan_history",
         object_type="system",
         object_id="scan_history",
@@ -454,19 +543,15 @@ async def dashboard_report_export(
     scan_id: uuid.UUID,
     fmt: str,
     session: DbSession,
+    user: Annotated[TokenUser, Depends(get_current_user)],
 ) -> Response:
-    """Same payloads as /v1/reports when dashboard is on (local dev; no JWT)."""
+    """Same payloads as /v1/reports when dashboard is enabled."""
     if not settings.dashboard_enabled:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dashboard disabled")
     if fmt not in ("md", "json"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "fmt must be md or json")
 
-    run = await session.get(ScanRun, scan_id)
-    if not run:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found")
-    profile = await session.get(ScanProfile, run.profile_id)
-    env = await session.get(Environment, profile.environment_id)
-    proj = await session.get(Project, env.project_id)
+    run, _profile, env, proj = await _auth_scan_org(session, scan_id, user.org_id)
     res = await session.execute(select(Finding).where(Finding.scan_id == scan_id))
     findings = list(res.scalars().all())
     fd = [

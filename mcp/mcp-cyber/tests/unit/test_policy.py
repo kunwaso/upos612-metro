@@ -1,6 +1,10 @@
 import pytest
+from pathlib import Path
 
 from cyber_engine.policy_engine import PolicyEngine, PolicyError
+
+
+_DEFAULT_POLICY = str(Path(__file__).resolve().parents[2] / "configs" / "default.policy.yaml")
 
 
 @pytest.fixture
@@ -71,3 +75,21 @@ def test_passive_prod_ok(policy: PolicyEngine):
         approval_id=None,
         approval_status=None,
     )
+
+
+def test_forbidden_payload_guard_blocks(policy: PolicyEngine):
+    policy = PolicyEngine(_DEFAULT_POLICY)
+    with pytest.raises(PolicyError, match="forbidden payload"):
+        policy.assert_no_forbidden_payloads(["SELECT * FROM users WHERE a='; drop table users"])
+
+
+def test_ci_gate_block_if_high_authz() -> None:
+    p = PolicyEngine(_DEFAULT_POLICY)
+    findings = [{"severity": "high", "status": "open", "category": "authz"}]
+    assert p.should_block_findings(findings, gate_name="ci_default")
+
+
+def test_ci_gate_allows_non_matching_findings() -> None:
+    p = PolicyEngine(_DEFAULT_POLICY)
+    findings = [{"severity": "medium", "status": "open", "category": "config"}]
+    assert not p.should_block_findings(findings, gate_name="ci_default")

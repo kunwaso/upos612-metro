@@ -40,6 +40,7 @@
             "app/Utils/ProductActivityLogUtil.php",
             "app/Utils/ProductCostingUtil.php",
             "app/Utils/ProductUtil.php",
+            "app/Utils/PurchaseViewDataBuilder.php",
             "app/Utils/QuoteDisplayPresenter.php",
             "app/Utils/QuoteInvoiceReleaseService.php",
             "app/Utils/QuoteUtil.php",
@@ -104,5 +105,5 @@
     "verify_commands": [
         "php artisan test --filter=Unit"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

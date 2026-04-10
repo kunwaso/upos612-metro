@@ -135,6 +135,10 @@
     ],
     "dependencies": {
         "requests": [
+            "CreateProjectautoTaskRequest",
+            "CreateWorkflowFromWizardRequest",
+            "CreateWorkflowRequest",
+            "ModifyAcceptProjectautoTaskRequest",
             "Modules\\Projectauto\\Http\\Requests\\CreateProjectautoTaskRequest",
             "Modules\\Projectauto\\Http\\Requests\\ModifyAcceptProjectautoTaskRequest",
             "Modules\\Projectauto\\Http\\Requests\\RejectProjectautoTaskRequest",
@@ -142,13 +146,19 @@
             "Modules\\Projectauto\\Http\\Requests\\UpdateProjectautoRuleRequest",
             "Modules\\Projectauto\\Http\\Requests\\Workflow\\CreateWorkflowFromWizardRequest",
             "Modules\\Projectauto\\Http\\Requests\\Workflow\\CreateWorkflowRequest",
-            "Modules\\Projectauto\\Http\\Requests\\Workflow\\UpdateWorkflowDraftRequest"
+            "Modules\\Projectauto\\Http\\Requests\\Workflow\\UpdateWorkflowDraftRequest",
+            "RejectProjectautoTaskRequest",
+            "StoreProjectautoRuleRequest",
+            "UpdateProjectautoRuleRequest",
+            "UpdateWorkflowDraftRequest"
         ],
         "services": [],
         "utils": [
             "App\\Utils\\ModuleUtil",
             "Modules\\Projectauto\\Utils\\ProjectautoUtil",
-            "Modules\\Projectauto\\Utils\\WizardGraphBuilder"
+            "Modules\\Projectauto\\Utils\\WizardGraphBuilder",
+            "ModuleUtil",
+            "ProjectautoUtil"
         ],
         "models": [
             "Modules\\Projectauto\\Entities\\ProjectautoPendingTask",
@@ -165,5 +175,5 @@
         "php artisan route:list --name=projectauto",
         "php artisan test --filter=Projectauto"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

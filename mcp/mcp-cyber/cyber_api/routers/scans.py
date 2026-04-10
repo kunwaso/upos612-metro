@@ -12,7 +12,16 @@ from cyber_api.principals import actor_uuid
 from cyber_api.schemas import CompareOut, FindingOut, ScanCreate, ScanOut
 from cyber_api.security import TokenUser, get_current_user
 from cyber_api.settings import settings
-from cyber_db.models import Environment, Finding, Project, ScanProfile, ScanRun
+from cyber_db.models import (
+    Approval,
+    Environment,
+    Finding,
+    OpenAPIArtifact,
+    Project,
+    RoutesArtifact,
+    ScanProfile,
+    ScanRun,
+)
 from cyber_worker.redis_jobs import enqueue_scan
 from cyber_worker.tasks import execute_scan
 
@@ -44,11 +53,20 @@ async def create_scan(
     if body.target_urls:
         opts["target_urls"] = body.target_urls
     if body.openapi_artifact_id:
-        opts["openapi_artifact_id"] = str(body.openapi_artifact_id)
+        oart = await session.get(OpenAPIArtifact, body.openapi_artifact_id)
+        if not oart or oart.environment_id != profile.environment_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "OpenAPI artifact not found")
+        opts["openapi_artifact_id"] = str(oart.id)
     if body.routes_artifact_id:
-        opts["routes_artifact_id"] = str(body.routes_artifact_id)
+        rart = await session.get(RoutesArtifact, body.routes_artifact_id)
+        if not rart or rart.environment_id != profile.environment_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Routes artifact not found")
+        opts["routes_artifact_id"] = str(rart.id)
     if body.approval_id:
-        opts["approval_id"] = str(body.approval_id)
+        ap = await session.get(Approval, body.approval_id)
+        if not ap or ap.profile_id != profile.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Approval not found")
+        opts["approval_id"] = str(ap.id)
     if body.note:
         opts["note"] = body.note
 

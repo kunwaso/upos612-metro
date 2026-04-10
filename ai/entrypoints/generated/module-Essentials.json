@@ -3,18 +3,15 @@
     "title": "Essentials",
     "purpose": "Entry map for the Essentials and HRM module surfaces under `/essentials/*` and `/hrm/*`.",
     "triggers": [
-        "attendance",
-        "Essentials",
-        "HRM",
-        "leave",
-        "payroll",
-        "todo"
+        "HRM flows (attendance, leave, payroll, shifts, holidays, sales targets) under /hrm/* need investigation or fixes.",
+        "Todo, document, reminder, messaging, or knowledge-base behavior under /essentials/* is changing.",
+        "Transcript preview, translation, or storage behavior is involved."
     ],
     "verified_paths": {
         "routes": [
             {
                 "path": "Modules/Essentials/Routes/web.php",
-                "summary": "dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes",
+                "summary": "dashboards, documents, todos, reminders, messaging, knowledge base, transcripts, and HRM routes under `/hrm/*`",
                 "exists": true
             },
             {
@@ -129,12 +126,17 @@
     ],
     "search_keywords": [
         "attendance",
+        "document",
         "Essentials",
         "essentials",
+        "holiday",
         "hrm",
         "knowledge-base",
         "leave",
+        "messaging",
         "payroll",
+        "reminder",
+        "shift",
         "todo",
         "transcripts"
     ],
@@ -143,13 +145,90 @@
         "ai/security-and-auth.md",
         "ai/ui-components.md"
     ],
-    "workflows": [],
-    "edit_bundles": [],
+    "workflows": [
+        {
+            "name": "Todo and document collaboration",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/DocumentController.php",
+                "Modules/Essentials/Http/Controllers/DocumentShareController.php",
+                "Modules/Essentials/Http/Controllers/ToDoController.php",
+                "Modules/Essentials/Resources/views/document",
+                "Modules/Essentials/Resources/views/todo"
+            ],
+            "notes": "Todo and document flows share comment/upload/share patterns; check both when editing either."
+        },
+        {
+            "name": "HRM attendance and payroll",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/AttendanceController.php",
+                "Modules/Essentials/Http/Controllers/PayrollController.php",
+                "Modules/Essentials/Http/Controllers/ShiftController.php",
+                "Modules/Essentials/Resources/views/attendance",
+                "Modules/Essentials/Resources/views/payroll"
+            ],
+            "notes": "Attendance feeds payroll; shift assignment affects both. Edit together when changing time/pay logic."
+        },
+        {
+            "name": "Leave management",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/EssentialsLeaveController.php",
+                "Modules/Essentials/Http/Controllers/EssentialsLeaveTypeController.php",
+                "Modules/Essentials/Resources/views/leave",
+                "Modules/Essentials/Resources/views/leave_type"
+            ],
+            "notes": "Leave type config drives leave request validation and status flow."
+        },
+        {
+            "name": "Transcript lifecycle",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/TranscriptController.php",
+                "Modules/Essentials/Http/Requests/PreviewTranscriptRequest.php",
+                "Modules/Essentials/Http/Requests/StoreTranscriptRequest.php",
+                "Modules/Essentials/Http/Requests/TranslateTranscriptRequest.php",
+                "Modules/Essentials/Resources/views/transcript",
+                "Modules/Essentials/Utils/TranscriptTranslationUtil.php",
+                "Modules/Essentials/Utils/TranscriptUtil.php"
+            ],
+            "notes": "Preview, store, and translate share form-request/util/view coupling."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Essentials collaboration bundle",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/DocumentController.php",
+                "Modules/Essentials/Http/Controllers/EssentialsMessageController.php",
+                "Modules/Essentials/Http/Controllers/ReminderController.php",
+                "Modules/Essentials/Http/Controllers/ToDoController.php",
+                "Modules/Essentials/Resources/views/document",
+                "Modules/Essentials/Resources/views/messages",
+                "Modules/Essentials/Resources/views/reminder",
+                "Modules/Essentials/Resources/views/todo"
+            ],
+            "notes": "Collaboration features (todo, docs, reminders, messages) share layout and permission patterns."
+        },
+        {
+            "name": "HRM payroll + attendance bundle",
+            "paths": [
+                "Modules/Essentials/Http/Controllers/AttendanceController.php",
+                "Modules/Essentials/Http/Controllers/EssentialsAllowanceAndDeductionController.php",
+                "Modules/Essentials/Http/Controllers/PayrollController.php",
+                "Modules/Essentials/Http/Controllers/ShiftController.php",
+                "Modules/Essentials/Resources/views/allowance_deduction",
+                "Modules/Essentials/Resources/views/attendance",
+                "Modules/Essentials/Resources/views/payroll"
+            ],
+            "notes": "Payroll calculations depend on attendance + allowance/deduction data."
+        }
+    ],
     "dependencies": {
         "requests": [
             "Modules\\Essentials\\Http\\Requests\\PreviewTranscriptRequest",
             "Modules\\Essentials\\Http\\Requests\\StoreTranscriptRequest",
-            "Modules\\Essentials\\Http\\Requests\\TranslateTranscriptRequest"
+            "Modules\\Essentials\\Http\\Requests\\TranslateTranscriptRequest",
+            "PreviewTranscriptRequest",
+            "StoreTranscriptRequest",
+            "TranslateTranscriptRequest"
         ],
         "services": [],
         "utils": [
@@ -157,9 +236,15 @@
             "App\\Utils\\ModuleUtil",
             "App\\Utils\\TransactionUtil",
             "App\\Utils\\Util",
+            "BusinessUtil",
+            "EssentialsUtil",
             "Modules\\Essentials\\Utils\\EssentialsUtil",
             "Modules\\Essentials\\Utils\\TranscriptTranslationUtil",
-            "Modules\\Essentials\\Utils\\TranscriptUtil"
+            "Modules\\Essentials\\Utils\\TranscriptUtil",
+            "ModuleUtil",
+            "TransactionUtil",
+            "TranscriptTranslationUtil",
+            "TranscriptUtil"
         ],
         "models": [
             "Modules\\Essentials\\Entities\\Document",
@@ -184,9 +269,12 @@
             "Spatie\\Permission\\Models\\Permission"
         ]
     },
-    "tests": [],
+    "tests": [
+        "Modules/Essentials/Tests"
+    ],
     "verify_commands": [
+        "php artisan route:list --name=essentials",
         "php artisan test --filter=Essentials"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

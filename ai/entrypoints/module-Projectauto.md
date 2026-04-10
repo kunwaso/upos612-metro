@@ -105,6 +105,10 @@ Entry map for Projectauto tasks, workflow builder screens, settings, and API dra
 
 ### Requests
 
+- `CreateProjectautoTaskRequest`
+- `CreateWorkflowFromWizardRequest`
+- `CreateWorkflowRequest`
+- `ModifyAcceptProjectautoTaskRequest`
 - `Modules\Projectauto\Http\Requests\CreateProjectautoTaskRequest`
 - `Modules\Projectauto\Http\Requests\ModifyAcceptProjectautoTaskRequest`
 - `Modules\Projectauto\Http\Requests\RejectProjectautoTaskRequest`
@@ -113,6 +117,10 @@ Entry map for Projectauto tasks, workflow builder screens, settings, and API dra
 - `Modules\Projectauto\Http\Requests\Workflow\CreateWorkflowFromWizardRequest`
 - `Modules\Projectauto\Http\Requests\Workflow\CreateWorkflowRequest`
 - `Modules\Projectauto\Http\Requests\Workflow\UpdateWorkflowDraftRequest`
+- `RejectProjectautoTaskRequest`
+- `StoreProjectautoRuleRequest`
+- `UpdateProjectautoRuleRequest`
+- `UpdateWorkflowDraftRequest`
 
 ### Services
 
@@ -123,6 +131,8 @@ Entry map for Projectauto tasks, workflow builder screens, settings, and API dra
 - `App\Utils\ModuleUtil`
 - `Modules\Projectauto\Utils\ProjectautoUtil`
 - `Modules\Projectauto\Utils\WizardGraphBuilder`
+- `ModuleUtil`
+- `ProjectautoUtil`
 
 ### Models / Entities
 
@@ -160,4 +170,4 @@ Entry map for Projectauto tasks, workflow builder screens, settings, and API dra
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

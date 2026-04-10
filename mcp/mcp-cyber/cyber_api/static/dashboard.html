@@ -287,6 +287,16 @@
 
     .exports { font-size: 0.78rem; margin-top: 0.25rem; }
     .exports a { color: var(--accent); margin-right: 0.75rem; }
+    .exports .btn-export {
+      background: none;
+      border: none;
+      color: var(--accent);
+      margin-right: 0.75rem;
+      padding: 0;
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
 
     .log-stream { max-height: 340px; overflow-y: auto; font-size: 0.8rem; }
     .log-line {
@@ -650,14 +660,14 @@
             </div>
             <p class="hint">Removes every <strong>scan run</strong>, <strong>finding</strong>, <strong>scan event</strong>, and audit rows for <span class="mono">scan_run</span> / <span class="mono">finding</span>. <strong>Does not</strong> delete projects, environments, or scan profiles. Requires typing <span class="mono">CLEAR</span>. API: <span class="mono">POST /dashboard/api/clear-scan-history</span>.</p>
           </div>
-          <p class="hint">Uses <span class="mono">POST /dashboard/api/run-scan</span> (no JWT while the dev dashboard is enabled). Same endpoint for passive and Phase 2 profiles — the profile <strong>mode</strong> and worker env (vault, Playwright) determine behavior. Only use on localhost. Set <span class="mono">CYBER_DASHBOARD_ENABLED=false</span> when the API is exposed.</p>
+          <p class="hint">Uses <span class="mono">POST /dashboard/api/run-scan</span> with bearer auth. Same endpoint for passive and Phase 2 profiles — the profile <strong>mode</strong> and worker env (vault, Playwright) determine behavior. Keep dashboard disabled unless explicitly needed (<span class="mono">CYBER_DASHBOARD_ENABLED=true</span>).</p>
         </div>
       </div>
     </section>
 
     <section id="compare-section">
       <h2>Compare scan runs</h2>
-      <p class="hint">Same fingerprint diff as MCP <span class="mono">compare_scan_runs</span> / API <span class="mono">GET /v1/scans/{a}/compare/{b}</span> (needs JWT there). On this page: <span class="mono">GET /dashboard/api/compare/{a}/{b}</span> while the dev dashboard is enabled. Pick an <strong>older</strong> baseline (A) and a <strong>newer</strong> run (B).</p>
+      <p class="hint">Same fingerprint diff as MCP <span class="mono">compare_scan_runs</span> / API <span class="mono">GET /v1/scans/{a}/compare/{b}</span>. On this page it calls <span class="mono">GET /dashboard/api/compare/{a}/{b}</span> with bearer auth. Pick an <strong>older</strong> baseline (A) and a <strong>newer</strong> run (B).</p>
       <div class="card compare-panel">
         <div class="card-pad">
           <div class="compare-grid">
@@ -684,7 +694,7 @@
 
     <section id="fleet-section">
       <h2>Fleet snapshot (open findings)</h2>
-      <p class="hint">Phase 4–5: per-project open counts by severity — <span class="mono">GET /dashboard/api/analytics/fleet</span> (no JWT). Same visibility as the feed; not org-scoped. For JWT + org scope use <span class="mono">GET /v1/analytics/fleet</span>.</p>
+      <p class="hint">Phase 4–5: per-project open counts by severity — <span class="mono">GET /dashboard/api/analytics/fleet</span> with bearer auth and org scope. Equivalent org-scoped API: <span class="mono">GET /v1/analytics/fleet</span>.</p>
       <div class="card">
         <div class="card-pad">
           <pre id="fleet-json" class="mono" style="white-space:pre-wrap;font-size:12px;margin:0;max-height:14rem;overflow:auto">Loading…</pre>
@@ -753,6 +763,27 @@
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
+    }
+
+    function getBearerToken() {
+      const tokenInput = document.getElementById("sb-token");
+      const fromInput = tokenInput && tokenInput.value ? tokenInput.value.trim() : "";
+      if (fromInput) return fromInput;
+      const fromStorage = localStorage.getItem("mcp_cyber_token") || "";
+      return fromStorage.trim();
+    }
+
+    function withAuthHeaders(headers) {
+      const out = Object.assign({}, headers || {});
+      const token = getBearerToken();
+      if (token) out.Authorization = "Bearer " + token;
+      return out;
+    }
+
+    async function authFetch(url, opts) {
+      const next = Object.assign({}, opts || {});
+      next.headers = withAuthHeaders((opts && opts.headers) || {});
+      return fetch(url, next);
     }
 
     function postureFromScan(s) {
@@ -916,6 +947,31 @@
       return lines.join("\n");
     }
 
+    async function downloadDashboardReport(scanId, fmt) {
+      const safeFmt = fmt === "json" ? "json" : "md";
+      const r = await authFetch("/dashboard/reports/" + encodeURIComponent(scanId) + "/" + safeFmt, {
+        headers: { Accept: safeFmt === "json" ? "application/json" : "text/markdown" },
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        let msg = text || (r.status + " " + r.statusText);
+        try {
+          const payload = JSON.parse(text);
+          if (payload && payload.detail) msg = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail);
+        } catch (e) {}
+        throw new Error(msg);
+      }
+      const blob = new Blob([text], { type: r.headers.get("content-type") || "text/plain" });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "scan-" + scanId + "." + safeFmt;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(href);
+    }
+
     scansContainer.addEventListener("click", function (ev) {
       const setBtn = ev.target.closest("button.btn-compare-set");
       if (setBtn && scansContainer.contains(setBtn)) {
@@ -923,6 +979,17 @@
         const slot = setBtn.getAttribute("data-slot");
         const sel = document.getElementById(slot === "a" ? "compare-scan-a" : "compare-scan-b");
         if (sel && sid) sel.value = sid;
+        return;
+      }
+      const exportBtn = ev.target.closest("button.btn-export");
+      if (exportBtn && scansContainer.contains(exportBtn)) {
+        const sid = exportBtn.getAttribute("data-export-scan-id");
+        const fmt = exportBtn.getAttribute("data-export-fmt") || "md";
+        if (!sid) return;
+        downloadDashboardReport(sid, fmt).catch(function (e) {
+          runErr.textContent = String(e.message || e);
+          runErr.classList.add("show");
+        });
         return;
       }
       const btn = ev.target.closest("button.btn-copy-finding");
@@ -987,9 +1054,6 @@
         listHtml = "<p style=\"margin:0.35rem 0 0;font-size:0.82rem;color:var(--muted)\">No individual finding rows (or none in preview window).</p>";
       }
 
-      const repMd = "/dashboard/reports/" + s.id + "/md";
-      const repJson = "/dashboard/reports/" + s.id + "/json";
-
       return (
         "<article class=\"scan-card\">" +
         "<div class=\"posture " + p.cls + "\"><h3>" + esc(p.title) + "</h3><p>" + p.detail + "</p></div>" +
@@ -1001,7 +1065,9 @@
         " · Base <span class=\"mono\">" + esc(s.base_url) + "</span></div>" +
         "<div class=\"meta-line\">Targets: <span class=\"mono\">" + esc(targets || "—") + "</span></div>" +
         listHtml +
-        "<div class=\"exports\"><span style=\"color:var(--muted)\">Exports:</span> <a href=\"" + esc(repMd) + "\">Markdown report</a><a href=\"" + esc(repJson) + "\">Raw JSON</a></div>" +
+        "<div class=\"exports\"><span style=\"color:var(--muted)\">Exports:</span> " +
+        "<button type=\"button\" class=\"btn-export\" data-export-scan-id=\"" + esc(s.id) + "\" data-export-fmt=\"md\">Markdown report</button>" +
+        "<button type=\"button\" class=\"btn-export\" data-export-scan-id=\"" + esc(s.id) + "\" data-export-fmt=\"json\">Raw JSON</button></div>" +
         "<div class=\"compare-card-actions\"><span style=\"color:var(--muted);font-size:0.7rem\">Compare runs:</span>" +
         "<button type=\"button\" class=\"btn-compare-set\" data-scan-id=\"" + esc(s.id) + "\" data-slot=\"a\" title=\"Set as baseline scan A\">Baseline A</button>" +
         "<button type=\"button\" class=\"btn-compare-set\" data-scan-id=\"" + esc(s.id) + "\" data-slot=\"b\" title=\"Set as compare scan B\">Compare B</button></div>" +
@@ -1081,7 +1147,7 @@
 
     async function loadMeta() {
       try {
-        const r = await fetch("/dashboard/api/meta");
+        const r = await authFetch("/dashboard/api/meta");
         if (!r.ok) throw new Error(r.status + " " + r.statusText);
         const data = await r.json();
         const profiles = data.profiles || [];
@@ -1144,7 +1210,7 @@
       const btn = document.getElementById("btn-run");
       btn.disabled = true;
       try {
-        const r = await fetch("/dashboard/api/run-scan", {
+        const r = await authFetch("/dashboard/api/run-scan", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({ profile_id: pid, target_urls: urls }),
@@ -1203,7 +1269,7 @@
       const btn = document.getElementById("btn-clear-history");
       btn.disabled = true;
       try {
-        const r = await fetch("/dashboard/api/clear-scan-history", {
+        const r = await authFetch("/dashboard/api/clear-scan-history", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({ confirm: "CLEAR" }),
@@ -1256,7 +1322,7 @@
       }
       out.innerHTML = "<p style=\"color:var(--muted)\">Comparing…</p>";
       try {
-        const r = await fetch(
+        const r = await authFetch(
           "/dashboard/api/compare/" + encodeURIComponent(a) + "/" + encodeURIComponent(b),
           { headers: { Accept: "application/json" } }
         );
@@ -1301,9 +1367,16 @@
       globalError.classList.remove("show");
       globalError.textContent = "";
       try {
-        const r = await fetch("/dashboard/api/feed");
+        const r = await authFetch("/dashboard/api/feed");
         if (r.status === 404) {
           globalError.textContent = "Dashboard feed disabled. Set CYBER_DASHBOARD_ENABLED=true or open /docs.";
+          globalError.classList.add("show");
+          scansContainer.innerHTML = "<p style=\"color:var(--muted)\">—</p>";
+          populateCompareSelects([]);
+          return;
+        }
+        if (r.status === 401) {
+          globalError.textContent = "Dashboard API requires a bearer token. Paste it in the MCP tools sidebar.";
           globalError.classList.add("show");
           scansContainer.innerHTML = "<p style=\"color:var(--muted)\">—</p>";
           populateCompareSelects([]);
@@ -1363,7 +1436,7 @@
     async function loadFleetSnapshot() {
       if (!fleetJson) return;
       try {
-        const r = await fetch("/dashboard/api/analytics/fleet");
+        const r = await authFetch("/dashboard/api/analytics/fleet");
         if (r.status === 404) {
           fleetJson.textContent = "—";
           return;

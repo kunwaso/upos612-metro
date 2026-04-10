@@ -34,7 +34,7 @@ python -m cyber_api
 # or: mcp-cyber-api
 ```
 
-**Dev dashboard:** open [http://127.0.0.1:8686/](http://127.0.0.1:8686/) for an HTML **test console**: **Run passive scan** (uses `POST /dashboard/api/run-scan` — no JWT while the dashboard is on), **security posture** cards (critical / high / medium / low counts and plain-language summaries, plus sample findings), **engine log**, and **audit** tail. Data refreshes every 5 seconds. Exports: `/dashboard/reports/{scan_id}/md|json`. Set `CYBER_DASHBOARD_ENABLED=false` if the API is reachable beyond localhost.
+**Dev dashboard:** open [http://127.0.0.1:8686/](http://127.0.0.1:8686/) for an HTML test console: run scans, read posture cards, inspect engine log and audit trail. Dashboard API calls now require Bearer auth and are org-scoped. Data refreshes every 5 seconds. Exports: `/dashboard/reports/{scan_id}/md|json`. Keep `CYBER_DASHBOARD_ENABLED=false` unless explicitly needed.
 
 Equivalent manual uvicorn:
 
@@ -62,7 +62,7 @@ Authorization: Bearer <token with sub, org_id, role>
 | `CYBER_DEV_SECRET` | HS256 secret for dev JWT |
 | `CYBER_API_URL` | MCP client base URL (**must match** API host:port) |
 | `CYBER_API_TOKEN` | Bearer token for MCP → API |
-| `CYBER_DASHBOARD_ENABLED` | `true` (default): serve `/` HTML + `/dashboard/api/*` without JWT; use `false` when exposed |
+| `CYBER_DASHBOARD_ENABLED` | `false` (default): opt-in dashboard UI at `/` + `/dashboard/api/*` (Bearer auth required) |
 
 ### Phase 2 (authenticated scans, OIDC, vault, evidence)
 
@@ -72,7 +72,8 @@ Authorization: Bearer <token with sub, org_id, role>
 | `CYBER_OIDC_AUDIENCE` | Expected JWT `aud` |
 | `CYBER_OIDC_JWKS_URL` | JWKS endpoint for signature verification |
 | `CYBER_OIDC_DEFAULT_ORG_ID` | UUID when tokens have no `org_id` claim |
-| `CYBER_AUTH_DEV_JWT_ALONGSIDE_OIDC` | `true` (default): allow HS256 dev JWT when OIDC is configured; set `false` in prod |
+| `CYBER_AUTH_ALLOW_DEV_JWT` | `true` (default): allow HS256 dev JWT when OIDC is not configured |
+| `CYBER_AUTH_DEV_JWT_ALONGSIDE_OIDC` | `false` (default): if `true`, allow HS256 dev JWT fallback when OIDC verification fails |
 | `CYBER_VAULT_JSON` / `CYBER_VAULT_FILE` | Map `credential_ref` → `username` / `password` / `token` (JSON object) |
 | `VAULT_ADDR` + `VAULT_TOKEN` + `CYBER_VAULT_KV_MOUNT` | Optional HashiCorp KV v2 (`…/v1/{mount}/data/{ref}`) |
 | `CYBER_PLAYWRIGHT_ADAPTER` | `1` / `true` to allow password-based browser login in `playwright_session` adapter |
@@ -86,7 +87,7 @@ Authorization: Bearer <token with sub, org_id, role>
 |-------|-------------|
 | **`CYBER_REDIS_URL`** | If set, new scans are **enqueued** on Redis list `cyber:scans:queue` instead of only `BackgroundTasks`. Run **`python -m cyber_worker.consumer`** or **`mcp-cyber-scan-worker`** (requires `pip install -e ".[phase3]"`). If LPUSH fails, the API falls back to in-process execution. |
 | **Approvals** | `POST /v1/approvals` for an **`active_controlled`** profile → `approve` / `reject` by `security_engineer` or `admin`. Requires a **`users`** row matching your JWT email (see `scripts/seed_demo.py`). |
-| **`active_controlled_stub`** | Adapter id for safe Phase 3 runs: records an **info** finding only (no intrusive payloads). Add it to the profile’s `adapter_ids` with mode `active_controlled` and pass `approval_id` on `POST /v1/scans`. |
+| **`active_controlled_stub`** | Adapter id for controlled active checks: TRACE/method exposure, open redirect probe, and backend error disclosure probes. Runs only in mode `active_controlled` with approved `approval_id`. |
 | **Suppressions** | `POST /v1/suppressions` (fingerprint + project) — worker **skips persisting** matching findings on future scans. |
 | **Finding status** | `POST /v1/findings/{id}/transition` — allowed: `open`, `in_progress`, `accepted_risk`, `fixed`, `suppressed`, `regressed`. |
 | **Docker** | `redis` service is defined; **`scan-worker`** uses Compose **profile** `ha-scans` (`docker compose --profile ha-scans up`). Set `CYBER_REDIS_URL` on **api** when using the queue. |
@@ -115,8 +116,8 @@ Authorization: Bearer <token with sub, org_id, role>
 | Piece | Description |
 |-------|-------------|
 | **`CYBER_BUSINESS_RULES_PATH`** | Optional YAML: tag raw findings after all adapters, before normalize (see `configs/business_rules.sample.yaml`). Rules must include at least one match key (`rule_id_prefix`, `rule_id_regex`, `category_equals`, `severity_equals`). |
-| **`fuzz_harness_stub`** | Adapter id: emits a single **info** finding when `enable_fuzz_harness_stub` is set on the profile options or `CYBER_FUZZ_STUB_ENABLED=1`. No traffic; documents an integration slot for an allowlisted external harness. |
-| **Dev dashboard** | **Fleet snapshot** section calls `GET /dashboard/api/analytics/fleet` (no JWT when dashboard is on; not org-scoped — same model as the feed). |
+| **`fuzz_harness_stub`** | Adapter id for low-intensity controlled fuzzing. Runs in `active_controlled` mode and probes benign query fuzz cases to detect 5xx robustness failures and error disclosure. |
+| **Dev dashboard** | Fleet snapshot calls `GET /dashboard/api/analytics/fleet` with Bearer auth and org scope. |
 
 Orchestrator now aggregates adapter output, applies business rules, then runs **`normalize_batch` once** (fingerprint dedup in the worker is unchanged).
 
@@ -176,6 +177,25 @@ python scripts/quick_scan_remote.py --base-url https://plm.pekofactory.store/
 ```
 
 This creates (or reuses) an **environment** with an allowlist for that host, a **passive** scan profile, starts a scan, and prints report URLs. Options: `--env-name`, `--project-slug`, `--target-urls "https://a/,https://a/login"`, `--register-only`.
+
+## Enterprise active profile template (one-command team setup)
+
+Template file:
+
+`configs/profile_templates/enterprise_active_controlled_fuzz_approvals.v1.json`
+
+One command to create/reuse the environment + profile consistently:
+
+```powershell
+cd mcp/mcp-cyber
+python scripts/apply_profile_template.py --base-url https://staging.example.com
+```
+
+Then run a controlled scan (after approval is granted) with one command:
+
+```powershell
+python scripts/apply_profile_template.py --base-url https://staging.example.com --approval-id <approved-approval-id>
+```
 
 ## Safety
 

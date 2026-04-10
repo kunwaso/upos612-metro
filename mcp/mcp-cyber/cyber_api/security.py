@@ -24,6 +24,8 @@ def create_dev_token(
     role: str = "developer",
     ttl_hours: int = 24,
 ) -> str:
+    if not settings.auth_allow_dev_jwt:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Dev JWT auth is disabled")
     secret = os.environ.get("CYBER_DEV_SECRET", settings.dev_secret)
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
@@ -38,6 +40,8 @@ def create_dev_token(
 
 
 def decode_dev_jwt(token: str) -> TokenUser:
+    if not settings.auth_allow_dev_jwt:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Dev JWT auth is disabled")
     secret = os.environ.get("CYBER_DEV_SECRET", settings.dev_secret)
     try:
         data = jwt.decode(token, secret, algorithms=["HS256"])
@@ -52,18 +56,23 @@ def decode_dev_jwt(token: str) -> TokenUser:
 
 
 def decode_token(token: str) -> TokenUser:
-    """Try OIDC (JWKS) when configured, then optional dev HS256 JWT."""
+    """Verify OIDC first when configured; fall back to dev JWT only when explicitly allowed."""
     from cyber_api import oidc
 
     if oidc.oidc_is_configured():
         try:
             return oidc.verify_oidc_token(token)
         except Exception:
-            if not settings.auth_dev_jwt_alongside_oidc:
+            if not (settings.auth_allow_dev_jwt and settings.auth_dev_jwt_alongside_oidc):
                 raise HTTPException(
                     status.HTTP_401_UNAUTHORIZED,
                     "Invalid or untrusted bearer token (OIDC)",
                 ) from None
+    elif not settings.auth_allow_dev_jwt:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Dev JWT auth is disabled; configure OIDC bearer auth",
+        )
     return decode_dev_jwt(token)
 
 

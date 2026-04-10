@@ -335,53 +335,10 @@ function collectControllerDependencies(string $repoRoot, array $controllerFiles)
             continue;
         }
 
-        $imports = [];
-        if (preg_match_all('/^use\s+([^;]+);/m', $content, $matches) > 0) {
-            foreach ($matches[1] as $match) {
-                if (is_string($match)) {
-                    $imports[] = trim($match);
-                }
-            }
-        }
+        $symbols = extractDependencySymbols($content);
 
-        if (preg_match('/function\s+__construct\s*\((.*?)\)\s*/s', $content, $constructor) === 1) {
-            $signature = $constructor[1] ?? '';
-            if (is_string($signature) && $signature !== '') {
-                if (preg_match_all('/([\\\\A-Za-z_][\\\\A-Za-z0-9_]*)\s+\$/', $signature, $typed) > 0) {
-                    foreach ($typed[1] as $typeMatch) {
-                        if (is_string($typeMatch)) {
-                            $imports[] = trim($typeMatch, "\\ \t\n\r\0\x0B");
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach ($imports as $import) {
-            $normalized = trim($import, "\\ \t\n\r\0\x0B");
-            if ($normalized === '') {
-                continue;
-            }
-
-            $lc = strtolower($normalized);
-            if (str_contains($lc, '\\http\\requests\\')) {
-                $dependencies['requests'][] = $normalized;
-                continue;
-            }
-
-            if (str_contains($lc, '\\services\\')) {
-                $dependencies['services'][] = $normalized;
-                continue;
-            }
-
-            if (str_contains($lc, '\\utils\\')) {
-                $dependencies['utils'][] = $normalized;
-                continue;
-            }
-
-            if (str_contains($lc, '\\entities\\') || str_contains($lc, '\\models\\')) {
-                $dependencies['models'][] = $normalized;
-            }
+        foreach ($symbols as $symbol) {
+            classifyDependencySymbol($symbol, $dependencies);
         }
     }
 
@@ -392,6 +349,114 @@ function collectControllerDependencies(string $repoRoot, array $controllerFiles)
     }
 
     return $dependencies;
+}
+
+/**
+ * Extract dependency class names from a PHP file's content using multiple strategies:
+ * 1. `use` import statements
+ * 2. Constructor type-hints
+ * 3. Method parameter type-hints (action injection)
+ * 4. Inline `new ClassName(...)` instantiations
+ * 5. Static method calls `ClassName::method(...)`
+ *
+ * @return array<int, string>
+ */
+function extractDependencySymbols(string $content): array
+{
+    $symbols = [];
+
+    if (preg_match_all('/^use\s+([^;]+);/m', $content, $matches) > 0) {
+        foreach ($matches[1] as $match) {
+            if (is_string($match)) {
+                $symbols[] = trim($match);
+            }
+        }
+    }
+
+    if (preg_match_all('/function\s+\w+\s*\((.*?)\)/s', $content, $methods) > 0) {
+        foreach ($methods[1] as $signature) {
+            if (!is_string($signature) || $signature === '') {
+                continue;
+            }
+
+            if (preg_match_all('/([\\\\A-Za-z_][\\\\A-Za-z0-9_]*)\s+\$/', $signature, $typed) > 0) {
+                foreach ($typed[1] as $typeMatch) {
+                    if (is_string($typeMatch)) {
+                        $symbols[] = trim($typeMatch, "\\ \t\n\r\0\x0B");
+                    }
+                }
+            }
+        }
+    }
+
+    if (preg_match_all('/new\s+([\\\\A-Za-z_][\\\\A-Za-z0-9_]*)\s*\(/', $content, $newCalls) > 0) {
+        foreach ($newCalls[1] as $className) {
+            if (is_string($className)) {
+                $symbols[] = trim($className, "\\ \t\n\r\0\x0B");
+            }
+        }
+    }
+
+    if (preg_match_all('/([\\\\A-Za-z_][\\\\A-Za-z0-9_]*)::(?!class\b)\w+\s*\(/', $content, $staticCalls) > 0) {
+        foreach ($staticCalls[1] as $className) {
+            if (is_string($className) && !in_array(strtolower($className), ['self', 'static', 'parent', 'route', 'auth', 'view', 'response', 'config', 'cache', 'log', 'db', 'app', 'request', 'session', 'event', 'validator', 'redirect', 'url', 'lang', 'str', 'arr', 'collect'], true)) {
+                $symbols[] = trim($className, "\\ \t\n\r\0\x0B");
+            }
+        }
+    }
+
+    return $symbols;
+}
+
+/**
+ * Classify a dependency symbol into requests, services, utils, or models.
+ *
+ * @param array{requests: array<int, string>, services: array<int, string>, utils: array<int, string>, models: array<int, string>} $dependencies
+ */
+function classifyDependencySymbol(string $symbol, array &$dependencies): void
+{
+    $normalized = trim($symbol, "\\ \t\n\r\0\x0B");
+    if ($normalized === '') {
+        return;
+    }
+
+    $lc = strtolower($normalized);
+
+    if (str_contains($lc, '\\http\\requests\\') || str_ends_with($lc, 'request')) {
+        if (!str_ends_with($lc, '\\request') && $lc !== 'request' && $lc !== 'illuminate\\http\\request') {
+            $dependencies['requests'][] = $normalized;
+            return;
+        }
+    }
+
+    if (str_contains($lc, '\\http\\requests\\')) {
+        $dependencies['requests'][] = $normalized;
+        return;
+    }
+
+    if (str_contains($lc, '\\services\\')) {
+        $dependencies['services'][] = $normalized;
+        return;
+    }
+
+    if (str_contains($lc, '\\utils\\')) {
+        $dependencies['utils'][] = $normalized;
+        return;
+    }
+
+    if (str_contains($lc, '\\entities\\') || str_contains($lc, '\\models\\')) {
+        $dependencies['models'][] = $normalized;
+        return;
+    }
+
+    $shortLc = strtolower(basename(str_replace('\\', '/', $normalized)));
+    if (str_ends_with($shortLc, 'util') && $shortLc !== 'util') {
+        $dependencies['utils'][] = $normalized;
+        return;
+    }
+    if (str_ends_with($shortLc, 'service') && $shortLc !== 'service') {
+        $dependencies['services'][] = $normalized;
+    }
 }
 
 /**

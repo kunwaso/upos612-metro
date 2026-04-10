@@ -1,0 +1,54 @@
+{
+  "template_id": "enterprise-active-controlled-fuzz-approvals.v1",
+  "description": "Enterprise profile for policy-gated active checks, controlled fuzzing, and approval-based execution.",
+  "environment_defaults": {
+    "path_prefixes": [
+      "/"
+    ]
+  },
+  "scan_profile": {
+    "name": "enterprise-active-controlled-fuzz-v1",
+    "mode": "active_controlled",
+    "adapter_ids": [
+      "headers_cookies",
+      "tls_basic",
+      "openapi_lint",
+      "routes_json_lint",
+      "active_controlled_stub",
+      "fuzz_harness_stub"
+    ],
+    "rate_limit_rps": 1.0,
+    "max_concurrency": 2,
+    "credential_ref": null,
+    "options": {
+      "active_max_targets": 5,
+      "active_redirect_params": [
+        "next",
+        "redirect",
+        "return",
+        "url",
+        "continue"
+      ],
+      "fuzz_max_urls": 8,
+      "fuzz_max_params": 4,
+      "fuzz_max_values": 3,
+      "fuzz_params": [
+        "q",
+        "search",
+        "id",
+        "page"
+      ],
+      "fuzz_values": [
+        "__CYBER_FUZZ_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "__CYBER_FUZZ_UTF8_kanji_check",
+        "__CYBER_FUZZ_SYMBOLS_[]{}!@#$%^&*"
+      ],
+      "routes_auth_middleware_markers": [
+        "auth",
+        "jwt",
+        "sanctum",
+        "authorize"
+      ]
+    }
+  }
+}

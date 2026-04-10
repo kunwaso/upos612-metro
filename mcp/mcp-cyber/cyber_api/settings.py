@@ -1,3 +1,4 @@
+import secrets
 from pathlib import Path
 
 from pydantic import AliasChoices, Field
@@ -22,7 +23,8 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CYBER_DATABASE_URL", "DATABASE_URL"),
     )
 
-    dev_secret: str = "change-me-dev-only"
+    # Per-process fallback for local dev only; set CYBER_DEV_SECRET explicitly for stable multi-process behavior.
+    dev_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(48))
     policy_path: str | None = None
     artifacts_dir: str = "./data/artifacts"
     require_allowlist: bool | None = None
@@ -33,15 +35,17 @@ class Settings(BaseSettings):
     # CYBER_RELOAD=true enables uvicorn --reload (dev only)
     reload: bool = False
 
-    # Unauthenticated / + /dashboard/api/* (read-only). Disable when API is reachable beyond localhost.
-    dashboard_enabled: bool = True
+    # Dashboard is opt-in; enable explicitly for local troubleshooting.
+    dashboard_enabled: bool = False
 
     # --- OIDC (Phase 2): when issuer + audience + JWKS URL are all set, RS256/ES256 tokens are accepted first.
     oidc_issuer: str = ""
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
-    # If true, HS256 dev JWT is still accepted when OIDC is configured (local ergonomics; disable in prod).
-    auth_dev_jwt_alongside_oidc: bool = True
+    # Allow local HS256 dev JWT when OIDC is not configured.
+    auth_allow_dev_jwt: bool = True
+    # If true, HS256 dev JWT is still accepted when OIDC verification fails.
+    auth_dev_jwt_alongside_oidc: bool = False
     oidc_default_org_id: str = ""
     oidc_email_claim: str = "email"
     oidc_org_id_claim: str = "org_id"

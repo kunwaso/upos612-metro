@@ -1,13 +1,10 @@
 {
     "kind": "module",
     "title": "Cms",
-    "purpose": "Storefront and CMS-admin entry map for root shopping pages, blogs, public contact pages, and `/cms/*` admin settings.",
+    "purpose": "Storefront and CMS-admin entry map for root shopping pages, blogs, public contact pages, RFQ flow, and `/cms/*` admin settings.",
     "triggers": [
-        "blog",
-        "Cms",
-        "contact-us",
-        "shop/*",
-        "storefront"
+        "Admin CMS page CRUD, site-details settings, or RFQ form behavior needs investigation.",
+        "Storefront layout, shop pages, or public blog/contact behavior is changing."
     ],
     "verified_paths": {
         "routes": [
@@ -38,16 +35,21 @@
             "Modules/Cms/Resources/views/page",
             "Modules/Cms/Resources/views/settings"
         ],
-        "requests": [],
+        "requests": [
+            "Modules/Cms/Http/Requests",
+            "Modules/Cms/Http/Requests/StoreCmsStorefrontRfqRequest.php"
+        ],
         "services": [],
         "utils": [
             "Modules/Cms/Utils",
             "Modules/Cms/Utils/CmsStorefrontCatalogUtil.php",
+            "Modules/Cms/Utils/CmsStorefrontRfqUtil.php",
             "Modules/Cms/Utils/CmsUtil.php"
         ],
         "models": [
             "Modules/Cms/Entities/CmsPage.php",
             "Modules/Cms/Entities/CmsPageMeta.php",
+            "Modules/Cms/Entities/CmsQuoteRequest.php",
             "Modules/Cms/Entities/CmsSiteDetail.php"
         ],
         "jobs": [],
@@ -281,12 +283,15 @@
     ],
     "search_keywords": [
         "blog",
+        "catalog",
         "Cms",
         "cms",
         "cms-page",
         "cms.home",
+        "collections",
         "contact-us",
         "decor-store",
+        "rfq",
         "shop/",
         "site-details"
     ],
@@ -295,16 +300,74 @@
         "ai/security-and-auth.md",
         "ai/ui-components.md"
     ],
-    "workflows": [],
-    "edit_bundles": [],
+    "workflows": [
+        {
+            "name": "Storefront catalog and RFQ flow",
+            "paths": [
+                "Modules/Cms/Http/Controllers/CmsController.php",
+                "Modules/Cms/Http/Requests/StoreCmsStorefrontRfqRequest.php",
+                "Modules/Cms/Resources/views/frontend",
+                "Modules/Cms/Routes/web.php",
+                "Modules/Cms/Utils/CmsStorefrontCatalogUtil.php",
+                "Modules/Cms/Utils/CmsStorefrontRfqUtil.php"
+            ],
+            "notes": "RFQ bugs span route throttle, form request validation, util persistence, and the frontend views."
+        },
+        {
+            "name": "Admin CMS page management",
+            "paths": [
+                "Modules/Cms/Http/Controllers/CmsPageController.php",
+                "Modules/Cms/Resources/views/page",
+                "Modules/Cms/Routes/web.php"
+            ],
+            "notes": "Page CRUD: route resource except show, controller, and admin page views."
+        },
+        {
+            "name": "Site details and settings",
+            "paths": [
+                "Modules/Cms/Http/Controllers/SettingsController.php",
+                "Modules/Cms/Resources/views/settings"
+            ],
+            "notes": "Site-details resource routes; admin settings views."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Storefront frontend bundle",
+            "paths": [
+                "Modules/Cms/Http/Controllers/CmsController.php",
+                "Modules/Cms/Resources/views/frontend",
+                "Modules/Cms/Resources/views/layouts",
+                "Modules/Cms/Routes/web.php",
+                "Modules/Cms/Utils/CmsStorefrontCatalogUtil.php"
+            ],
+            "notes": "Most public storefront changes touch route, controller, catalog util, and frontend/layout views together."
+        },
+        {
+            "name": "Admin page CRUD bundle",
+            "paths": [
+                "Modules/Cms/Http/Controllers/CmsPageController.php",
+                "Modules/Cms/Resources/views/page"
+            ],
+            "notes": "Admin page editor and listing views."
+        }
+    ],
     "dependencies": {
-        "requests": [],
+        "requests": [
+            "Modules\\Cms\\Http\\Requests\\StoreCmsStorefrontRfqRequest",
+            "StoreCmsStorefrontRfqRequest"
+        ],
         "services": [],
         "utils": [
             "App\\Utils\\ModuleUtil",
             "App\\Utils\\Util",
+            "CmsStorefrontCatalogUtil",
+            "CmsStorefrontRfqUtil",
+            "CmsUtil",
             "Modules\\Cms\\Utils\\CmsStorefrontCatalogUtil",
-            "Modules\\Cms\\Utils\\CmsUtil"
+            "Modules\\Cms\\Utils\\CmsStorefrontRfqUtil",
+            "Modules\\Cms\\Utils\\CmsUtil",
+            "ModuleUtil"
         ],
         "models": [
             "Modules\\Cms\\Entities\\CmsPage",
@@ -312,9 +375,12 @@
             "Modules\\Cms\\Entities\\CmsSiteDetail"
         ]
     },
-    "tests": [],
+    "tests": [
+        "Modules/Cms/Tests"
+    ],
     "verify_commands": [
+        "php artisan route:list --name=cms",
         "php artisan test --filter=Cms"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }

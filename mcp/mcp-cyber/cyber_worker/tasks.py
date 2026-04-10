@@ -19,6 +19,7 @@ from cyber_db.session import async_session_factory
 from cyber_engine.adapters.base import ScanContext
 from cyber_engine.credentials.vault import resolve_credential_ref
 from cyber_engine.orchestrator import Orchestrator
+from cyber_engine.policy_engine import PolicyEngine
 from cyber_engine.rate_limit import AsyncRateLimiter
 from cyber_worker.suppression_check import is_fingerprint_suppressed
 
@@ -56,6 +57,8 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
             if aid:
                 ap = await session.get(Approval, uuid.UUID(str(aid)))
                 if ap:
+                    if ap.profile_id != profile.id:
+                        raise ValueError("approval_id does not belong to this scan profile")
                     approval_status = ap.status
 
             openapi_json: str | None = None
@@ -63,6 +66,8 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
             if oaid:
                 art = await session.get(OpenAPIArtifact, uuid.UUID(str(oaid)))
                 if art:
+                    if art.environment_id != env.id:
+                        raise ValueError("openapi_artifact_id does not belong to scan environment")
                     p = Path(art.storage_uri)
                     if p.is_file():
                         openapi_json = p.read_text(encoding="utf-8")
@@ -72,6 +77,8 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
             if raid:
                 rart = await session.get(RoutesArtifact, uuid.UUID(str(raid)))
                 if rart:
+                    if rart.environment_id != env.id:
+                        raise ValueError("routes_artifact_id does not belong to scan environment")
                     rp = Path(rart.storage_uri)
                     if rp.is_file():
                         routes_json = rp.read_text(encoding="utf-8")
@@ -149,6 +156,19 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
                 seen_fp.add(fp)
                 deduped.append(row)
             rows = deduped
+            gate_inputs = [{**row, "status": "open"} for row in rows]
+            ci_blocked = PolicyEngine().should_block_findings(gate_inputs, gate_name="ci_default")
+            if ci_blocked:
+                session.add(
+                    ScanEvent(
+                        scan_id=run.id,
+                        level="warn",
+                        adapter="policy",
+                        event_type="policy_gate_block",
+                        message="Findings match policy.gates.ci_default.block_if",
+                        context={"gate": "ci_default"},
+                    )
+                )
 
             for row in rows:
                 if await is_fingerprint_suppressed(session, row["project_id"], row["fingerprint"]):
@@ -191,6 +211,7 @@ async def execute_scan(scan_id: uuid.UUID) -> None:
                 )
 
             summary = await _scan_summary(session, run.id)
+            summary["policy_ci_block"] = bool(ci_blocked)
             run.status = "succeeded"
             run.finished_at = datetime.now(timezone.utc)
             run.summary = summary

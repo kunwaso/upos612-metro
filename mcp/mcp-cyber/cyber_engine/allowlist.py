@@ -15,6 +15,23 @@ def parse_allowlist(raw: dict) -> AllowlistConfig:
     return AllowlistConfig.model_validate(raw)
 
 
+def _normalize_prefix(prefix: str) -> str:
+    p = (prefix or "").strip()
+    if not p:
+        return "/"
+    if not p.startswith("/"):
+        p = "/" + p
+    if p != "/" and p.endswith("/"):
+        p = p.rstrip("/")
+    return p or "/"
+
+
+def _path_prefix_match(path: str, prefix: str) -> bool:
+    if prefix == "/":
+        return True
+    return path == prefix or path.startswith(prefix + "/")
+
+
 def url_allowed(url: str, base_url: str, cfg: AllowlistConfig) -> bool:
     try:
         u = urlparse(url)
@@ -33,7 +50,8 @@ def url_allowed(url: str, base_url: str, cfg: AllowlistConfig) -> bool:
             return False
     path = u.path or "/"
     if cfg.path_prefixes:
-        if not any(path.startswith(p) or path == p.rstrip("/") for p in cfg.path_prefixes):
+        prefixes = [_normalize_prefix(p) for p in cfg.path_prefixes]
+        if not any(_path_prefix_match(path, p) for p in prefixes):
             return False
     return True
 

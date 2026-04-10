@@ -48,6 +48,7 @@ This map is intentionally Util-focused. The first table lists the primary `*Util
 | [FacebookContactFeedProvider.php](../../app/Utils/FacebookContactFeedProvider.php) | Facebook contact-feed provider adapter. | `rg -n 'FacebookContactFeedProvider|ContactFeedProvider' app routes Modules` |
 | [GoogleContactFeedProvider.php](../../app/Utils/GoogleContactFeedProvider.php) | Google contact-feed provider adapter. | `rg -n 'GoogleContactFeedProvider|ContactFeedProvider' app routes Modules` |
 | [LinkedInContactFeedProvider.php](../../app/Utils/LinkedInContactFeedProvider.php) | LinkedIn contact-feed provider adapter. | `rg -n 'LinkedInContactFeedProvider|ContactFeedProvider' app routes Modules` |
+| [PurchaseViewDataBuilder.php](../../app/Utils/PurchaseViewDataBuilder.php) | Support class for purchase view data builder. | `rg -n 'PurchaseViewDataBuilder' app routes Modules` |
 | [QuoteDisplayPresenter.php](../../app/Utils/QuoteDisplayPresenter.php) | Quote display and presentation formatting helpers. | `rg -n 'QuoteDisplayPresenter|QuoteDisplay' app routes Modules` |
 | [QuoteInvoiceReleaseService.php](../../app/Utils/QuoteInvoiceReleaseService.php) | Service that releases quotes into invoice-ready state. | `rg -n 'QuoteInvoiceReleaseService|QuoteInvoiceRelease' app routes Modules` |
 | [SerpApiGoogleContactFeedProvider.php](../../app/Utils/SerpApiGoogleContactFeedProvider.php) | SerpApi-backed Google contact-feed provider adapter. | `rg -n 'SerpApiGoogleContactFeedProvider|ContactFeedProvider' app routes Modules` |
@@ -78,4 +79,4 @@ This map is intentionally Util-focused. The first table lists the primary `*Util
 
 ## Last reviewed
 
-- 2026-04-03
+- 2026-04-10

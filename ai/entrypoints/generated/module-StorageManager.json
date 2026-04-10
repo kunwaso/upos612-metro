@@ -1,19 +1,18 @@
 {
     "kind": "module",
     "title": "StorageManager",
-    "purpose": "Entry map for the warehouse and storage execution module under `/storage-manager/*`.",
+    "purpose": "Entry map for the warehouse and storage execution module under `/storage-manager/*`, covering inbound, putaway, outbound, transfers, cycle counts, damage, replenishment, purchasing advisory, and control tower.",
     "triggers": [
-        "counts",
-        "inbound",
-        "putaway",
-        "StorageManager",
-        "warehouse"
+        "Control tower dashboard, reconciliation, or purchasing advisory issues.",
+        "Outbound pick/pack/ship, transfer execution, or cycle count flows are involved.",
+        "Putaway, slot assignment, or replenishment rule behavior needs investigation.",
+        "Warehouse inbound receiving, GRN, or VAS sync behavior is changing."
     ],
     "verified_paths": {
         "routes": [
             {
                 "path": "Modules/StorageManager/Routes/web.php",
-                "summary": "`/storage-manager/*` routes for settings, areas, slots, inbound, putaway, outbound, transfers, counts, damage, replenishment, and control tower",
+                "summary": "`/storage-manager/*` routes for settings, areas, slots, inbound, putaway, outbound, transfers, counts, damage, replenishment, purchasing advisory, control tower, and reconciliation APIs",
                 "exists": true
             },
             {
@@ -49,7 +48,9 @@
             "Modules/StorageManager/Resources/views/damage",
             "Modules/StorageManager/Resources/views/documents",
             "Modules/StorageManager/Resources/views/inbound",
+            "Modules/StorageManager/Resources/views/layouts",
             "Modules/StorageManager/Resources/views/outbound",
+            "Modules/StorageManager/Resources/views/partials",
             "Modules/StorageManager/Resources/views/planning",
             "Modules/StorageManager/Resources/views/putaway",
             "Modules/StorageManager/Resources/views/replenishment",
@@ -77,6 +78,8 @@
             "Modules/StorageManager/Http/Requests/StoreStorageAreaRequest.php",
             "Modules/StorageManager/Http/Requests/StoreStorageSlotRequest.php",
             "Modules/StorageManager/Http/Requests/SubmitCycleCountRequest.php",
+            "Modules/StorageManager/Http/Requests/SyncInboundReceiptVasRequest.php",
+            "Modules/StorageManager/Http/Requests/UnlinkInboundReceiptVasRequest.php",
             "Modules/StorageManager/Http/Requests/UpdateStorageAreaRequest.php",
             "Modules/StorageManager/Http/Requests/UpdateStorageSlotRequest.php"
         ],
@@ -106,7 +109,8 @@
         ],
         "utils": [
             "Modules/StorageManager/Utils",
-            "Modules/StorageManager/Utils/StorageManagerUtil.php"
+            "Modules/StorageManager/Utils/StorageManagerUtil.php",
+            "Modules/StorageManager/Utils/StorageVasReceiptSyncUtil.php"
         ],
         "models": [
             "Modules/StorageManager/Entities/StorageApprovalRequest.php",
@@ -130,11 +134,15 @@
         "assets": [],
         "tests": [
             "Modules/StorageManager/Tests",
+            "Modules/StorageManager/Tests/Feature/InboundReceivingGrnFeatureTest.php",
+            "Modules/StorageManager/Tests/Feature/InboundVasSyncFeatureTest.php",
             "Modules/StorageManager/Tests/Feature/StorageManagerRoutesRegistrationTest.php",
+            "Modules/StorageManager/Tests/Feature/WarehouseMapViewContractTest.php",
             "Modules/StorageManager/Tests/Unit/StorageManagerContractTest.php",
             "Modules/StorageManager/Tests/Unit/StorageManagerUtilContractTest.php",
             "Modules/StorageManager/Tests/Unit/StorageManagerVasSyncContractTest.php",
-            "Modules/StorageManager/Tests/Unit/StorageSlotModelContractTest.php"
+            "Modules/StorageManager/Tests/Unit/StorageSlotModelContractTest.php",
+            "Modules/StorageManager/Tests/Unit/StorageVasReceiptSyncUtilTest.php"
         ]
     },
     "route_prefixes": [
@@ -157,27 +165,150 @@
         "areas",
         "control-tower",
         "counts",
+        "cycle-count",
         "damage",
+        "grn",
         "inbound",
         "install",
         "outbound",
+        "pack",
+        "pick",
         "planning",
+        "purchasing-advisory",
         "putaway",
         "replenishment",
+        "ship",
         "slots",
         "storage-manager",
         "StorageManager",
-        "transfers"
+        "transfer",
+        "transfers",
+        "warehouse"
     ],
     "related_docs": [
         "ai/database-map.md",
         "ai/laravel-conventions.md",
         "ai/security-and-auth.md"
     ],
-    "workflows": [],
-    "edit_bundles": [],
+    "workflows": [
+        {
+            "name": "Inbound receiving and VAS sync",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/InboundController.php",
+                "Modules/StorageManager/Http/Requests/ConfirmReceiptRequest.php",
+                "Modules/StorageManager/Http/Requests/SyncInboundReceiptVasRequest.php",
+                "Modules/StorageManager/Resources/views/inbound",
+                "Modules/StorageManager/Services/ReceivingService.php",
+                "Modules/StorageManager/Utils/StorageVasReceiptSyncUtil.php"
+            ],
+            "notes": "GRN receipt and VAS sync: controller validates, delegates to receiving service and VAS sync util."
+        },
+        {
+            "name": "Putaway and slot management",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/PutawayController.php",
+                "Modules/StorageManager/Http/Controllers/StorageAreaController.php",
+                "Modules/StorageManager/Http/Controllers/StorageSlotController.php",
+                "Modules/StorageManager/Http/Requests/CompletePutawayRequest.php",
+                "Modules/StorageManager/Resources/views/areas",
+                "Modules/StorageManager/Resources/views/putaway",
+                "Modules/StorageManager/Resources/views/slots",
+                "Modules/StorageManager/Services/PutawayService.php"
+            ],
+            "notes": "Putaway depends on slot/area config; edit slot CRUD and putaway flow together."
+        },
+        {
+            "name": "Outbound pick, pack, ship",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/OutboundExecutionController.php",
+                "Modules/StorageManager/Http/Requests/CompletePackRequest.php",
+                "Modules/StorageManager/Http/Requests/CompletePickRequest.php",
+                "Modules/StorageManager/Http/Requests/CompleteShipRequest.php",
+                "Modules/StorageManager/Resources/views/outbound",
+                "Modules/StorageManager/Services/OutboundExecutionService.php"
+            ],
+            "notes": "Three-step outbound: pick \u2192 pack \u2192 ship with separate form requests and one execution service."
+        },
+        {
+            "name": "Transfer execution",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/TransferExecutionController.php",
+                "Modules/StorageManager/Http/Requests/CompleteTransferDispatchRequest.php",
+                "Modules/StorageManager/Http/Requests/ConfirmTransferReceiptRequest.php",
+                "Modules/StorageManager/Resources/views/transfers",
+                "Modules/StorageManager/Services/TransferExecutionService.php"
+            ],
+            "notes": "Inter-warehouse transfers: dispatch and receipt confirmation through one service."
+        },
+        {
+            "name": "Cycle counts and damage",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/CycleCountController.php",
+                "Modules/StorageManager/Http/Controllers/DamageQuarantineController.php",
+                "Modules/StorageManager/Resources/views/counts",
+                "Modules/StorageManager/Resources/views/damage",
+                "Modules/StorageManager/Services/CycleCountService.php",
+                "Modules/StorageManager/Services/DamageQuarantineService.php"
+            ],
+            "notes": "Count sessions and damage reports share approval/shortage patterns."
+        },
+        {
+            "name": "Control tower and reconciliation",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/ControlTowerController.php",
+                "Modules/StorageManager/Resources/views/control_tower",
+                "Modules/StorageManager/Services/ReconciliationService.php",
+                "Modules/StorageManager/Services/WarehouseKpiService.php"
+            ],
+            "notes": "Control tower dashboard with KPI widgets plus JSON reconciliation/sync-retry endpoints."
+        }
+    ],
+    "edit_bundles": [
+        {
+            "name": "Inbound + VAS bundle",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/InboundController.php",
+                "Modules/StorageManager/Resources/views/inbound",
+                "Modules/StorageManager/Services/ReceivingService.php",
+                "Modules/StorageManager/Utils/StorageVasReceiptSyncUtil.php"
+            ],
+            "notes": "Inbound receipt and VAS posting should be edited together to avoid sync drift."
+        },
+        {
+            "name": "Warehouse structure bundle",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/StorageAreaController.php",
+                "Modules/StorageManager/Http/Controllers/StorageLocationSettingsController.php",
+                "Modules/StorageManager/Http/Controllers/StorageSlotController.php",
+                "Modules/StorageManager/Resources/views/areas",
+                "Modules/StorageManager/Resources/views/settings",
+                "Modules/StorageManager/Resources/views/slots"
+            ],
+            "notes": "Area/slot/settings CRUD share location scoping and affect all warehouse flows."
+        },
+        {
+            "name": "Outbound execution bundle",
+            "paths": [
+                "Modules/StorageManager/Http/Controllers/OutboundExecutionController.php",
+                "Modules/StorageManager/Resources/views/outbound",
+                "Modules/StorageManager/Services/OutboundExecutionService.php"
+            ],
+            "notes": "Pick/pack/ship controller, service, and views should stay in sync."
+        }
+    ],
     "dependencies": {
         "requests": [
+            "ApproveCycleCountShortagesRequest",
+            "AssignSlotRequest",
+            "CompletePackRequest",
+            "CompletePickRequest",
+            "CompletePutawayRequest",
+            "CompleteReplenishmentRequest",
+            "CompleteShipRequest",
+            "CompleteTransferDispatchRequest",
+            "ConfirmReceiptRequest",
+            "ConfirmTransferReceiptRequest",
+            "CreateCycleCountSessionRequest",
             "Modules\\StorageManager\\Http\\Requests\\ApproveCycleCountShortagesRequest",
             "Modules\\StorageManager\\Http\\Requests\\AssignSlotRequest",
             "Modules\\StorageManager\\Http\\Requests\\CompletePackRequest",
@@ -196,10 +327,25 @@
             "Modules\\StorageManager\\Http\\Requests\\StoreStorageAreaRequest",
             "Modules\\StorageManager\\Http\\Requests\\StoreStorageSlotRequest",
             "Modules\\StorageManager\\Http\\Requests\\SubmitCycleCountRequest",
+            "Modules\\StorageManager\\Http\\Requests\\SyncInboundReceiptVasRequest",
+            "Modules\\StorageManager\\Http\\Requests\\UnlinkInboundReceiptVasRequest",
             "Modules\\StorageManager\\Http\\Requests\\UpdateStorageAreaRequest",
-            "Modules\\StorageManager\\Http\\Requests\\UpdateStorageSlotRequest"
+            "Modules\\StorageManager\\Http\\Requests\\UpdateStorageSlotRequest",
+            "ReportDamageRequest",
+            "ResolveDamageRequest",
+            "StoreGroupedPurchasingAdvisoryRequest",
+            "StorePurchasingAdvisoryRequest",
+            "StoreStorageAreaRequest",
+            "StoreStorageSlotRequest",
+            "SubmitCycleCountRequest",
+            "SyncInboundReceiptVasRequest",
+            "UnlinkInboundReceiptVasRequest",
+            "UpdateStorageAreaRequest",
+            "UpdateStorageSlotRequest"
         ],
         "services": [
+            "CycleCountService",
+            "DamageQuarantineService",
             "Modules\\StorageManager\\Services\\CycleCountService",
             "Modules\\StorageManager\\Services\\DamageQuarantineService",
             "Modules\\StorageManager\\Services\\OutboundExecutionService",
@@ -210,11 +356,24 @@
             "Modules\\StorageManager\\Services\\ReplenishmentService",
             "Modules\\StorageManager\\Services\\TransferExecutionService",
             "Modules\\StorageManager\\Services\\WarehouseKpiService",
-            "Modules\\StorageManager\\Services\\WarehouseSyncService"
+            "Modules\\StorageManager\\Services\\WarehouseSyncService",
+            "OutboundExecutionService",
+            "PurchasingAdvisoryService",
+            "PutawayService",
+            "ReceivingService",
+            "ReconciliationService",
+            "ReplenishmentService",
+            "TransferExecutionService",
+            "WarehouseKpiService",
+            "WarehouseSyncService"
         ],
         "utils": [
             "App\\Utils\\ModuleUtil",
-            "Modules\\StorageManager\\Utils\\StorageManagerUtil"
+            "Modules\\StorageManager\\Utils\\StorageManagerUtil",
+            "Modules\\StorageManager\\Utils\\StorageVasReceiptSyncUtil",
+            "ModuleUtil",
+            "StorageManagerUtil",
+            "StorageVasReceiptSyncUtil"
         ],
         "models": [
             "Modules\\StorageManager\\Entities\\StorageArea",
@@ -235,7 +394,8 @@
         "Modules/StorageManager/Tests"
     ],
     "verify_commands": [
+        "php artisan route:list --name=storage-manager",
         "php artisan test --filter=StorageManager"
     ],
-    "last_reviewed": "2026-04-03"
+    "last_reviewed": "2026-04-10"
 }
