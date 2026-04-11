@@ -1,0 +1,47 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# UPOS612 — project-scoped Codex CLI layer (loaded when this repo is trusted and you run Codex from this tree).
+
+developer_instructions = "Read AGENTS-FAST.md at session start for the intent router and non-negotiables. For workspace file reads, prefer read_file_cache MCP. For exact search, use grep MCP. For routes/schema/tests, use laravel_mysql MCP. Call warm_cache and project_map only for repo-specific tasks (implement, analyze, audit, log-scan) — skip for conceptual or explain questions. For impact/call-chain analysis before changing a Util or controller method, use the gitnexus MCP (impact, context, query tools). When in Plan Mode (/plan), use the $phase-task-planning skill: numbered phases, task table per phase (Task ID, Task, Reference, Deliverable), Verification per phase, and a markdown todo list. Do not rewrite or replace existing .cursor/plans/*.plan.md when the user asks to execute or 'plan from' them."
+
+[mcp_servers.laravel_mysql]
+command = "php"
+args = ["D:/wamp64/www/upos612/mcp/laravel-mysql-mcp/bin/server"]
+
+[mcp_servers.read_file_cache]
+command = "php"
+args = ["D:/wamp64/www/upos612/mcp/read-file-cache-mcp/bin/server"]
+env = { MCP_READ_FILE_WORKSPACE_ROOT = "D:/wamp64/www/upos612", MCP_READ_FILE_CACHE_ROOT = "D:/wamp64/www/upos612/.cache/read-file-cache-mcp" }
+
+[mcp_servers.grep]
+command = "php"
+args = ["D:/wamp64/www/upos612/mcp/grep-mcp/bin/server"]
+env = { MCP_GREP_WORKSPACE_ROOT = "D:/wamp64/www/upos612" }
+
+[mcp_servers.playwright]
+args = ["@playwright/mcp@latest"]
+command = "npx"
+
+[mcp_servers.audit_web]
+command = "php"
+args = ["D:/wamp64/www/upos612/mcp/audit-web-mcp/bin/server"]
+env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "D:/wamp64/www/upos612", MCP_AUDIT_WEB_NODE_BINARY = "node", MCP_AUDIT_WEB_PHP_BINARY = "php" }
+
+[mcp_servers.chrome-devtools]
+command = "cmd"
+args = ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--browser-url=http://127.0.0.1:9222"]
+startup_timeout_ms = 20000
+env = { SystemRoot = "C:\\Windows", PROGRAMFILES = "C:\\Program Files" }
+
+[mcp_servers.gitnexus]
+command = "powershell"
+args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:/Users/Ray/AppData/Roaming/npm/gitnexus.ps1", "mcp"]
+
+# Rey uses gitnexus_rey in its own .codex/config.toml — keep it disabled here.
+[mcp_servers.gitnexus_rey]
+enabled = false
+
+[mcp_servers.semantic_code_search]
+command = "php"
+args = ["D:/wamp64/www/upos612/mcp/semantic-code-search-mcp/bin/server"]
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "D:/wamp64/www/upos612", MCP_SEMANTIC_INDEX_ROOT = "D:/wamp64/www/upos612/.cache/semantic-code-search-mcp", MCP_SEMANTIC_PYTHON_BIN = "C:/Users/Ray/AppData/Local/Python/pythoncore-3.14-64/python.exe", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-small-en", MCP_SEMANTIC_HF_DEVICE = "cpu", MCP_SEMANTIC_HF_BATCH_SIZE = "12", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_CHUNK_LINES = "80", MCP_SEMANTIC_CHUNK_OVERLAP = "8", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,config,ai,mcp,.cursor", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
