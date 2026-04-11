@@ -56,8 +56,9 @@ Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezo
         Route::prefix('inbound')->name('inbound.')->group(function () {
             Route::get('/expected-receipts', [InboundController::class, 'index'])->name('index');
             Route::post('/purchase-orders/{purchaseOrder}/receive-goods', [InboundController::class, 'startPurchaseOrderReceiving'])->name('purchase-orders.start-receiving');
-            Route::get('/receipts/{sourceType}/{sourceId}', [InboundController::class, 'show'])->name('show');
+            // Register GRN before the generic receipt workbench route so `/receipts/{id}/grn` is not captured as `{sourceType}/{sourceId}`.
             Route::get('/receipts/{document}/grn', [InboundController::class, 'showGrn'])->name('grn.show');
+            Route::get('/receipts/{sourceType}/{sourceId}', [InboundController::class, 'show'])->name('show');
             Route::post('/receipts/{document}/confirm', [InboundController::class, 'confirm'])->name('confirm');
             Route::post('/receipts/{document}/reopen', [InboundController::class, 'reopen'])->name('reopen');
             Route::post('/receipts/{document}/sync-vas', [InboundController::class, 'syncVas'])->name('sync-vas');

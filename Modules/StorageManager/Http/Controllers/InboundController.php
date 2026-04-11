@@ -10,6 +10,7 @@ use Modules\StorageManager\Http\Requests\SyncInboundReceiptVasRequest;
 use Modules\StorageManager\Http\Requests\UnlinkInboundReceiptVasRequest;
 use Modules\StorageManager\Services\ReceivingService;
 use Modules\StorageManager\Services\WarehouseSyncService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 use Modules\StorageManager\Utils\StorageVasReceiptSyncUtil;
 
@@ -40,6 +41,11 @@ class InboundController extends Controller
             'executionSummary' => $board['executionSummary'],
             'purchases' => $board['purchases'],
             'purchaseOrders' => $board['purchaseOrders'],
+            'storageToolbarTitle' => __('lang_v1.inbound_receiving'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.inbound_receiving'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -53,7 +59,17 @@ class InboundController extends Controller
         $context = $this->receivingService->getReceiptWorkbench($businessId, $sourceType, $sourceId, (int) request()->session()->get('user.id'));
         $context['sourceSummary']['can_confirm'] = ! empty($context['sourceSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::inbound.show', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::inbound.show', array_merge($context, [
+            'storageToolbarTitle' => __('lang_v1.inbound_receipt'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.expected_receipts'), 'url' => route('storage-manager.inbound.index')],
+                ['label' => __('lang_v1.inbound_receipt'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function startPurchaseOrderReceiving(Request $request, int $purchaseOrder)
@@ -151,7 +167,17 @@ class InboundController extends Controller
             abort(404);
         }
 
-        return view('storagemanager::inbound.grn', $this->receivingService->goodsReceivedNoteContext($businessId, $documentModel));
+        $grnContext = $this->receivingService->goodsReceivedNoteContext($businessId, $documentModel);
+        $locId = (int) $documentModel->location_id;
+
+        return view('storagemanager::inbound.grn', array_merge($grnContext, [
+            'storageToolbarTitle' => __('lang_v1.goods_received_note'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.inbound_receiving'), 'url' => route('storage-manager.inbound.index')],
+                ['label' => __('lang_v1.goods_received_note'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function reopen(Request $request, int $document)

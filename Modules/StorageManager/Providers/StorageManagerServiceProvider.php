@@ -2,7 +2,11 @@
 
 namespace Modules\StorageManager\Providers;
 
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Modules\StorageManager\Http\ViewComposers\StorageManagerToolbarViewComposer;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Console\AuditLotExpiryReadinessCommand;
 use Modules\StorageManager\Console\ReconcileWarehouseLocationCommand;
 use Modules\StorageManager\Services\CycleCountService;
@@ -28,6 +32,9 @@ class StorageManagerServiceProvider extends ServiceProvider
         $this->registerViews();
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
 
+        View::composer('storagemanager::*', StorageManagerToolbarViewComposer::class);
+        Blade::componentNamespace('Modules\\StorageManager\\View\\Components', 'storagemanager');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ReconcileWarehouseLocationCommand::class,
@@ -38,6 +45,8 @@ class StorageManagerServiceProvider extends ServiceProvider
 
     public function register()
     {
+        $this->app->singleton(StorageManagerToolbarNavUtil::class);
+
         $this->app->register(RouteServiceProvider::class);
         $this->mergeConfigFrom(__DIR__ . '/../Config/config.php', 'storagemanager');
         $this->app->singleton(CycleCountService::class);

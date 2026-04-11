@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Goods Received Note')
+@section('title', __('lang_v1.goods_received_note'))
 
 @section('content')
 <style>
@@ -72,30 +72,21 @@
 </style>
 
 <div class="d-flex flex-column flex-column-fluid">
-    <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6 no-print">
-        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
-            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
-                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
-                    Goods Received Note
-                </h1>
-                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
-                    <li class="breadcrumb-item text-muted">@lang('lang_v1.storage_manager')</li>
-                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                    <li class="breadcrumb-item text-muted">Inbound Receiving</li>
-                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                    <li class="breadcrumb-item text-muted">Goods Received Note</li>
-                </ul>
-            </div>
-            <div class="d-flex gap-2">
+    <x-storagemanager::storage-toolbar
+        :title="$storageToolbarTitle"
+        :breadcrumbs="$storageToolbarBreadcrumbs"
+        :map-location-id="$storageToolbarLocationId ?? null"
+        toolbar-wrapper-class="no-print"
+    >
+        <x-slot name="contextActions">
                 <a href="{{ route('storage-manager.inbound.show', ['sourceType' => $document->source_type, 'sourceId' => $document->source_id]) }}" class="btn btn-sm btn-light">
                     @lang('messages.back')
                 </a>
                 <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                     @lang('messages.print')
                 </button>
-            </div>
-        </div>
-    </div>
+        </x-slot>
+    </x-storagemanager::storage-toolbar>
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div id="kt_app_content_container" class="app-container container-xxl">

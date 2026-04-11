@@ -1,27 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Replenishment Document')
+@section('title', __('lang_v1.replenishment_document'))
 
 @section('content')
 <div class="d-flex flex-column flex-column-fluid">
-    <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
-        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
-            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
-                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
-                    Replenishment Document
-                </h1>
-                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
-                    <li class="breadcrumb-item text-muted">@lang('lang_v1.storage_manager')</li>
-                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                    <li class="breadcrumb-item text-muted">Replenishment Document</li>
-                </ul>
-            </div>
-            <div class="d-flex align-items-center gap-2 gap-lg-3">
+    <x-storagemanager::storage-toolbar
+        :title="$storageToolbarTitle"
+        :breadcrumbs="$storageToolbarBreadcrumbs"
+        :map-location-id="$storageToolbarLocationId ?? null"
+    >
+        <x-slot name="contextActions">
                 <a href="{{ route('storage-manager.replenishment.index') }}" class="btn btn-sm btn-light">@lang('messages.back')</a>
-                <a href="{{ route('storage-manager.transfers.index') }}" class="btn btn-sm btn-light-primary">Transfer Execution</a>
-            </div>
-        </div>
-    </div>
+                <a href="{{ route('storage-manager.transfers.index') }}" class="btn btn-sm btn-light-primary">@lang('lang_v1.transfer_execution')</a>
+        </x-slot>
+    </x-storagemanager::storage-toolbar>
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div id="kt_app_content_container" class="app-container container-xxl">

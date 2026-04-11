@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Http\Requests\StoreStorageAreaRequest;
 use Modules\StorageManager\Http\Requests\UpdateStorageAreaRequest;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 
 class StorageAreaController extends Controller
 {
@@ -76,6 +77,11 @@ class StorageAreaController extends Controller
             'locations' => $locations,
             'locationId' => $locationId,
             'metrics' => $metrics,
+            'storageToolbarTitle' => __('lang_v1.warehouse_areas'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.warehouse_areas'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -92,6 +98,11 @@ class StorageAreaController extends Controller
             'categories' => $this->categories($businessId),
             'area' => null,
             'areaTypes' => $this->areaTypes(),
+            'storageToolbarTitle' => __('lang_v1.add_warehouse_area'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.warehouse_areas'), 'url' => route('storage-manager.areas.index')],
+                ['label' => __('lang_v1.add_warehouse_area'), 'url' => null],
+            ]),
         ]);
     }
 
@@ -127,11 +138,20 @@ class StorageAreaController extends Controller
 
         $businessId = (int) $request->session()->get('user.business_id');
 
+        $area = $this->findArea($businessId, $id);
+        $locId = (int) $area->location_id;
+
         return view('storagemanager::areas.edit', [
             'locations' => $this->locations($businessId),
             'categories' => $this->categories($businessId),
-            'area' => $this->findArea($businessId, $id),
+            'area' => $area,
             'areaTypes' => $this->areaTypes(),
+            'storageToolbarTitle' => __('lang_v1.edit_warehouse_area'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.warehouse_areas'), 'url' => route('storage-manager.areas.index')],
+                ['label' => __('lang_v1.edit_warehouse_area'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
         ]);
     }
 

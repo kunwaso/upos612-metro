@@ -11,6 +11,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Entities\StorageLocationSetting;
 use Modules\StorageManager\Services\ReconciliationService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 
 class StorageLocationSettingsController extends Controller
 {
@@ -132,6 +133,10 @@ class StorageLocationSettingsController extends Controller
                 'alert' => __('lang_v1.alert'),
                 'block' => __('lang_v1.block'),
             ],
+            'storageToolbarTitle' => __('lang_v1.warehouse_settings'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.warehouse_settings'), 'url' => null],
+            ]),
         ]);
     }
 

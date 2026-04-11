@@ -6,6 +6,7 @@ use App\BusinessLocation;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Modules\StorageManager\Http\Requests\AssignSlotRequest;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class StorageManagerController extends Controller
@@ -89,6 +90,12 @@ class StorageManagerController extends Controller
             'expiring_url'        => $expiringHeaderUrl,
         ];
 
+        $storageToolbarTitle = __('lang_v1.warehouse_map');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.warehouse_map'), 'url' => null],
+        ], $location_id > 0 ? $location_id : null);
+        $storageToolbarLocationId = $location_id > 0 ? $location_id : null;
+
         return view('storagemanager::index', compact(
             'locations',
             'location_id',
@@ -96,7 +103,10 @@ class StorageManagerController extends Controller
             'selectedLocation',
             'running_out_items',
             'expiring_items',
-            'widget_meta'
+            'widget_meta',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
         ));
     }
 
@@ -130,12 +140,21 @@ class StorageManagerController extends Controller
             ? BusinessLocation::where('business_id', $business_id)->find($location_id)
             : null;
 
+        $storageToolbarTitle = __('lang_v1.running_out_of_stock');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.running_out_of_stock'), 'url' => null],
+        ], $location_id > 0 ? $location_id : null);
+        $storageToolbarLocationId = $location_id > 0 ? $location_id : null;
+
         return view('storagemanager::running_out_of_stock', compact(
             'locations',
             'location_id',
             'items',
             'selectedLocation',
-            'product_id'
+            'product_id',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
         ));
     }
 

@@ -4,13 +4,16 @@ namespace Modules\StorageManager\Tests\Feature;
 
 use App\Category;
 use Illuminate\Support\Collection;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use stdClass;
 use Tests\TestCase;
 
 class WarehouseMapViewContractTest extends TestCase
 {
-    public function test_warehouse_map_renders_slot_and_staging_cell_kinds(): void
+    public function test_warehouse_map_renders_reserve_slot_buttons_and_staging_empty_state(): void
     {
+        $_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
+
         $category = new Category();
         $category->id = 7;
         $category->name = 'Reserve';
@@ -24,34 +27,26 @@ class WarehouseMapViewContractTest extends TestCase
         $slot->max_capacity = 10;
         $slot->occupancy = 3;
 
-        $mapCards = [
+        $zones = [
             [
-                'card_type' => 'slot_grid',
-                'area' => ['id' => 1, 'name' => 'Reserve-A', 'type' => 'reserve', 'sort_order' => 1],
+                'area_id' => 1,
+                'area_type' => 'reserve',
                 'category' => $category,
+                'label' => 'Reserve-A',
                 'slots' => collect([$slot]),
                 'occupied' => 3,
                 'capacity' => 10,
-                'products' => [],
-                'product_count' => 0,
+                'placeholder' => false,
             ],
             [
-                'card_type' => 'staging_inbound',
-                'area' => ['id' => 2, 'name' => 'Staging In-A', 'type' => 'staging_in', 'sort_order' => 2],
+                'area_id' => 2,
+                'area_type' => 'staging_in',
                 'category' => null,
+                'label' => 'Staging In-A',
                 'slots' => collect(),
                 'occupied' => 0,
                 'capacity' => 0,
-                'products' => [
-                    [
-                        'line_id' => 90,
-                        'product_label' => 'Product Alpha With Long Name',
-                        'hover_name' => 'Product Alpha With Long Name',
-                        'inbound_url' => '/storage-manager/inbound/receipts/purchase/10',
-                        'disabled' => false,
-                    ],
-                ],
-                'product_count' => 1,
+                'placeholder' => true,
             ],
         ];
 
@@ -61,7 +56,7 @@ class WarehouseMapViewContractTest extends TestCase
         $html = view('storagemanager::index', [
             'locations' => collect([1 => 'Main Warehouse']),
             'location_id' => 1,
-            'map_cards' => $mapCards,
+            'zones' => $zones,
             'selectedLocation' => $selectedLocation,
             'running_out_items' => new Collection(),
             'expiring_items' => new Collection(),
@@ -70,12 +65,18 @@ class WarehouseMapViewContractTest extends TestCase
                 'expiring_url' => '/reports/stock-expiry?location_id=1',
                 'expiry_window_days' => 30,
             ],
+            'storageToolbarTitle' => __('lang_v1.warehouse_map'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.warehouse_map'), 'url' => null],
+            ], 1),
+            'storageToolbarLocationId' => 1,
         ])->render();
 
-        $this->assertStringContainsString('data-cell-kind="slot"', $html);
-        $this->assertStringContainsString('data-cell-kind="staging-product"', $html);
-        $this->assertStringContainsString('data-inbound-url="/storage-manager/inbound/receipts/purchase/10"', $html);
-        $this->assertStringContainsString('Open inbound items:', $html);
+        $this->assertStringContainsString('slot-cell', $html);
+        $this->assertStringContainsString('data-slot-id="12"', $html);
+        $this->assertStringContainsString('A-01', $html);
+        $this->assertStringContainsString('Reserve-A', $html);
+        $this->assertStringContainsString('Staging In-A', $html);
+        $this->assertStringContainsString(__('lang_v1.warehouse_map_no_slot_cells'), $html);
     }
 }
-

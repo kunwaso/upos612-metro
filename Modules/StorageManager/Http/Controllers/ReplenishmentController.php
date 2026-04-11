@@ -5,6 +5,7 @@ namespace Modules\StorageManager\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Modules\StorageManager\Http\Requests\CompleteReplenishmentRequest;
 use Modules\StorageManager\Services\ReplenishmentService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class ReplenishmentController extends Controller
@@ -31,6 +32,11 @@ class ReplenishmentController extends Controller
             'locationId' => $locationId,
             'queueSummary' => $queue['queueSummary'],
             'rows' => $queue['rows'],
+            'storageToolbarTitle' => __('lang_v1.replenishment_queue'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.replenishment_queue'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -42,8 +48,16 @@ class ReplenishmentController extends Controller
 
         $businessId = request()->session()->get('user.business_id');
         $context = $this->replenishmentService->getWorkbench($businessId, $rule, (int) request()->session()->get('user.id'));
+        $locId = (int) $context['rule']->location_id;
 
-        return view('storagemanager::replenishment.show', $context);
+        return view('storagemanager::replenishment.show', array_merge($context, [
+            'storageToolbarTitle' => __('lang_v1.replenishment_document'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.replenishment_queue'), 'url' => route('storage-manager.replenishment.index')],
+                ['label' => __('lang_v1.replenishment_document'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function complete(CompleteReplenishmentRequest $request, int $rule)

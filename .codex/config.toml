@@ -37,10 +37,6 @@ env = { SystemRoot = "C:\\Windows", PROGRAMFILES = "C:\\Program Files" }
 command = "powershell"
 args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:/Users/Ray/AppData/Roaming/npm/gitnexus.ps1", "mcp"]
 
-# Rey uses gitnexus_rey in its own .codex/config.toml — keep it disabled here.
-[mcp_servers.gitnexus_rey]
-enabled = false
-
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["D:/wamp64/www/upos612/mcp/semantic-code-search-mcp/bin/server"]

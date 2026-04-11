@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\CompletePutawayRequest;
 use Modules\StorageManager\Services\PutawayService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class PutawayController extends Controller
@@ -33,6 +34,11 @@ class PutawayController extends Controller
             'locationId' => $locationId,
             'queueSummary' => $queue['queueSummary'],
             'documents' => $queue['documents'],
+            'storageToolbarTitle' => __('lang_v1.putaway_queue'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.putaway_queue'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -44,8 +50,17 @@ class PutawayController extends Controller
 
         $businessId = request()->session()->get('user.business_id');
         $context = $this->putawayService->getWorkbench($businessId, $document);
+        $doc = $context['document'];
+        $locId = (int) $doc->location_id;
 
-        return view('storagemanager::putaway.show', $context);
+        return view('storagemanager::putaway.show', array_merge($context, [
+            'storageToolbarTitle' => (string) ($doc->document_no ?: __('lang_v1.putaway_document')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.putaway_queue'), 'url' => route('storage-manager.putaway.index')],
+                ['label' => __('lang_v1.putaway_document'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function complete(CompletePutawayRequest $request, int $document)

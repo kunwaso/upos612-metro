@@ -8,6 +8,7 @@ use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\StoreGroupedPurchasingAdvisoryRequest;
 use Modules\StorageManager\Http\Requests\StorePurchasingAdvisoryRequest;
 use Modules\StorageManager\Services\PurchasingAdvisoryService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class PurchasingAdvisoryController extends Controller
@@ -36,6 +37,11 @@ class PurchasingAdvisoryController extends Controller
             'summary' => $queue['summary'],
             'rows' => $queue['rows'],
             'purchaseRequisitionEnabled' => $purchaseRequisitionEnabled,
+            'storageToolbarTitle' => __('lang_v1.purchasing_advisories'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.purchasing_advisories'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 

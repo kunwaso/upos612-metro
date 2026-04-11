@@ -2,6 +2,9 @@
 
 namespace Modules\StorageManager\Tests\Feature;
 
+use App\Http\Middleware\AdminSidebarMenu;
+use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Transaction;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -24,7 +27,13 @@ class InboundReceivingGrnFeatureTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware();
+        $_SERVER['REMOTE_ADDR'] ??= '127.0.0.1';
+
+        $this->withoutMiddleware([
+            Authenticate::class,
+            AdminSidebarMenu::class,
+            VerifyCsrfToken::class,
+        ]);
 
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite', [
@@ -44,7 +53,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
     {
         $this->actingAs($this->makeUser([]));
 
-        $this->withSession(['user' => ['business_id' => 44, 'id' => 7]])
+        $this->withSession($this->storageManagerFeatureSession())
             ->post(route('storage-manager.inbound.purchase-orders.start-receiving', 55))
             ->assertForbidden();
     }
@@ -52,18 +61,18 @@ class InboundReceivingGrnFeatureTest extends TestCase
     public function test_start_purchase_order_receiving_route_redirects_to_generated_purchase_workbench(): void
     {
         $receivingService = Mockery::mock(ReceivingService::class);
+        $generatedPurchase = new Transaction();
+        $generatedPurchase->id = 91;
+        $generatedPurchase->type = 'purchase';
         $receivingService->shouldReceive('startPurchaseOrderReceiving')
             ->once()
             ->with(44, 55, 7)
-            ->andReturn(new Transaction([
-                'id' => 91,
-                'type' => 'purchase',
-            ]));
+            ->andReturn($generatedPurchase);
         $this->bindControllerDependencies($receivingService);
 
         $this->actingAs($this->makeUser(['storage_manager.operate']));
 
-        $response = $this->withSession(['user' => ['business_id' => 44, 'id' => 7]])
+        $response = $this->withSession($this->storageManagerFeatureSession())
             ->post(route('storage-manager.inbound.purchase-orders.start-receiving', 55));
 
         $response->assertRedirect(route('storage-manager.inbound.show', [
@@ -77,6 +86,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
         DB::table('storage_documents')->insert([
             'id' => 501,
             'business_id' => 99,
+            'location_id' => 1,
             'document_type' => 'receipt',
             'status' => 'completed',
             'source_type' => 'purchase',
@@ -89,7 +99,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
 
         $this->actingAs($this->makeUser(['storage_manager.view']));
 
-        $this->withSession(['user' => ['business_id' => 44, 'id' => 7]])
+        $this->withSession($this->storageManagerFeatureSession())
             ->get(route('storage-manager.inbound.grn.show', 501))
             ->assertNotFound();
     }
@@ -99,6 +109,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
         DB::table('storage_documents')->insert([
             'id' => 601,
             'business_id' => 44,
+            'location_id' => 1,
             'document_type' => 'receipt',
             'status' => 'completed',
             'source_type' => 'purchase',
@@ -153,7 +164,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
 
         $this->actingAs($this->makeUser(['storage_manager.view']));
 
-        $this->withSession(['user' => ['business_id' => 44, 'id' => 7]])
+        $this->withSession($this->storageManagerFeatureSession())
             ->get(route('storage-manager.inbound.grn.show', 601))
             ->assertOk()
             ->assertSee('GOODS RECEIVED NOTE')
@@ -167,6 +178,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
         DB::table('storage_documents')->insert([
             'id' => 701,
             'business_id' => 44,
+            'location_id' => 1,
             'document_type' => 'receipt',
             'status' => 'open',
             'source_type' => 'purchase',
@@ -205,7 +217,7 @@ class InboundReceivingGrnFeatureTest extends TestCase
 
         $this->actingAs($this->makeUser(['storage_manager.operate']));
 
-        $response = $this->withSession(['user' => ['business_id' => 44, 'id' => 7]])
+        $response = $this->withSession($this->storageManagerFeatureSession())
             ->post(route('storage-manager.inbound.confirm', 701), [
                 'delivery_note_number' => 'DN-701',
                 'lines' => [
@@ -228,9 +240,16 @@ class InboundReceivingGrnFeatureTest extends TestCase
     {
         Schema::dropAllTables();
 
+        Schema::create('system', function (Blueprint $table) {
+            $table->id();
+            $table->string('key');
+            $table->text('value')->nullable();
+        });
+
         Schema::create('storage_documents', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('business_id');
+            $table->unsignedBigInteger('location_id')->nullable();
             $table->string('document_type', 40);
             $table->string('status', 30)->default('draft');
             $table->string('source_type', 60)->nullable();
@@ -243,10 +262,48 @@ class InboundReceivingGrnFeatureTest extends TestCase
 
     protected function bindControllerDependencies(?ReceivingService $receivingService = null): void
     {
+        $this->app->forgetInstance(ReceivingService::class);
+        $this->app->forgetInstance(StorageManagerUtil::class);
+        $this->app->forgetInstance(WarehouseSyncService::class);
+        $this->app->forgetInstance(StorageVasReceiptSyncUtil::class);
+
         $this->app->instance(ReceivingService::class, $receivingService ?: Mockery::mock(ReceivingService::class)->shouldIgnoreMissing());
         $this->app->instance(StorageManagerUtil::class, Mockery::mock(StorageManagerUtil::class)->shouldIgnoreMissing());
         $this->app->instance(WarehouseSyncService::class, Mockery::mock(WarehouseSyncService::class)->shouldIgnoreMissing());
         $this->app->instance(StorageVasReceiptSyncUtil::class, Mockery::mock(StorageVasReceiptSyncUtil::class)->shouldIgnoreMissing());
+    }
+
+    /**
+     * Session keys required by layouts, Timezone middleware, and format_currency / format_quantity_value helpers.
+     *
+     * @return array<string, mixed>
+     */
+    protected function storageManagerFeatureSession(): array
+    {
+        return [
+            'user' => [
+                'id' => 7,
+                'business_id' => 44,
+                'language' => 'en',
+            ],
+            'business' => [
+                'id' => 44,
+                'time_zone' => 'UTC',
+                'quantity_precision' => 2,
+                'currency_precision' => 2,
+                'currency_symbol_placement' => 'before',
+                'date_format' => 'Y-m-d',
+                'time_format' => 24,
+                'enabled_modules' => [],
+                'common_settings' => [],
+                'pos_settings' => json_encode([]),
+            ],
+            'currency' => [
+                'symbol' => '$',
+                'decimal_separator' => '.',
+                'thousand_separator' => ',',
+            ],
+        ];
     }
 
     protected function makeUser(array $allowedAbilities): User
@@ -276,6 +333,11 @@ class InboundReceivingGrnFeatureTest extends TestCase
             public function can($ability, $arguments = []): bool
             {
                 return (bool) ($this->abilities[$ability] ?? false);
+            }
+
+            public function hasRole($roles, $guard = null): bool
+            {
+                return false;
             }
         };
     }

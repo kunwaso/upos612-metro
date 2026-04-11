@@ -9,6 +9,7 @@ use Modules\StorageManager\Http\Requests\ApproveCycleCountShortagesRequest;
 use Modules\StorageManager\Http\Requests\CreateCycleCountSessionRequest;
 use Modules\StorageManager\Http\Requests\SubmitCycleCountRequest;
 use Modules\StorageManager\Services\CycleCountService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class CycleCountController extends Controller
@@ -40,6 +41,11 @@ class CycleCountController extends Controller
             'boardSummary' => $board['boardSummary'],
             'sessionRows' => $board['sessionRows'],
             'approvalRows' => $board['approvalRows'],
+            'storageToolbarTitle' => __('lang_v1.cycle_count_sessions'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.cycle_count_sessions'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -76,8 +82,17 @@ class CycleCountController extends Controller
 
         $businessId = request()->session()->get('user.business_id');
         $context = $this->cycleCountService->getWorkbench($businessId, $session);
+        $sessionModel = $context['session'];
+        $locId = (int) $sessionModel->location_id;
 
-        return view('storagemanager::counts.show', $context);
+        return view('storagemanager::counts.show', array_merge($context, [
+            'storageToolbarTitle' => (string) ($sessionModel->session_no ?: __('lang_v1.cycle_count_workbench')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.cycle_count_sessions'), 'url' => route('storage-manager.counts.index')],
+                ['label' => (string) ($sessionModel->session_no ?: '#'.$sessionModel->id), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function submit(SubmitCycleCountRequest $request, int $session)

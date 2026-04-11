@@ -36,13 +36,13 @@ class StorageVasReceiptSyncUtilTest extends TestCase
     public function test_unlink_rejects_non_receipt_documents(): void
     {
         $document = new \Modules\StorageManager\Entities\StorageDocument();
-        $document->document_type = 'putaway';
+        $document->document_type = 'damage';
         $document->status = 'completed';
 
         $util = app(StorageVasReceiptSyncUtil::class);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Only receipt documents can be unlinked');
+        $this->expectExceptionMessage('Only receipt or putaway documents can be unlinked from VAS accounting.');
 
         $util->unlinkReceiptVasSync(1, $document, 1);
     }
@@ -56,7 +56,7 @@ class StorageVasReceiptSyncUtilTest extends TestCase
         $util = app(StorageVasReceiptSyncUtil::class);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Receipt must be completed or closed');
+        $this->expectExceptionMessage('Storage document must be completed or closed before unlinking accounting.');
 
         $util->unlinkReceiptVasSync(1, $document, 1);
     }

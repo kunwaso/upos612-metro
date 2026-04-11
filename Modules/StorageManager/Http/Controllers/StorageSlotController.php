@@ -9,6 +9,7 @@ use Modules\StorageManager\Entities\StorageArea;
 use Modules\StorageManager\Entities\StorageSlot;
 use Modules\StorageManager\Http\Requests\StoreStorageSlotRequest;
 use Modules\StorageManager\Http\Requests\UpdateStorageSlotRequest;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class StorageSlotController extends Controller
@@ -51,7 +52,23 @@ class StorageSlotController extends Controller
 
         $slots = $query->orderBy('location_id')->orderBy('category_id')->orderBy('row')->orderBy('position')->paginate(50);
 
-        return view('storagemanager::slots.index', compact('slots', 'locations', 'categories', 'areas', 'location_id', 'category_id'));
+        $storageToolbarTitle = __('lang_v1.storage_slots');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.storage_slots'), 'url' => null],
+        ], $location_id > 0 ? $location_id : null);
+        $storageToolbarLocationId = $location_id > 0 ? $location_id : null;
+
+        return view('storagemanager::slots.index', compact(
+            'slots',
+            'locations',
+            'categories',
+            'areas',
+            'location_id',
+            'category_id',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
+        ));
     }
 
     /**
@@ -69,7 +86,22 @@ class StorageSlotController extends Controller
         $areas       = $this->util->getAreasDropdown($business_id);
         $prefill_location_id = (int) request('location_id', 0);
 
-        return view('storagemanager::slots.create', compact('locations', 'categories', 'areas', 'prefill_location_id'));
+        $storageToolbarTitle = __('lang_v1.add_storage_slot');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.storage_slots'), 'url' => route('storage-manager.slots.index')],
+            ['label' => __('lang_v1.add_storage_slot'), 'url' => null],
+        ], $prefill_location_id > 0 ? $prefill_location_id : null);
+        $storageToolbarLocationId = $prefill_location_id > 0 ? $prefill_location_id : null;
+
+        return view('storagemanager::slots.create', compact(
+            'locations',
+            'categories',
+            'areas',
+            'prefill_location_id',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
+        ));
     }
 
     /**
@@ -117,7 +149,23 @@ class StorageSlotController extends Controller
         $categories  = $this->util->getCategoriesDropdown($business_id);
         $areas       = $this->util->getAreasDropdown($business_id);
 
-        return view('storagemanager::slots.edit', compact('slot', 'locations', 'categories', 'areas'));
+        $locId = (int) $slot->location_id;
+        $storageToolbarTitle = __('lang_v1.edit_storage_slot');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.storage_slots'), 'url' => route('storage-manager.slots.index')],
+            ['label' => __('lang_v1.edit_storage_slot'), 'url' => null],
+        ], $locId > 0 ? $locId : null);
+        $storageToolbarLocationId = $locId > 0 ? $locId : null;
+
+        return view('storagemanager::slots.edit', compact(
+            'slot',
+            'locations',
+            'categories',
+            'areas',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
+        ));
     }
 
     /**

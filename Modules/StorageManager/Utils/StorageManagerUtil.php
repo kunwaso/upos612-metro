@@ -24,12 +24,15 @@ class StorageManagerUtil
     /**
      * Return zone cards for the Warehouse Map.
      *
-     * Strategy (area-first):
+     * Strategy (area-first when {@code storage_slots.area_id} exists):
      *  1. Load all StorageAreas for the location — one card per area, in sort_order order.
      *  2. For each area, attach the slots that belong to it (area_id = area.id).
      *  3. Any slots without an area_id are grouped by category_id and appended as legacy cards.
      *
-     * This ensures every area always appears on the map regardless of whether it has slots yet.
+     * If {@code area_id} is not a column yet, area rows are ignored for the map and all slots are
+     * shown as legacy category cards only (avoids empty duplicate zone cards).
+     *
+     * When area_id exists, every area appears on the map regardless of whether it has slots yet.
      *
      * @param  int  $business_id
      * @param  int  $location_id
@@ -68,34 +71,32 @@ class StorageManagerUtil
 
         $zones = [];
 
-        // --- Area-driven cards (always one per area) ---
+        // --- Area-driven cards (one per area) — only when slots can be linked to areas ---
         $coveredSlotIds = [];
-        foreach ($areas as $area) {
-            if ($hasAreaId) {
+        if ($hasAreaId) {
+            foreach ($areas as $area) {
                 $areaSlots = $slots->where('area_id', $area->id)->values();
-            } else {
-                $areaSlots = collect();
+
+                foreach ($areaSlots as $slot) {
+                    $coveredSlotIds[] = $slot->id;
+                }
+
+                $label = $this->warehouseMapAreaTitle($area);
+
+                $zones[] = [
+                    'area_id'     => (int) $area->id,
+                    'area_type'   => (string) $area->area_type,
+                    'category'    => $area->category,
+                    'label'       => $label,
+                    'slots'       => $areaSlots,
+                    'occupied'    => $areaSlots->sum('occupancy'),
+                    'capacity'    => $areaSlots->sum('max_capacity'),
+                    'placeholder' => $areaSlots->isEmpty(),
+                ];
             }
-
-            foreach ($areaSlots as $slot) {
-                $coveredSlotIds[] = $slot->id;
-            }
-
-            $label = $this->warehouseMapAreaTitle($area);
-
-            $zones[] = [
-                'area_id'     => (int) $area->id,
-                'area_type'   => (string) $area->area_type,
-                'category'    => $area->category,
-                'label'       => $label,
-                'slots'       => $areaSlots,
-                'occupied'    => $areaSlots->sum('occupancy'),
-                'capacity'    => $areaSlots->sum('max_capacity'),
-                'placeholder' => $areaSlots->isEmpty(),
-            ];
         }
 
-        // --- Legacy cards: slots not linked to any area, grouped by category ---
+        // --- Legacy cards: slots not linked to any area (or all slots when area_id column is absent), grouped by category ---
         $remainingSlots = $slots->whereNotIn('id', $coveredSlotIds)->values();
 
         foreach ($remainingSlots->groupBy('category_id') as $categoryId => $categorySlots) {

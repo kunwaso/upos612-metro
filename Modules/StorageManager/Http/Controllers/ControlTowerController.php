@@ -17,6 +17,7 @@ use Modules\StorageManager\Services\PurchasingAdvisoryService;
 use Modules\StorageManager\Services\WarehouseKpiService;
 use Modules\StorageManager\Services\ReconciliationService;
 use Modules\StorageManager\Services\WarehouseSyncService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 
 class ControlTowerController extends Controller
 {
@@ -127,6 +128,12 @@ class ControlTowerController extends Controller
         $dashboard = $this->warehouseKpiService->buildDashboard($businessId, $locationId > 0 ? $locationId : null);
         $purchasingSummary = $this->purchasingAdvisoryService->queueForLocation($businessId, $locationId > 0 ? $locationId : null);
 
+        $storageToolbarTitle = __('lang_v1.control_tower');
+        $storageToolbarBreadcrumbs = StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+            ['label' => __('lang_v1.control_tower'), 'url' => null],
+        ], $locationId > 0 ? $locationId : null);
+        $storageToolbarLocationId = $locationId > 0 ? $locationId : null;
+
         return view('storagemanager::control_tower.index', compact(
             'locations',
             'locationId',
@@ -137,7 +144,10 @@ class ControlTowerController extends Controller
             'locationRows',
             'readinessRows',
             'dashboard',
-            'purchasingSummary'
+            'purchasingSummary',
+            'storageToolbarTitle',
+            'storageToolbarBreadcrumbs',
+            'storageToolbarLocationId'
         ));
     }
 

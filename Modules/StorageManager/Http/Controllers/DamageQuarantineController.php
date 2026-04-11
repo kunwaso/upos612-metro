@@ -7,6 +7,7 @@ use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\ReportDamageRequest;
 use Modules\StorageManager\Http\Requests\ResolveDamageRequest;
 use Modules\StorageManager\Services\DamageQuarantineService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class DamageQuarantineController extends Controller
@@ -36,6 +37,11 @@ class DamageQuarantineController extends Controller
             'approvalRows' => $board['approvalRows'],
             'quarantineSlotOptions' => $board['quarantineSlotOptions'],
             'availableBuckets' => $board['availableBuckets'],
+            'storageToolbarTitle' => __('lang_v1.damage_quarantine'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.damage_quarantine'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -47,8 +53,17 @@ class DamageQuarantineController extends Controller
 
         $businessId = request()->session()->get('user.business_id');
         $context = $this->damageQuarantineService->getWorkbench($businessId, $document);
+        $doc = $context['document'];
+        $locId = (int) $doc->location_id;
 
-        return view('storagemanager::damage.show', $context);
+        return view('storagemanager::damage.show', array_merge($context, [
+            'storageToolbarTitle' => (string) ($doc->document_no ?: __('lang_v1.damage_quarantine')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.damage_quarantine'), 'url' => route('storage-manager.damage.index')],
+                ['label' => (string) ($doc->document_no ?: '#'.$doc->id), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function store(ReportDamageRequest $request)

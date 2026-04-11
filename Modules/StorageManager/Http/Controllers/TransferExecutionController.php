@@ -7,6 +7,7 @@ use Modules\StorageManager\Entities\StorageDocument;
 use Modules\StorageManager\Http\Requests\ConfirmTransferReceiptRequest;
 use Modules\StorageManager\Http\Requests\CompleteTransferDispatchRequest;
 use Modules\StorageManager\Services\TransferExecutionService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class TransferExecutionController extends Controller
@@ -34,6 +35,11 @@ class TransferExecutionController extends Controller
             'dispatchSummary' => $board['dispatchSummary'],
             'dispatchRows' => $board['dispatchRows'],
             'receiptRows' => $board['receiptRows'],
+            'storageToolbarTitle' => __('lang_v1.transfer_execution'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.transfer_execution'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -47,7 +53,17 @@ class TransferExecutionController extends Controller
         $context = $this->transferExecutionService->getDispatchWorkbench($businessId, $transfer, (int) request()->session()->get('user.id'));
         $context['sourceSummary']['can_confirm'] = ! empty($context['sourceSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::transfers.dispatch', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::transfers.dispatch', array_merge($context, [
+            'storageToolbarTitle' => (string) ($document->document_no ?: __('lang_v1.transfer_dispatch')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.transfer_execution'), 'url' => route('storage-manager.transfers.index')],
+                ['label' => __('lang_v1.dispatch_workbench'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function confirmDispatch(CompleteTransferDispatchRequest $request, int $document)
@@ -98,7 +114,17 @@ class TransferExecutionController extends Controller
         $context = $this->transferExecutionService->getReceiptWorkbench($businessId, $transfer, (int) request()->session()->get('user.id'));
         $context['sourceSummary']['can_confirm'] = ! empty($context['sourceSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::transfers.receipt', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::transfers.receipt', array_merge($context, [
+            'storageToolbarTitle' => (string) ($document->document_no ?: __('lang_v1.transfer_receipt')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.transfer_execution'), 'url' => route('storage-manager.transfers.index')],
+                ['label' => __('lang_v1.receipt_workbench'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function confirmReceipt(ConfirmTransferReceiptRequest $request, int $document)

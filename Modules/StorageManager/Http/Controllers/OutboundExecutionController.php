@@ -8,6 +8,7 @@ use Modules\StorageManager\Http\Requests\CompletePackRequest;
 use Modules\StorageManager\Http\Requests\CompletePickRequest;
 use Modules\StorageManager\Http\Requests\CompleteShipRequest;
 use Modules\StorageManager\Services\OutboundExecutionService;
+use Modules\StorageManager\Utils\StorageManagerToolbarNavUtil;
 use Modules\StorageManager\Utils\StorageManagerUtil;
 
 class OutboundExecutionController extends Controller
@@ -36,6 +37,11 @@ class OutboundExecutionController extends Controller
             'pickRows' => $board['pickRows'],
             'packRows' => $board['packRows'],
             'shipRows' => $board['shipRows'],
+            'storageToolbarTitle' => __('lang_v1.outbound_execution'),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.outbound_execution'), 'url' => null],
+            ], $locationId > 0 ? $locationId : null),
+            'storageToolbarLocationId' => $locationId > 0 ? $locationId : null,
         ]);
     }
 
@@ -49,7 +55,17 @@ class OutboundExecutionController extends Controller
         $context = $this->outboundExecutionService->getPickWorkbench($businessId, $salesOrder, (int) request()->session()->get('user.id'));
         $context['orderSummary']['can_confirm'] = ! empty($context['orderSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::outbound.pick', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::outbound.pick', array_merge($context, [
+            'storageToolbarTitle' => (string) ($document->document_no ?: __('lang_v1.pick_workbench')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.outbound_execution'), 'url' => route('storage-manager.outbound.index')],
+                ['label' => __('lang_v1.pick_workbench'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function confirmPick(CompletePickRequest $request, int $document)
@@ -97,7 +113,17 @@ class OutboundExecutionController extends Controller
         $context = $this->outboundExecutionService->getPackWorkbench($businessId, $salesOrder, (int) request()->session()->get('user.id'));
         $context['orderSummary']['can_confirm'] = ! empty($context['orderSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::outbound.pack', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::outbound.pack', array_merge($context, [
+            'storageToolbarTitle' => (string) ($document->document_no ?: __('lang_v1.pack_workbench')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.outbound_execution'), 'url' => route('storage-manager.outbound.index')],
+                ['label' => __('lang_v1.pack_workbench'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function confirmPack(CompletePackRequest $request, int $document)
@@ -146,7 +172,17 @@ class OutboundExecutionController extends Controller
         $context = $this->outboundExecutionService->getShipWorkbench($businessId, $salesOrder, (int) request()->session()->get('user.id'));
         $context['orderSummary']['can_confirm'] = ! empty($context['orderSummary']['can_confirm']) && auth()->user()->can('storage_manager.operate');
 
-        return view('storagemanager::outbound.ship', $context);
+        $document = $context['document'];
+        $locId = (int) $document->location_id;
+
+        return view('storagemanager::outbound.ship', array_merge($context, [
+            'storageToolbarTitle' => (string) ($document->document_no ?: __('lang_v1.ship_workbench')),
+            'storageToolbarBreadcrumbs' => StorageManagerToolbarNavUtil::breadcrumbsAfterRoot([
+                ['label' => __('lang_v1.outbound_execution'), 'url' => route('storage-manager.outbound.index')],
+                ['label' => __('lang_v1.ship_workbench'), 'url' => null],
+            ], $locId > 0 ? $locId : null),
+            'storageToolbarLocationId' => $locId > 0 ? $locId : null,
+        ]));
     }
 
     public function confirmShip(CompleteShipRequest $request, int $document)
