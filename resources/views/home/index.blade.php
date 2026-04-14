@@ -67,11 +67,11 @@
         return num_format_value($value);
     };
 @endphp
-<div class="content flex-row-fluid" id="kt_content">
+    <div class="home-dashboard-root" data-home-dashboard-root>
     <div class="row gx-5 gx-xl-10 mb-5">
         <div class="col-12">
             <div class="card card-flush" id="dashboard-date-filter">
-                <div class="card-header align-items-center py-5">
+                <div class="card-header align-items-center py-5 flex-wrap">
                     <div class="card-title d-flex flex-column">
                         <span class="fs-2 fw-bold text-gray-900">Dashboard Date Filter</span>
                         <span class="text-gray-500 fw-semibold fs-6" data-sales-chart-range-label>{{ data_get($dashboardMeta, 'range.label', 'This month') }}</span>
@@ -796,56 +796,58 @@
                 <!--begin::Card body-->
                 <div class="card-body pt-2">
                     <!--begin::Table-->
-                    <table class="table align-middle table-row-dashed fs-6 gy-3" id="hm_dashboard_product_orders_table">
-                        <!--begin::Table head-->
-                        <thead>
-                            <!--begin::Table row-->
-                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                <th class="min-w-100px">Order ID</th>
-                                <th class="text-end min-w-100px">Created</th>
-                                <th class="text-end min-w-125px">Customer</th>
-                                <th class="text-end min-w-100px">Total</th>
-                                <th class="text-end min-w-100px">Profit</th>
-                                <th class="text-end min-w-50px">Status</th>
-                                <th class="text-end"></th>
-                            </tr>
-                            <!--end::Table row-->
-                        </thead>
-                        <!--end::Table head-->
-                        <!--begin::Table body-->
-                        <tbody class="fw-bold text-gray-600">
-                            @forelse ($dashboardProductOrders as $order)
-                                <tr>
-                                    <td>
-                                        <a href="javascript:void(0)" class="text-gray-800 text-hover-primary">{{ $order['order_id'] ?? '-' }}</a>
-                                    </td>
-                                    <td class="text-end">{{ $order['created_at'] ?? '-' }}</td>
-                                    <td class="text-end">
-                                        <a href="javascript:void(0)" class="text-gray-600 text-hover-primary">{{ $order['customer_name'] ?? '-' }}</a>
-                                    </td>
-                                    <td class="text-end">@format_currency($order['total'] ?? 0)</td>
-                                    <td class="text-end">
-                                        <span class="text-gray-800 fw-bolder">@format_currency($order['profit'] ?? 0)</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <span class="badge py-3 px-4 fs-7 badge-light-{{ $order['status_variant'] ?? 'warning' }}">{{ $order['status'] ?? '-' }}</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary toggle h-25px w-25px" data-dashboard-product-orders="expand_row">
-                                            <i class="ki-duotone ki-plus fs-4 m-0 toggle-off"></i>
-                                            <i class="ki-duotone ki-minus fs-4 m-0 toggle-on d-none"></i>
-                                        </button>
-                                    </td>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-6 gy-3" id="hm_dashboard_product_orders_table">
+                            <!--begin::Table head-->
+                            <thead>
+                                <!--begin::Table row-->
+                                <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="min-w-100px">Order ID</th>
+                                    <th class="text-end min-w-100px">Created</th>
+                                    <th class="text-end min-w-125px">Customer</th>
+                                    <th class="text-end min-w-100px">Total</th>
+                                    <th class="text-end min-w-100px">Profit</th>
+                                    <th class="text-end min-w-50px">Status</th>
+                                    <th class="text-end"></th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center text-gray-500">No data available</td>
-                                </tr>
-                            @endforelse
-                        
-                        </tbody>
-                        <!--end::Table body-->
-                    </table>
+                                <!--end::Table row-->
+                            </thead>
+                            <!--end::Table head-->
+                            <!--begin::Table body-->
+                            <tbody class="fw-bold text-gray-600">
+                                @forelse ($dashboardProductOrders as $order)
+                                    <tr>
+                                        <td>
+                                            <a href="javascript:void(0)" class="text-gray-800 text-hover-primary">{{ $order['order_id'] ?? '-' }}</a>
+                                        </td>
+                                        <td class="text-end">{{ $order['created_at'] ?? '-' }}</td>
+                                        <td class="text-end">
+                                            <a href="javascript:void(0)" class="text-gray-600 text-hover-primary">{{ $order['customer_name'] ?? '-' }}</a>
+                                        </td>
+                                        <td class="text-end">@format_currency($order['total'] ?? 0)</td>
+                                        <td class="text-end">
+                                            <span class="text-gray-800 fw-bolder">@format_currency($order['profit'] ?? 0)</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge py-3 px-4 fs-7 badge-light-{{ $order['status_variant'] ?? 'warning' }}">{{ $order['status'] ?? '-' }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary toggle h-25px w-25px" data-dashboard-product-orders="expand_row">
+                                                <i class="ki-duotone ki-plus fs-4 m-0 toggle-off"></i>
+                                                <i class="ki-duotone ki-minus fs-4 m-0 toggle-on d-none"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center text-gray-500">No data available</td>
+                                    </tr>
+                                @endforelse
+
+                            </tbody>
+                            <!--end::Table body-->
+                        </table>
+                    </div>
                     <!--end::Table-->
                 </div>
                 <!--end::Card body-->
@@ -879,7 +881,7 @@
                 <!--begin::Body-->
                 <div class="card-body">
                     <!--begin::Scroll-->
-                    <div class="hover-scroll-overlay-y pe-6 me-n6" style="height: 415px">
+                    <div class="hover-scroll-overlay-y pe-3 pe-md-6 me-0" style="height: 415px">
                         @forelse ($dashboardDeliveryFeed as $delivery)
                             <div class="border border-dashed border-gray-300 rounded px-7 py-3 mb-6">
                                 <div class="d-flex flex-stack mb-3">
@@ -965,47 +967,49 @@
                 <!--begin::Card body-->
                 <div class="card-body">
                     <!--begin::Table-->
-                    <table class="table align-middle table-row-dashed fs-6 gy-3" id="hm_dashboard_stock_table">
-                        <!--begin::Table head-->
-                        <thead>
-                            <!--begin::Table row-->
-                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                <th class="min-w-150px">Item</th>
-                                <th class="text-end pe-3 min-w-100px">Product ID</th>
-                                <th class="text-end pe-3 min-w-150px">Date Added</th>
-                                <th class="text-end pe-3 min-w-100px">Price</th>
-                                <th class="text-end pe-3 min-w-100px">Status</th>
-                                <th class="text-end pe-0 min-w-75px">Qty</th>
-                            </tr>
-                            <!--end::Table row-->
-                        </thead>
-                        <!--end::Table head-->
-                        <!--begin::Table body-->
-                        <tbody class="fw-bold text-gray-600">
-                            @forelse ($dashboardStockRows as $stock)
-                                <tr>
-                                    <td>
-                                        <a href="javascript:void(0)" class="text-gray-900 text-hover-primary">{{ $stock['item_name'] ?? '-' }}</a>
-                                    </td>
-                                    <td class="text-end">{{ $stock['product_code'] ?? '-' }}</td>
-                                    <td class="text-end">{{ $stock['date_added'] ?? '-' }}</td>
-                                    <td class="text-end">@format_currency($stock['price'] ?? 0)</td>
-                                    <td class="text-end">
-                                        <span class="badge py-3 px-4 fs-7 badge-light-{{ $stock['status_variant'] ?? 'primary' }}">{{ $stock['status_label'] ?? '-' }}</span>
-                                    </td>
-                                    <td class="text-end" data-order="{{ $stock['qty'] ?? 0 }}">
-                                        <span class="text-gray-900 fw-bold">{{ num_format_value($stock['qty'] ?? 0) }} PCS</span>
-                                    </td>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-6 gy-3" id="hm_dashboard_stock_table">
+                            <!--begin::Table head-->
+                            <thead>
+                                <!--begin::Table row-->
+                                <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="min-w-150px">Item</th>
+                                    <th class="text-end pe-3 min-w-100px">Product ID</th>
+                                    <th class="text-end pe-3 min-w-150px">Date Added</th>
+                                    <th class="text-end pe-3 min-w-100px">Price</th>
+                                    <th class="text-end pe-3 min-w-100px">Status</th>
+                                    <th class="text-end pe-0 min-w-75px">Qty</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-gray-500">No data available</td>
-                                </tr>
-                            @endforelse
-                        
-                        </tbody>
-                        <!--end::Table body-->
-                    </table>
+                                <!--end::Table row-->
+                            </thead>
+                            <!--end::Table head-->
+                            <!--begin::Table body-->
+                            <tbody class="fw-bold text-gray-600">
+                                @forelse ($dashboardStockRows as $stock)
+                                    <tr>
+                                        <td>
+                                            <a href="javascript:void(0)" class="text-gray-900 text-hover-primary">{{ $stock['item_name'] ?? '-' }}</a>
+                                        </td>
+                                        <td class="text-end">{{ $stock['product_code'] ?? '-' }}</td>
+                                        <td class="text-end">{{ $stock['date_added'] ?? '-' }}</td>
+                                        <td class="text-end">@format_currency($stock['price'] ?? 0)</td>
+                                        <td class="text-end">
+                                            <span class="badge py-3 px-4 fs-7 badge-light-{{ $stock['status_variant'] ?? 'primary' }}">{{ $stock['status_label'] ?? '-' }}</span>
+                                        </td>
+                                        <td class="text-end" data-order="{{ $stock['qty'] ?? 0 }}">
+                                            <span class="text-gray-900 fw-bold">{{ num_format_value($stock['qty'] ?? 0) }} PCS</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-gray-500">No data available</td>
+                                    </tr>
+                                @endforelse
+
+                            </tbody>
+                            <!--end::Table body-->
+                        </table>
+                    </div>
                     <!--end::Table-->
                 </div>
                 <!--end::Card body-->
@@ -1015,7 +1019,6 @@
         <!--end::Col-->
     </div>
     <!--end::Row-->
-</div>
 
 @if (!empty($all_locations))
     <div class="row g-5 g-xl-10 mt-1" id="dashboard-data-section">
@@ -1251,6 +1254,7 @@
     </div>
 @endif
 
+</div>
 <div class="modal fade payment_modal" tabindex="-1" aria-hidden="true"></div>
 <div class="modal fade edit_pso_status_modal" tabindex="-1" aria-hidden="true"></div>
 <div class="modal fade edit_payment_modal" tabindex="-1" aria-hidden="true"></div>
@@ -1260,51 +1264,71 @@
 
 @section('css')
     <style>
-        .select2-container {
-            width: 100% !important;
+        .home-dashboard-root {
+            max-width: 100%;
+            overflow-x: clip;
         }
 
-        #kt_content [data-dashboard-widget] .card-header .d-flex.align-items-center {
+        @supports not (overflow: clip) {
+            .home-dashboard-root {
+                overflow-x: hidden;
+            }
+        }
+
+        .home-dashboard-root #dashboard-date-filter .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1rem;
+        }
+
+        .home-dashboard-root #dashboard-date-filter .card-title {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget] .card-header .d-flex.align-items-center {
             flex-wrap: wrap;
             row-gap: 0.35rem;
+            min-width: 0;
         }
 
-        #kt_content [data-dashboard-widget] .card-header .fs-2hx,
-        #kt_content [data-dashboard-widget] .px-9 .fs-2hx {
+        .home-dashboard-root [data-dashboard-widget] .card-header .fs-2hx,
+        .home-dashboard-root [data-dashboard-widget] .px-9 .fs-2hx {
             font-size: clamp(1.7rem, 2.7vw, 2.45rem) !important;
             line-height: 1.1;
             max-width: 100%;
             word-break: break-word;
         }
 
-        #kt_content [data-dashboard-widget] .card-header .badge {
+        .home-dashboard-root [data-dashboard-widget] .card-header .badge {
             flex-shrink: 0;
             white-space: nowrap;
         }
 
-        #kt_content [data-dashboard-widget="sales-summary"] .card-body {
+        .home-dashboard-root [data-dashboard-widget="sales-summary"] .card-body {
             padding-right: 1rem;
             overflow: hidden;
         }
 
-        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center {
+        .home-dashboard-root [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center {
             display: grid;
             grid-template-columns: 8px minmax(0, 1fr) minmax(0, 8.75rem);
             column-gap: 0.5rem;
             align-items: center;
         }
 
-        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .bullet {
+        .home-dashboard-root [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .bullet {
             margin-right: 0 !important;
         }
 
-        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .text-gray-500 {
+        .home-dashboard-root [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .text-gray-500 {
             min-width: 0;
             margin-right: 0 !important;
             line-height: 1.2;
         }
 
-        #kt_content [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .fw-bolder.text-gray-700 {
+        .home-dashboard-root [data-dashboard-widget="sales-summary"] .card-body .d-flex.fs-6.fw-semibold.align-items-center .fw-bolder.text-gray-700 {
             min-width: 0;
             text-align: right;
             line-height: 1.15;
@@ -1313,9 +1337,179 @@
             font-size: 0.95rem;
         }
 
-        #kt_content [data-dashboard-widget="average-daily-sales"] .card-body,
-        #kt_content [data-dashboard-widget="sales-chart"] .card-body {
+        .home-dashboard-root [data-dashboard-widget="average-daily-sales"] .card-body,
+        .home-dashboard-root [data-dashboard-widget="sales-chart"] .card-body {
             overflow: hidden;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="delivery-feed"] .hover-scroll-overlay-y {
+            margin-right: 0 !important;
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-item {
+            margin-right: 0 !important;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar,
+        .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar {
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .d-flex.flex-stack.flex-wrap.gap-4,
+        .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .d-flex.flex-stack.flex-wrap.gap-4 {
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .d-flex.align-items-center.fw-bold,
+        .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .d-flex.align-items-center.fw-bold,
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .position-relative {
+            min-width: 0;
+            max-width: min(100%, 16rem);
+        }
+
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .select2-container,
+        .home-dashboard-root [data-dashboard-widget="stock-table"] .select2-container {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
+        .home-dashboard-root [data-dashboard-widget="product-orders"] .table-responsive,
+        .home-dashboard-root [data-dashboard-widget="stock-table"] .table-responsive,
+        .home-dashboard-root [data-dashboard-widget="recent-orders"] .table-responsive {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        .home-dashboard-root #dashboard-data-section .table-responsive,
+        .home-dashboard-root #dashboard-data-section .dataTables_wrapper,
+        .home-dashboard-root #dashboard-data-section .dataTables_scroll,
+        .home-dashboard-root #dashboard-data-section .dataTables_scrollBody {
+            max-width: 100%;
+        }
+
+        .home-dashboard-root #dashboard-data-section .table-responsive,
+        .home-dashboard-root #dashboard-data-section .dataTables_wrapper,
+        .home-dashboard-root #dashboard-data-section .dataTables_scroll,
+        .home-dashboard-root #dashboard-data-section .dataTables_scrollBody {
+            overflow-x: auto;
+        }
+
+        .home-dashboard-root #dashboard-data-section .dataTables_wrapper .dataTables_scrollHead {
+            overflow-x: hidden !important;
+            max-width: 100%;
+        }
+
+        @media (max-width: 991.98px) {
+            .home-dashboard-root #dashboard-date-filter .card-header {
+                align-items: flex-start;
+            }
+
+            .home-dashboard-root #dashboard-date-filter .card-toolbar {
+                width: 100%;
+                display: flex;
+            }
+
+            .home-dashboard-root #dashboard-date-filter .card-toolbar .btn {
+                width: 100%;
+                max-width: 18rem;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar {
+                width: 100%;
+                margin-top: 0.75rem;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .d-flex.flex-stack.flex-wrap.gap-4,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .d-flex.flex-stack.flex-wrap.gap-4 {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 0.6rem !important;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .d-flex.align-items-center.fw-bold,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .d-flex.align-items-center.fw-bold,
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .position-relative,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .btn.btn-light.btn-sm {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .form-select,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .form-select,
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar input[data-dashboard-product-orders="search"],
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .btn.btn-light.btn-sm {
+                width: 100% !important;
+                max-width: 100%;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="product-orders"] .card-toolbar .select2,
+            .home-dashboard-root [data-dashboard-widget="stock-table"] .card-toolbar .select2 {
+                width: 100% !important;
+                max-width: 100%;
+            }
+
+            .home-dashboard-root #hm_dashboard_product_orders_table,
+            .home-dashboard-root #hm_dashboard_stock_table,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] table {
+                width: 100% !important;
+                max-width: 100%;
+                table-layout: fixed;
+            }
+
+            .home-dashboard-root #hm_dashboard_product_orders_table th,
+            .home-dashboard-root #hm_dashboard_product_orders_table td,
+            .home-dashboard-root #hm_dashboard_stock_table th,
+            .home-dashboard-root #hm_dashboard_stock_table td,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] th,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] td,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] .nav-text,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] .text-gray-500,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] a {
+                min-width: 0 !important;
+                width: auto !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-item,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-link {
+                width: calc(50% - 0.25rem);
+                max-width: 100%;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-link {
+                height: auto;
+                min-height: 84px;
+            }
+
+            .home-dashboard-root #hm_dashboard_product_orders_table .badge,
+            .home-dashboard-root #hm_dashboard_stock_table .badge {
+                white-space: normal;
+                line-height: 1.2;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .home-dashboard-root #dashboard-date-filter .card-toolbar .btn {
+                max-width: 100%;
+            }
+
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-item,
+            .home-dashboard-root [data-dashboard-widget="recent-orders"] [data-dashboard-recent-tabs-nav] .nav-link {
+                width: 100%;
+            }
         }
     </style>
 @endsection
@@ -1338,6 +1532,47 @@
     @endif
     <script type="text/javascript">
         $(document).ready(function() {
+            var legacyDashboardTables = [];
+            var legacyDashboardResizeTimer = null;
+            var scheduleLegacyDashboardTableAdjust = function(tableApi) {
+                if (!tableApi || !tableApi.columns || typeof tableApi.columns.adjust !== 'function') {
+                    return;
+                }
+
+                var runAdjust = function() {
+                    tableApi.columns.adjust();
+                    if (tableApi.responsive && typeof tableApi.responsive.recalc === 'function') {
+                        tableApi.responsive.recalc();
+                    }
+                };
+
+                if (window.requestAnimationFrame) {
+                    window.requestAnimationFrame(runAdjust);
+                } else {
+                    window.setTimeout(runAdjust, 0);
+                }
+            };
+            var registerLegacyDashboardTable = function(tableApi) {
+                if (!tableApi || legacyDashboardTables.indexOf(tableApi) !== -1) {
+                    return;
+                }
+
+                legacyDashboardTables.push(tableApi);
+                scheduleLegacyDashboardTableAdjust(tableApi);
+            };
+
+            $(window).off('resize.homeLegacyDashboardTables').on('resize.homeLegacyDashboardTables', function() {
+                if (legacyDashboardResizeTimer) {
+                    window.clearTimeout(legacyDashboardResizeTimer);
+                }
+
+                legacyDashboardResizeTimer = window.setTimeout(function() {
+                    $.each(legacyDashboardTables, function(_, tableApi) {
+                        scheduleLegacyDashboardTableAdjust(tableApi);
+                    });
+                }, 120);
+            });
+
             if ($('#sales_order_table').length) {
                 sales_order_table = $('#sales_order_table').DataTable({
                     processing: true,
@@ -1405,8 +1640,12 @@
                             data: 'added_by',
                             name: 'u.first_name'
                         },
-                    ]
+                    ],
+                    drawCallback: function() {
+                        scheduleLegacyDashboardTableAdjust(this.api());
+                    }
                 });
+                registerLegacyDashboardTable(sales_order_table);
 
                 $('#so_location').change(function() {
                     sales_order_table.ajax.reload();
@@ -1538,8 +1777,12 @@
                                 data: 'added_by',
                                 name: 'u.first_name'
                             }
-                        ]
+                        ],
+                        drawCallback: function() {
+                            scheduleLegacyDashboardTableAdjust(this.api());
+                        }
                     });
+                    registerLegacyDashboardTable(purchase_order_table);
 
                     $('#po_location').change(function() {
                         purchase_order_table.ajax.reload();
@@ -1600,8 +1843,12 @@
                                 data: 'added_by',
                                 name: 'u.first_name'
                             },
-                        ]
+                        ],
+                        drawCallback: function() {
+                            scheduleLegacyDashboardTableAdjust(this.api());
+                        }
                     });
+                    registerLegacyDashboardTable(purchase_requisition_table);
 
                     $('#pr_location').change(function() {
                         purchase_requisition_table.ajax.reload();
@@ -1730,10 +1977,14 @@
                     "fnDrawCallback": function(oSettings) {
                         __currency_convert_recursively($('#shipments_table'));
                     },
+                    drawCallback: function() {
+                        scheduleLegacyDashboardTableAdjust(this.api());
+                    },
                     createdRow: function(row, data, dataIndex) {
                         $(row).find('td:eq(4)').attr('class', 'clickable_td');
                     }
                 });
+                registerLegacyDashboardTable(sell_table);
 
                 $('#pending_shipments_location').change(function() {
                     sell_table.ajax.reload();

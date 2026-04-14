@@ -60,7 +60,7 @@ Use the first matching lane before doing broader workflow:
 | `tenant-audit` | User asks to audit/fix tenant security, missing business_id, or route auth | grep checklist → fix or report each finding | See 0.4h. Use implement mode. |
 | `known-issues-fix` | User asks to fix known-issues in an area or apply ai/known-issues.md | read known-issues for area → apply mitigations/fixes | See 0.4i. Use implement mode. |
 | `full-autofix` | User says "run all autofixes", "check project", "health check", or "autofix everything" | log-scan → lint-fix → optional tenant-audit / known-issues-fix | See 0.4j. Use implement mode. |
-| `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome → interactive `audit_web` → read persisted report → optional Chrome DevTools escalation → fix → Playwright + `audit_web` verify | See `ai/browser-audit-workflow.md`. |
+| `web-audit` | User asks for `audit and fix: <url>` or `interactive web audit: <url>` | open audit Chrome → ensure auth cookies/storage_state (fallback login: `admin` / `admin123`) → interactive `audit_web` → read persisted report → optional Chrome DevTools escalation → fix → Playwright + `audit_web` verify | See `ai/browser-audit-workflow.md`. |
 | `product-copilot-eval` | Evaluate adding an in-app assistant, guided UI helper, or ERP copilot | read `ai/product-copilot-patterns.md` → `ai/aichat-authz-baseline.md` + `Modules/Aichat/README.md` (when Aichat is in scope) → define approval boundaries, safe first use case, and rollout scope | Treat page-agent-like ideas as product patterns, not default coding-agent dependencies. No `project_map` or `warm_cache` unless explicitly scoping the integration for this repo. |
 | `design-audit` | User asks to audit a view/screen for a11y, contrast, responsive, or UI quality | read ai/ui-components.md + target Blade → checklist (focus, contrast, structure, assets) → report (and fix within Metronic if implement mode) | Scope: Metronic only; no theme change. |
 | `design-polish` | User asks for a final design pass on a view or component | read view + ui-components → improve hierarchy, spacing, copy within Metronic only; no new classes | Scope: Metronic only. |
@@ -1099,7 +1099,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (17846 symbols, 37336 relationships, 89 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (18617 symbols, 51206 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

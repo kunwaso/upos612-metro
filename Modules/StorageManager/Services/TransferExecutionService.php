@@ -14,6 +14,7 @@ use Modules\StorageManager\Entities\StorageSlot;
 use Modules\StorageManager\Entities\StorageSlotStock;
 use Modules\StorageManager\Entities\StorageTask;
 use Modules\StorageManager\Entities\StorageTaskEvent;
+use Modules\StorageManager\Utils\StorageManagerUtil;
 use RuntimeException;
 
 class TransferExecutionService
@@ -24,7 +25,8 @@ class TransferExecutionService
         protected WarehouseSyncService $warehouseSyncService,
         protected ReconciliationService $reconciliationService,
         protected ProductUtil $productUtil,
-        protected TransactionUtil $transactionUtil
+        protected TransactionUtil $transactionUtil,
+        protected StorageManagerUtil $storageManagerUtil
     ) {
     }
 
@@ -576,6 +578,13 @@ class TransferExecutionService
                     'idempotency_key' => 'transfer-receipt-in-' . $document->id . '-line-' . $line->id,
                     'created_by' => $userId,
                 ]);
+
+                $this->storageManagerUtil->syncWarehouseMapSlotForProduct(
+                    $businessId,
+                    (int) $line->product_id,
+                    (int) $purchaseTransfer->location_id,
+                    $stagingSlotId
+                );
 
                 $line->forceFill([
                     'to_area_id' => $stagingSlot->area_id,

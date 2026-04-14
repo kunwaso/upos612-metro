@@ -11,12 +11,14 @@ use Modules\StorageManager\Entities\StorageLocationSetting;
 use Modules\StorageManager\Entities\StorageSlot;
 use Modules\StorageManager\Entities\StorageTask;
 use Modules\StorageManager\Entities\StorageTaskEvent;
+use Modules\StorageManager\Utils\StorageManagerUtil;
 use RuntimeException;
 
 class PutawayService
 {
     public function __construct(
-        protected InventoryMovementService $inventoryMovementService
+        protected InventoryMovementService $inventoryMovementService,
+        protected StorageManagerUtil $storageManagerUtil
     ) {
     }
 
@@ -266,6 +268,13 @@ class PutawayService
                     'created_by' => $userId,
                 ]);
 
+                $this->storageManagerUtil->syncWarehouseMapSlotForProduct(
+                    $businessId,
+                    (int) $line->product_id,
+                    (int) $document->location_id,
+                    $destinationSlotId
+                );
+
                 $line->forceFill([
                     'to_area_id' => $destinationSlot->area_id,
                     'to_slot_id' => $destinationSlotId,
@@ -411,6 +420,13 @@ class PutawayService
                     'idempotency_key' => 'putaway-reopen-' . $document->id . '-line-' . $line->id . '-attempt-' . $putawayAttempt,
                     'created_by' => $userId,
                 ]);
+
+                $this->storageManagerUtil->syncWarehouseMapSlotForProduct(
+                    $businessId,
+                    (int) $line->product_id,
+                    (int) $document->location_id,
+                    $stagingSlotId
+                );
 
                 $line->forceFill([
                     'result_status' => 'pending',

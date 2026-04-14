@@ -445,10 +445,12 @@ Use when:
 Workflow:
 
 1. Start the dedicated Chrome debug browser with `scripts/open-audit-chrome.ps1`.
-2. Run `audit_web` in `mode=interactive` and `persist_report=true`.
-3. Read the persisted report.
-4. Escalate to Chrome DevTools MCP only if `triageSummary.shouldEscalateToDevtools` is `true` or the issue remains ambiguous.
-5. After code changes, verify with Playwright MCP and a rerun of `audit_web`.
+2. For protected routes, use cookie-backed storage state first via `storage_state_path` (default: `output/playwright/audit-web-mcp/reports/.auth/pos-admin.json`).
+3. If auth state is missing/expired or the run redirects to `/login`, refresh auth by running `audit_web` with `login_url=<base>/login`, `login_username=admin`, `login_password=admin123`, and `save_storage_state_path=output/playwright/audit-web-mcp/reports/.auth/pos-admin.json`.
+4. Run `audit_web` in `mode=interactive` and `persist_report=true`.
+5. Read the persisted report.
+6. Escalate to Chrome DevTools MCP only if `triageSummary.shouldEscalateToDevtools` is `true` or the issue remains ambiguous.
+7. After code changes, verify with Playwright MCP and a rerun of `audit_web`. Keep the same logged-in browser context so cookies remain valid during verification.
 
 Detailed repo workflow: [ai/browser-audit-workflow.md](browser-audit-workflow.md)
 

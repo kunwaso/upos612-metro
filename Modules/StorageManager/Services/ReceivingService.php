@@ -18,6 +18,7 @@ use Modules\StorageManager\Entities\StorageDocumentLine;
 use Modules\StorageManager\Entities\StorageDocumentLink;
 use Modules\StorageManager\Entities\StorageLocationSetting;
 use Modules\StorageManager\Entities\StorageSlot;
+use Modules\StorageManager\Utils\StorageManagerUtil;
 use RuntimeException;
 
 class ReceivingService
@@ -30,7 +31,8 @@ class ReceivingService
         protected PutawayService $putawayService,
         protected WarehouseSyncService $warehouseSyncService,
         protected ProductUtil $productUtil,
-        protected TransactionUtil $transactionUtil
+        protected TransactionUtil $transactionUtil,
+        protected StorageManagerUtil $storageManagerUtil
     ) {
     }
 
@@ -627,6 +629,13 @@ class ReceivingService
                     'idempotency_key' => 'receipt-' . $document->id . '-line-' . $line->id . '-attempt-' . $receiptAttempt,
                     'created_by' => $userId,
                 ]);
+
+                $this->storageManagerUtil->syncWarehouseMapSlotForProduct(
+                    $businessId,
+                    (int) $line->product_id,
+                    (int) $document->location_id,
+                    (int) $line->to_slot_id
+                );
             }
 
             $document->forceFill([
@@ -748,6 +757,13 @@ class ReceivingService
                     'idempotency_key' => 'receipt-reopen-' . $document->id . '-line-' . $line->id . '-attempt-' . $receiptAttempt,
                     'created_by' => $userId,
                 ]);
+
+                $this->storageManagerUtil->syncWarehouseMapSlotForProduct(
+                    $businessId,
+                    (int) $line->product_id,
+                    (int) $document->location_id,
+                    null
+                );
 
                 $line->forceFill([
                     'executed_qty' => round((float) $line->expected_qty, 4),

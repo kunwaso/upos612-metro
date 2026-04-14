@@ -9,6 +9,10 @@
         charts: {},
         table4: null,
         table5: null,
+        tableAdjustResizeBound: false,
+        tableAdjustResizeTimer: null,
+        tableNormalizeTimer: null,
+        overflowAuditTimer: null,
         salesChartFilter: {
             range: 'month',
             startDate: null,
@@ -26,6 +30,8 @@
         init: function () {
             this.initSalesChartFilter();
             this.bindSalesChartFilterEvents();
+            this.bindTableViewportAdjust();
+            this.scheduleLayoutNormalization('init');
             var initialPayload = this.getInitialPayload();
             if (initialPayload && typeof initialPayload === 'object') {
                 this.hydrate(initialPayload);
@@ -91,6 +97,7 @@
             this.runHydrationStep('applyProductOrdersTable', function () { self.applyProductOrdersTable(payload); });
             this.runHydrationStep('applyDeliveryFeed', function () { self.applyDeliveryFeed(payload); });
             this.runHydrationStep('applyStockTable', function () { self.applyStockTable(payload); });
+            this.scheduleLayoutNormalization('post_hydrate');
         },
 
         getEndpoint: function () {
@@ -1006,12 +1013,225 @@
             if ($empty.length) {
                 $empty.toggleClass('d-none', hasVisibleTab);
             }
+
+            var self = this;
+            $card.find('[data-dashboard-recent-tabs-nav] a[data-bs-toggle=\"pill\"]')
+                .off('shown.bs.tab.homeMetronicDashboardOverflow')
+                .on('shown.bs.tab.homeMetronicDashboardOverflow', function () {
+                    self.scheduleLayoutNormalization('recent_tab_switch');
+                });
+
+            this.scheduleLayoutNormalization('recent_orders_render');
         },
 
         destroyDataTableIfExists: function ($table) {
             if ($.fn.DataTable && $.fn.DataTable.isDataTable($table)) {
                 $table.DataTable().clear().destroy();
             }
+        },
+
+        adjustTableColumns: function (tableInstance) {
+            if (!tableInstance || !tableInstance.columns || typeof tableInstance.columns.adjust !== 'function') {
+                return;
+            }
+
+            tableInstance.columns.adjust();
+            if (tableInstance.responsive && typeof tableInstance.responsive.recalc === 'function') {
+                tableInstance.responsive.recalc();
+            }
+        },
+
+        scheduleTableAdjust: function (tableInstance) {
+            var self = this;
+            var runAdjust = function () {
+                self.adjustTableColumns(tableInstance);
+            };
+
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(runAdjust);
+            } else {
+                window.setTimeout(runAdjust, 0);
+            }
+        },
+
+        scheduleLayoutNormalization: function (reason) {
+            var self = this;
+            if (this.tableNormalizeTimer) {
+                window.clearTimeout(this.tableNormalizeTimer);
+            }
+
+            this.tableNormalizeTimer = window.setTimeout(function () {
+                self.normalizeDashboardTableWidths();
+                self.scheduleTableAdjust(self.table4);
+                self.scheduleTableAdjust(self.table5);
+                self.scheduleOverflowAudit(reason || 'layout_normalize');
+            }, 20);
+        },
+
+        normalizeDashboardTableWidths: function () {
+            var root = document.querySelector('[data-home-dashboard-root]') || document.getElementById('kt_content');
+            if (!root) {
+                return;
+            }
+
+            var tableContainers = root.querySelectorAll(
+                '[data-dashboard-widget=\"product-orders\"] .table-responsive,' +
+                '[data-dashboard-widget=\"stock-table\"] .table-responsive,' +
+                '[data-dashboard-widget=\"recent-orders\"] .table-responsive,' +
+                '#dashboard-data-section .table-responsive,' +
+                '#dashboard-data-section .dataTables_wrapper,' +
+                '#dashboard-data-section .dataTables_scroll,' +
+                '#dashboard-data-section .dataTables_scrollBody'
+            );
+            for (var i = 0; i < tableContainers.length; i++) {
+                tableContainers[i].style.maxWidth = '100%';
+                tableContainers[i].style.overflowX = 'auto';
+            }
+
+            var tables = root.querySelectorAll(
+                '#hm_dashboard_product_orders_table,' +
+                '#hm_dashboard_stock_table,' +
+                '[data-dashboard-widget=\"recent-orders\"] table'
+            );
+            for (var n = 0; n < tables.length; n++) {
+                tables[n].style.maxWidth = '100%';
+                tables[n].style.width = '100%';
+            }
+        },
+
+        isOverflowDebugEnabled: function () {
+            try {
+                return window.localStorage && window.localStorage.getItem('homeOverflowDebug') === '1';
+            } catch (err) {
+                return false;
+            }
+        },
+
+        scheduleOverflowAudit: function (reason) {
+            if (!this.isOverflowDebugEnabled()) {
+                return;
+            }
+
+            var self = this;
+            if (this.overflowAuditTimer) {
+                window.clearTimeout(this.overflowAuditTimer);
+            }
+
+            this.overflowAuditTimer = window.setTimeout(function () {
+                self.runOverflowAudit(reason || 'unknown');
+            }, 90);
+        },
+
+        describeOverflowNode: function (node) {
+            if (!node || !node.tagName) {
+                return 'unknown';
+            }
+
+            var descriptor = node.tagName.toLowerCase();
+            if (node.id) {
+                descriptor += '#' + node.id;
+            }
+
+            if (node.classList && node.classList.length) {
+                var classNames = Array.prototype.slice.call(node.classList, 0, 3);
+                if (classNames.length) {
+                    descriptor += '.' + classNames.join('.');
+                }
+            }
+
+            return descriptor;
+        },
+
+        runOverflowAudit: function (reason) {
+            if (!this.isOverflowDebugEnabled()) {
+                return;
+            }
+
+            var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+            var doc = document.documentElement;
+            var root = document.querySelector('[data-home-dashboard-root]') || document.body;
+            var nodes = root ? root.querySelectorAll('*') : [];
+            var offenders = [];
+
+            for (var i = 0; i < nodes.length; i++) {
+                var node = nodes[i];
+                if (!node || typeof node.getBoundingClientRect !== 'function') {
+                    continue;
+                }
+
+                var style = window.getComputedStyle(node);
+                if (!style || style.position === 'fixed' || style.display === 'none' || style.visibility === 'hidden') {
+                    continue;
+                }
+
+                var rect = node.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) {
+                    continue;
+                }
+
+                var leftOverflow = Math.max(0, -rect.left);
+                var rightOverflow = Math.max(0, rect.right - viewportWidth);
+                var overflowAmount = Math.max(leftOverflow, rightOverflow);
+
+                if (overflowAmount < 1) {
+                    continue;
+                }
+
+                offenders.push({
+                    element: this.describeOverflowNode(node),
+                    left: Math.round(rect.left),
+                    right: Math.round(rect.right),
+                    width: Math.round(rect.width),
+                    overflow: Math.round(overflowAmount)
+                });
+            }
+
+            offenders.sort(function (a, b) {
+                return b.overflow - a.overflow;
+            });
+            if (offenders.length > 25) {
+                offenders = offenders.slice(0, 25);
+            }
+
+            var payload = {
+                reason: reason,
+                viewportWidth: viewportWidth,
+                documentScrollWidth: doc ? doc.scrollWidth : 0,
+                documentClientWidth: doc ? doc.clientWidth : 0,
+                offenders: offenders
+            };
+
+            if (console.groupCollapsed && console.table) {
+                console.groupCollapsed('[home-overflow] ' + reason);
+                console.log(payload);
+                if (offenders.length) {
+                    console.table(offenders);
+                }
+                console.groupEnd();
+            } else {
+                console.log('[home-overflow]', payload);
+            }
+        },
+
+        bindTableViewportAdjust: function () {
+            if (this.tableAdjustResizeBound) {
+                return;
+            }
+
+            var self = this;
+            $(window).off('resize.homeMetronicDashboardTables').on('resize.homeMetronicDashboardTables', function () {
+                if (self.tableAdjustResizeTimer) {
+                    window.clearTimeout(self.tableAdjustResizeTimer);
+                }
+
+                self.tableAdjustResizeTimer = window.setTimeout(function () {
+                    self.scheduleTableAdjust(self.table4);
+                    self.scheduleTableAdjust(self.table5);
+                    self.scheduleLayoutNormalization('window_resize');
+                }, 120);
+            });
+
+            this.tableAdjustResizeBound = true;
         },
 
         applyProductOrdersTable: function (payload) {
@@ -1096,6 +1316,11 @@
                     }
                 ]
             });
+            this.scheduleTableAdjust(this.table4);
+            this.table4.on('draw.dt.homeMetronicDashboardTables', function () {
+                self.scheduleTableAdjust(self.table4);
+                self.scheduleLayoutNormalization('product_orders_draw');
+            });
 
             var searchInput = $('[data-dashboard-product-orders="search"]');
             searchInput.off('keyup.homeMetronicDashboard').on('keyup.homeMetronicDashboard', function () {
@@ -1131,7 +1356,12 @@
                     $plus.addClass('d-none');
                     $minus.removeClass('d-none');
                 }
+
+                self.scheduleTableAdjust(self.table4);
+                self.scheduleLayoutNormalization('product_orders_expand_toggle');
             });
+
+            this.scheduleLayoutNormalization('product_orders_hydrate');
         },
 
         renderProductOrderLines: function (lines) {
@@ -1205,6 +1435,7 @@
             }
 
             $container.html(html);
+            this.scheduleLayoutNormalization('delivery_feed_hydrate');
         },
 
         applyStockTable: function (payload) {
@@ -1278,6 +1509,11 @@
                     }
                 ]
             });
+            this.scheduleTableAdjust(this.table5);
+            this.table5.on('draw.dt.homeMetronicDashboardTables', function () {
+                self.scheduleTableAdjust(self.table5);
+                self.scheduleLayoutNormalization('stock_table_draw');
+            });
 
             var statusFilter = $('[data-dashboard-stock="filter_status"]');
             statusFilter.off('change.homeMetronicDashboard').on('change.homeMetronicDashboard', function () {
@@ -1294,6 +1530,8 @@
                 var normalized = map[value] || String(value).toLowerCase().replace(/\s+/g, '_');
                 self.table5.column(4).search(normalized).draw();
             });
+
+            this.scheduleLayoutNormalization('stock_table_hydrate');
         }
     };
 

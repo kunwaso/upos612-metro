@@ -203,6 +203,28 @@ class StorageManagerUtil
     }
 
     /**
+     * Align Warehouse Map display (product_racks.slot_id) with execution-layer staging/putaway.
+     *
+     * Execution truth for quantities and multi-slot stock remains storage_slot_stock rows and inventory movements.
+     * This updates at most one map pointer per product per location (last write wins if split stock).
+     *
+     * @param  int  $businessId
+     * @param  int  $productId
+     * @param  int  $locationId  Used when clearing assignment; must match the slot's location when assigning.
+     * @param  int|null  $slotId  Positive slot id to assign, or null/zero to clear slot_id for the product at this location.
+     */
+    public function syncWarehouseMapSlotForProduct(int $businessId, int $productId, int $locationId, ?int $slotId): void
+    {
+        if ($slotId !== null && $slotId > 0) {
+            $this->assignProductToSlot($businessId, $productId, $slotId);
+
+            return;
+        }
+
+        $this->unassignProductFromSlot($businessId, $productId, $locationId);
+    }
+
+    /**
      * Auto-generate a slot code from category short_code + row + position.
      * E.g. category short_code "A", row "1", position "2" → "A12"
      */

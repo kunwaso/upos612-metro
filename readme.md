@@ -88,14 +88,14 @@ php artisan aichat:audit-export --business_id=1 --action=chat_message_pipeline_r
 
 ### Step 3 — Map signal to code and fix
 
-| Signal | Root cause area | File to open |
-|--------|----------------|--------------|
-| `chat_message_pipeline_rejected` + `error_type=model_invalid` | Model not in business allowlist | `ChatWorkflowUtil`, `ChatUtil::isModelAllowedForBusiness` |
-| `chat_message_pipeline_rejected` + `error_type=pii_blocked` | PII policy rejecting prompt | `ChatWorkflowUtil::applyPiiPolicy`, `aichat_chat_settings.pii_policy` |
-| `chat_message_pipeline_rejected` + `error_type=credential_missing` | API key not set for provider | `ChatUtil::resolveCredentialForChat`, `aichat_chat_credentials` |
-| `message_send_error` / `message_stream_error` | Provider API failure | `AIChatUtil`, Laravel log for stack trace |
-| `chat_action_denied` | Permission gap | `ChatCapabilityResolver`, Spatie permissions |
-| `message_feedback_saved` with low thumbs-down ratio | Prompt / context quality | `ChatUtil::buildOrganizationContext`, system prompt in `aichat_chat_settings` |
+| Signal                                                             | Root cause area                 | File to open                                                                  |
+| ------------------------------------------------------------------ | ------------------------------- | ----------------------------------------------------------------------------- |
+| `chat_message_pipeline_rejected` + `error_type=model_invalid`      | Model not in business allowlist | `ChatWorkflowUtil`, `ChatUtil::isModelAllowedForBusiness`                     |
+| `chat_message_pipeline_rejected` + `error_type=pii_blocked`        | PII policy rejecting prompt     | `ChatWorkflowUtil::applyPiiPolicy`, `aichat_chat_settings.pii_policy`         |
+| `chat_message_pipeline_rejected` + `error_type=credential_missing` | API key not set for provider    | `ChatUtil::resolveCredentialForChat`, `aichat_chat_credentials`               |
+| `message_send_error` / `message_stream_error`                      | Provider API failure            | `AIChatUtil`, Laravel log for stack trace                                     |
+| `chat_action_denied`                                               | Permission gap                  | `ChatCapabilityResolver`, Spatie permissions                                  |
+| `message_feedback_saved` with low thumbs-down ratio                | Prompt / context quality        | `ChatUtil::buildOrganizationContext`, system prompt in `aichat_chat_settings` |
 
 ### Step 4 — Verify the fix
 
@@ -118,6 +118,9 @@ Make sure the plan is decision-complete so the agent can code correctly.
 ```
 
 Build me a detailed implementation plan phase by phase, task by task, with a todo list. Make sure to use worker agent to coding faster if needed. use metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
+ask me any question if need to clarify the plan is decision-complete so the agent can code correctly.
+
+Build me a detailed implementation plan phase by phase, task by task, with a todo list.use metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
 ask me any question if need to clarify the plan is decision-complete so the agent can code correctly.
 
 ## Common Repo Shortcuts
@@ -148,3 +151,4 @@ composer entrypoints:generate
 composer entrypoints:check
 
 
+```
