@@ -17,14 +17,14 @@ class ProviderHealthService
         $einvoiceSettings = (array) $settings->einvoice_settings;
 
         return [
-            $this->domainHealth('bank_statement_import', (string) ($integrationSettings['bank_statement_provider'] ?? 'manual')),
-            $this->domainHealth('tax_export', (string) ($integrationSettings['tax_export_provider'] ?? 'local')),
-            $this->domainHealth('einvoice', (string) ($einvoiceSettings['provider'] ?? 'sandbox')),
-            $this->domainHealth('payroll_bridge', (string) ($integrationSettings['payroll_bridge_provider'] ?? 'essentials')),
+            $this->domainHealth('bank_statement_import', (string) ($integrationSettings['bank_statement_provider'] ?? 'manual'), $integrationSettings, $einvoiceSettings),
+            $this->domainHealth('tax_export', (string) ($integrationSettings['tax_export_provider'] ?? 'local'), $integrationSettings, $einvoiceSettings),
+            $this->domainHealth('einvoice', (string) ($einvoiceSettings['provider'] ?? 'sandbox'), $integrationSettings, $einvoiceSettings),
+            $this->domainHealth('payroll_bridge', (string) ($integrationSettings['payroll_bridge_provider'] ?? 'essentials'), $integrationSettings, $einvoiceSettings),
         ];
     }
 
-    protected function domainHealth(string $domainKey, string $provider): array
+    protected function domainHealth(string $domainKey, string $provider, array $integrationSettings, array $einvoiceSettings): array
     {
         $adapterMap = (array) config("vasaccounting.{$domainKey}_adapters", []);
         $profile = (array) config("vasaccounting.provider_health_profiles.{$domainKey}.{$provider}", []);
@@ -32,7 +32,15 @@ class ProviderHealthService
 
         $missingConfig = [];
         foreach ($requiredConfig as $configPath) {
-            $value = config($configPath);
+            $value = null;
+            if (str_starts_with($configPath, 'integration_settings.')) {
+                $value = data_get($integrationSettings, substr($configPath, strlen('integration_settings.')));
+            } elseif (str_starts_with($configPath, 'einvoice_settings.')) {
+                $value = data_get($einvoiceSettings, substr($configPath, strlen('einvoice_settings.')));
+            } else {
+                $value = config($configPath);
+            }
+
             if ($value === null || $value === '') {
                 $missingConfig[] = $configPath;
             }

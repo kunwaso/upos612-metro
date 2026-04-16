@@ -13,6 +13,7 @@ Start here when the correct repo area is unclear.
 | `Projectauto`, tasks, workflows, builder | [module-Projectauto.md](./module-Projectauto.md) | Local module folder present; workflow-wizard doc exists |
 | `StorageManager`, warehouse, inbound, putaway, counts, outbound, WMS | [module-StorageManager.md](./module-StorageManager.md) | Local module folder present; no `Routes/api.php` file in this checkout |
 | `VasAccounting`, `vas-accounting`, vouchers, budgets, reports | [module-VasAccounting.md](./module-VasAccounting.md) | Local module folder present; API controller subfolder exists |
+| `ProjectX`, Metronic module, hooks, view composers, root integration | — | not in checkout; see `ai/projectx-integration.md` and `.cursor/rules/projectx-module-ui.mdc` for design rules |
 | `Accounting` | — | not in checkout |
 | `AiAssistance` | — | not in checkout |
 | `AssetManagement` | — | not in checkout |

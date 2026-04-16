@@ -53,6 +53,9 @@
         ];
 
         $failureWidgetItems = $failureWidgetItems ?? [];
+        $journeySummary = (array) data_get($journeyState ?? [], 'summary', []);
+        $journeySteps = collect((array) data_get($journeyState ?? [], 'steps', []));
+        $journeyPendingSteps = $journeySteps->where('status', '!=', 'completed')->take(3);
 
         $trendToolbar = '
             <select id="vas-dashboard-range" class="form-select form-select-solid form-select-sm w-140px">
@@ -90,6 +93,44 @@
                     <a href="{{ route('vasaccounting.reports.index') }}" class="btn btn-light-primary btn-sm">{{ $vasAccountingUtil->actionLabel('open_reports') }}</a>
                     <a href="{{ route('vasaccounting.vouchers.index') }}" class="btn btn-light btn-sm">{{ __('vasaccounting::lang.views.dashboard.snapshot.voucher_queue') }}</a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-flush mb-8">
+        <div class="card-body py-6">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                <div>
+                    <div class="text-gray-900 fw-bold fs-4 mb-1">{{ __('vasaccounting::lang.views.dashboard.journey.title') }}</div>
+                    <div class="text-muted fs-7">{{ __('vasaccounting::lang.views.dashboard.journey.subtitle') }}</div>
+                    <div class="text-muted fs-8 mt-2">
+                        {{ __('vasaccounting::lang.compliance_baseline') }}:
+                        {{ data_get($journeySummary, 'profile_label', 'Circular 99/2025/TT-BTC') }}
+                    </div>
+                </div>
+                <div class="d-flex flex-column align-items-lg-end">
+                    <div class="text-gray-900 fw-bold fs-2">{{ data_get($journeySummary, 'progress_percent', 0) }}%</div>
+                    <div class="text-muted fs-8">{{ data_get($journeySummary, 'completed', 0) }}/{{ data_get($journeySummary, 'total', 0) }} {{ __('vasaccounting::lang.views.dashboard.journey.steps_completed') }}</div>
+                </div>
+            </div>
+            <div class="progress h-8px bg-light-primary mt-4">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ data_get($journeySummary, 'progress_percent', 0) }}%" aria-valuenow="{{ data_get($journeySummary, 'progress_percent', 0) }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="row g-3 mt-2">
+                @forelse ($journeyPendingSteps as $step)
+                    <div class="col-md-4">
+                        <a href="{{ $step['url'] ?? '#' }}" class="d-flex align-items-center justify-content-between border border-gray-200 rounded px-3 py-2 text-gray-700 text-hover-primary">
+                            <span class="fw-semibold">{{ $step['label'] ?? '-' }}</span>
+                            <span class="badge {{ ($step['status'] ?? '') === 'blocked' ? 'badge-light-warning' : 'badge-light-info' }}">
+                                {{ ucfirst(str_replace('_', ' ', $step['status'] ?? 'in_progress')) }}
+                            </span>
+                        </a>
+                    </div>
+                @empty
+                    <div class="col-12">
+                        <div class="text-muted fs-8">{{ __('vasaccounting::lang.views.dashboard.journey.complete_message') }}</div>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>

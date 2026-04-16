@@ -39,14 +39,14 @@
                 'badgeVariant' => 'light-danger',
             ],
             [
-                'key' => 'draft_vouchers',
-                'label' => $vasAccountingUtil->metricLabel('draft_vouchers'),
-                'value' => number_format((int) ($metrics['draftVouchers'] ?? 0)),
+                'key' => 'compliance_completion',
+                'label' => __('vasaccounting::lang.compliance_completion'),
+                'value' => number_format((int) data_get($complianceCompletion ?? [], 'completion_percent', 0)) . '%',
                 'delta' => 0,
                 'direction' => 'flat',
-                'hint' => __('vasaccounting::lang.views.setup.cards.draft_vouchers_hint'),
-                'icon' => 'ki-outline ki-note-2',
-                'badgeVariant' => 'light-warning',
+                'hint' => __('vasaccounting::lang.compliance_completion_hint'),
+                'icon' => 'ki-outline ki-shield-tick',
+                'badgeVariant' => data_get($complianceCompletion ?? [], 'is_complete', false) ? 'light-success' : 'light-warning',
             ],
             [
                 'key' => 'statutory_accounts',
@@ -81,6 +81,30 @@
         @include('vasaccounting::partials.workspace.kpi_strip', ['cards' => $setupKpiCards])
     </div>
 
+    <div class="card card-flush mb-8">
+        <div class="card-body py-6">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-5">
+                <div>
+                    <div class="text-gray-900 fw-bold fs-4 mb-1">{{ __('vasaccounting::lang.compliance_baseline') }}</div>
+                    <div class="text-muted fs-7">
+                        {{ data_get($activeComplianceProfile ?? [], 'label', 'Circular 99/2025/TT-BTC') }}
+                        ({{ __('vasaccounting::lang.effective_date') }}:
+                        {{ data_get($activeComplianceProfile ?? [], 'effective_date', '2026-01-01') }})
+                    </div>
+                </div>
+                <div class="d-flex flex-column align-items-lg-end">
+                    <span class="badge {{ data_get($complianceCompletion ?? [], 'is_complete', false) ? 'badge-light-success' : 'badge-light-warning' }}">
+                        {{ __('vasaccounting::lang.compliance_checks') }}:
+                        {{ data_get($complianceCompletion ?? [], 'completed_checks', 0) }}/{{ data_get($complianceCompletion ?? [], 'total_checks', 0) }}
+                    </span>
+                    @if (!empty(data_get($complianceCompletion ?? [], 'blockers')))
+                        <div class="text-muted fs-8 mt-2">{{ implode(' • ', (array) data_get($complianceCompletion ?? [], 'blockers', [])) }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-5 g-xl-10">
         <div class="col-xl-8">
             <div class="card card-flush">
@@ -94,6 +118,41 @@
                     <form method="POST" action="{{ route('vasaccounting.setup.store') }}">
                         @csrf
                         <div class="mb-8">
+                            <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.step') }} 1</div>
+                            <div class="fw-bold fs-6 mb-4">{{ __('vasaccounting::lang.compliance_baseline') }}</div>
+                            <div class="row g-5">
+                                <div class="col-md-4">
+                                    <label class="form-label required">{{ __('vasaccounting::lang.compliance_standard') }}</label>
+                                    <select class="form-select form-select-solid" name="compliance_settings[standard]">
+                                        @foreach ($complianceProfiles as $profileKey => $profileLabel)
+                                            <option value="{{ $profileKey }}" @selected(old('compliance_settings.standard', data_get($activeComplianceProfile, 'key', 'tt99_2025')) === $profileKey)>{{ $profileLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">{{ __('vasaccounting::lang.effective_date') }}</label>
+                                    <input
+                                        type="date"
+                                        class="form-control form-control-solid"
+                                        name="compliance_settings[effective_date]"
+                                        value="{{ old('compliance_settings.effective_date', data_get($activeComplianceProfile, 'effective_date', '2026-01-01')) }}"
+                                    >
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">{{ __('vasaccounting::lang.legacy_bridge_mode') }}</label>
+                                    <div class="form-check form-check-custom form-check-solid mt-3">
+                                        <input class="form-check-input" type="checkbox" value="1" name="compliance_settings[legacy_bridge_enabled]" {{ old('compliance_settings.legacy_bridge_enabled', data_get($activeComplianceProfile, 'legacy_bridge_enabled', false)) ? 'checked' : '' }}>
+                                        <label class="form-check-label">{{ __('vasaccounting::lang.legacy_bridge_mode_help') }}</label>
+                                    </div>
+                                    <input type="hidden" name="compliance_settings[profile_version]" value="{{ old('compliance_settings.profile_version', data_get($activeComplianceProfile, 'profile_version', '2026.01')) }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="separator separator-dashed my-8"></div>
+
+                        <div class="mb-8">
+                            <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.step') }} 2</div>
                             <div class="fw-bold fs-6 mb-4">{{ $vasAccountingUtil->fieldLabel('core_settings') }}</div>
                             <div class="row g-5">
                                 <div class="col-md-4">
@@ -122,15 +181,23 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">{{ __('vasaccounting::lang.navigation_mode') }}</label>
+                                    <select class="form-select form-select-solid" name="ui_settings[navigation_mode]">
+                                        <option value="advanced" @selected(old('ui_settings.navigation_mode', data_get($settings->ui_settings, 'navigation_mode', 'advanced')) === 'advanced')>{{ __('vasaccounting::lang.navigation_modes.advanced') }}</option>
+                                        <option value="basic" @selected(old('ui_settings.navigation_mode', data_get($settings->ui_settings, 'navigation_mode', 'advanced')) === 'basic')>{{ __('vasaccounting::lang.navigation_modes.basic') }}</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
                         <div class="separator separator-dashed my-8"></div>
 
                         <div class="mb-8">
+                            <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.step') }} 3</div>
                             <div class="fw-bold fs-6 mb-4">{{ $vasAccountingUtil->fieldLabel('mandatory_posting_map') }}</div>
                             <div class="row g-5">
-                                @foreach (config('vasaccounting.mandatory_posting_map_keys', []) as $postingKey)
+                                @foreach ($vasAccountingUtil->mandatoryPostingMapKeys($settings) as $postingKey)
                                     <div class="col-md-6">
                                         <label class="form-label required">{{ $vasAccountingUtil->postingMapLabel($postingKey) }}</label>
                                         <select class="form-select form-select-solid select2" data-control="select2" data-placeholder="{{ __('vasaccounting::lang.placeholders.select_account') }}" name="posting_map[{{ $postingKey }}]">
@@ -149,6 +216,7 @@
                         <div class="separator separator-dashed my-8"></div>
 
                         <div class="mb-8">
+                            <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.step') }} 4</div>
                             <div class="fw-bold fs-6 mb-4">{{ $vasAccountingUtil->fieldLabel('workflow_and_provider_controls') }}</div>
                             <div class="row g-5">
                                 <div class="col-md-4">
@@ -211,6 +279,26 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
+                                    <label class="form-label">VNPT API Base URL</label>
+                                    <input type="text" class="form-control form-control-solid" name="integration_settings[vnpt_api_base_url]" value="{{ old('integration_settings.vnpt_api_base_url', data_get($settings->integration_settings, 'vnpt_api_base_url')) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">VNPT Client ID</label>
+                                    <input type="text" class="form-control form-control-solid" name="integration_settings[vnpt_client_id]" value="{{ old('integration_settings.vnpt_client_id', data_get($settings->integration_settings, 'vnpt_client_id')) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">VNPT Client Secret</label>
+                                    <input type="password" class="form-control form-control-solid" name="integration_settings[vnpt_client_secret]" value="{{ old('integration_settings.vnpt_client_secret') }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">VNPT Tax Username</label>
+                                    <input type="text" class="form-control form-control-solid" name="integration_settings[vnpt_tax_username]" value="{{ old('integration_settings.vnpt_tax_username', data_get($settings->integration_settings, 'vnpt_tax_username')) }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">VNPT Tax Password</label>
+                                    <input type="password" class="form-control form-control-solid" name="integration_settings[vnpt_tax_password]" value="{{ old('integration_settings.vnpt_tax_password') }}">
+                                </div>
+                                <div class="col-md-4">
                                     <label class="form-label">{{ __('vasaccounting::lang.manual_voucher_approval') }}</label>
                                     <div class="form-check form-check-custom form-check-solid mt-3">
                                         <input class="form-check-input" type="checkbox" value="1" name="approval_settings[require_manual_voucher_approval]" {{ old('approval_settings.require_manual_voucher_approval', data_get($settings->approval_settings, 'require_manual_voucher_approval', false)) ? 'checked' : '' }}>
@@ -223,6 +311,7 @@
                         <div class="separator separator-dashed my-8"></div>
 
                         <div class="mb-8">
+                            <div class="text-muted fw-semibold fs-8 text-uppercase mb-2">{{ __('vasaccounting::lang.step') }} 5</div>
                             <div class="fw-bold fs-6 mb-4">{{ __('vasaccounting::lang.feature_flags') }}</div>
                             <div class="row g-5">
                                 @foreach ($enterpriseDomains as $domainKey => $domainConfig)

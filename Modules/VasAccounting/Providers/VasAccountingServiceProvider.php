@@ -57,9 +57,11 @@ use Modules\VasAccounting\Services\CutoverService;
 use Modules\VasAccounting\Services\LegacyAccountingBackfillService;
 use Modules\VasAccounting\Services\Adapters\SandboxEInvoiceAdapter;
 use Modules\VasAccounting\Services\BankStatementImportAdapterManager;
+use Modules\VasAccounting\Services\ComplianceProfileService;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
 use Modules\VasAccounting\Services\EInvoiceAdapterManager;
 use Modules\VasAccounting\Services\Expense\ExpenseSettlementService;
+use Modules\VasAccounting\Services\FinancialStatementBuilderService;
 use Modules\VasAccounting\Services\IntegrationHubService;
 use Modules\VasAccounting\Services\Inventory\InventoryCostService;
 use Modules\VasAccounting\Services\LoanAccountingService;
@@ -68,6 +70,7 @@ use Modules\VasAccounting\Services\ProviderHealthService;
 use Modules\VasAccounting\Services\Procurement\ProcurementDiscrepancyService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
 use Modules\VasAccounting\Services\Sales\OrderToCashLifecycleService;
+use Modules\VasAccounting\Services\AccountingJourneyService;
 use Modules\VasAccounting\Services\SourceDocumentAdapterManager;
 use Modules\VasAccounting\Services\TaxExportAdapterManager;
 use Modules\VasAccounting\Services\VasDepreciationService;
@@ -154,6 +157,8 @@ class VasAccountingServiceProvider extends ServiceProvider
     protected function registerServices(): void
     {
         $this->app->singleton(VasAccountingUtil::class);
+        $this->app->singleton(ComplianceProfileService::class);
+        $this->app->singleton(AccountingJourneyService::class);
         $this->app->singleton(LedgerPostingUtil::class);
         $this->app->singleton(SourceDocumentAdapterManager::class);
         $this->app->singleton(VasPostingService::class);
@@ -175,6 +180,7 @@ class VasAccountingServiceProvider extends ServiceProvider
         $this->app->singleton(OperationsAssetReportUtil::class);
         $this->app->singleton(ProviderHealthService::class);
         $this->app->singleton(EnterprisePlanningReportUtil::class);
+        $this->app->singleton(FinancialStatementBuilderService::class);
         $this->app->singleton(EnterpriseReportingService::class);
         $this->app->singleton(ReportSnapshotService::class);
         $this->app->singleton(IntegrationHubService::class);

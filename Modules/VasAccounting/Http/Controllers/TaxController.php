@@ -4,6 +4,7 @@ namespace Modules\VasAccounting\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Modules\VasAccounting\Entities\VasTaxCode;
 use Modules\VasAccounting\Http\Requests\ExportTaxRequest;
@@ -22,7 +23,7 @@ class TaxController extends VasBaseController
 
     public function index(Request $request)
     {
-        $this->authorizePermission('vas_accounting.tax.manage');
+        $this->authorizeTaxCenterAccess();
 
         $businessId = $this->businessId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
@@ -56,6 +57,7 @@ class TaxController extends VasBaseController
     {
         $businessId = $this->businessId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
+        $integrationSettings = (array) $settings->integration_settings;
         $provider = (string) ($request->input('provider') ?: (((array) $settings->integration_settings)['tax_export_provider'] ?? 'local'));
         $adapter = $this->adapterManager->resolve($provider);
         $salesVatBook = $this->enterpriseReportUtil->salesVatBook($businessId);
@@ -69,11 +71,43 @@ class TaxController extends VasBaseController
                 'sales_tax_total' => round((float) $salesVatBook->sum('tax_amount'), 2),
                 'purchase_tax_total' => round((float) $purchaseVatBook->sum('tax_amount'), 2),
             ],
+        ], [
+            'request_id' => (string) ($request->headers->get('X-Request-Id') ?: Str::uuid()),
+            'idempotency_key' => (string) ($request->headers->get('Idempotency-Key') ?: sha1($businessId . '|' . $provider . '|' . (string) $request->input('export_type'))),
+            'signed_payload_hash' => hash('sha256', json_encode([
+                'business_id' => $businessId,
+                'provider' => $provider,
+                'export_type' => (string) $request->input('export_type'),
+            ])),
+            'provider_config' => [
+                'vnpt_api_base_url' => (string) ($integrationSettings['vnpt_api_base_url'] ?? ''),
+                'vnpt_client_id' => (string) ($integrationSettings['vnpt_client_id'] ?? ''),
+                'vnpt_client_secret' => (string) ($integrationSettings['vnpt_client_secret'] ?? ''),
+                'vnpt_tax_username' => (string) ($integrationSettings['vnpt_tax_username'] ?? ''),
+                'vnpt_tax_password' => (string) ($integrationSettings['vnpt_tax_password'] ?? ''),
+            ],
+            'retry' => [
+                'attempt' => (int) $request->input('retry_attempt', 1),
+                'is_retry' => (bool) $request->boolean('is_retry'),
+            ],
         ]);
 
         return redirect()
             ->route('vasaccounting.tax.index')
             ->with('status', ['success' => true, 'msg' => __('vasaccounting::lang.tax_export_generated')])
             ->with('tax_export_result', $result);
+    }
+
+    protected function authorizeTaxCenterAccess(): void
+    {
+        if (
+            ! auth()->check()
+            || (
+                ! auth()->user()->can('vas_accounting.tax.manage')
+                && ! auth()->user()->can('vas_accounting.filing.operator')
+            )
+        ) {
+            abort(403, __('vasaccounting::lang.unauthorized_action'));
+        }
     }
 }

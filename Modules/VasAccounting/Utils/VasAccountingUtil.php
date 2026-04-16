@@ -27,14 +27,23 @@ class VasAccountingUtil
 
     public function getOrCreateBusinessSettings(int $businessId): VasBusinessSetting
     {
+        $defaultComplianceProfile = (string) config('vasaccounting.compliance_profiles.default', 'tt99_2025');
+        $defaultComplianceEffectiveDate = (string) data_get(
+            config('vasaccounting.compliance_profiles.profiles', []),
+            $defaultComplianceProfile . '.effective_date',
+            '2026-01-01'
+        );
+
         $defaults = [
             'book_currency' => (string) config('vasaccounting.book_currency', 'VND'),
             'inventory_method' => (string) config('vasaccounting.inventory_method', 'weighted_average'),
             'is_enabled' => true,
             'posting_map' => $this->buildDefaultPostingMapByCodes($businessId),
             'compliance_settings' => [
-                'standard' => 'Circular 99/2025/TT-BTC',
-                'effective_date' => '2026-01-01',
+                'standard' => $defaultComplianceProfile,
+                'effective_date' => $defaultComplianceEffectiveDate,
+                'legacy_bridge_enabled' => false,
+                'profile_version' => '2026.01',
             ],
             'inventory_settings' => [
                 'method' => (string) config('vasaccounting.inventory_method', 'weighted_average'),
@@ -83,7 +92,26 @@ class VasAccountingUtil
         }
 
         if (Schema::hasColumn('vas_business_settings', 'ui_settings')) {
-            $defaults['ui_settings'] = ['locale' => $this->defaultVasLocale()];
+            $defaults['ui_settings'] = [
+                'locale' => $this->defaultVasLocale(),
+                'navigation_mode' => 'advanced',
+            ];
+        }
+
+        if (Schema::hasColumn('vas_business_settings', 'compliance_standard')) {
+            $defaults['compliance_standard'] = $defaultComplianceProfile;
+        }
+
+        if (Schema::hasColumn('vas_business_settings', 'compliance_effective_date')) {
+            $defaults['compliance_effective_date'] = $defaultComplianceEffectiveDate;
+        }
+
+        if (Schema::hasColumn('vas_business_settings', 'compliance_legacy_bridge_enabled')) {
+            $defaults['compliance_legacy_bridge_enabled'] = false;
+        }
+
+        if (Schema::hasColumn('vas_business_settings', 'compliance_profile_version')) {
+            $defaults['compliance_profile_version'] = '2026.01';
         }
 
         return VasBusinessSetting::firstOrCreate(
@@ -112,16 +140,37 @@ class VasAccountingUtil
         return $map;
     }
 
-    public function mandatoryPostingMapKeys(): array
+    public function mandatoryPostingMapKeys(?VasBusinessSetting $settings = null): array
     {
-        return (array) config('vasaccounting.mandatory_posting_map_keys', []);
+        $profileKey = null;
+        if ($settings) {
+            $profileKey = (string) (
+                $settings->compliance_standard
+                ?: data_get((array) $settings->compliance_settings, 'standard')
+                ?: ''
+            );
+        }
+
+        if ($profileKey !== '') {
+            $profileRequired = (array) data_get(
+                config('vasaccounting.compliance_profiles.profiles', []),
+                $profileKey . '.required_posting_map_keys',
+                []
+            );
+
+            if ($profileRequired !== []) {
+                return array_values(array_unique($profileRequired));
+            }
+        }
+
+        return array_values(array_unique((array) config('vasaccounting.mandatory_posting_map_keys', [])));
     }
 
     public function isPostingMapComplete(VasBusinessSetting $settings): bool
     {
         $postingMap = (array) $settings->posting_map;
 
-        foreach ($this->mandatoryPostingMapKeys() as $requiredKey) {
+        foreach ($this->mandatoryPostingMapKeys($settings) as $requiredKey) {
             if (empty($postingMap[$requiredKey])) {
                 return false;
             }
@@ -1004,6 +1053,103 @@ class VasAccountingUtil
             ->get(['id', 'account_code', 'account_name', 'level']);
     }
 
+    public function complianceProfiles(): array
+    {
+        return (array) config('vasaccounting.compliance_profiles.profiles', []);
+    }
+
+    public function complianceProfileForSettings(VasBusinessSetting $settings): array
+    {
+        $profiles = $this->complianceProfiles();
+        $defaultProfileKey = (string) config('vasaccounting.compliance_profiles.default', 'tt99_2025');
+        $settingsPayload = (array) $settings->compliance_settings;
+
+        $profileKey = (string) (
+            $settings->compliance_standard
+            ?: ($settingsPayload['standard'] ?? $defaultProfileKey)
+        );
+        if (! array_key_exists($profileKey, $profiles)) {
+            $profileKey = array_key_exists($defaultProfileKey, $profiles) ? $defaultProfileKey : 'tt99_2025';
+        }
+
+        $profile = (array) ($profiles[$profileKey] ?? []);
+        $effectiveDate = (string) (
+            optional($settings->compliance_effective_date)->toDateString()
+            ?: ($settingsPayload['effective_date'] ?? ($profile['effective_date'] ?? '2026-01-01'))
+        );
+        $legacyBridgeEnabled = (bool) (
+            $settings->compliance_legacy_bridge_enabled
+            || ($settingsPayload['legacy_bridge_enabled'] ?? false)
+        );
+        $profileVersion = (string) (
+            $settings->compliance_profile_version
+            ?: ($settingsPayload['profile_version'] ?? '2026.01')
+        );
+
+        return array_replace($profile, [
+            'key' => $profileKey,
+            'effective_date' => $effectiveDate,
+            'legacy_bridge_enabled' => $legacyBridgeEnabled,
+            'profile_version' => $profileVersion,
+        ]);
+    }
+
+    public function complianceProfileForBusiness(int $businessId): array
+    {
+        return $this->complianceProfileForSettings($this->getOrCreateBusinessSettings($businessId));
+    }
+
+    public function complianceCompletionStatus(VasBusinessSetting $settings): array
+    {
+        $profile = $this->complianceProfileForSettings($settings);
+        $integrationSettings = (array) $settings->integration_settings;
+        $einvoiceSettings = (array) $settings->einvoice_settings;
+        $requiredFiling = (array) ($profile['filing_requirements'] ?? []);
+
+        $checks = [
+            'profile_selected' => ! empty($profile['key']),
+            'tt99_effective_date_valid' => $profile['key'] !== 'tt99_2025' || ((string) $profile['effective_date'] >= '2026-01-01'),
+            'posting_map_complete' => $this->isPostingMapComplete($settings),
+            'einvoice_provider_ready' => ! isset($requiredFiling['einvoice_provider'])
+                || (string) $requiredFiling['einvoice_provider'] === ''
+                || (string) $requiredFiling['einvoice_provider'] === (string) ($einvoiceSettings['provider'] ?? ''),
+            'tax_export_provider_ready' => ! isset($requiredFiling['tax_export_provider'])
+                || (string) $requiredFiling['tax_export_provider'] === ''
+                || (string) $requiredFiling['tax_export_provider'] === (string) ($integrationSettings['tax_export_provider'] ?? ''),
+        ];
+
+        $labels = [
+            'profile_selected' => 'Compliance profile selected',
+            'tt99_effective_date_valid' => 'Effective date valid for Circular 99/2025/TT-BTC',
+            'posting_map_complete' => 'Mandatory posting map completed',
+            'einvoice_provider_ready' => 'E-invoice provider matches profile requirement',
+            'tax_export_provider_ready' => 'Tax export provider matches profile requirement',
+        ];
+
+        $total = count($checks);
+        $completed = collect($checks)->filter()->count();
+        $blockers = collect($checks)
+            ->filter(fn (bool $status) => $status === false)
+            ->keys()
+            ->map(fn (string $key) => $labels[$key] ?? Str::headline($key))
+            ->values()
+            ->all();
+
+        return [
+            'profile_key' => (string) ($profile['key'] ?? ''),
+            'profile_label' => (string) ($profile['label'] ?? Str::headline((string) ($profile['key'] ?? ''))),
+            'effective_date' => (string) ($profile['effective_date'] ?? ''),
+            'legacy_bridge_enabled' => (bool) ($profile['legacy_bridge_enabled'] ?? false),
+            'profile_version' => (string) ($profile['profile_version'] ?? '2026.01'),
+            'total_checks' => $total,
+            'completed_checks' => $completed,
+            'completion_percent' => $total > 0 ? (int) floor(($completed / $total) * 100) : 100,
+            'is_complete' => $completed === $total,
+            'checks' => $checks,
+            'blockers' => $blockers,
+        ];
+    }
+
     public function dashboardMetrics(int $businessId): array
     {
         $openPeriods = VasAccountingPeriod::query()
@@ -1028,6 +1174,11 @@ class VasAccountingUtil
             ->whereYear('posted_at', now()->year)
             ->count();
 
-        return compact('openPeriods', 'postingFailures', 'draftVouchers', 'postedThisMonth');
+        $compliance = $this->complianceCompletionStatus($this->getOrCreateBusinessSettings($businessId));
+
+        return compact('openPeriods', 'postingFailures', 'draftVouchers', 'postedThisMonth') + [
+            'complianceCompletion' => (int) ($compliance['completion_percent'] ?? 0),
+            'complianceComplete' => (bool) ($compliance['is_complete'] ?? false),
+        ];
     }
 }

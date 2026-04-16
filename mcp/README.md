@@ -29,4 +29,6 @@ Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps
 
 When the exact symbol is known, prefer `grep` + `read_file_cache` + `laravel_mysql`. Reach for GitNexus before shared-code edits or unfamiliar execution flows, and reach for semantic search when the question is behavioral or architectural and exact strings are not enough.
 
+- `mcp-cyber` - Python-based cybersecurity scanning platform (FastAPI + Celery + Playwright). **Experimental / not yet integrated** into the standard agent workflow. Contains vulnerability scanning, SARIF reports, policy engine, and audit dashboards. See `mcp/mcp-cyber/README.md` for standalone setup. Not listed in `ai/agent-team-policy.md` approved servers; requires team decision before enabling in `.cursor/mcp.json` or Codex config.
+
 **Team policy (approved servers, data-handling rules, CI expectations):** [`ai/agent-team-policy.md`](../ai/agent-team-policy.md)

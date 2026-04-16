@@ -14,6 +14,8 @@ use Modules\VasAccounting\Services\Adapters\SellReturnDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\StockAdjustmentDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\StockTransferDocumentAdapter;
 use Modules\VasAccounting\Services\Adapters\SandboxEInvoiceAdapter;
+use Modules\VasAccounting\Services\Adapters\VnptEInvoiceAdapter;
+use Modules\VasAccounting\Services\Adapters\VnptTaxExportAdapter;
 
 return [
     'version' => '1.1.0',
@@ -23,6 +25,81 @@ return [
     'default_timezone' => 'Asia/Ho_Chi_Minh',
     'api_guard' => 'auth:api',
     'report_route_prefix' => 'vas-accounting/reports',
+    'compliance_profiles' => [
+        'default' => 'tt99_2025',
+        'profiles' => [
+            'tt99_2025' => [
+                'label' => 'Circular 99/2025/TT-BTC',
+                'effective_date' => '2026-01-01',
+                'legacy_bridge_allowed' => true,
+                'required_posting_map_keys' => [
+                    'cash',
+                    'bank',
+                    'accounts_receivable',
+                    'accounts_payable',
+                    'revenue',
+                    'vat_output',
+                    'vat_input',
+                    'inventory',
+                    'cogs',
+                    'expense',
+                    'fixed_asset',
+                    'accumulated_depreciation',
+                    'depreciation_expense',
+                    'stock_adjustment',
+                    'stock_transfer',
+                ],
+                'required_reports' => [
+                    'trial_balance',
+                    'general_ledger',
+                    'financial_statements',
+                    'vat',
+                    'close_packet',
+                ],
+                'required_statement_types' => [
+                    'balance_sheet',
+                    'income_statement',
+                    'cash_flow',
+                    'notes',
+                ],
+                'filing_requirements' => [
+                    'einvoice_provider' => 'vnpt',
+                    'tax_export_provider' => 'vnpt',
+                ],
+            ],
+            'tt200_legacy_bridge' => [
+                'label' => 'TT200 Legacy Bridge',
+                'effective_date' => '2015-01-01',
+                'legacy_bridge_allowed' => true,
+                'required_posting_map_keys' => [
+                    'cash',
+                    'bank',
+                    'accounts_receivable',
+                    'accounts_payable',
+                    'revenue',
+                    'vat_output',
+                    'vat_input',
+                    'inventory',
+                    'cogs',
+                    'expense',
+                ],
+                'required_reports' => [
+                    'trial_balance',
+                    'general_ledger',
+                    'financial_statements',
+                ],
+                'required_statement_types' => [
+                    'balance_sheet',
+                    'income_statement',
+                    'cash_flow',
+                ],
+                'filing_requirements' => [
+                    'einvoice_provider' => null,
+                    'tax_export_provider' => null,
+                ],
+            ],
+        ],
+    ],
     'document_statuses' => [
         'draft' => 'Draft',
         'pending_approval' => 'Pending approval',
@@ -1041,6 +1118,71 @@ return [
         ['sequence_key' => 'tax_adjustment', 'prefix' => 'TAX', 'padding' => 5],
         ['sequence_key' => 'closing', 'prefix' => 'CLS', 'padding' => 5],
     ],
+    'financial_statement_types' => [
+        'balance_sheet' => ['label' => 'Balance Sheet'],
+        'income_statement' => ['label' => 'Income Statement'],
+        'cash_flow' => ['label' => 'Cash Flow Statement'],
+        'notes' => ['label' => 'Notes to Financial Statements'],
+    ],
+    'financial_statement_lines' => [
+        'tt99_2025' => [
+            'balance_sheet' => [
+                ['line_code' => 'A100', 'label' => 'Cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112']],
+                ['line_code' => 'A110', 'label' => 'Accounts receivable', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['131']],
+                ['line_code' => 'A120', 'label' => 'Inventories', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['152', '153', '154', '155', '156', '157']],
+                ['line_code' => 'A200', 'label' => 'Fixed assets (gross)', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['211', '212', '213', '217']],
+                ['line_code' => 'A210', 'label' => 'Accumulated depreciation', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['214']],
+                ['line_code' => 'L100', 'label' => 'Accounts payable', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['331']],
+                ['line_code' => 'L110', 'label' => 'Taxes and other payables', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['333', '334', '335', '338']],
+                ['line_code' => 'L120', 'label' => 'Loans and borrowings', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['311', '315', '341', '342', '343']],
+                ['line_code' => 'E100', 'label' => 'Owner equity', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['411', '412', '418']],
+                ['line_code' => 'E110', 'label' => 'Retained earnings', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['421']],
+            ],
+            'income_statement' => [
+                ['line_code' => 'I100', 'label' => 'Revenue', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['511', '512', '515']],
+                ['line_code' => 'I110', 'label' => 'Cost of goods sold', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['632']],
+                ['line_code' => 'I120', 'label' => 'Gross profit', 'formula' => 'I100 - I110'],
+                ['line_code' => 'I130', 'label' => 'Selling expenses', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['641']],
+                ['line_code' => 'I140', 'label' => 'General and admin expenses', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['642']],
+                ['line_code' => 'I150', 'label' => 'Finance costs', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['635']],
+                ['line_code' => 'I160', 'label' => 'Other income', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['711']],
+                ['line_code' => 'I170', 'label' => 'Other expenses', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['811']],
+                ['line_code' => 'I180', 'label' => 'Corporate income tax expense', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['821']],
+                ['line_code' => 'I190', 'label' => 'Profit after tax', 'formula' => 'I120 - I130 - I140 - I150 + I160 - I170 - I180'],
+            ],
+            'cash_flow' => [
+                ['line_code' => 'C100', 'label' => 'Cash inflows from operating activities', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112'], 'source' => 'period'],
+                ['line_code' => 'C110', 'label' => 'Cash outflows from operating activities', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['111', '112'], 'source' => 'period'],
+                ['line_code' => 'C120', 'label' => 'Net cash flow from operating activities', 'formula' => 'C100 - C110'],
+                ['line_code' => 'C200', 'label' => 'Opening cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112'], 'source' => 'opening'],
+                ['line_code' => 'C210', 'label' => 'Closing cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112'], 'source' => 'closing'],
+            ],
+            'notes' => [
+                ['line_code' => 'N100', 'label' => 'Reporting basis', 'type' => 'text', 'default_text' => 'Prepared under Circular 99/2025/TT-BTC effective January 1, 2026.'],
+                ['line_code' => 'N110', 'label' => 'Book currency', 'type' => 'setting', 'setting_path' => 'book_currency'],
+                ['line_code' => 'N120', 'label' => 'Inventory valuation method', 'type' => 'setting', 'setting_path' => 'inventory_method'],
+                ['line_code' => 'N130', 'label' => 'Total active ledger accounts', 'type' => 'metric', 'metric' => 'active_accounts'],
+            ],
+        ],
+        'tt200_legacy_bridge' => [
+            'balance_sheet' => [
+                ['line_code' => 'A100', 'label' => 'Cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112']],
+                ['line_code' => 'A110', 'label' => 'Accounts receivable', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['131']],
+                ['line_code' => 'A120', 'label' => 'Inventories', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['152', '153', '154', '155', '156', '157']],
+                ['line_code' => 'L100', 'label' => 'Accounts payable', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['331']],
+                ['line_code' => 'E100', 'label' => 'Owner equity', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['411', '412', '418', '421']],
+            ],
+            'income_statement' => [
+                ['line_code' => 'I100', 'label' => 'Revenue', 'normal' => 'credit_minus_debit', 'account_prefixes' => ['511', '512', '515']],
+                ['line_code' => 'I110', 'label' => 'Cost of goods sold', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['632']],
+                ['line_code' => 'I120', 'label' => 'Profit before tax', 'formula' => 'I100 - I110'],
+            ],
+            'cash_flow' => [
+                ['line_code' => 'C100', 'label' => 'Opening cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112'], 'source' => 'opening'],
+                ['line_code' => 'C110', 'label' => 'Closing cash and cash equivalents', 'normal' => 'debit_minus_credit', 'account_prefixes' => ['111', '112'], 'source' => 'closing'],
+            ],
+        ],
+    ],
     'source_document_adapters' => [
         'sell' => SellDocumentAdapter::class,
         'purchase' => PurchaseDocumentAdapter::class,
@@ -1055,12 +1197,14 @@ return [
     ],
     'einvoice_adapters' => [
         'sandbox' => SandboxEInvoiceAdapter::class,
+        'vnpt' => VnptEInvoiceAdapter::class,
     ],
     'bank_statement_import_adapters' => [
         'manual' => NullBankStatementImportAdapter::class,
     ],
     'tax_export_adapters' => [
         'local' => LocalTaxExportAdapter::class,
+        'vnpt' => VnptTaxExportAdapter::class,
     ],
     'payroll_bridge_adapters' => [
         'essentials' => EssentialsPayrollBridgeAdapter::class,
@@ -1081,6 +1225,18 @@ return [
                 'required_config' => [],
                 'notes' => 'Local export payloads are implemented, but filing-grade provider output is still required.',
             ],
+            'vnpt' => [
+                'label' => 'VNPT tax export',
+                'production_ready' => true,
+                'required_config' => [
+                    'integration_settings.vnpt_api_base_url',
+                    'integration_settings.vnpt_client_id',
+                    'integration_settings.vnpt_client_secret',
+                    'integration_settings.vnpt_tax_username',
+                    'integration_settings.vnpt_tax_password',
+                ],
+                'notes' => 'VNPT filing-grade export is enabled when production credentials are present.',
+            ],
         ],
         'einvoice' => [
             'sandbox' => [
@@ -1088,6 +1244,16 @@ return [
                 'production_ready' => false,
                 'required_config' => [],
                 'notes' => 'Sandbox issuance is enabled for workflow testing only; production provider credentials are still required.',
+            ],
+            'vnpt' => [
+                'label' => 'VNPT e-invoice',
+                'production_ready' => true,
+                'required_config' => [
+                    'integration_settings.vnpt_api_base_url',
+                    'integration_settings.vnpt_client_id',
+                    'integration_settings.vnpt_client_secret',
+                ],
+                'notes' => 'VNPT production issuance is available after credential validation and provider health checks.',
             ],
         ],
         'payroll_bridge' => [

@@ -9,7 +9,13 @@ class EInvoiceActionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->can('vas_accounting.einvoice.manage');
+        if (! auth()->check()) {
+            return false;
+        }
+
+        return auth()->user()->can('vas_accounting.einvoice.manage')
+            || auth()->user()->can('vas_accounting.einvoices.manage')
+            || auth()->user()->can('vas_accounting.filing.operator');
     }
 
     public function rules(): array

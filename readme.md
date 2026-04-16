@@ -115,13 +115,10 @@ For each phase include:
 - verification
 - assumptions and no-change areas
 Make sure the plan is decision-complete so the agent can code correctly.
+Use Metronic UI style template at public/html or https://preview.keenthemes.com/html/metronic/docs/base/utilities.
+Use worker agents for parallel coding when phases are independent.
+Ask me any questions needed to ensure the plan is decision-complete.
 ```
-
-Build me a detailed implementation plan phase by phase, task by task, with a todo list. Make sure to use worker agent to coding faster if needed. use metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
-ask me any question if need to clarify the plan is decision-complete so the agent can code correctly.
-
-Build me a detailed implementation plan phase by phase, task by task, with a todo list.use metronic ui style template at public\html or web link component https://preview.keenthemes.com/html/metronic/docs/base/utilities.  
-ask me any question if need to clarify the plan is decision-complete so the agent can code correctly.
 
 ## Common Repo Shortcuts
 

@@ -39,6 +39,8 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', ApplyVasLocale::
             Route::get('/dashboard/kpis', [DashboardController::class, 'kpis'])->name('dashboard.kpis');
             Route::get('/dashboard/trends', [DashboardController::class, 'trends'])->name('dashboard.trends');
             Route::get('/dashboard/failures', [DashboardController::class, 'failures'])->name('dashboard.failures');
+            Route::get('/journey/state', [DashboardController::class, 'journeyState'])->name('journey.state');
+            Route::get('/journey/next-actions', [DashboardController::class, 'journeyNextActions'])->name('journey.next_actions');
             Route::get('/reports/{reportKey}/datatable', [ReportController::class, 'datatable'])->name('reports.datatable');
         });
 

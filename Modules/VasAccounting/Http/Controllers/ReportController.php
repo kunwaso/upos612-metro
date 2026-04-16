@@ -8,12 +8,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Modules\VasAccounting\Application\DTOs\ActionContext;
 use Modules\VasAccounting\Contracts\ProcurementDiscrepancyServiceInterface;
 use Modules\VasAccounting\Domain\FinanceCore\Models\FinanceMatchException;
 use Modules\VasAccounting\Entities\VasReportSnapshot;
+use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Http\Requests\GenerateReportSnapshotRequest;
 use Modules\VasAccounting\Http\Requests\ReportDatatableRequest;
+use Modules\VasAccounting\Services\ComplianceProfileService;
 use Modules\VasAccounting\Services\EnterpriseReportingService;
 use Modules\VasAccounting\Services\ReportSnapshotService;
 use Modules\VasAccounting\Services\WorkflowApproval\ExpenseApprovalEscalationDispatchService;
@@ -24,7 +27,8 @@ class ReportController extends VasBaseController
         protected EnterpriseReportingService $enterpriseReportingService,
         protected ReportSnapshotService $reportSnapshotService,
         protected ExpenseApprovalEscalationDispatchService $expenseApprovalEscalationDispatchService,
-        protected ProcurementDiscrepancyServiceInterface $procurementDiscrepancyService
+        protected ?ProcurementDiscrepancyServiceInterface $procurementDiscrepancyService = null,
+        protected ?ComplianceProfileService $complianceProfileService = null
     ) {
     }
 
@@ -184,7 +188,7 @@ class ReportController extends VasBaseController
             ->get();
 
         foreach ($exceptions as $exception) {
-            $this->procurementDiscrepancyService->assignOwner($exception, $userId, $context);
+            $this->procurementDiscrepancyService()->assignOwner($exception, $userId, $context);
             $assigned++;
         }
 
@@ -235,7 +239,7 @@ class ReportController extends VasBaseController
             ->get();
 
         foreach ($exceptions as $exception) {
-            $this->procurementDiscrepancyService->assignOwner($exception, $ownerId, $context);
+            $this->procurementDiscrepancyService()->assignOwner($exception, $ownerId, $context);
             $assigned++;
         }
 
@@ -363,23 +367,57 @@ class ReportController extends VasBaseController
             return $mapped;
         })->all();
 
-        return response()->json([
+        $responsePayload = [
             'draw' => (int) $request->input('draw', 0),
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
             'data' => $data,
-        ]);
+        ];
+        if ($reportKey === 'financial_statements') {
+            $responsePayload['standard_profile'] = (string) ($dataset['standard_profile'] ?: $this->complianceProfileService()
+                ->activeProfileForBusiness($this->businessId($request))['key']);
+        }
+
+        return response()->json($responsePayload);
     }
 
     protected function renderReport(Request $request, string $reportKey)
     {
         $this->authorizePermission('vas_accounting.reports.view');
 
-        $dataset = $this->enterpriseReportingService->buildDataset($reportKey, $this->businessId($request), $request->all());
+        $filters = $request->all();
+        if ($reportKey === 'financial_statements') {
+            $filters = array_replace($filters, Validator::make(
+                $request->all(),
+                (new ReportDatatableRequest())->financialStatementRules()
+            )->validate());
+        }
+
+        $dataset = $this->enterpriseReportingService->buildDataset($reportKey, $this->businessId($request), $filters);
         $dataset['reportKey'] = $reportKey;
         $dataset['reportManagement'] = $this->reportManagement($reportKey, $this->businessId($request));
+        if ($reportKey === 'financial_statements') {
+            $dataset['standard_profile'] = $dataset['standard_profile'] ?: $this->complianceProfileService()
+                ->activeProfileForBusiness($this->businessId($request))['key'];
+            $dataset['periodOptions'] = VasAccountingPeriod::query()
+                ->where('business_id', $this->businessId($request))
+                ->orderByDesc('end_date')
+                ->get(['id', 'name', 'start_date', 'end_date']);
+
+            return view('vasaccounting::reports.financial_statements', $dataset);
+        }
 
         return view('vasaccounting::reports.table', $dataset);
+    }
+
+    protected function complianceProfileService(): ComplianceProfileService
+    {
+        return $this->complianceProfileService ?: app(ComplianceProfileService::class);
+    }
+
+    protected function procurementDiscrepancyService(): ProcurementDiscrepancyServiceInterface
+    {
+        return $this->procurementDiscrepancyService ?: app(ProcurementDiscrepancyServiceInterface::class);
     }
 
     protected function reportManagement(string $reportKey, int $businessId): array

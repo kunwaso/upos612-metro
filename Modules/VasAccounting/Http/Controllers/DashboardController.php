@@ -11,6 +11,7 @@ use Modules\VasAccounting\Http\Requests\DashboardUiDataRequest;
 use Modules\VasAccounting\Entities\VasAccountingPeriod;
 use Modules\VasAccounting\Entities\VasPostingFailure;
 use Modules\VasAccounting\Entities\VasVoucher;
+use Modules\VasAccounting\Services\AccountingJourneyService;
 use Modules\VasAccounting\Services\VasInventoryValuationService;
 use Modules\VasAccounting\Utils\VasAccountingUtil;
 
@@ -18,7 +19,8 @@ class DashboardController extends VasBaseController
 {
     public function __construct(
         protected VasAccountingUtil $vasUtil,
-        protected VasInventoryValuationService $inventoryValuationService
+        protected VasInventoryValuationService $inventoryValuationService,
+        protected ?AccountingJourneyService $accountingJourneyService = null
     ) {
     }
 
@@ -39,6 +41,8 @@ class DashboardController extends VasBaseController
             ->get();
         $periods = VasAccountingPeriod::query()->where('business_id', $businessId)->latest('start_date')->take(6)->get();
         $failures = VasPostingFailure::query()->where('business_id', $businessId)->whereNull('resolved_at')->latest()->take(5)->get();
+        $journeyState = $this->journeyService()->state($businessId);
+        $journeyNextActions = $this->journeyService()->nextActions($businessId, 3);
         $failureWidgetItems = $failures->map(function (VasPostingFailure $failure) {
             return [
                 'title' => $this->displayFailureMessage((string) $failure->error_message),
@@ -52,6 +56,8 @@ class DashboardController extends VasBaseController
             'autoBootstrapped' => $bootstrap['bootstrapped'],
             'locationOptions' => BusinessLocation::forDropdown($businessId),
             'selectedLocationId' => $selectedLocationId,
+            'journeyState' => $journeyState,
+            'journeyNextActions' => $journeyNextActions,
         ]);
     }
 
@@ -258,6 +264,23 @@ class DashboardController extends VasBaseController
         ]);
     }
 
+    public function journeyState(Request $request): JsonResponse
+    {
+        $this->authorizePermission('vas_accounting.access');
+
+        return response()->json($this->journeyService()->state($this->businessId($request)));
+    }
+
+    public function journeyNextActions(Request $request): JsonResponse
+    {
+        $this->authorizePermission('vas_accounting.access');
+
+        return response()->json([
+            'actions' => $this->journeyService()->nextActions($this->businessId($request), 5),
+            'updated_at' => now()->toIso8601String(),
+        ]);
+    }
+
     protected function percentageDelta(int|float $current, int|float $previous): float
     {
         $previous = (float) $previous;
@@ -291,5 +314,10 @@ class DashboardController extends VasBaseController
         }
 
         return str($normalized)->limit(120)->toString();
+    }
+
+    protected function journeyService(): AccountingJourneyService
+    {
+        return $this->accountingJourneyService ?: app(AccountingJourneyService::class);
     }
 }

@@ -281,7 +281,7 @@ class IntegrationHubService
         $salesBook = $this->enterpriseFinanceReportUtil->salesVatBook((int) $run->business_id);
         $purchaseBook = $this->enterpriseFinanceReportUtil->purchaseVatBook((int) $run->business_id);
 
-        return $adapter->export((string) ($payload['export_type'] ?? 'vat_declaration'), array_replace($payload, [
+        $exportPayload = array_replace($payload, [
             'business_id' => (int) $run->business_id,
             'sales_book' => $salesBook->map(fn ($row) => (array) $row)->all(),
             'purchase_book' => $purchaseBook->map(fn ($row) => (array) $row)->all(),
@@ -289,7 +289,13 @@ class IntegrationHubService
                 'sales_tax_total' => round((float) $salesBook->sum('tax_amount'), 2),
                 'purchase_tax_total' => round((float) $purchaseBook->sum('tax_amount'), 2),
             ],
-        ]));
+        ]);
+
+        return $adapter->export(
+            (string) ($payload['export_type'] ?? 'vat_declaration'),
+            $exportPayload,
+            $this->integrationTrace($run, 'tax_export', $exportPayload)
+        );
     }
 
     protected function runPayrollBridge(VasIntegrationRun $run): array
@@ -328,10 +334,14 @@ class IntegrationHubService
             ->findOrFail($documentId);
 
         $adapter = $this->eInvoiceAdapterManager->resolve($run->provider ?: $document->provider);
-        $result = $adapter->syncStatus([
+        $syncPayload = [
             'provider_document_id' => $document->provider_document_id,
             'status' => $document->status,
-        ]);
+        ];
+        $result = $adapter->syncStatus(
+            $syncPayload,
+            $this->integrationTrace($run, 'einvoice_sync', $syncPayload)
+        );
 
         $document->status = $result['status'] ?? $document->status;
         $document->last_synced_at = $result['last_synced_at'] ?? now();
@@ -442,5 +452,30 @@ class IntegrationHubService
             default => 'in_review',
         };
         $statementImport->save();
+    }
+
+    protected function integrationTrace(VasIntegrationRun $run, string $action, array $payload): array
+    {
+        $settings = $this->vasUtil->getOrCreateBusinessSettings((int) $run->business_id);
+        $integrationSettings = (array) $settings->integration_settings;
+
+        return [
+            'action' => $action,
+            'request_id' => (string) data_get($run->payload, 'request_id', $run->id . '-' . $action),
+            'idempotency_key' => sha1($run->id . '|' . $action . '|' . json_encode($payload)),
+            'signed_payload_hash' => hash('sha256', json_encode($payload)),
+            'provider_reference_id' => (string) data_get($payload, 'provider_document_id', ''),
+            'provider_config' => [
+                'vnpt_api_base_url' => (string) ($integrationSettings['vnpt_api_base_url'] ?? ''),
+                'vnpt_client_id' => (string) ($integrationSettings['vnpt_client_id'] ?? ''),
+                'vnpt_client_secret' => (string) ($integrationSettings['vnpt_client_secret'] ?? ''),
+                'vnpt_tax_username' => (string) ($integrationSettings['vnpt_tax_username'] ?? ''),
+                'vnpt_tax_password' => (string) ($integrationSettings['vnpt_tax_password'] ?? ''),
+            ],
+            'retry' => [
+                'attempt' => (int) data_get($run->payload, 'retry_attempt', 1),
+                'is_retry' => (bool) data_get($run->payload, 'is_retry', false),
+            ],
+        ];
     }
 }

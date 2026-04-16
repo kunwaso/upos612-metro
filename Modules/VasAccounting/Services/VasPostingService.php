@@ -27,7 +27,8 @@ class VasPostingService
         protected VasAccountingUtil $vasUtil,
         protected LedgerPostingUtil $ledgerPostingUtil,
         protected ?DocumentApprovalService $documentApprovalService = null,
-        protected ?ExchangeRateService $exchangeRateService = null
+        protected ?ExchangeRateService $exchangeRateService = null,
+        protected ?ComplianceProfileService $complianceProfileService = null
     ) {
     }
 
@@ -71,6 +72,10 @@ class VasPostingService
         }
 
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
+        $compliance = $this->vasUtil->complianceCompletionStatus($settings);
+        if (! ((bool) ($compliance['is_complete'] ?? false))) {
+            throw new RuntimeException('Compliance setup is incomplete. Complete setup checkpoints before posting.');
+        }
         if (! $this->vasUtil->isPostingMapComplete($settings)) {
             throw new RuntimeException(__('vasaccounting::lang.posting_map_incomplete'));
         }

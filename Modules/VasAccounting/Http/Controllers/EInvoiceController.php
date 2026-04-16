@@ -5,6 +5,7 @@ namespace Modules\VasAccounting\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Modules\VasAccounting\Http\Requests\EInvoiceActionRequest;
 use Modules\VasAccounting\Entities\VasEInvoiceDocument;
 use Modules\VasAccounting\Entities\VasEInvoiceLog;
@@ -22,7 +23,7 @@ class EInvoiceController extends VasBaseController
 
     public function index(Request $request)
     {
-        $this->authorizePermission('vas_accounting.einvoice.manage');
+        $this->authorizeEInvoiceAccess();
 
         $businessId = $this->businessId($request);
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
@@ -72,11 +73,13 @@ class EInvoiceController extends VasBaseController
 
         $provider = $this->resolveProvider($request);
         $adapter = $this->adapterManager->resolve($provider);
-        $result = $adapter->issue([
+        $payload = [
             'voucher_id' => $voucherModel->id,
             'reference' => $voucherModel->voucher_no,
             'notes' => $request->input('notes'),
-        ]);
+        ];
+        $trace = $this->buildTraceMeta($request, 'issue', $payload);
+        $result = $adapter->issue($payload, $trace);
 
         $document = VasEInvoiceDocument::updateOrCreate(
             [
@@ -97,7 +100,7 @@ class EInvoiceController extends VasBaseController
             ]
         );
 
-        $this->logDocumentAction($document, 'issue', ['voucher_id' => $voucherModel->id, 'provider' => $provider], $result);
+        $this->logDocumentAction($document, 'issue', ['voucher_id' => $voucherModel->id, 'provider' => $provider, 'trace' => $trace], $result);
 
         return redirect()
             ->route('vasaccounting.einvoices.index')
@@ -111,17 +114,19 @@ class EInvoiceController extends VasBaseController
             ->findOrFail($document);
 
         $adapter = $this->adapterManager->resolve($documentModel->provider);
-        $result = $adapter->syncStatus([
+        $payload = [
             'provider_document_id' => $documentModel->provider_document_id,
             'status' => $documentModel->status,
-        ]);
+        ];
+        $trace = $this->buildTraceMeta($request, 'sync', $payload, $documentModel);
+        $result = $adapter->syncStatus($payload, $trace);
 
         $documentModel->status = $result['status'] ?? $documentModel->status;
         $documentModel->last_synced_at = $result['last_synced_at'] ?? now();
         $documentModel->response_payload = $result['response_payload'] ?? $result;
         $documentModel->save();
 
-        $this->logDocumentAction($documentModel, 'sync', ['provider_document_id' => $documentModel->provider_document_id], $result);
+        $this->logDocumentAction($documentModel, 'sync', ['provider_document_id' => $documentModel->provider_document_id, 'trace' => $trace], $result);
 
         return redirect()
             ->route('vasaccounting.einvoices.index')
@@ -132,10 +137,11 @@ class EInvoiceController extends VasBaseController
     {
         $documentModel = $this->loadDocument($request, $document);
         $adapter = $this->adapterManager->resolve($this->resolveProvider($request, $documentModel->provider));
-        $result = $adapter->cancel([
+        $payload = [
             'provider_document_id' => $documentModel->provider_document_id,
             'notes' => $request->input('notes'),
-        ]);
+        ];
+        $result = $adapter->cancel($payload, $this->buildTraceMeta($request, 'cancel', $payload, $documentModel));
 
         $this->applyDocumentResult($documentModel, 'cancel', $result);
 
@@ -148,10 +154,11 @@ class EInvoiceController extends VasBaseController
     {
         $documentModel = $this->loadDocument($request, $document);
         $adapter = $this->adapterManager->resolve($this->resolveProvider($request, $documentModel->provider));
-        $result = $adapter->correct([
+        $payload = [
             'provider_document_id' => $documentModel->provider_document_id,
             'notes' => $request->input('notes'),
-        ]);
+        ];
+        $result = $adapter->correct($payload, $this->buildTraceMeta($request, 'correct', $payload, $documentModel));
 
         $this->applyDocumentResult($documentModel, 'correct', $result);
 
@@ -164,10 +171,11 @@ class EInvoiceController extends VasBaseController
     {
         $documentModel = $this->loadDocument($request, $document);
         $adapter = $this->adapterManager->resolve($this->resolveProvider($request, $documentModel->provider));
-        $result = $adapter->replace([
+        $payload = [
             'provider_document_id' => $documentModel->provider_document_id,
             'notes' => $request->input('notes'),
-        ]);
+        ];
+        $result = $adapter->replace($payload, $this->buildTraceMeta($request, 'replace', $payload, $documentModel));
 
         $this->applyDocumentResult($documentModel, 'replace', $result);
 
@@ -224,5 +232,51 @@ class EInvoiceController extends VasBaseController
             'response_payload' => $responsePayload,
             'created_by' => auth()->id(),
         ]);
+    }
+
+    protected function buildTraceMeta(
+        Request $request,
+        string $action,
+        array $payload,
+        ?VasEInvoiceDocument $document = null
+    ): array {
+        $requestId = (string) ($request->headers->get('X-Request-Id') ?: Str::uuid());
+        $idempotencyKey = (string) ($request->headers->get('Idempotency-Key') ?: sha1($action . '|' . $requestId . '|' . json_encode($payload)));
+        $settings = $this->vasUtil->getOrCreateBusinessSettings($this->businessId($request));
+        $integrationSettings = (array) $settings->integration_settings;
+
+        return [
+            'action' => $action,
+            'request_id' => $requestId,
+            'idempotency_key' => $idempotencyKey,
+            'provider_reference_id' => (string) ($document?->provider_document_id ?: data_get($payload, 'provider_document_id', '')),
+            'signed_payload_hash' => hash('sha256', json_encode($payload)),
+            'provider_config' => [
+                'vnpt_api_base_url' => (string) ($integrationSettings['vnpt_api_base_url'] ?? ''),
+                'vnpt_client_id' => (string) ($integrationSettings['vnpt_client_id'] ?? ''),
+                'vnpt_client_secret' => (string) ($integrationSettings['vnpt_client_secret'] ?? ''),
+                'vnpt_tax_username' => (string) ($integrationSettings['vnpt_tax_username'] ?? ''),
+                'vnpt_tax_password' => (string) ($integrationSettings['vnpt_tax_password'] ?? ''),
+            ],
+            'retry' => [
+                'attempt' => (int) $request->input('retry_attempt', 1),
+                'is_retry' => (bool) $request->boolean('is_retry'),
+                'reason' => (string) $request->input('retry_reason', ''),
+            ],
+        ];
+    }
+
+    protected function authorizeEInvoiceAccess(): void
+    {
+        if (
+            ! auth()->check()
+            || (
+                ! auth()->user()->can('vas_accounting.einvoice.manage')
+                && ! auth()->user()->can('vas_accounting.einvoices.manage')
+                && ! auth()->user()->can('vas_accounting.filing.operator')
+            )
+        ) {
+            abort(403, __('vasaccounting::lang.unauthorized_action'));
+        }
     }
 }

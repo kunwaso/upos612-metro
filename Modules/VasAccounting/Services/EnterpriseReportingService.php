@@ -25,7 +25,9 @@ class EnterpriseReportingService
         protected OperationsAssetReportUtil $operationsAssetReportUtil,
         protected EnterprisePlanningReportUtil $planningReportUtil,
         protected VasPeriodCloseService $periodCloseService,
-        protected ExpenseApprovalMonitorService $expenseApprovalMonitorService
+        protected ExpenseApprovalMonitorService $expenseApprovalMonitorService,
+        protected ?FinancialStatementBuilderService $financialStatementBuilderService = null,
+        protected ?ComplianceProfileService $complianceProfileService = null
     ) {
     }
 
@@ -109,7 +111,7 @@ class EnterpriseReportingService
             'loans' => $this->loans($businessId),
             'costing' => $this->costing($businessId),
             'budget_variance' => $this->budgetVariance($businessId),
-            'financial_statements' => $this->financialStatements($businessId),
+            'financial_statements' => $this->financialStatements($businessId, $filters),
             'close_packet' => $this->closePacket($businessId, $filters),
             'operational_health' => $this->operationalHealth($businessId),
             default => throw new \InvalidArgumentException("Unsupported VAS report key [{$reportKey}]."),
@@ -1447,21 +1449,48 @@ class EnterpriseReportingService
         );
     }
 
-    protected function financialStatements(int $businessId): array
+    protected function financialStatements(int $businessId, array $filters = []): array
     {
-        $rows = DB::table('vas_accounts as a')
-            ->leftJoin('vas_ledger_balances as lb', 'lb.account_id', '=', 'a.id')
-            ->where('a.business_id', $businessId)
-            ->selectRaw('a.account_type, SUM(lb.closing_debit) as debit_total, SUM(lb.closing_credit) as credit_total')
-            ->groupBy('a.account_type')
-            ->get();
+        $builder = $this->financialStatementBuilderService ?: app(FinancialStatementBuilderService::class);
+        $profileService = $this->complianceProfileService ?: app(ComplianceProfileService::class);
+        $profile = $profileService->activeProfileForBusiness($businessId);
+        $statementPayload = $builder->build($businessId, $filters, $profile);
 
-        return $this->dataset(
-            'Financial Statement Summary',
-            ['Account Type', 'Debit Total', 'Credit Total'],
-            $rows->map(fn ($row) => [$row->account_type, $this->money($row->debit_total), $this->money($row->credit_total)]),
-            [['label' => 'Statement groups', 'value' => $rows->count()]]
+        $dataset = $this->dataset(
+            (string) ($statementPayload['title'] ?? 'Financial Statements'),
+            (array) ($statementPayload['columns'] ?? []),
+            collect((array) ($statementPayload['rows'] ?? [])),
+            [
+                ['label' => 'Statement', 'value' => (string) ($statementPayload['statement'] ?? '')],
+                ['label' => 'Compliance profile', 'value' => (string) ($statementPayload['profile_label'] ?? $statementPayload['profile_key'] ?? '')],
+                ['label' => 'Period', 'value' => (string) data_get($statementPayload, 'period.name', '-')],
+                ['label' => 'Comparative period', 'value' => (string) data_get($statementPayload, 'comparative_period.name', '-')],
+            ],
+            [
+                [
+                    'title' => 'Statutory Form',
+                    'subtitle' => 'Line-level output generated from the active compliance profile.',
+                    'columns' => ['Line code', 'Line item', 'Current period', 'Comparative period'],
+                    'rows' => collect((array) ($statementPayload['line_items'] ?? []))
+                        ->map(fn (array $line) => [
+                            (string) ($line['line_code'] ?? ''),
+                            (string) ($line['label'] ?? ''),
+                            (string) ($line['current_display'] ?? '-'),
+                            (string) ($line['comparative_display'] ?? '-'),
+                        ])
+                        ->values()
+                        ->all(),
+                    'empty' => 'No statutory lines were configured for this statement profile.',
+                ],
+            ]
         );
+
+        $dataset['statement'] = (string) ($statementPayload['statement'] ?? '');
+        $dataset['period_id'] = data_get($statementPayload, 'period.id');
+        $dataset['comparative_period_id'] = data_get($statementPayload, 'comparative_period.id');
+        $dataset['standard_profile'] = (string) ($statementPayload['profile_key'] ?? '');
+
+        return $dataset;
     }
 
     protected function closePacket(int $businessId, array $filters): array
@@ -1512,6 +1541,7 @@ class EnterpriseReportingService
                 ['label' => 'Period', 'value' => $period->name],
                 ['label' => 'Status', 'value' => ucfirst($period->status)],
                 ['label' => 'Blocked items', 'value' => $blockedCount],
+                ['label' => 'Compliance completion', 'value' => (string) ($blockers['compliance_completion'] ?? 0) . '%'],
                 ['label' => 'Pending treasury docs', 'value' => $blockers['pending_treasury_documents']],
                 ['label' => 'Treasury exceptions', 'value' => $blockers['unreconciled_bank_lines']],
                 ['label' => 'Pending procurement docs', 'value' => $blockers['pending_procurement_documents']],

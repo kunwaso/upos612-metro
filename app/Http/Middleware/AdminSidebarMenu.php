@@ -6,7 +6,9 @@ use App\Utils\ModuleUtil;
 use Closure;
 use Menu;
 use Modules\CustomDashboard\Entities\CustomDashboard;
+use Modules\VasAccounting\Services\AccountingJourneyService;
 use Modules\VasAccounting\Services\CutoverService;
+use Modules\VasAccounting\Utils\VasAccountingUtil;
 
 class AdminSidebarMenu
 {
@@ -585,9 +587,41 @@ class AdminSidebarMenu
             }
 
             if (app(ModuleUtil::class)->isModuleInstalled('VasAccounting') && auth()->user()->can('vas_accounting.access')) {
+                $vasNavigationMode = 'advanced';
+                $vasBasicNavigation = [];
+                if ($business_id > 0) {
+                    $vasSettings = app(VasAccountingUtil::class)->getOrCreateBusinessSettings($business_id);
+                    $vasNavigationMode = (string) data_get((array) $vasSettings->ui_settings, 'navigation_mode', 'advanced');
+                    if ($vasNavigationMode === 'basic') {
+                        $vasBasicNavigation = app(AccountingJourneyService::class)->basicNavigation($business_id);
+                    }
+                }
+
                 $menu->dropdown(
                     __('vasaccounting::lang.module_name'),
-                    function ($sub) {
+                    function ($sub) use ($vasNavigationMode, $vasBasicNavigation) {
+                        if ($vasNavigationMode === 'basic') {
+                            $addedRoutes = [];
+                            $sub->url(route('vasaccounting.setup.index'), __('vasaccounting::lang.setup'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.setup.*')]);
+                            $addedRoutes[] = 'vasaccounting.setup.index';
+                            $sub->url(route('vasaccounting.dashboard.index'), __('vasaccounting::lang.dashboard'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.dashboard.*')]);
+                            $addedRoutes[] = 'vasaccounting.dashboard.index';
+
+                            foreach ($vasBasicNavigation as $step) {
+                                $routeName = (string) ($step['route'] ?? '');
+                                if ($routeName === '' || in_array($routeName, $addedRoutes, true) || ! app('router')->has($routeName)) {
+                                    continue;
+                                }
+
+                                $sub->url(route($routeName), (string) ($step['label'] ?: __('vasaccounting::lang.module_name')), ['icon' => '', 'active' => request()->routeIs($routeName)]);
+                                $addedRoutes[] = $routeName;
+                            }
+
+                            $sub->url(route('vasaccounting.reports.index'), __('vasaccounting::lang.reports'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.reports.*')]);
+
+                            return;
+                        }
+
                         $sub->url(route('vasaccounting.setup.index'), __('vasaccounting::lang.setup'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.setup.*')]);
                         $sub->url(route('vasaccounting.dashboard.index'), __('vasaccounting::lang.dashboard'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.dashboard.*')]);
                         $sub->url(route('vasaccounting.chart.index'), __('vasaccounting::lang.chart_of_accounts'), ['icon' => '', 'active' => request()->routeIs('vasaccounting.chart.*')]);

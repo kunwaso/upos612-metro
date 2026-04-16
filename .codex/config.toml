@@ -34,10 +34,10 @@ startup_timeout_ms = 20000
 env = { SystemRoot = "C:\\Windows", PROGRAMFILES = "C:\\Program Files" }
 
 [mcp_servers.gitnexus]
-command = "powershell"
-args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:/Users/Ray/AppData/Roaming/npm/gitnexus.ps1", "mcp"]
+command = "npx"
+args = ["-y", "gitnexus@1.4.8", "mcp"]
 
 [mcp_servers.semantic_code_search]
 command = "php"
 args = ["D:/wamp64/www/upos612/mcp/semantic-code-search-mcp/bin/server"]
-env = { MCP_SEMANTIC_WORKSPACE_ROOT = "D:/wamp64/www/upos612", MCP_SEMANTIC_INDEX_ROOT = "D:/wamp64/www/upos612/.cache/semantic-code-search-mcp", MCP_SEMANTIC_PYTHON_BIN = "C:/Users/Ray/AppData/Local/Python/pythoncore-3.14-64/python.exe", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-small-en", MCP_SEMANTIC_HF_DEVICE = "cpu", MCP_SEMANTIC_HF_BATCH_SIZE = "12", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_CHUNK_LINES = "80", MCP_SEMANTIC_CHUNK_OVERLAP = "8", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,config,ai,mcp,.cursor", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }
+env = { MCP_SEMANTIC_WORKSPACE_ROOT = "D:/wamp64/www/upos612", MCP_SEMANTIC_INDEX_ROOT = "D:/wamp64/www/upos612/.cache/semantic-code-search-mcp", MCP_SEMANTIC_PYTHON_BIN = "C:/Users/Ray/AppData/Local/Python/pythoncore-3.14-64/python.exe", MCP_SEMANTIC_EMBED_BACKEND = "huggingface", MCP_SEMANTIC_EMBED_MODEL = "BAAI/bge-base-en", MCP_SEMANTIC_HF_DEVICE = "cpu", MCP_SEMANTIC_HF_BATCH_SIZE = "12", MCP_SEMANTIC_HF_LOCAL_FILES_ONLY = "1", MCP_SEMANTIC_CHUNK_LINES = "80", MCP_SEMANTIC_CHUNK_OVERLAP = "8", MCP_SEMANTIC_INCLUDE_ROOTS = "app,Modules,routes,resources/views,config,ai,mcp,.cursor", MCP_SEMANTIC_INCLUDE_ROOT_FILES = "AGENTS.md,AGENTS-FAST.md,composer.json,composer.lock,README.md,modules_statuses.json" }

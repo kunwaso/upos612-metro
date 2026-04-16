@@ -16,6 +16,8 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertTrue($router->has('vasaccounting.ui.dashboard.kpis'));
         $this->assertTrue($router->has('vasaccounting.ui.dashboard.trends'));
         $this->assertTrue($router->has('vasaccounting.ui.dashboard.failures'));
+        $this->assertTrue($router->has('vasaccounting.ui.journey.state'));
+        $this->assertTrue($router->has('vasaccounting.ui.journey.next_actions'));
         $this->assertTrue($router->has('vasaccounting.ui.reports.datatable'));
         $this->assertTrue($router->has('vasaccounting.chart.index'));
         $this->assertTrue($router->has('vasaccounting.periods.index'));
@@ -207,6 +209,14 @@ class VasAccountingRoutesRegistrationTest extends TestCase
         $this->assertSame(
             'vas-accounting/ui/dashboard/failures',
             $routes->getByName('vasaccounting.ui.dashboard.failures')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/journey/state',
+            $routes->getByName('vasaccounting.ui.journey.state')->uri()
+        );
+        $this->assertSame(
+            'vas-accounting/ui/journey/next-actions',
+            $routes->getByName('vasaccounting.ui.journey.next_actions')->uri()
         );
         $this->assertSame(
             'vas-accounting/ui/reports/{reportKey}/datatable',

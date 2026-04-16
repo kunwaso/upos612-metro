@@ -9,6 +9,7 @@ class VasBusinessSetting extends BaseVasModel
     protected $casts = [
         'posting_map' => 'array',
         'compliance_settings' => 'array',
+        'compliance_effective_date' => 'date',
         'inventory_settings' => 'array',
         'depreciation_settings' => 'array',
         'tax_settings' => 'array',
@@ -23,5 +24,6 @@ class VasBusinessSetting extends BaseVasModel
         'rollout_settings' => 'array',
         'ui_settings' => 'array',
         'is_enabled' => 'boolean',
+        'compliance_legacy_bridge_enabled' => 'boolean',
     ];
 }

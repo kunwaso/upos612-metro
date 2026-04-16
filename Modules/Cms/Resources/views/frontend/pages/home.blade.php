@@ -13,7 +13,7 @@
             <div id="decor-store-slider" class="rev_slider fullscreenbanner" data-version="5.4.5" >
                 <!-- begin slides list -->
                 <ul>
-                    <!-- minimum slide structure -->
+                    <!-- minimum slide1 -->
                     <li  data-index="rs-73" data-transition="fade" data-slotamount="default" data-hideafterloop="0" data-hideslideonmobile="off"  data-easein="default" data-easeout="default" data-masterspeed="300"  data-thumb="http://works.themepunch.com/revolution_5_3/wp-content/"  data-rotate="0"  data-saveperformance="off"  data-title="Slide" data-param1="01" data-description="">
                         <!-- slide's main background image -->
                         <img src="{{ asset('modules/cms/assets/images/rev-trans-tile.png') }}" alt="dummy" class="rev-slidebg" data-bgcolor='#e5eff3'>
@@ -386,13 +386,13 @@
                                  data-frames='[{"delay":2600,"speed":1000,"sfxcolor":"#ffffff","sfx_effect":"blockfromright","frame":"0","from":"z:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
                                  data-textAlign="['center','center','center','center']"
                                  data-basealign="grid"
-                                 style="border: none; background-image: url(https://placehold.co/200x115);">
+                                 style="border: none; background-image: url({{ asset('modules/cms/assets/slider/200115-carton.jpg') }});">
                             </div>
                             <!-- end slider thumb layer -->
                         </div>
                         <!-- end arrow group layer -->
                     </li>
-                    <!-- minimum slide structure -->
+                    <!-- minimum slide2 -->
                     <li  data-index="rs-72" data-transition="fade" data-slotamount="default" data-hideafterloop="0" data-hideslideonmobile="off"  data-easein="default" data-easeout="default" data-masterspeed="300"  data-thumb="http://works.themepunch.com/revolution_5_3/wp-content/"  data-rotate="0"  data-saveperformance="off"  data-title="Slide" data-param1="01" data-description="">
                         <!-- slide's main background image -->
                         <img src="{{ asset('modules/cms/assets/images/rev-trans-tile.png') }}" alt="dummy" class="rev-slidebg" data-bgcolor='#f9f1eb'>
@@ -477,7 +477,7 @@
                              data-basealign="slide"
                              data-responsive_offset="on"
                              data-responsive="on">
-                            <img src="https://placehold.co/1678x740" alt="background-pattern" data-ww="100%" data-hh="auto">
+                            <img src="{{ asset('modules/cms/assets/slider/thung-hop-carton.png') }}" alt="background-pattern" data-ww="100%" data-hh="auto">
                         </div>
                         <!-- end product image layer -->
                         <!-- start row zone -->
@@ -558,7 +558,7 @@
                                          data-paddingright="[0,0,200,0]"
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,200,0]">
-                                        Verona sofas
+                                       Thùng - hộp carton
                                     </div>
                                     <!-- end title  layer -->
                                     <!-- start subtitle layer -->
@@ -588,11 +588,11 @@
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,0,0]"
                                          style="color: rgba(22,32,44,0.8)">
-                                        Price starting from <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">$259.00</span>
+                                        In ấn theo yêu cầu, độ dày từ <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">3 - 7 lớp</span>
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
-                                    <a href="{{ route('cms.store.shop') }}" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
+                                    <a href="{{ route('cms.contact.us') }}" class="tp-caption alt-font text-uppercase btn btn-dark-gray btn-large btn-switch-text btn-round-edge btn-box-shadow d-inline-block shop-button btn-rounded" 
                                        id="slide-2-layer-09"
                                        data-x="['left','left','left','left']" data-hoffset="['0','0','0','0']" 
                                        data-y="['middle','middle','middle','middle']" data-voffset="['0','0','0','0']" 
@@ -618,7 +618,7 @@
                                        data-paddingbottom="[16,12,12,12]"
                                        data-paddingleft="[25,18,16,16]"
                                        style="color: rgba(22,32,44,0.8)">
-                                        <i class="feather icon-feather-shopping-bag pe-10px icon-small"></i>Shop Now
+                                        <i class="feather icon-feather-shopping-bag pe-10px icon-small"></i>Liên hệ ngay
                                     </a>
                                     <!-- end button layer -->
                                 </div>
@@ -682,7 +682,7 @@
                              data-paddingright="[0,0,0,0]"
                              data-paddingbottom="[0,0,0,0]"
                              data-paddingleft="[0,0,0,0]">
-                            <span class="pe-20px">More information</span><a href="#" class="d-flex justify-content-center align-items-center icon-box w-45px h-45px rounded-circle border border-color-transparent-dark-very-light border-2"><i class="bi bi-info icon-extra-medium text-dark-gray"></i></a>
+                            <span class="pe-20px">Thông tin chi tiết</span><a href="#" class="d-flex justify-content-center align-items-center icon-box w-45px h-45px rounded-circle border border-color-transparent-dark-very-light border-2"><i class="bi bi-info icon-extra-medium text-dark-gray"></i></a>
                         </div>
                         <!-- end sub text layer -->
                         <!-- start tooltip layer -->
@@ -711,7 +711,7 @@
                              data-paddingbottom="[30,25,0,0]"
                              data-paddingleft="[35,25,0,0]"
                              data-lasttriggerstate="reset"
-                             style="z-index: 36; background-color: rgba(22,32,44,0.85); color: rgba(255,255,255,0.8); border-radius: 6px;">The three-seater works not just as the primary seating option, but also as an elegant statement piece.</div>
+                             style="z-index: 36; background-color: rgba(22,32,44,0.85); color: rgba(255,255,255,0.8); border-radius: 6px;">Thùng carton - hộp carton in ấn theo yêu cầu, độ dày từ 3 - 7 lớp</div>
                         <!-- end tooltip layer -->
                         <!-- start arrow group layer -->
                         <div class="navigation-arrow">
@@ -766,13 +766,13 @@
                                  data-frames='[{"delay":2600,"speed":1000,"sfxcolor":"#ffffff","sfx_effect":"blockfromright","frame":"0","from":"z:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
                                  data-textAlign="['center','center','center','center']"
                                  data-basealign="grid"
-                                 style="border: none; background-image: url(https://placehold.co/200x115);">
+                                 style="border: none; background-image: url({{ asset('modules/cms/assets/slider/200115-air-silicagel.jpg') }});">
                             </div>
                             <!-- end slider thumb layer -->
                         </div>
                         <!-- end arrow group layer -->
                     </li>
-                    <!-- minimum slide structure -->
+                    <!-- minimum slide3 -->
                     <li  data-index="rs-74" data-transition="fade" data-slotamount="default" data-hideafterloop="0" data-hideslideonmobile="off"  data-easein="default" data-easeout="default" data-masterspeed="300"  data-thumb="http://works.themepunch.com/revolution_5_3/wp-content/"  data-rotate="0"  data-saveperformance="off"  data-title="Slide" data-param1="01" data-description="">
                         <!-- slide's main background image -->
                         <img src="{{ asset('modules/cms/assets/images/rev-trans-tile.png') }}" alt="dummy" class="rev-slidebg" data-bgcolor='#e9fafb'>
@@ -857,7 +857,7 @@
                              data-basealign="slide"
                              data-responsive_offset="on"
                              data-responsive="on">
-                            <img src="https://placehold.co/1678x740" alt="background-pattern" data-ww="100%" data-hh="auto">
+                            <img src="{{ asset('modules/cms/assets/slider/airpack.png') }}" alt="background-pattern" data-ww="100%" data-hh="auto">
                         </div>
                         <!-- end product image layer -->
                         <!-- start row zone -->
@@ -938,7 +938,7 @@
                                          data-paddingright="[0,0,200,0]"
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,200,0]">
-                                        Lewis sofas
+                                        Màng xốp hơi
                                     </div>
                                     <!-- end title  layer -->
                                     <!-- start subtitle layer -->
@@ -968,7 +968,7 @@
                                          data-paddingbottom="[0,0,0,0]"
                                          data-paddingleft="[0,0,0,0]"
                                          style="color: rgba(22,32,44,0.8)">
-                                        Price starting from <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">$259.00</span>
+                                        silicagel <span class="text-decoration-line-bottom-medium fw-600 text-dark-gray">200g - 1000g</span>
                                     </div>
                                     <!-- end subtitle layer -->
                                     <!-- start button layer -->
@@ -1168,10 +1168,10 @@
                         <i class="bi bi-heart-fill text-red fs-13"></i> 
                     </div>
                     <div class="feature-box-content">
-                        <span class="d-inline-block fs-16 fw-500 alt-font text-dark-gray">On demand</span>
+                        <span class="d-inline-block fs-16 fw-500 alt-font text-dark-gray">Danh mục</span>
                     </div>
                 </div>
-                <h6 class="mb-0 fw-700 alt-font text-dark-gray">Featured categories</h6>
+                <h6 class="mb-0 fw-700 alt-font text-dark-gray">sản phẩm</h6>
             </div>
             <div class="col-xl-10 col-lg-9">
                 <div class="row row-cols-2 row-cols-md-5 row-cols-sm-3 justify-content-center align-items-center" data-anime='{ "el": "childs", "translateX": [50, 0], "opacity": [0,1], "duration": 600, "delay":100, "staggervalue": 150, "easing": "easeOutQuad" }'>

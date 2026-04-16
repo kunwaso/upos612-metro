@@ -30,6 +30,7 @@ class VasPeriodCloseService
     public function blockers(int $businessId, VasAccountingPeriod $period): array
     {
         $settings = $this->vasUtil->getOrCreateBusinessSettings($businessId);
+        $complianceCompletion = $this->vasUtil->complianceCompletionStatus($settings);
         $periodEnd = optional($period->end_date)->toDateString();
 
         $draftVouchers = VasVoucher::query()
@@ -106,6 +107,8 @@ class VasPeriodCloseService
 
         return [
             'posting_map_incomplete' => ! $this->vasUtil->isPostingMapComplete($settings),
+            'compliance_checks_incomplete' => ! ((bool) ($complianceCompletion['is_complete'] ?? false)),
+            'compliance_completion' => (int) ($complianceCompletion['completion_percent'] ?? 0),
             'draft_vouchers' => $draftVouchers,
             'posting_failures' => $postingFailures,
             'pending_depreciation' => $pendingDepreciation,
@@ -380,6 +383,13 @@ class VasPeriodCloseService
             + $warehouseSyncBlockers;
 
         $definitions = [
+            'compliance_profile' => [
+                'title' => 'Compliance profile checks completed',
+                'status' => $blockers['compliance_checks_incomplete'] ? 'blocked' : 'completed',
+                'notes' => $blockers['compliance_checks_incomplete']
+                    ? 'Compliance baseline checks are incomplete.'
+                    : 'Compliance baseline checks are complete.',
+            ],
             'posting_map' => [
                 'title' => 'Mandatory posting map completed',
                 'status' => $blockers['posting_map_incomplete'] ? 'blocked' : 'completed',
@@ -494,6 +504,7 @@ class VasPeriodCloseService
         $this->syncChecklist((int) $period->business_id, $period, $userId);
 
         $hasBlockers = $blockers['posting_map_incomplete']
+            || $blockers['compliance_checks_incomplete']
             || $blockers['draft_vouchers'] > 0
             || $blockers['posting_failures'] > 0
             || $blockers['pending_depreciation'] > 0
