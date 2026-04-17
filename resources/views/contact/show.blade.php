@@ -231,6 +231,12 @@
                                 @lang('report.stock_report')
                             </a>
                         </li>
+                        <li class="nav-item mt-2">
+                            <a class="nav-link text-active-primary ms-0 me-10 py-5 {{ $view_type === 'supplier_products' ? 'active' : '' }}"
+                                href="#tab_supplier_products" data-bs-toggle="tab" data-bs-target="#tab_supplier_products">
+                                @lang('lang_v1.supplier_products')
+                            </a>
+                        </li>
                     @endif
                     @if ($is_customer)
                         <li class="nav-item mt-2">
@@ -475,6 +481,14 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="tab-pane fade {{ $view_type === 'supplier_products' ? 'show active' : '' }}" id="tab_supplier_products">
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body">
+                            @include('contact.partials.supplier_products_tab')
+                        </div>
+                    </div>
+                </div>
             @endif
 
             {{-- Sales tab (customer only) --}}
@@ -611,6 +625,9 @@
     var contactFeedsLoadUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'loadContactFeeds'], [$contact->id]) }}";
     var contactFeedsUpdateUrl = "{{ action([\App\Http\Controllers\ContactController::class, 'updateContactFeeds'], [$contact->id]) }}";
     var contactEditUrl = "{{ route('contacts.edit', ['contact' => $contact->id]) }}";
+    var supplierProductsConfig = @json($supplier_products_config ?? []);
+    var supplierProductsTable = null;
+    var supplierProductsTabLoaded = false;
 
     $(document).ready(function () {
         var initContactEditTabForm = function ($container) {
@@ -777,12 +794,69 @@
             });
         };
 
+        var buildSupplierProductDeleteUrl = function (productId) {
+            if (!supplierProductsConfig.destroy_url_template) {
+                return '';
+            }
+
+            return supplierProductsConfig.destroy_url_template.replace('__PRODUCT_ID__', productId);
+        };
+
+        var initializeSupplierProductsTab = function () {
+            if (!supplierProductsConfig.list_url || !$('#supplier_products_table').length) {
+                return;
+            }
+
+            if (!supplierProductsTabLoaded) {
+                supplierProductsTable = $('#supplier_products_table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    fixedHeader: false,
+                    ajax: {
+                        url: supplierProductsConfig.list_url,
+                    },
+                    columns: [
+                        { data: 'product_name', name: 'p.name' },
+                        { data: 'sku', name: 'p.sku' },
+                        { data: 'action', name: 'action', orderable: false, searchable: false },
+                    ],
+                });
+                supplierProductsTabLoaded = true;
+            } else if (supplierProductsTable) {
+                supplierProductsTable.ajax.reload();
+            }
+
+            if (supplierProductsConfig.can_manage && $('#supplier_products_select').length && !$('#supplier_products_select').data('supplier-products-select2')) {
+                $('#supplier_products_select').select2({
+                    width: '100%',
+                    ajax: {
+                        url: supplierProductsConfig.products_search_url,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                term: params.term || '',
+                            };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data,
+                            };
+                        },
+                    },
+                    minimumInputLength: 1,
+                });
+                $('#supplier_products_select').data('supplier-products-select2', true);
+            }
+        };
+
         // Activate correct tab from $view_type
         var tabMap = {
             'ledger': '#tab_ledger',
             'edit': '#tab_edit',
             'purchase': '#tab_purchases',
             'stock_report': '#tab_stock',
+            'supplier_products': '#tab_supplier_products',
             'sales': '#tab_sales',
             'subscriptions': '#tab_subscriptions',
             'payments': '#tab_payments',
@@ -889,6 +963,113 @@
             }
         });
 
+        $('[data-bs-target="#tab_supplier_products"]').on('shown.bs.tab', function () {
+            initializeSupplierProductsTab();
+        });
+
+        $(document).on('click', '#add_supplier_products_btn', function () {
+            if (!supplierProductsConfig.can_manage) {
+                return;
+            }
+
+            var productIds = ($('#supplier_products_select').val() || []).map(function (value) {
+                return parseInt(value, 10);
+            }).filter(function (value) {
+                return value > 0;
+            });
+
+            if (!productIds.length) {
+                toastr.error("{{ __('lang_v1.supplier_products_select_required') }}");
+                return;
+            }
+
+            if (productIds.length > (supplierProductsConfig.max_product_ids || 500)) {
+                toastr.error("{{ __('lang_v1.supplier_products_max_limit_exceeded') }}");
+                return;
+            }
+
+            var $button = $(this);
+            __disable_submit_button($button);
+
+            $.ajax({
+                method: 'POST',
+                url: supplierProductsConfig.store_url,
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': supplierProductsConfig.csrf_token,
+                },
+                data: {
+                    product_ids: productIds,
+                },
+                success: function (result) {
+                    if (result.success === true || result.success == true) {
+                        toastr.success(result.msg);
+                        $('#supplier_products_select').val(null).trigger('change');
+                        if (supplierProductsTable) {
+                            supplierProductsTable.ajax.reload();
+                        }
+                    } else {
+                        toastr.error(result.msg || "{{ __('messages.something_went_wrong') }}");
+                    }
+                },
+                error: function () {
+                    toastr.error("{{ __('messages.something_went_wrong') }}");
+                },
+                complete: function () {
+                    $button.prop('disabled', false);
+                },
+            });
+        });
+
+        $(document).on('click', '.js-remove-supplier-product', function () {
+            if (!supplierProductsConfig.can_manage) {
+                return;
+            }
+
+            var href = $(this).data('href');
+            var productId = $(this).data('product-id');
+            if (!href && productId) {
+                href = buildSupplierProductDeleteUrl(productId);
+            }
+            if (!href) {
+                toastr.error("{{ __('messages.something_went_wrong') }}");
+                return;
+            }
+
+            swal({
+                title: LANG.sure,
+                icon: 'warning',
+                buttons: true,
+                dangerMode: true,
+            }).then(function (willDelete) {
+                if (!willDelete) {
+                    return;
+                }
+
+                $.ajax({
+                    method: 'DELETE',
+                    url: href,
+                    dataType: 'json',
+                    headers: {
+                        'X-CSRF-TOKEN': supplierProductsConfig.csrf_token,
+                    },
+                    success: function (result) {
+                        if (result.success === true || result.success == true) {
+                            toastr.success(result.msg);
+                            if (supplierProductsTable) {
+                                supplierProductsTable.ajax.reload();
+                            }
+                        } else {
+                            toastr.error(result.msg || "{{ __('messages.something_went_wrong') }}");
+                        }
+                    },
+                    error: function () {
+                        toastr.error("{{ __('messages.something_went_wrong') }}");
+                    },
+                });
+            });
+        });
+
         // Load feeds when tab is opened the first time
         $('[data-bs-target="#tab_feeds"]').one('shown.bs.tab', function () {
             initialize_contact_feeds();
@@ -903,6 +1084,9 @@
         }
         if (contactActiveTab === 'edit') {
             loadContactEditTab();
+        }
+        if (contactActiveTab === 'supplier_products') {
+            initializeSupplierProductsTab();
         }
 
         $('#discount_date').datetimepicker({

@@ -160,9 +160,9 @@ Use this exact handoff so tools complement each other instead of overlapping:
 
 1. **Exact symbol/string work** -> `grep` -> `read_file_cache` -> `laravel_mysql` only if route/schema/test context is needed.
 2. **Meaning/architecture work** -> `semantic_code_search` (`index_status` first) -> `gitnexus` (`query`/`context`) -> `grep` for exact confirmation -> `read_file_cache`.
-3. **Before editing Util/controller methods** -> run `gitnexus_impact` for blast radius and flag HIGH/CRITICAL risk.
+3. **Before editing shared/high-impact Util/controller/model methods** -> run `gitnexus_impact` for blast radius and flag HIGH/CRITICAL risk. Tiny local single-file changes may skip this.
 4. **Before commit** -> run `gitnexus_detect_changes` to confirm affected scope and execution-flow impact.
-5. **If semantic degrades** (`NOT_INDEXED`, `STALE`, `EMBEDDER_UNAVAILABLE`) -> fallback immediately to `gitnexus` + `grep` + `read_file_cache` + `laravel_mysql`.
+5. **If semantic degrades** (`NOT_INDEXED`, `STALE`, `EMBEDDER_UNAVAILABLE`) -> fallback to `gitnexus` + `grep` + `read_file_cache` + `laravel_mysql` only when GitNexus is healthy; otherwise continue with `grep` + `read_file_cache` + targeted verification.
 
 ### 5.1a) Hard Search Routing
 
@@ -179,8 +179,8 @@ Session-start check:
 1. Keep exact startup commands centralized in `mcp/CODEX-SETUP.md`.
 2. On a cold repo-specific session, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\warm-cache.ps1 -Profile startup`.
 3. Run `php scripts/check-mcp-health.php` from repo root after startup, dependency changes, or MCP config changes.
-4. If `gitnexus` is not `READY`, refresh it before shared-code edits or refactors.
-5. If `semantic_code_search` is `READY`, use it for behavior-level discovery; otherwise fall back immediately to GitNexus + grep + read_file_cache.
+4. If `gitnexus` is not `READY`, refresh it before shared/high-impact edits or refactors, but do not block `tiny` or low-risk local fixes on reindex.
+5. If `semantic_code_search` is `READY`, use it for behavior-level discovery; otherwise fall back to GitNexus + grep + read_file_cache when GitNexus is healthy, or to grep + read_file_cache + targeted verification when GitNexus is degraded.
 6. For deep or external repo-specific work, start with: `project_map` -> `resource://composer` -> `index_status` after cache warm-up.
 
 If a preferred tool is available but unhealthy/degraded (for example timeout, empty content, metadata-only responses, stale index, repeated failure):
@@ -189,6 +189,23 @@ If a preferred tool is available but unhealthy/degraded (for example timeout, em
 2. Keep the same split: grep for exact, semantic for meaning, read tool for content.
 3. Do not loop on the failing tool; fall back immediately.
 4. Note the fallback briefly when it affects confidence or speed.
+
+### 5.1b) GitNexus Timeout / Hung Reindex (Windows)
+
+Use this guardrail when `gitnexus analyze` or reindex hangs:
+
+1. Time-box reindex/analyze calls (default 20 minutes).
+2. A `wait_agent` timeout does not kill the process; if timed out, kill the PowerShell process tree.
+3. Kill by command-line match:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object { ($_.Name -in @('powershell.exe','pwsh.exe')) -and $_.CommandLine -match 'gitnexus\\s+analyze|gitnexus\\s+reindex' } |
+  ForEach-Object { taskkill /PID $_.ProcessId /T /F }
+```
+
+4. Retry once after kill; if still timing out, treat GitNexus as degraded for that task and continue with `grep + read_file_cache + targeted tests`.
+5. Never block `tiny`, `explain`, or low-risk local fixes on GitNexus reindex.
 
 Quick routing examples:
 
@@ -202,8 +219,8 @@ For repo-specific `implement`, `analyze`, and `execute-plan` work:
 
 1. Startup once with `scripts/warm-cache.ps1 -Profile startup`.
 2. Health-check once with `php scripts/check-mcp-health.php`.
-3. Use GitNexus before shared Util/controller/model edits.
-4. Use semantic search only when the health check reports `READY`.
+3. Use GitNexus on demand for shared/high-impact Util/controller/model/refactor edits and unfamiliar architecture work; do not require GitNexus for tiny/local low-risk changes.
+4. Use semantic search only when the health check reports `READY`; otherwise use GitNexus + grep + read_file_cache when GitNexus is healthy, or grep + read_file_cache + targeted verification when GitNexus is degraded.
 
 ---
 

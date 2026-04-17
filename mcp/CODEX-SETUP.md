@@ -20,7 +20,7 @@ Then replace `<repo-root>` with your local checkout path (example: `D:/wamp64/ww
 
 Notes:
 
-- GitNexus is pinned to `gitnexus@1.4.8` (no `@latest` drift).
+- GitNexus is installed globally (`npm install -g gitnexus@1.6.1`); uses direct `gitnexus` command for fast startup.
 - `semantic_code_search` is enabled with explicit workspace/index scope envs.
 
 Restart Codex after config changes.
@@ -123,13 +123,13 @@ php mcp/semantic-code-search-mcp/bin/index-codebase --force
 GitNexus graph refresh:
 
 ```powershell
-npx -y gitnexus@1.4.8 analyze
+gitnexus analyze
 ```
 
 Nightly deep graph (embeddings):
 
 ```powershell
-npx -y gitnexus@1.4.8 analyze --embeddings
+gitnexus analyze --embeddings
 ```
 
 Health check (after setup/startup changes):
@@ -174,7 +174,7 @@ Note: scheduled-task register/unregister can require elevated privileges.
 
 Revert pinned GitNexus (not recommended):
 
-- Change `gitnexus@1.4.8` back to your preferred version in `~/.codex/config.toml`.
+- Change the globally installed gitnexus version via `npm install -g gitnexus@<version>` if needed.
 
 ## 7. POS smoke auth bootstrap (optional)
 

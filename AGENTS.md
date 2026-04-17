@@ -75,8 +75,8 @@ For repo-specific `implement`, `analyze`, `investigate`, `execute-plan`, `extern
 1. Use `scripts/warm-cache.ps1 -Profile startup` as the canonical startup entrypoint when commands are allowed.
 2. Run `php scripts/check-mcp-health.php` and record the status line for `grep`, `read_file_cache`, `gitnexus`, and `semantic_code_search`.
 3. Treat `grep` + `read_file_cache` as the minimum ready set for local repo work.
-4. Treat GitNexus as required before shared Util/controller/model/refactor edits; follow the GitNexus block near the end of this file.
-5. Treat semantic search as the first choice for behavior-level discovery only when health says `READY`; otherwise fall back immediately to GitNexus + grep + read_file_cache.
+4. Treat GitNexus as conditionally required before shared Util/controller/model/refactor edits or unfamiliar architecture work; do not require GitNexus for tiny/local low-risk changes.
+5. Treat semantic search as the first choice for behavior-level discovery only when health says `READY`; otherwise fall back to GitNexus + grep + read_file_cache when GitNexus is healthy, or to grep + read_file_cache + targeted verification when GitNexus is degraded.
 6. Do not block conceptual, generic comparison, or tiny explain tasks on startup orchestration.
 
 ### 0.1c Skill-First Workflow
@@ -339,6 +339,24 @@ Use this guardrail when agents choose tools in Codex/Cursor:
 4. If semantic is skipped or degraded, fall back to `grep` + `read_file_cache` without retry loops.
 5. If `grep` MCP is unavailable in the host client, use that client's native repo search (e.g. Cursor Grep). Use shell `rg` only as last fallback when no repo-aware grep/search tool is exposed.
 6. For mixed discovery tasks, semantic may find candidates first, but confirm edit locations with `grep` before changing files.
+
+### 0.4d.2 GitNexus timeout and hung-process guard (Windows)
+
+Use this when `gitnexus analyze`/reindex hangs or repeatedly times out.
+
+1. Time-box GitNexus analyze/reindex calls (default `20` minutes).
+2. Do not treat `wait_agent` timeout as a kill. If waiting times out, actively terminate the hung PowerShell process tree.
+3. Kill hung reindex processes by matching command line and using process-tree termination:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object { ($_.Name -in @('powershell.exe','pwsh.exe')) -and $_.CommandLine -match 'gitnexus\\s+analyze|gitnexus\\s+reindex' } |
+  ForEach-Object { taskkill /PID $_.ProcessId /T /F }
+```
+
+4. Retry at most once automatically after killing hung processes.
+5. If it still times out, mark GitNexus as degraded for this task and continue with `grep + read_file_cache + targeted tests` instead of blocking work.
+6. Never block `tiny`, `explain`, or low-risk local fixes on GitNexus reindex.
 
 ### 0.4e Scan Laravel log and autofix
 
@@ -1099,7 +1117,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (18160 symbols, 36431 relationships, 62 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (15270 symbols, 45933 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

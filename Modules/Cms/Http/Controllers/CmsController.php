@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Modules\Cms\Http\Requests\StoreCmsStorefrontRfqRequest;
 use Modules\Cms\Entities\CmsPage;
+use Modules\Cms\Entities\CmsPageMeta;
 use Modules\Cms\Entities\CmsSiteDetail;
 use Modules\Cms\Notifications\NewLeadGeneratedNotification;
 use Modules\Cms\Utils\CmsStorefrontCatalogUtil;
@@ -173,14 +174,20 @@ class CmsController extends Controller
 
     public function getBlogList()
     {
+        $blogSettings = CmsSiteDetail::getValue('blog_settings');
+        if (! is_array($blogSettings)) {
+            $blogSettings = [];
+        }
+        $postsPerPage = max(1, (int) ($blogSettings['posts_per_page'] ?? 12));
+
         $blogs = CmsPage::where('type', 'blog')
                     ->orderBy('priority', 'asc')
                     ->where('is_enabled', 1)
                     ->with('createdBy')
-                    ->get();
+                    ->paginate($postsPerPage);
 
         return view('cms::frontend.blogs.index')
-            ->with(compact('blogs'));
+            ->with(compact('blogs', 'blogSettings'));
     }
 
     public function viewBlog(Request $request)
@@ -192,8 +199,29 @@ class CmsController extends Controller
                     ->with('createdBy')
                     ->findOrFail($id);
 
+        $blogSettings = CmsSiteDetail::getValue('blog_settings');
+        if (! is_array($blogSettings)) {
+            $blogSettings = [];
+        }
+
+        $metaRows = CmsPageMeta::where('cms_page_id', $blog->id)->get();
+        $blogMeta = [];
+        foreach ($metaRows as $metaRow) {
+            $blogMeta[$metaRow->meta_key] = json_decode($metaRow->meta_value, true);
+        }
+
+        $relatedBlogs = collect();
+        if (! empty($blogSettings['show_related_posts'])) {
+            $relatedBlogs = CmsPage::where('type', 'blog')
+                ->where('is_enabled', 1)
+                ->where('id', '!=', $blog->id)
+                ->orderBy('priority', 'asc')
+                ->limit(3)
+                ->get();
+        }
+
         return view('cms::frontend.blogs.show')
-            ->with(compact('blog'));
+            ->with(compact('blog', 'blogSettings', 'blogMeta', 'relatedBlogs'));
     }
 
     public function contactUs(Request $request)
@@ -215,6 +243,7 @@ class CmsController extends Controller
     {
         $business = $this->storefrontCatalogUtil->getStorefrontBusiness();
         $catalogCategory = trim((string) $request->query('category', ''));
+        $catalogSearch = trim((string) $request->query('s', ''));
         $products = $this->storefrontCatalogUtil->paginateCatalog($request, 12);
         $products = $products->through(function ($product) use ($business) {
             return $this->storefrontCatalogUtil->buildCardPresentation($product, $business);
@@ -231,7 +260,7 @@ class CmsController extends Controller
         $sidebarSlides = $sidebarCards->chunk(3);
 
         return view('cms::frontend.pages.shop')
-            ->with(compact('products', 'resultsSummary', 'catalogSort', 'sidebarSlides', 'catalogCategory'));
+            ->with(compact('products', 'resultsSummary', 'catalogSort', 'sidebarSlides', 'catalogCategory', 'catalogSearch'));
     }
 
     public function shopCollections()

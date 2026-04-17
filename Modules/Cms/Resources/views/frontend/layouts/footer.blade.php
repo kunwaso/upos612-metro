@@ -19,10 +19,10 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Categories</span>
                 <ul>
-                    <li><a href="{{ route('cms.store.shop') }}">Bed room</a></li>
-                    <li><a href="{{ route('cms.store.shop') }}">Living room</a></li>
-                    <li><a href="{{ route('cms.store.shop') }}">Lightning</a></li>
-                    <li><a href="{{ route('cms.store.shop') }}">Fabrics sofa</a></li>
+                    <li><a href="{{ route('cms.store.shop') }}">Products</a></li>
+                    <li><a href="{{ route('cms.store.collections') }}">Collections</a></li>
+                    <li><a href="{{ route('cms.blogs.index') }}">Blog</a></li>
+                    <li><a href="{{ route('cms.contact.us') }}">Contact</a></li>
                 </ul>
             </div>
             <!-- end footer column -->
@@ -30,10 +30,10 @@
             <div class="col-6 col-lg-2 col-sm-4 xs-mb-30px order-sm-3 order-lg-2">
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Information</span>
                 <ul>
+                    <li><a href="{{ route('cms.home') }}">Home</a></li>
                     <li><a href="{{ route('cms.about.us') }}">About us</a></li>
                     <li><a href="{{ route('cms.contact.us') }}">Contact us</a></li>
                     <li><a href="{{ route('cms.store.faq') }}">FAQs</a></li>
-                    <li><a href="{{ route('cms.store.faq') }}">Payment</a></li>
                 </ul>
             </div>
             <!-- end footer column -->
@@ -42,6 +42,8 @@
                 <span class="fs-16 alt-font fw-500 d-block text-white mb-5px">Account</span>
                 <ul>
                     <li><a href="{{ route('cms.store.shop') }}">Shop</a></li>
+                    <li><a href="{{ route('login') }}">Login</a></li>
+                    <li><a href="{{ route('home') }}">Dashboard</a></li>
                 </ul>
             </div>
             <!-- end footer column -->  

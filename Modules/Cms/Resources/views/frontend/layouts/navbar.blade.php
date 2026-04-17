@@ -64,10 +64,10 @@
                                 </div>
                                 <div class="row row-cols-1 row-cols-md-2">
                                     <div class="col">
-                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-01.jpg') }}" alt=""></a>
+                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/other/thung-carton-nav.jpg') }}" alt=""></a>
                                     </div>
                                     <div class="col">
-                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-02.jpg') }}" alt=""></a>
+                                        <a href="{{ route('cms.store.shop') }}"><img class="w-100" src="{{ asset('modules/cms/assets/other/bao-bi-nav.jpg') }}" alt=""></a>
                                     </div>
                                 </div>
                             </div> 
@@ -141,7 +141,7 @@
                                         <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/other/air-pack-nav.jpg') }}" alt=""></a>
                                     </div>
                                     <div class="col">
-                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-menu-banner-04.jpg') }}" alt=""></a>
+                                        <a href="{{ route('cms.store.collections') }}"><img src="{{ asset('modules/cms/assets/other/wood-pack-nav.jpg') }}" alt=""></a>
                                     </div>
                                 </div>
                             </div> 
@@ -167,9 +167,9 @@
                     <a href="javascript:void(0)" class="search-form-icon header-search-form"><i class="feather icon-feather-search"></i></a> 
                     <div class="search-form-wrapper">
                         <button title="Close" type="button" class="search-close alt-font">×</button>
-                        <form id="search-form" role="search" method="get" class="search-form bg-white" action="#">
+                        <form id="search-form" role="search" method="get" class="search-form bg-white" action="{{ route('cms.store.shop') }}">
                             <div class="search-form-box">
-                                <h2 class="text-dark-gray text-center mb-7 alt-font fw-700 ls-minus-1px">What are you looking for?</h2>
+                                <h2 class="text-dark-gray text-center mb-7 alt-font fw-700 ls-minus-1px">bạn đang tìm kiếm sản phẩm gì?</h2>
                                 <input class="search-input alt-font" id="search-form-input5e219ef164995" placeholder="Enter your keywords..." name="s" value="" type="text" autocomplete="off">
                                 <button type="submit" class="search-button">
                                     <i class="feather icon-feather-search" aria-hidden="true"></i> 

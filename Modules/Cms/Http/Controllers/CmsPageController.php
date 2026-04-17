@@ -32,6 +32,9 @@ class CmsPageController extends Controller
     public function index(Request $request)
     {
         $post_type = $request->get('type', 'page');
+        if ($post_type === 'blog') {
+            return redirect()->route('cms.blog.admin.posts.index');
+        }
 
         $pages = CmsPage::where('type', $post_type)
                     ->orderBy('priority', 'asc')

@@ -121,7 +121,7 @@ This keeps external evaluation grounded in local repo truth instead of drifting 
 | **semantic_code_search** | Yes. Run `index_codebase` (MCP tool) or `php mcp/semantic-code-search-mcp/bin/index-codebase` (CLI); index is stored at `<repo-root>/.cache/semantic-code-search-mcp/`. | Semantic search needs an embedded index; it is built once (or when stale) and reused. |
 | **grep** | No. No codebase index; runs ripgrep on each call. | By design: exact/pattern search is done live against the filesystem. See `mcp/grep-mcp/README.md`. |
 | **read_file_cache** | **Yes.** Persistent disk cache at `MCP_READ_FILE_CACHE_ROOT`. Pre-build by calling the **`warm_cache`** tool once or run `php mcp/read-file-cache-mcp/bin/warm-cache` from repo root. | Two-tier: in-memory + SQLite on disk. Pre-warm so `read_file` is faster. See `mcp/read-file-cache-mcp/README.md` and §4.3 (Codex). |
-| **gitnexus** | Yes. Run `npx -y gitnexus@1.4.8 analyze` (or `--embeddings`) to refresh `.gitnexus/meta.json` and the local graph. | GitNexus graph context is only trustworthy when its indexed commit matches current HEAD. |
+| **gitnexus** | Yes. Run `gitnexus analyze` (or `--embeddings`) to refresh `.gitnexus/meta.json` and the local graph. Installed globally via `npm install -g gitnexus@1.6.1`. | GitNexus graph context is only trustworthy when its indexed commit matches current HEAD. |
 
 **grep-mcp** never creates a cache. For **read_file_cache-mcp**, call **`warm_cache`** to pre-build the disk cache so `.cache/read-file-cache-mcp/` exists and `read_file` is faster.
 
@@ -305,7 +305,7 @@ If exact or semantic search becomes degraded during this workflow, fall back imm
 | Tool times out once | Retry once; if it fails again, mark degraded and fall back |
 | Tool returns empty/partial content | Mark degraded immediately; fall back |
 | Semantic index reports `STALE` or `NOT_INDEXED` | Skip semantic for remaining session; use grep + read_file_cache |
-| GitNexus reports stale index | Note in output; if possible refresh (`npx gitnexus analyze`); otherwise skip impact checks and state the gap |
+| GitNexus reports stale index | Note in output; if possible refresh (`gitnexus analyze`); otherwise skip impact checks and state the gap |
 | Multiple tools degraded simultaneously | Stop and report health status to user before continuing |
 
 **Discard rule:** If a tool call fails mid-batch (e.g. one of 3 parallel reads times out), use results from the successful calls and note the gap rather than retrying the entire batch.
@@ -426,7 +426,7 @@ Use when:
 Remember:
 
 - GitNexus is only trustworthy when `.gitnexus/meta.json` is in sync with current HEAD
-- pin the MCP server to `gitnexus@1.4.8`; avoid `@latest` drift in project config
+- GitNexus is installed globally (`npm install -g gitnexus@1.6.1`); use `gitnexus` command directly, not `npx`
 - use `gitnexus_impact` before editing shared symbols and `gitnexus_detect_changes` before commit
 
 ### 3.6 Audit Web MCP Server
@@ -497,8 +497,8 @@ args = ["<repo-root>/mcp/audit-web-mcp/bin/server"]
 env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 
 [mcp_servers.gitnexus]
-command = "npx"
-args = ["-y", "gitnexus@1.4.8", "mcp"]
+command = "gitnexus"
+args = ["mcp"]
 
 [mcp_servers.semantic_code_search]
 command = "php"
@@ -543,8 +543,8 @@ Example project-level config with placeholders:
       }
     },
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "gitnexus@1.4.8", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     },
     "semantic_code_search": {
       "command": "php",

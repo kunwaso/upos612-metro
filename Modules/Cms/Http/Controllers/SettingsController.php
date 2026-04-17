@@ -7,11 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Cms\Entities\CmsSiteDetail;
+use Modules\Cms\Http\Requests\UpdateBlogSettingsRequest;
+use Modules\Cms\Utils\BlogSettingsUtil;
 
 class SettingsController extends Controller
 {
     protected $commonUtil;
+    protected $blogSettingsUtil;
 
     /**
      * Constructor
@@ -19,9 +23,10 @@ class SettingsController extends Controller
      * @param  ProductUtils  $product
      * @return void
      */
-    public function __construct(Util $commonUtil)
+    public function __construct(Util $commonUtil, BlogSettingsUtil $blogSettingsUtil)
     {
         $this->commonUtil = $commonUtil;
+        $this->blogSettingsUtil = $blogSettingsUtil;
     }
 
     /**
@@ -55,7 +60,7 @@ class SettingsController extends Controller
      * @param  Request  $request
      * @return Response
      */
-    public function store(Request $request)
+    public function store(UpdateBlogSettingsRequest $request)
     {
         //check if app is in demo & disable action
         $notAllowedInDemo = $this->commonUtil->notAllowedInDemo();
@@ -76,6 +81,9 @@ class SettingsController extends Controller
             $site_details['logo'] = $this->__uploadFile($request, $logo);
 
             CmsSiteDetail::createOrUpdateSiteDetails($site_details);
+            if ($request->has('blog_settings') || $request->hasFile('blog_settings.listing_banner_image')) {
+                $this->blogSettingsUtil->save($request);
+            }
 
             DB::commit();
             $output = [
@@ -86,9 +94,9 @@ class SettingsController extends Controller
             return redirect()
                 ->action([\Modules\Cms\Http\Controllers\SettingsController::class, 'index'])
                 ->with('status', $output);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
-            \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
+            Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
             $output = [
                 'success' => false,
                 'msg' => __('messages.something_went_wrong'),

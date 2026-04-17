@@ -543,7 +543,7 @@ if (!is_file($gitnexusMetaPath)) {
             'gitnexus',
             'GitNexus graph metadata not found.',
             [
-                'Run: npx gitnexus@' . $gitnexusVersion . ' analyze',
+                'Run: gitnexus analyze',
                 'Expected metadata file: .gitnexus/meta.json',
             ],
             'MISSING_INDEX'
@@ -557,7 +557,7 @@ if (!is_file($gitnexusMetaPath)) {
             'WARN',
             'gitnexus',
             'GitNexus metadata exists but could not be parsed.',
-            ['Re-run: npx gitnexus@' . $gitnexusVersion . ' analyze'],
+            ['Re-run: gitnexus analyze'],
             'INVALID_METADATA'
         );
     } else {
@@ -578,7 +578,7 @@ if (!is_file($gitnexusMetaPath)) {
                 'WARN',
                 'gitnexus',
                 'GitNexus metadata is missing lastCommit.',
-                ['Re-run: npx gitnexus@' . $gitnexusVersion . ' analyze'],
+                ['Re-run: gitnexus analyze'],
                 'INVALID_METADATA'
             );
         } else {
@@ -605,7 +605,7 @@ if (!is_file($gitnexusMetaPath)) {
                     'indexed lastCommit: ' . $indexedCommit,
                     'current HEAD: ' . $currentHead,
                     'embeddings: ' . $embeddings,
-                    'Run: npx gitnexus@' . $gitnexusVersion . ' analyze' . ($embeddings > 0 ? ' --embeddings' : ''),
+                    'Run: gitnexus analyze' . ($embeddings > 0 ? ' --embeddings' : ''),
                 ];
 
                 if (is_int($behindCount)) {

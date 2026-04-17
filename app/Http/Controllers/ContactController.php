@@ -12,8 +12,11 @@ use App\PurchaseLine;
 use App\Transaction;
 use App\TransactionPayment;
 use App\User;
+use App\Http\Requests\AttachContactSupplierProductsRequest;
 use App\Http\Requests\ContactFeedSyncRequest;
+use App\Http\Requests\DetachContactSupplierProductRequest;
 use App\Utils\ContactFeedUtil;
+use App\Utils\ContactSupplierProductUtil;
 use App\Utils\ContactUtil;
 use App\Utils\ModuleUtil;
 use App\Utils\NotificationUtil;
@@ -40,6 +43,8 @@ class ContactController extends Controller
 
     protected $contactFeedUtil;
 
+    protected $contactSupplierProductUtil;
+
     /**
      * Constructor
      *
@@ -52,7 +57,8 @@ class ContactController extends Controller
         TransactionUtil $transactionUtil,
         NotificationUtil $notificationUtil,
         ContactUtil $contactUtil,
-        ContactFeedUtil $contactFeedUtil
+        ContactFeedUtil $contactFeedUtil,
+        ContactSupplierProductUtil $contactSupplierProductUtil
     ) {
         $this->commonUtil = $commonUtil;
         $this->contactUtil = $contactUtil;
@@ -60,6 +66,7 @@ class ContactController extends Controller
         $this->transactionUtil = $transactionUtil;
         $this->notificationUtil = $notificationUtil;
         $this->contactFeedUtil = $contactFeedUtil;
+        $this->contactSupplierProductUtil = $contactSupplierProductUtil;
     }
 
     /**
@@ -220,6 +227,12 @@ class ContactController extends Controller
                                 <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=stock_report" class="menu-link px-3">
                                     <i class="fas fa-hourglass-half me-2" aria-hidden="true"></i>
                                     '.__('report.stock_report').'
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=supplier_products" class="menu-link px-3">
+                                    <i class="fas fa-boxes me-2" aria-hidden="true"></i>
+                                    '.__('lang_v1.supplier_products').'
                                 </a>
                             </div>';
                         }
@@ -452,6 +465,12 @@ class ContactController extends Controller
                                 <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=stock_report" class="menu-link px-3">
                                     <i class="fas fa-hourglass-half me-2" aria-hidden="true"></i>
                                     '.__('report.stock_report').'
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a href="'.action([\App\Http\Controllers\ContactController::class, 'show'], [$row->id]).'?view=supplier_products" class="menu-link px-3">
+                                    <i class="fas fa-boxes me-2" aria-hidden="true"></i>
+                                    '.__('lang_v1.supplier_products').'
                                 </a>
                             </div>';
                         }
@@ -740,6 +759,21 @@ class ContactController extends Controller
 
         $is_supplier = in_array($contact->type, ['supplier', 'both']);
         $is_customer = in_array($contact->type, ['customer', 'both']);
+        $can_manage_supplier_products = $is_supplier && auth()->user()->can('supplier.update');
+        $supplier_products_config = [];
+
+        if ($is_supplier) {
+            $supplier_products_config = [
+                'contact_id' => (int) $contact->id,
+                'max_product_ids' => 500,
+                'list_url' => route('contacts.supplier-products.index', ['contact' => $contact->id]),
+                'store_url' => route('contacts.supplier-products.store', ['contact' => $contact->id]),
+                'destroy_url_template' => route('contacts.supplier-products.destroy', ['contact' => $contact->id, 'product' => '__PRODUCT_ID__']),
+                'products_search_url' => url('/products/list-no-variation'),
+                'csrf_token' => csrf_token(),
+                'can_manage' => $can_manage_supplier_products,
+            ];
+        }
 
         if ($is_supplier) {
             $total_amount = $this->commonUtil->num_f($contact->total_purchase ?? 0);
@@ -780,7 +814,9 @@ class ContactController extends Controller
                  'purchase_custom_field_visibility',
                  'contact_stats',
                  'is_supplier',
-                 'is_customer'
+                 'is_customer',
+                 'supplier_products_config',
+                 'can_manage_supplier_products'
              ));
     }
 
@@ -1644,6 +1680,100 @@ class ContactController extends Controller
         return $product_stocks->rawColumns(['current_stock', 'stock_price', 'total_quantity_sold', 'purchase_quantity', 'total_quantity_transfered'])->make(true);
     }
 
+    /**
+     * Datatable listing for supplier related products.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int|string  $contact
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getContactSupplierProducts(Request $request, $contact)
+    {
+        $business_id = (int) $request->session()->get('user.business_id');
+        $contact = $this->getAuthorizedContactForSupplierProducts($business_id, (int) $contact);
+        $can_manage_supplier_products = auth()->user()->can('supplier.update');
+
+        try {
+            $query = $this->contactSupplierProductUtil->getQueryForDatatable($business_id, (int) $contact->id);
+
+            return Datatables::of($query)
+                ->addColumn('action', function ($row) use ($can_manage_supplier_products, $contact) {
+                    if (! $can_manage_supplier_products) {
+                        return '';
+                    }
+
+                    $delete_url = route('contacts.supplier-products.destroy', [
+                        'contact' => $contact->id,
+                        'product' => $row->product_id,
+                    ]);
+
+                    return '<button type="button" class="btn btn-sm btn-light-danger js-remove-supplier-product" data-href="'.$delete_url.'" data-product-id="'.$row->product_id.'"><i class="fas fa-trash me-2"></i>'.__('messages.delete').'</button>';
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondWithError($e->getMessage());
+        } catch (\Exception $e) {
+            \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
+
+            return $this->respondWentWrong($e);
+        }
+    }
+
+    /**
+     * Attach selected products to a supplier contact.
+     *
+     * @param  \App\Http\Requests\AttachContactSupplierProductsRequest  $request
+     * @param  int|string  $contact
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function attachContactSupplierProducts(AttachContactSupplierProductsRequest $request, $contact)
+    {
+        $business_id = (int) $request->session()->get('user.business_id');
+        $product_ids = (array) $request->validated('product_ids', []);
+
+        try {
+            $result = $this->contactSupplierProductUtil->attachProducts($business_id, (int) $contact, $product_ids);
+
+            return $this->respondSuccess(__('lang_v1.supplier_products_added_successfully'), $result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondWithError($e->getMessage());
+        } catch (\Exception $e) {
+            \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
+
+            return $this->respondWentWrong($e);
+        }
+    }
+
+    /**
+     * Detach a single product from supplier contact.
+     *
+     * @param  \App\Http\Requests\DetachContactSupplierProductRequest  $request
+     * @param  int|string  $contact
+     * @param  int|string  $product
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function detachContactSupplierProduct(DetachContactSupplierProductRequest $request, $contact, $product)
+    {
+        $business_id = (int) $request->session()->get('user.business_id');
+
+        try {
+            $deleted_count = $this->contactSupplierProductUtil->detachProduct($business_id, (int) $contact, (int) $product);
+
+            if ($deleted_count < 1) {
+                return $this->respondWithError(__('lang_v1.supplier_product_not_found'));
+            }
+
+            return $this->respondSuccess(__('lang_v1.supplier_products_removed_successfully'));
+        } catch (\InvalidArgumentException $e) {
+            return $this->respondWithError($e->getMessage());
+        } catch (\Exception $e) {
+            \Log::emergency('File:'.$e->getFile().'Line:'.$e->getLine().'Message:'.$e->getMessage());
+
+            return $this->respondWentWrong($e);
+        }
+    }
+
     public function updateStatus($id)
     {
         if (! auth()->user()->can('supplier.update') && ! auth()->user()->can('customer.update')) {
@@ -1849,6 +1979,45 @@ class ContactController extends Controller
         if (empty($contact)) {
             abort(404);
         }
+
+        $is_selected_contacts = ! empty($user->selected_contacts);
+        $user_contacts = [];
+        if ($is_selected_contacts && method_exists($user, 'contactAccess')) {
+            $user_contacts = $user->contactAccess->pluck('id')->toArray();
+        }
+
+        if (! $user->can('supplier.view') && $user->can('supplier.view_own')) {
+            if ($contact->created_by != $user->id && ! in_array($contact->id, $user_contacts)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        if (! $user->can('customer.view') && $user->can('customer.view_own')) {
+            if ($contact->created_by != $user->id && ! in_array($contact->id, $user_contacts)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        return $contact;
+    }
+
+    /**
+     * Validate supplier-products access and return tenant scoped contact.
+     *
+     * @param  int  $business_id
+     * @param  int  $contact_id
+     * @return \App\Contact
+     */
+    private function getAuthorizedContactForSupplierProducts($business_id, $contact_id)
+    {
+        $user = auth()->user();
+
+        if (! $user->can('supplier.view') && ! $user->can('customer.view') && ! $user->can('customer.view_own') && ! $user->can('supplier.view_own')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $contact = Contact::where('business_id', $business_id)
+            ->whereKey($contact_id)
+            ->firstOrFail();
 
         $is_selected_contacts = ! empty($user->selected_contacts);
         $user_contacts = [];

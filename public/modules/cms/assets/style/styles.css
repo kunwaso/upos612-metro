@@ -1,11 +1,9 @@
-/* ===================================
-    Crafto - Decor store
-====================================== */
+
 /* font */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
 /* variable */
 :root {     
-    --base-color: #1B3250;
+    --base-color: #ed4109;
     --dark-gray: #16202c;
     --medium-gray: #888e95;
     --alt-font: 'Plus Jakarta Sans', sans-serif;

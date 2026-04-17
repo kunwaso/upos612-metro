@@ -25,8 +25,8 @@ args = ["<repo-root>/mcp/audit-web-mcp/bin/server"]
 env = { MCP_AUDIT_WEB_WORKSPACE_ROOT = "<repo-root>" }
 
 [mcp_servers.gitnexus]
-command = "npx"
-args = ["-y", "gitnexus@1.4.8", "mcp"]
+command = "gitnexus"
+args = ["mcp"]
 
 # Optional: fully local Hugging Face embeddings (install python deps in mcp/semantic-code-search-mcp/scripts/requirements.txt)
 [mcp_servers.semantic_code_search]

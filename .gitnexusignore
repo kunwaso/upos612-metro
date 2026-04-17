@@ -1,15 +1,52 @@
-# GitNexus ignore - focus on app code only
+# GitNexus ignore — index only coding-relevant paths
+# Included implicitly: app/, Modules/, routes/, resources/views/, config/, tests/, database/migrations/
+
+# ----- Infra / vendored / generated -----
 vendor/
 node_modules/
-public/assets/
-public/modules/
-public/html/
-public/uploads/
+public/
 storage/
+bootstrap/cache/
 .cache/
 .git/
-bootstrap/cache/
-database/factories/
+
+# MCP servers (infrastructure, not app code — includes .venv with ~7000 files)
+mcp/
+
+# Playwright output / audit artifacts
+output/
+
+# Legacy theme / plugin assets
+resources/plugins/
+craftotheme/
+
+# CMS heavy assets (vendors.js >512 KB, frontend HTML/images)
+Modules/Cms/Resources/assets/
+Modules/Cms/Resources/html/
+
+# Python venvs and cache (safety net for any future additions)
+**/.venv/
+**/__pycache__/
+
+# ----- Binary / non-code file types -----
 *.min.js
 *.min.css
 *.map
+*.lock
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.ico
+*.webp
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.pyc
+*.pyd
+*.pdf
+*.zip
+*.gz
+*.tar

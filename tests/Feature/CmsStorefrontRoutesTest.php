@@ -14,16 +14,31 @@ class CmsStorefrontRoutesTest extends TestCase
         foreach ([
             '/shop/catalog',
             '/shop/collections',
-            '/shop/account',
-            '/shop/wishlist',
             '/shop/faq',
             '/shop/about-us',
             '/shop/contact-us',
-            '/shop/blogs',
         ] as $path) {
             $response = $this->get($path);
             $response->assertOk();
         }
+    }
+
+    public function test_blog_routes_follow_vi_canonical_and_en_prefixed_contract(): void
+    {
+        config(['cms.blog_default_locale' => 'vi']);
+
+        $this->get('/shop/blogs')->assertOk();
+        $this->get('/en/shop/blogs')->assertOk();
+    }
+
+    public function test_legacy_and_vi_prefixed_blog_urls_redirect_to_vi_canonical(): void
+    {
+        config(['cms.blog_default_locale' => 'vi']);
+
+        $this->get('/c/blogs')->assertRedirect('/shop/blogs');
+        $this->get('/c/blog/sample-10')->assertRedirect('/shop/blog/sample-10');
+        $this->get('/vi/shop/blogs')->assertRedirect('/shop/blogs');
+        $this->get('/vi/shop/blog/sample-10')->assertRedirect('/shop/blog/sample-10');
     }
 
     public function test_shop_product_redirects_to_catalog(): void
@@ -126,8 +141,97 @@ class CmsStorefrontRoutesTest extends TestCase
         }
     }
 
+    public function test_catalog_search_filters_by_name(): void
+    {
+        $product = $this->resolveStorefrontSearchProduct();
+        $searchTerm = trim((string) $product->name);
+        if ($searchTerm === '') {
+            $this->markTestSkipped('Requires a storefront product with a non-empty name.');
+        }
+
+        $response = $this->get('/shop/catalog?s='.urlencode($searchTerm));
+        $response->assertOk()->assertSee($product->name, false);
+    }
+
+    public function test_catalog_search_filters_by_sku_or_sub_sku(): void
+    {
+        $product = $this->resolveStorefrontSearchProduct();
+        $variation = $product->variations()->first();
+        if ($variation === null) {
+            $this->markTestSkipped('Requires a storefront product with at least one variation.');
+        }
+
+        $originalSubSku = $variation->sub_sku;
+        $searchTerm = 'cms-subsku-'.uniqid();
+        $variation->sub_sku = $searchTerm;
+        $variation->save();
+
+        try {
+            $response = $this->get('/shop/catalog?s='.urlencode($searchTerm));
+            $response->assertOk()->assertSee($product->name, false);
+        } finally {
+            $variation->sub_sku = $originalSubSku;
+            $variation->save();
+        }
+    }
+
+    public function test_catalog_search_filters_by_description(): void
+    {
+        $product = $this->resolveStorefrontSearchProduct();
+
+        $originalDescription = $product->product_description;
+        $searchTerm = 'cms-description-'.uniqid();
+        $product->product_description = 'Storefront search '.$searchTerm;
+        $product->save();
+
+        try {
+            $response = $this->get('/shop/catalog?s='.urlencode($searchTerm));
+            $response->assertOk()->assertSee($product->name, false);
+        } finally {
+            $product->product_description = $originalDescription;
+            $product->save();
+        }
+    }
+
+    public function test_catalog_search_persists_when_sort_changes(): void
+    {
+        $product = $this->resolveStorefrontSearchProduct();
+        $searchTerm = trim((string) $product->sku);
+        if ($searchTerm === '') {
+            $this->markTestSkipped('Requires a storefront product with a non-empty sku.');
+        }
+
+        $response = $this->get('/shop/catalog?s='.urlencode($searchTerm).'&sort=name');
+        $response->assertOk()
+            ->assertSee($product->name, false)
+            ->assertSee('name="s"', false)
+            ->assertSee('value="'.$searchTerm.'"', false);
+    }
+
     public function test_named_home_route_exists(): void
     {
         $this->get(route('cms.home'))->assertStatus(200);
+    }
+
+    private function resolveStorefrontSearchProduct(): Product
+    {
+        $business = Business::query()->first();
+        if ($business === null) {
+            $this->markTestSkipped('Requires a business row in the database.');
+        }
+
+        config(['cms.storefront_business_id' => $business->id]);
+
+        $product = Product::query()
+            ->where('business_id', $business->id)
+            ->active()
+            ->productForSales()
+            ->first();
+
+        if ($product === null) {
+            $this->markTestSkipped('Requires an active for-sale storefront product.');
+        }
+
+        return $product;
     }
 }

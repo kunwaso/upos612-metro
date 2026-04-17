@@ -65,6 +65,20 @@ class CmsStorefrontCatalogUtil
         }
 
         $query = $this->catalogQuery($businessId);
+        $searchTerm = trim((string) $request->query('s', ''));
+        if ($searchTerm !== '') {
+            $likeSearch = '%'.$searchTerm.'%';
+            $query->where(function (Builder $searchQuery) use ($likeSearch) {
+                $searchQuery
+                    ->where('products.name', 'like', $likeSearch)
+                    ->orWhere('products.sku', 'like', $likeSearch)
+                    ->orWhere('products.product_description', 'like', $likeSearch)
+                    ->orWhereHas('variations', function (Builder $variationQuery) use ($likeSearch) {
+                        $variationQuery->where('sub_sku', 'like', $likeSearch);
+                    });
+            });
+        }
+
         $categoryName = trim((string) $request->query('category', ''));
         if ($categoryName !== '') {
             $query->whereHas('category', function (Builder $categoryQuery) use ($businessId, $categoryName) {

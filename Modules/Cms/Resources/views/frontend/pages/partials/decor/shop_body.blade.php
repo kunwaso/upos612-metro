@@ -28,6 +28,13 @@
                                 <a href="#"><img src="{{ asset('modules/cms/assets/images/shop-list.svg') }}" class="opacity-5" alt="" /></a>
                             </div>
                             <div class="ms-20px xs-ms-0">{{ $resultsSummary ?? '' }}</div>
+                            @if(!empty($catalogSearch))
+                            <div class="ms-20px xs-ms-0">
+                                <span class="badge border border-color-extra-medium-gray text-dark-gray fw-500">
+                                    Search: {{ $catalogSearch }}
+                                </span>
+                            </div>
+                            @endif
                             @if(!empty($catalogCategory))
                             <div class="ms-20px xs-ms-0">
                                 <span class="badge border border-color-extra-medium-gray text-dark-gray fw-500">
@@ -39,6 +46,9 @@
                                 <form method="get" action="{{ route('cms.store.shop') }}" class="d-inline-block">
                                     @if(!empty($catalogCategory))
                                         <input type="hidden" name="category" value="{{ $catalogCategory }}">
+                                    @endif
+                                    @if(!empty($catalogSearch))
+                                        <input type="hidden" name="s" value="{{ $catalogSearch }}">
                                     @endif
                                     <select name="sort" class="form-select border-0 background-position-right" aria-label="Sorting" onchange="this.form.submit()">
                                         <option value="latest" @selected(($catalogSort ?? 'latest') === 'latest')>Sort by latest</option>
@@ -73,26 +83,6 @@
                                 <li><a href="{{ route('cms.store.shop', ['category' => 'Chống sốc - Gel']) }}"><span class="product-cb product-category-cb"></span>Chống sốc - Gel</a><span class="item-qty">07</span></li>
                                 <li><a href="{{ route('cms.store.shop', ['category' => 'Bao bì khác']) }}"><span class="product-cb product-category-cb"></span>Bao bì khác</a><span class="item-qty">08</span></li>
                                 <li><a href="{{ route('cms.store.shop', ['category' => 'Dụng cụ']) }}"><span class="product-cb product-category-cb"></span>Dụng cụ</a><span class="item-qty">09</span></li>
-                            </ul>
-                        </div>
-                        <div class="mb-30px">
-                            <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by color</span>
-                            <ul class="fs-15 shop-filter color-filter">
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#232323"></span>Black</a><span class="item-qty">05</span></li>
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#8E412E"></span>Chestnut</a><span class="item-qty">24</span></li>
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#E0A699"></span>Brown</a><span class="item-qty">32</span></li>
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#E0A699"></span>Pastel pink</a><span class="item-qty">22</span></li>
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#9DA693"></span>Litchen green</a><span class="item-qty">09</span></li>
-                                <li><a href="#"><span class="product-cb product-color-cb" style="background-color:#E7C06D"></span>Yellow</a><span class="item-qty">06</span></li> 
-                            </ul>
-                        </div>
-                        <div class="mb-30px">
-                            <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by fabric</span>
-                            <ul class="fs-15 shop-filter fabric-filter">
-                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Polyolefin</a><span class="item-qty">08</span></li> 
-                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Jute fabric</a><span class="item-qty">03</span></li>
-                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Crepe fabric</a><span class="item-qty">20</span></li>
-                                <li><a href="#"><span class="product-cb product-fabric-cb"></span>Wollen fabric</a><span class="item-qty">08</span></li>
                             </ul>
                         </div>
                         <div class="mb-30px">
@@ -135,19 +125,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <span class="alt-font fw-600 fs-17 text-dark-gray d-block mb-10px">Filter by tags</span>
-                            <div class="shop-filter tag-cloud"> 
-                                <a href="#">furniture</a>
-                                <a href="#">living room</a>
-                                <a href="#">lamp</a>
-                                <a href="#">modern</a>
-                                <a href="#">wooden</a>
-                                <a href="#">armchair</a>
-                                <a href="#">dining room</a>
-                                <a href="#">handmade</a>
-                            </div>
-                        </div> 
+
                     </div>
                 </div>
             </div>

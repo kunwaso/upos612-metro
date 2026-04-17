@@ -34,8 +34,8 @@ startup_timeout_ms = 20000
 env = { SystemRoot = "C:\\Windows", PROGRAMFILES = "C:\\Program Files" }
 
 [mcp_servers.gitnexus]
-command = "npx"
-args = ["-y", "gitnexus@1.4.8", "mcp"]
+command = "gitnexus"
+args = ["mcp"]
 
 [mcp_servers.semantic_code_search]
 command = "php"

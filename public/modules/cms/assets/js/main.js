@@ -181,19 +181,22 @@
     });
 
     // Search validation
-    $(document).on('click', '.search-button', function () {
+    $(document).on('submit', '#search-form', function (e) {
         var error = true;
-        var formObj = $(this).parents('form');
+        var formObj = $(this);
         formObj.find('input[type=text]').each(function (index) {
             var _this = $(this),
                     searchVal = _this.val();
-            if (searchVal === null || searchVal === '') {
+            if (searchVal === null || $.trim(searchVal) === '') {
                 formObj.find('input:eq(' + index + ')').addClass('search-error');
                 error = false;
             } else {
                 formObj.find('input:eq(' + index + ')').removeClass('search-error');
             }
         });
+        if (!error) {
+            e.preventDefault();
+        }
         return error;
     });
 

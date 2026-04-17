@@ -20,4 +20,16 @@ return [
     'storefront_rfq_todo_user_id' => env('CMS_STOREFRONT_RFQ_TODO_USER_ID') !== null && env('CMS_STOREFRONT_RFQ_TODO_USER_ID') !== ''
         ? (int) env('CMS_STOREFRONT_RFQ_TODO_USER_ID')
         : null,
+
+    /*
+    | Blog v2 re-architecture flags and locale settings.
+    */
+    'blog_supported_locales' => ['en', 'vi'],
+    'blog_default_locale' => 'vi',
+    'blog_features' => [
+        'v2_routes_enabled' => env('CMS_BLOG_V2_ROUTES_ENABLED', true),
+        'v2_render_enabled' => env('CMS_BLOG_V2_RENDER_ENABLED', true),
+        'comments_enabled' => env('CMS_BLOG_COMMENTS_ENABLED', true),
+        'likes_enabled' => env('CMS_BLOG_LIKES_ENABLED', true),
+    ],
 ];

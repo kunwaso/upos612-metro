@@ -120,6 +120,19 @@ class Contact extends Authenticatable
     }
 
     /**
+     * Get products associated to supplier contact.
+     */
+    public function supplierProducts()
+    {
+        return $this->belongsToMany(
+            \App\Product::class,
+            'contact_supplier_products',
+            'contact_id',
+            'product_id'
+        )->withTimestamps();
+    }
+
+    /**
      * Return list of contact dropdown for a business
      *
      * @param $business_id int

@@ -29,8 +29,8 @@
                     </li>
                 </ul>
                 <ul class="nav navbar-nav">
-                    <li @if(request()->type == 'blog') class="active" @endif>
-                        <a href="{{action([\Modules\Cms\Http\Controllers\CmsPageController::class, 'index'], ['type' => 'blog'])}}">
+                    <li @if(request()->routeIs('cms.blog.admin.*') || request()->routeIs('cms.site-details.blog-posts.*')) class="active" @endif>
+                        <a href="{{ route('cms.blog.admin.posts.index') }}">
                             @lang('cms::lang.blog')
                         </a>
                     </li>

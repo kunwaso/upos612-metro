@@ -20,8 +20,8 @@
       }
     },
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "gitnexus@1.4.8", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     },
     "semantic_code_search": {
       "command": "php",

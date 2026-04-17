@@ -123,21 +123,22 @@ unset IFS
 
   if [ "${UPOS612_MCP_SKIP_GITNEXUS_ANALYZE:-0}" = "1" ]; then
     echo "gitnexus: skipped by UPOS612_MCP_SKIP_GITNEXUS_ANALYZE"
-  elif [ "$RUN_GITNEXUS" -eq 1 ] && [ -f "$REPO_ROOT/.gitnexus/meta.json" ] && command -v npx >/dev/null 2>&1; then
+  elif [ "$RUN_GITNEXUS" -eq 1 ] && [ -f "$REPO_ROOT/.gitnexus/meta.json" ]; then
     echo "gitnexus: analyzing upos612"
     (
       cd "$REPO_ROOT" || exit 0
-      npx -y "gitnexus@$VERSION" analyze >/dev/null 2>&1 || {
-        npm cache verify >/dev/null 2>&1 || true
+      if command -v gitnexus >/dev/null 2>&1; then
+        gitnexus analyze >/dev/null 2>&1 || true
+      elif command -v npx >/dev/null 2>&1; then
         npx -y "gitnexus@$VERSION" analyze >/dev/null 2>&1 || true
-      }
+      fi
     )
   elif [ "$RUN_GITNEXUS" -eq 0 ]; then
     echo "gitnexus: skipped, no graph-relevant paths in this push"
   elif [ ! -f "$REPO_ROOT/.gitnexus/meta.json" ]; then
     echo "gitnexus: skipped, repo is not indexed yet"
   else
-    echo "gitnexus: skipped, npx unavailable"
+    echo "gitnexus: skipped, gitnexus/npx unavailable"
   fi
 ) >> "$LOG_FILE" 2>&1 &
 
