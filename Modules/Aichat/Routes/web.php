@@ -12,7 +12,7 @@ Route::middleware(['web'])->group(function () {
         ->name('aichat.telegram.webhook');
 });
 
-Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu'])->group(function () {
+Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'two_factor.verified'])->group(function () {
     Route::prefix('aichat')->group(function () {
         Route::prefix('chat')->name('aichat.chat.')->group(function () {
             Route::get('/', [ChatController::class, 'index'])->name('index');

@@ -8,7 +8,7 @@ use Modules\Projectauto\Http\Controllers\WorkflowApiController;
 use Modules\Projectauto\Http\Controllers\WorkflowController;
 use Modules\Projectauto\Http\Controllers\WorkflowRegistryApiController;
 
-Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu'])
+Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'two_factor.verified'])
     ->prefix('projectauto')
     ->name('projectauto.')
     ->group(function () {

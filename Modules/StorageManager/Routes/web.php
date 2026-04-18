@@ -16,7 +16,7 @@ use Modules\StorageManager\Http\Controllers\PutawayController;
 use Modules\StorageManager\Http\Controllers\ReplenishmentController;
 use Modules\StorageManager\Http\Controllers\TransferExecutionController;
 
-Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu'])
+Route::middleware(['web', 'authh', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'two_factor.verified'])
     ->prefix('storage-manager')
     ->name('storage-manager.')
     ->group(function () {

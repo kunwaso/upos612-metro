@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use App\Utils\BusinessUtil;
 use App\Utils\ModuleUtil;
+use App\Utils\TwoFactorUtil;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use App\Rules\ReCaptcha;
@@ -40,16 +41,19 @@ class LoginController extends Controller
 
     protected $moduleUtil;
 
+    protected $twoFactorUtil;
+
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(BusinessUtil $businessUtil, ModuleUtil $moduleUtil)
+    public function __construct(BusinessUtil $businessUtil, ModuleUtil $moduleUtil, TwoFactorUtil $twoFactorUtil)
     {
         $this->middleware('guest')->except('logout');
         $this->businessUtil = $businessUtil;
         $this->moduleUtil = $moduleUtil;
+        $this->twoFactorUtil = $twoFactorUtil;
     }
 
     public function showLoginForm()
@@ -188,6 +192,11 @@ class LoginController extends Controller
                     'status',
                     ['success' => 0, 'msg' => __('lang_v1.business_dont_have_crm_subscription')]
                 );
+        }
+
+        $this->twoFactorUtil->clearVerifiedTwoFactor($request->session());
+        if ((bool) $user->two_factor_enabled && ! $request->session()->has('previous_user_id')) {
+            return redirect()->route('two-factor.challenge.show');
         }
     }
 

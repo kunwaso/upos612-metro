@@ -6,7 +6,7 @@ use Modules\Mailbox\Http\Controllers\MailboxController;
 use Modules\Mailbox\Http\Controllers\MailboxOAuthController;
 use Modules\Mailbox\Http\Controllers\MailboxSendController;
 
-Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu'])
+Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'two_factor.verified'])
     ->prefix('mailbox')
     ->name('mailbox.')
     ->group(function () {

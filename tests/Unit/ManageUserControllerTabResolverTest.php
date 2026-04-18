@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Controllers\ManageUserController;
 use App\Utils\ModuleUtil;
+use App\Utils\TwoFactorUtil;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -48,7 +49,10 @@ class ManageUserControllerTabResolverTest extends TestCase
 
     private function resolveTab($tab): string
     {
-        $controller = new ManageUserController($this->createMock(ModuleUtil::class));
+        $controller = new ManageUserController(
+            $this->createMock(ModuleUtil::class),
+            $this->createMock(TwoFactorUtil::class)
+        );
         $method = new ReflectionMethod($controller, 'resolveUserAccountTab');
         $method->setAccessible(true);
 

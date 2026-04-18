@@ -149,7 +149,7 @@ Route::redirect('c/contact-us', 'shop/contact-us', 301);
 Route::post('c/submit-contact-form', [CmsController::class, 'postContactForm']);
 Route::redirect('c/products/bao-bi-cuon', 'shop/products/bao-bi-cuon', 301);
 
-Route::middleware('web', 'SetSessionData', 'auth', 'language', 'timezone', 'AdminSidebarMenu')
+Route::middleware('web', 'SetSessionData', 'auth', 'language', 'timezone', 'AdminSidebarMenu', 'two_factor.verified')
     ->prefix('cms')
     ->group(function () {
         Route::middleware('can:superadmin')->group(function () {

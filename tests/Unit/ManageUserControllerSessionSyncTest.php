@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Http\Controllers\ManageUserController;
 use App\User;
 use App\Utils\ModuleUtil;
+use App\Utils\TwoFactorUtil;
 use Illuminate\Http\Request;
 use ReflectionMethod;
 use Tests\TestCase;
@@ -77,7 +78,10 @@ class ManageUserControllerSessionSyncTest extends TestCase
 
     private function invokeSessionSync(Request $request, User $user): void
     {
-        $controller = new ManageUserController($this->createMock(ModuleUtil::class));
+        $controller = new ManageUserController(
+            $this->createMock(ModuleUtil::class),
+            $this->createMock(TwoFactorUtil::class)
+        );
         $method = new ReflectionMethod($controller, 'syncCurrentUserSession');
         $method->setAccessible(true);
         $method->invoke($controller, $request, $user);

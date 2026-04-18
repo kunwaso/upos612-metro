@@ -4,11 +4,16 @@
 
 @php
     $active_tab = $active_tab ?? request()->query('tab', 'overview');
-    $valid_tabs = ['overview', 'settings', 'documents', 'activities'];
+    $is_self_two_factor_only = $is_self_two_factor_only ?? false;
+    $can_access_settings_tab = $can_access_settings_tab ?? auth()->user()->can('user.update') || $is_self_two_factor_only;
+    $valid_tabs = $is_self_two_factor_only ? ['settings'] : ['overview', 'settings', 'documents', 'activities'];
     if (! in_array($active_tab, $valid_tabs, true)) {
         $active_tab = 'overview';
     }
-    if ($active_tab === 'settings' && ! auth()->user()->can('user.update')) {
+    if ($is_self_two_factor_only) {
+        $active_tab = 'settings';
+    }
+    if ($active_tab === 'settings' && ! $can_access_settings_tab) {
         $active_tab = 'overview';
     }
 
@@ -35,17 +40,19 @@
                 </ul>
             </div>
 
-            <div class="d-flex align-items-center py-2">
-                {!! Form::select(
-                    'user_id',
-                    $users,
-                    $user->id,
-                    [
-                        'class' => 'form-select form-select-solid w-200px',
-                        'id' => 'user_id',
-                    ]
-                ) !!}
-            </div>
+            @unless($is_self_two_factor_only)
+                <div class="d-flex align-items-center py-2">
+                    {!! Form::select(
+                        'user_id',
+                        $users,
+                        $user->id,
+                        [
+                            'class' => 'form-select form-select-solid w-200px',
+                            'id' => 'user_id',
+                        ]
+                    ) !!}
+                </div>
+            @endunless
         </div>
     </div>
 
@@ -147,18 +154,20 @@
                     </div>
 
                     <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
-                        <li class="nav-item mt-2">
-                            <a
-                                class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'overview' ? 'active' : '' }}"
-                                href="#tab_user_info"
-                                data-bs-toggle="tab"
-                                data-bs-target="#tab_user_info"
-                            >
-                                @lang('lang_v1.user_info')
-                            </a>
-                        </li>
+                        @unless($is_self_two_factor_only)
+                            <li class="nav-item mt-2">
+                                <a
+                                    class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'overview' ? 'active' : '' }}"
+                                    href="#tab_user_info"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#tab_user_info"
+                                >
+                                    @lang('lang_v1.user_info')
+                                </a>
+                            </li>
+                        @endunless
 
-                        @can('user.update')
+                        @if ($can_access_settings_tab)
                             <li class="nav-item mt-2">
                                 <a
                                     class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'settings' ? 'active' : '' }}"
@@ -169,109 +178,119 @@
                                     @lang('messages.settings')
                                 </a>
                             </li>
-                        @endcan
+                        @endif
 
-                        <li class="nav-item mt-2">
-                            <a
-                                class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'documents' ? 'active' : '' }}"
-                                href="#tab_documents_and_notes"
-                                data-bs-toggle="tab"
-                                data-bs-target="#tab_documents_and_notes"
-                            >
-                                @lang('lang_v1.documents_and_notes')
-                            </a>
-                        </li>
+                        @unless($is_self_two_factor_only)
+                            <li class="nav-item mt-2">
+                                <a
+                                    class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'documents' ? 'active' : '' }}"
+                                    href="#tab_documents_and_notes"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#tab_documents_and_notes"
+                                >
+                                    @lang('lang_v1.documents_and_notes')
+                                </a>
+                            </li>
 
-                        <li class="nav-item mt-2">
-                            <a
-                                class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'activities' ? 'active' : '' }}"
-                                href="#tab_activities"
-                                data-bs-toggle="tab"
-                                data-bs-target="#tab_activities"
-                            >
-                                @lang('lang_v1.activities')
-                            </a>
-                        </li>
+                            <li class="nav-item mt-2">
+                                <a
+                                    class="nav-link text-active-primary ms-0 me-10 py-5 {{ $active_tab === 'activities' ? 'active' : '' }}"
+                                    href="#tab_activities"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#tab_activities"
+                                >
+                                    @lang('lang_v1.activities')
+                                </a>
+                            </li>
+                        @endunless
                     </ul>
                 </div>
             </div>
 
             <div class="tab-content">
-                <div class="tab-pane fade {{ $active_tab === 'overview' ? 'show active' : '' }}" id="tab_user_info">
-                    <div class="card mb-5 mb-xl-10" id="kt_profile_details_view">
-                        <div class="card-header cursor-pointer">
-                            <div class="card-title m-0">
-                                <h3 class="fw-bold m-0">@lang('lang_v1.user_info')</h3>
-                            </div>
-                            @can('user.update')
-                                <a href="{{ route('users.show', ['user' => $user->id, 'tab' => 'settings']) }}" class="btn btn-sm btn-primary align-self-center">
-                                    @lang('messages.edit')
-                                </a>
-                            @endcan
-                        </div>
-
-                        <div class="card-body p-9">
-                            <div class="row mb-7">
-                                <label class="col-lg-4 fw-semibold text-muted">@lang('lang_v1.cmmsn_percent')</label>
-                                <div class="col-lg-8">
-                                    <span class="fw-bold fs-6 text-gray-800">{{ $user->cmmsn_percent }}%</span>
-                                </div>
-                            </div>
-
-                            <div class="row mb-7">
-                                <label class="col-lg-4 fw-semibold text-muted">@lang('lang_v1.allowed_contacts')</label>
-                                <div class="col-lg-8 fv-row">
-                                    @php
-                                        $selected_contacts = [];
-                                        if (count($user->contactAccess)) {
-                                            foreach ($user->contactAccess as $contact) {
-                                                $selected_contacts[] = $contact->name;
-                                            }
-                                        }
-                                    @endphp
-                                    <span class="fw-semibold text-gray-800 fs-6">
-                                        {{ ! empty($selected_contacts) ? implode(', ', $selected_contacts) : __('lang_v1.all') }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            @include('user.show_details')
-                        </div>
-                    </div>
-                </div>
-
-                @can('user.update')
-                    <div class="tab-pane fade {{ $active_tab === 'settings' ? 'show active' : '' }}" id="tab_user_settings">
-                        <div class="card mb-5 mb-xl-10">
+                @unless($is_self_two_factor_only)
+                    <div class="tab-pane fade {{ $active_tab === 'overview' ? 'show active' : '' }}" id="tab_user_info">
+                        <div class="card mb-5 mb-xl-10" id="kt_profile_details_view">
                             <div class="card-header cursor-pointer">
                                 <div class="card-title m-0">
-                                    <h3 class="fw-bold m-0">@lang('messages.settings')</h3>
+                                    <h3 class="fw-bold m-0">@lang('lang_v1.user_info')</h3>
+                                </div>
+                                @can('user.update')
+                                    <a href="{{ route('users.show', ['user' => $user->id, 'tab' => 'settings']) }}" class="btn btn-sm btn-primary align-self-center">
+                                        @lang('messages.edit')
+                                    </a>
+                                @endcan
+                            </div>
+
+                            <div class="card-body p-9">
+                                <div class="row mb-7">
+                                    <label class="col-lg-4 fw-semibold text-muted">@lang('lang_v1.cmmsn_percent')</label>
+                                    <div class="col-lg-8">
+                                        <span class="fw-bold fs-6 text-gray-800">{{ $user->cmmsn_percent }}%</span>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-7">
+                                    <label class="col-lg-4 fw-semibold text-muted">@lang('lang_v1.allowed_contacts')</label>
+                                    <div class="col-lg-8 fv-row">
+                                        @php
+                                            $selected_contacts = [];
+                                            if (count($user->contactAccess)) {
+                                                foreach ($user->contactAccess as $contact) {
+                                                    $selected_contacts[] = $contact->name;
+                                                }
+                                            }
+                                        @endphp
+                                        <span class="fw-semibold text-gray-800 fs-6">
+                                            {{ ! empty($selected_contacts) ? implode(', ', $selected_contacts) : __('lang_v1.all') }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                @include('user.show_details')
+                            </div>
+                        </div>
+                    </div>
+                @endunless
+
+                @if ($can_access_settings_tab)
+                    <div class="tab-pane fade {{ $active_tab === 'settings' ? 'show active' : '' }}" id="tab_user_settings">
+                        @can('user.update')
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0">
+                                        <h3 class="fw-bold m-0">@lang('messages.settings')</h3>
+                                    </div>
+                                </div>
+                                <div class="card-body p-9">
+                                    @includeIf('manage_user.partials.settings_form')
                                 </div>
                             </div>
+                        @endcan
+
+                        @includeIf('manage_user.partials.two_factor_card')
+                    </div>
+                @endif
+
+                @unless($is_self_two_factor_only)
+                    <div class="tab-pane fade {{ $active_tab === 'documents' ? 'show active' : '' }}" id="tab_documents_and_notes">
+                        <div class="card mb-5 mb-xl-10">
                             <div class="card-body p-9">
-                                @includeIf('manage_user.partials.settings_form')
+                                <input type="hidden" name="notable_id" id="notable_id" value="{{ $user->id }}">
+                                <input type="hidden" name="notable_type" id="notable_type" value="App\User">
+                                <div class="document_note_body"></div>
                             </div>
                         </div>
                     </div>
-                @endcan
 
-                <div class="tab-pane fade {{ $active_tab === 'documents' ? 'show active' : '' }}" id="tab_documents_and_notes">
-                    <div class="card mb-5 mb-xl-10">
-                        <div class="card-body p-9">
-                            <input type="hidden" name="notable_id" id="notable_id" value="{{ $user->id }}">
-                            <input type="hidden" name="notable_type" id="notable_type" value="App\User">
-                            <div class="document_note_body"></div>
+                    <div class="tab-pane fade {{ $active_tab === 'activities' ? 'show active' : '' }}" id="tab_activities">
+                        <div class="card mb-5 mb-xl-10">
+                            <div class="card-body p-9">
+                                @include('activity_log.activities')
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="tab-pane fade {{ $active_tab === 'activities' ? 'show active' : '' }}" id="tab_activities">
-                    <div class="card mb-5 mb-xl-10">
-                        <div class="card-body p-9">
-                            @include('activity_log.activities')
-                        </div>
-                    </div>
-                </div>
+                @endunless
             </div>
         </div>
     </div>

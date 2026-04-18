@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\BusinessLocation;
 use App\User;
 use App\Utils\ModuleUtil;
+use App\Utils\TwoFactorUtil;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,9 +23,10 @@ class ManageUserController extends Controller
      * @param  Util  $commonUtil
      * @return void
      */
-    public function __construct(ModuleUtil $moduleUtil)
+    public function __construct(ModuleUtil $moduleUtil, TwoFactorUtil $twoFactorUtil)
     {
         $this->moduleUtil = $moduleUtil;
+        $this->twoFactorUtil = $twoFactorUtil;
     }
 
     /**
@@ -161,18 +163,29 @@ class ManageUserController extends Controller
      */
     public function show($id)
     {
-        if (! auth()->user()->can('user.view')) {
-            abort(403, 'Unauthorized action.');
-        }
-
         $business_id = request()->session()->get('user.business_id');
         $active_tab = $this->resolveUserAccountTab(request()->query('tab'));
-        if ($active_tab == 'settings' && ! auth()->user()->can('user.update')) {
+        $is_self_two_factor_only = false;
+
+        if (! auth()->user()->can('user.view')) {
+            $is_own_settings_tab = (int) auth()->id() === (int) $id && $active_tab === 'settings';
+            if (! $is_own_settings_tab) {
+                abort(403, 'Unauthorized action.');
+            }
+
+            $is_self_two_factor_only = true;
+            $active_tab = 'settings';
+        } elseif ($active_tab == 'settings' && ! auth()->user()->can('user.update')) {
             $active_tab = 'overview';
         }
 
-        $payload = $this->getUserAccountViewData($business_id, $id);
+        $payload = $is_self_two_factor_only
+            ? $this->getSelfTwoFactorViewData($business_id, $id)
+            : $this->getUserAccountViewData($business_id, $id);
+
+        $payload = array_merge($payload, $this->getTwoFactorViewData($payload['user'], $is_self_two_factor_only));
         $payload['active_tab'] = $active_tab;
+        $payload['is_self_two_factor_only'] = $is_self_two_factor_only;
 
         return view('manage_user.show')->with($payload);
     }
@@ -407,6 +420,52 @@ class ManageUserController extends Controller
         );
     }
 
+    private function getSelfTwoFactorViewData($business_id, $id)
+    {
+        $user = User::where('business_id', $business_id)
+                    ->findOrFail($id);
+
+        return compact('user');
+    }
+
+    private function getTwoFactorViewData(User $user, bool $is_self_two_factor_only): array
+    {
+        $is_owner = (int) auth()->id() === (int) $user->id;
+        $can_access_settings_tab = auth()->user()->can('user.update') || $is_self_two_factor_only;
+        $can_manage_two_factor_self = $is_owner;
+        $can_reset_two_factor = auth()->user()->can('superadmin') && ! $is_owner;
+
+        $two_factor_setup_payload = null;
+        $two_factor_setup_qr_data_uri = null;
+        if ($can_manage_two_factor_self && ! (bool) $user->two_factor_enabled) {
+            $two_factor_setup_payload = $this->twoFactorUtil->getSetupPayload((int) $user->id);
+
+            if (! empty($two_factor_setup_payload['secret'])) {
+                $provisioning_uri = $this->twoFactorUtil->buildProvisioningUri($user, (string) $two_factor_setup_payload['secret']);
+                $two_factor_setup_qr_data_uri = $this->twoFactorUtil->renderProvisioningQrDataUri($provisioning_uri);
+            }
+        }
+
+        $two_factor_recovery_codes = session('two_factor.recovery_codes', []);
+        if (! is_array($two_factor_recovery_codes)) {
+            $two_factor_recovery_codes = [];
+        }
+
+        $two_factor_recovery_download_token = session('two_factor.recovery_download_token');
+        $two_factor_recovery_remaining = $this->twoFactorUtil->recoveryCodesCount($user->two_factor_recovery_codes);
+
+        return compact(
+            'can_access_settings_tab',
+            'can_manage_two_factor_self',
+            'can_reset_two_factor',
+            'two_factor_setup_payload',
+            'two_factor_setup_qr_data_uri',
+            'two_factor_recovery_codes',
+            'two_factor_recovery_download_token',
+            'two_factor_recovery_remaining'
+        );
+    }
+
     private function getLanguagesArray()
     {
         $config_languages = config('constants.langs', []);
@@ -517,12 +576,24 @@ class ManageUserController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $user_id = auth()->user()->id;
-        $username = auth()->user()->username;
+        $current_user_id = (int) auth()->user()->id;
+        $current_username = (string) auth()->user()->username;
+        $previous_user_id = session('previous_user_id');
+        $previous_username = session('previous_username');
+        $is_returning_to_previous_user = ! empty($previous_user_id) && (int) $id === (int) $previous_user_id;
+
+        if (empty($previous_user_id)) {
+            $previous_user_id = $current_user_id;
+            $previous_username = $current_username;
+        }
+
         session()->flush();
 
-        if (request()->has('save_current')) {
-            session(['previous_user_id' => $user_id, 'previous_username' => $username]);
+        if (! $is_returning_to_previous_user) {
+            session([
+                'previous_user_id' => (int) $previous_user_id,
+                'previous_username' => (string) $previous_username,
+            ]);
         }
 
         Auth::loginUsingId($id);
