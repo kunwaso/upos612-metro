@@ -6,6 +6,13 @@ use Illuminate\Support\Facades\Http;
 
 class TranscriptUtil
 {
+    protected const DEFAULT_TRANSLATION_ENGINE = 'py_googletrans';
+
+    protected const TRANSLATION_ENGINES = [
+        'py_googletrans',
+        'aichat',
+    ];
+
     /**
      * Language metadata used across the transcript feature.
      * - transcription: ISO code for STT provider
@@ -30,6 +37,13 @@ class TranscriptUtil
         'ro' => ['transcription' => 'ro', 'speech' => 'ro-RO'],
         'lo' => ['transcription' => 'lo', 'speech' => 'lo-LA'],
         'he' => ['transcription' => 'he', 'speech' => 'he-IL'],
+    ];
+
+    /**
+     * App locale key -> py-googletrans language code mapping.
+     */
+    protected const PY_TRANSLATION_LANGUAGE_MAP = [
+        'ce' => 'zh-cn',
     ];
 
     /**
@@ -83,8 +97,7 @@ class TranscriptUtil
      */
     public function getApiKey(int $business_id): ?string
     {
-        $settings = session('business.essentials_settings');
-        $settings = ! empty($settings) ? json_decode($settings, true) : [];
+        $settings = $this->getEssentialsSettings($business_id);
 
         $key = $settings['groq_api_key'] ?? null;
 
@@ -156,5 +169,149 @@ class TranscriptUtil
         $options = $this->getLanguageOptions();
 
         return (string) ($options[$language] ?? strtoupper($language));
+    }
+
+    public function getTranslationEngine(int $business_id): string
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $defaultEngine = strtolower((string) env('ESSENTIALS_TRANSCRIPT_TRANSLATION_DEFAULT_ENGINE', self::DEFAULT_TRANSLATION_ENGINE));
+        if (! in_array($defaultEngine, self::TRANSLATION_ENGINES, true)) {
+            $defaultEngine = self::DEFAULT_TRANSLATION_ENGINE;
+        }
+
+        $engine = strtolower(trim((string) ($settings['transcript_translation_engine'] ?? $defaultEngine)));
+        if (! in_array($engine, self::TRANSLATION_ENGINES, true)) {
+            return self::DEFAULT_TRANSLATION_ENGINE;
+        }
+
+        return $engine;
+    }
+
+    public function getTranslationPythonBinary(int $business_id): string
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $binary = trim((string) ($settings['transcript_translation_python_bin'] ?? env('ESSENTIALS_TRANSCRIPT_PYTHON_BIN', 'python')));
+
+        return $binary !== '' ? $binary : 'python';
+    }
+
+    public function getTranslationPythonScriptPath(int $business_id): string
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $scriptPath = trim((string) ($settings['transcript_translation_py_script'] ?? env('ESSENTIALS_TRANSCRIPT_PY_SCRIPT', 'scripts/transcript_translate_google.py')));
+
+        if ($scriptPath === '') {
+            $scriptPath = 'scripts/transcript_translate_google.py';
+        }
+
+        if ($this->isAbsolutePath($scriptPath)) {
+            return $scriptPath;
+        }
+
+        return base_path($scriptPath);
+    }
+
+    public function getTranslationTimeoutSeconds(int $business_id): int
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $timeout = (int) ($settings['transcript_translation_timeout_seconds'] ?? env('ESSENTIALS_TRANSCRIPT_TRANSLATION_TIMEOUT_SECONDS', 8));
+
+        return max(1, min($timeout, 120));
+    }
+
+    public function getTranslationCacheTtlSeconds(int $business_id): int
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $ttl = (int) ($settings['transcript_translation_cache_ttl_seconds'] ?? env('ESSENTIALS_TRANSCRIPT_TRANSLATION_CACHE_TTL_SECONDS', 600));
+
+        return max(0, min($ttl, 86400));
+    }
+
+    public function getTranslationPythonServiceUrls(int $business_id): array
+    {
+        $settings = $this->getEssentialsSettings($business_id);
+        $settingsUrls = $settings['transcript_translation_py_service_urls'] ?? null;
+        $envUrls = env('ESSENTIALS_TRANSCRIPT_PY_SERVICE_URLS', '');
+
+        $urls = $this->parseServiceUrlList($settingsUrls);
+        if (! empty($urls)) {
+            return $urls;
+        }
+
+        return $this->parseServiceUrlList($envUrls);
+    }
+
+    public function resolvePyTranslationLanguage(?string $language): string
+    {
+        $language = strtolower(trim((string) $language));
+        if ($language === '') {
+            return 'auto';
+        }
+
+        return (string) (self::PY_TRANSLATION_LANGUAGE_MAP[$language] ?? $language);
+    }
+
+    public function buildTranslationCacheKey(string $engine, string $sourceLanguage, string $targetLanguage, string $text): string
+    {
+        return sprintf(
+            'essentials:transcripts:translate:%s:%s:%s:%s',
+            strtolower(trim($engine)),
+            strtolower(trim($sourceLanguage)),
+            strtolower(trim($targetLanguage)),
+            hash('sha256', trim($text))
+        );
+    }
+
+    protected function getEssentialsSettings(int $business_id): array
+    {
+        $sessionSettings = [
+            session('business.essentials_settings'),
+            data_get(session('business'), 'essentials_settings'),
+        ];
+
+        foreach ($sessionSettings as $candidate) {
+            if (is_array($candidate)) {
+                return $candidate;
+            }
+
+            if (is_string($candidate) && trim($candidate) !== '') {
+                $decoded = json_decode($candidate, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+        }
+
+        return [];
+    }
+
+    protected function parseServiceUrlList($value): array
+    {
+        if (is_string($value)) {
+            $value = explode(',', $value);
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($value as $item) {
+            $url = trim((string) $item);
+            if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
+            $urls[] = $url;
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    protected function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\\\')
+            || (bool) preg_match('/^[A-Za-z]:[\\\\\\/]/', $path);
     }
 }

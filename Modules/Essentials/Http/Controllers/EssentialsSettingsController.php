@@ -65,9 +65,21 @@ class EssentialsSettingsController extends Controller
         }
 
         try {
-            $input = $request->only(['leave_ref_no_prefix', 'leave_instructions', 'payroll_ref_no_prefix', 'essentials_todos_prefix', 'grace_before_checkin', 'grace_after_checkin', 'grace_before_checkout', 'grace_after_checkout', 'groq_api_key']);
+            $input = $request->only(['leave_ref_no_prefix', 'leave_instructions', 'payroll_ref_no_prefix', 'essentials_todos_prefix', 'grace_before_checkin', 'grace_after_checkin', 'grace_before_checkout', 'grace_after_checkout', 'groq_api_key', 'transcript_translation_engine']);
             $input['is_location_required'] = ! empty($request->input('is_location_required')) ? 1 : 0;
             $input['calculate_sales_target_commission_without_tax'] = ! empty($request->input('calculate_sales_target_commission_without_tax')) ? 1 : 0;
+
+            $allowedTranscriptTranslationEngines = ['py_googletrans', 'aichat'];
+            $defaultTranscriptTranslationEngine = strtolower((string) env('ESSENTIALS_TRANSCRIPT_TRANSLATION_DEFAULT_ENGINE', 'py_googletrans'));
+            if (! in_array($defaultTranscriptTranslationEngine, $allowedTranscriptTranslationEngines, true)) {
+                $defaultTranscriptTranslationEngine = 'py_googletrans';
+            }
+
+            $selectedEngine = strtolower(trim((string) $request->input('transcript_translation_engine', $defaultTranscriptTranslationEngine)));
+            if (! in_array($selectedEngine, $allowedTranscriptTranslationEngines, true)) {
+                $selectedEngine = $defaultTranscriptTranslationEngine;
+            }
+            $input['transcript_translation_engine'] = $selectedEngine;
 
             $business = Business::find($business_id);
             $business->essentials_settings = json_encode($input);

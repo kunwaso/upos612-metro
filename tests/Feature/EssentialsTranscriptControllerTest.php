@@ -134,6 +134,62 @@ class EssentialsTranscriptControllerTest extends TestCase
         $this->assertSame(0, DB::table('essentials_transcripts')->count());
     }
 
+    public function test_preview_returns_error_and_does_not_create_database_row_when_translation_fails()
+    {
+        Storage::fake(config('filesystems.default', 'local'));
+
+        $moduleUtil = \Mockery::mock(ModuleUtil::class);
+        $transcriptUtil = \Mockery::mock(TranscriptUtil::class);
+        $translationUtil = \Mockery::mock(TranscriptTranslationUtil::class);
+
+        $transcriptUtil->shouldReceive('getApiKey')
+            ->once()
+            ->with(44)
+            ->andReturn('groq-test-key');
+        $transcriptUtil->shouldReceive('resolveTranscriptionLanguage')
+            ->once()
+            ->with('en')
+            ->andReturn('en');
+        $transcriptUtil->shouldReceive('transcribe')
+            ->once()
+            ->andReturn('Hello world');
+        $translationUtil->shouldReceive('translateText')
+            ->once()
+            ->with(44, 7, 'Hello world', 'en', 'vi')
+            ->andThrow(new \RuntimeException('Transcript translation failed. Please try again.'));
+
+        $controller = new TranscriptController($moduleUtil, $transcriptUtil, $translationUtil);
+        $user = $this->makeUser(true);
+        $this->be($user);
+
+        $request = PreviewTranscriptRequest::create(
+            '/essentials/transcripts/preview',
+            'POST',
+            [
+                'source_language' => 'en',
+                'target_language' => 'vi',
+            ],
+            [],
+            [
+                'recorded_audio' => UploadedFile::fake()->create('recording.webm', 64, 'audio/webm'),
+            ]
+        );
+        $request->setLaravelSession($this->makeSession([
+            'user.business_id' => 44,
+            'user.id' => 7,
+        ]));
+        $request->setUserResolver(function () use ($user) {
+            return $user;
+        });
+
+        $response = $controller->preview($request);
+        $payload = $response->getData(true);
+
+        $this->assertFalse($payload['success']);
+        $this->assertSame('Transcript translation failed. Please try again.', $payload['msg']);
+        $this->assertSame(0, DB::table('essentials_transcripts')->count());
+    }
+
     public function test_store_persists_audio_transcript_translation_and_language_pair()
     {
         Storage::fake(config('filesystems.default', 'local'));

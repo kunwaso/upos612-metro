@@ -617,6 +617,8 @@ if (!auth()->user()->can('module.action')) {
 - No `// TODO` left in committed code
 - If you can't complete a feature, say so and explain why — don't leave broken state
 - Test every edge case before declaring done
+- Ignore unrelated file changes discovered during execution; do not switch scope or revert those files.
+- Continue the current user-requested job until it is complete; only pause for blockers that directly impact the active scope or when the user reprioritizes.
 
 ### 2.9 Never Break What Exists
 
@@ -1117,7 +1119,7 @@ Reference: `ai/projectx-integration.md` for the stable hooks/view-composer patte
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **upos612** (14585 symbols, 43795 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **upos612** (14716 symbols, 44308 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

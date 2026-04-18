@@ -2,9 +2,9 @@
     <div class="container-fluid">
         <div class="col-auto">
             <a class="navbar-brand" href="{{ route('cms.home') }}">
-                <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="default-logo">
-                <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="alt-logo">
-                <img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-black@2x.png') }}" alt="" class="mobile-logo"> 
+                <img src="{{ asset('modules/cms/assets/images/white-logo.png') }}" alt="DEPAK Logo" class="default-logo">
+                <img src="{{ asset('modules/cms/assets/images/white-logo.png') }}" alt="DEPAK Logo" class="alt-logo">
+                <img src="{{ asset('modules/cms/assets/images/whote-logo.png') }}" alt="DEPAK Logo" class="mobile-logo"> 
             </a>
         </div>
         <div class="col-auto menu-order position-static xs-ps-0">

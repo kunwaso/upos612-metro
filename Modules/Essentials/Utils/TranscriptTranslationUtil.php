@@ -2,6 +2,7 @@
 
 namespace Modules\Essentials\Utils;
 
+use Illuminate\Support\Facades\Cache;
 use Modules\Aichat\Utils\AIChatUtil;
 use Modules\Aichat\Utils\ChatUtil;
 
@@ -21,15 +22,23 @@ class TranscriptTranslationUtil
 
     protected TranscriptUtil $transcriptUtil;
 
-    public function __construct(ChatUtil $chatUtil, AIChatUtil $aiChatUtil, TranscriptUtil $transcriptUtil)
+    protected PyGoogleTranslateClient $pyGoogleTranslateClient;
+
+    public function __construct(
+        ChatUtil $chatUtil,
+        AIChatUtil $aiChatUtil,
+        TranscriptUtil $transcriptUtil,
+        PyGoogleTranslateClient $pyGoogleTranslateClient
+    )
     {
         $this->chatUtil = $chatUtil;
         $this->aiChatUtil = $aiChatUtil;
         $this->transcriptUtil = $transcriptUtil;
+        $this->pyGoogleTranslateClient = $pyGoogleTranslateClient;
     }
 
     /**
-     * Translate text by using the business default provider/model configured in Aichat.
+     * Translate text by using the configured transcript translation engine.
      *
      * @throws \RuntimeException
      */
@@ -49,6 +58,66 @@ class TranscriptTranslationUtil
             return $text;
         }
 
+        $engine = $this->transcriptUtil->getTranslationEngine($businessId);
+        if ($engine === 'py_googletrans') {
+            return $this->translateWithPyGoogleTrans($businessId, $text, $sourceLanguage, $targetLanguage);
+        }
+
+        return $this->translateWithAichat($businessId, $userId, $text, $sourceLanguage, $targetLanguage);
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    protected function translateWithPyGoogleTrans(
+        int $businessId,
+        string $text,
+        string $sourceLanguage,
+        string $targetLanguage
+    ): string {
+        $sourceCode = $this->transcriptUtil->resolvePyTranslationLanguage($sourceLanguage);
+        $targetCode = $this->transcriptUtil->resolvePyTranslationLanguage($targetLanguage);
+
+        if ($sourceCode === $targetCode) {
+            return $text;
+        }
+
+        $cacheKey = $this->transcriptUtil->buildTranslationCacheKey('py_googletrans', $sourceCode, $targetCode, $text);
+        $cacheTtl = $this->transcriptUtil->getTranslationCacheTtlSeconds($businessId);
+        $serviceUrls = $this->transcriptUtil->getTranslationPythonServiceUrls($businessId);
+
+        $translate = function () use ($businessId, $text, $sourceCode, $targetCode, $serviceUrls) {
+            $translated = trim($this->pyGoogleTranslateClient->translate(
+                $businessId,
+                $text,
+                $sourceCode,
+                $targetCode,
+                $serviceUrls
+            ));
+            if ($translated === '') {
+                throw new \RuntimeException(__('essentials::lang.translation_empty_response'));
+            }
+
+            return $translated;
+        };
+
+        if ($cacheTtl > 0) {
+            return (string) Cache::remember($cacheKey, $cacheTtl, $translate);
+        }
+
+        return (string) $translate();
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    protected function translateWithAichat(
+        int $businessId,
+        int $userId,
+        string $text,
+        string $sourceLanguage,
+        string $targetLanguage
+    ): string {
         $modelOptions = $this->chatUtil->buildModelOptions($businessId, $userId);
         $candidates = $this->buildTranslationCandidates($modelOptions);
         if (empty($candidates)) {

@@ -3,7 +3,7 @@
         <div class="row justify-content-center">
             <!-- start footer column -->
             <div class="col-6 col-lg-3 last-paragraph-no-margin order-sm-1 md-mb-50px xs-mb-30px">
-                <a href="{{ route('cms.home') }}" class="footer-logo mb-15px d-inline-block"><img src="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white.png') }}" data-at2x="{{ asset('modules/cms/assets/images/demo-decor-store-logo-white@2x.png') }}" alt=""></a>
+                <a href="{{ route('cms.home') }}" class="footer-logo mb-15px d-inline-block"><img src="{{ asset('modules/cms/assets/images/dark-logo.png') }}" alt="DEPAK Logo"></a>
                 <p class="w-80 sm-w-100">Lorem ipsum amet adipiscing elit to eiusmod ad tempor.</p>
                 <div class="elements-social social-icon-style-02 mt-15px">
                     <ul class="small-icon light">

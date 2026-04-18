@@ -876,7 +876,7 @@ $(document).ready(function () {
         return recognition;
     }
 
-    function requestPreview(formData, onSuccess, onComplete) {
+    function requestPreview(formData, onSuccess, onComplete, onError) {
         $.ajax({
             url: previewUrl,
             method: 'POST',
@@ -886,7 +886,11 @@ $(document).ready(function () {
             headers: { 'X-CSRF-TOKEN': csrfToken },
             success: function (res) {
                 if (!res.success || !res.data) {
-                    toastr.error(res.msg || '{{ __("messages.something_went_wrong") }}');
+                    var failMsg = res.msg || '{{ __("messages.something_went_wrong") }}';
+                    toastr.error(failMsg);
+                    if (typeof onError === 'function') {
+                        onError(failMsg, res);
+                    }
                     return;
                 }
                 onSuccess(res.data);
@@ -894,6 +898,9 @@ $(document).ready(function () {
             error: function (xhr) {
                 var msg = extractAjaxErrorMessage(xhr, '{{ __("messages.something_went_wrong") }}');
                 toastr.error(msg);
+                if (typeof onError === 'function') {
+                    onError(msg, xhr);
+                }
             },
             complete: function () {
                 if (typeof onComplete === 'function') {
@@ -1007,9 +1014,10 @@ $(document).ready(function () {
                 }
 
                 $('#live-spinner-row').removeClass('d-none');
-                state.pending = buildLivePending(blob, mimeType);
-                showResult(state.pending);
-                openSaveModal();
+                var livePreviewState = buildLivePending(blob, mimeType);
+                state.pending = null;
+                showResult(livePreviewState);
+                closeSaveModal();
 
                 var formData = new FormData();
                 formData.append('_token', csrfToken);
@@ -1018,22 +1026,26 @@ $(document).ready(function () {
                 formData.append('target_language', targetLang);
 
                 requestPreview(formData, function (data) {
-                    state.pending = $.extend({}, state.pending || buildLivePending(blob, mimeType), {
+                    state.pending = $.extend({}, livePreviewState, {
                         source: 'live',
                         title: ($('#live-title-input').val() || '').trim(),
                         source_language: sourceLang,
                         target_language: targetLang,
-                        transcript_text: (data.transcript_text || state.pending.transcript_text || '').trim(),
-                        translated_text: (data.translated_text || state.pending.translated_text || '').trim(),
+                        transcript_text: (data.transcript_text || livePreviewState.transcript_text || '').trim(),
+                        translated_text: (data.translated_text || livePreviewState.translated_text || '').trim(),
                         blob: blob,
                         blobMimeType: mimeType
                     });
 
                     showResult(state.pending);
                     syncSaveModal();
+                    openSaveModal();
                 }, function () {
                     $('#live-spinner-row').addClass('d-none');
                     finishStopState();
+                }, function () {
+                    state.pending = null;
+                    closeSaveModal();
                 });
             });
 
